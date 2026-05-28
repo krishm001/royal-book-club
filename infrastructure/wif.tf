@@ -1,11 +1,6 @@
 locals {
   allowed_repositories = [
     "krishm001/royal-book-club",
-    "krishm001/royalbookclub",
-    "Krishm001/royal-book-club",
-    "Krishm001/royalbookclub",
-    "KrishM001/royal-book-club",
-    "KrishM001/royalbookclub"
   ]
 }
 
