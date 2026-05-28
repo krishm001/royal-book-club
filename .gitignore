@@ -12,9 +12,9 @@
 **/target/
 **/*.class
 **/*.jar
+!**/wrapper/maven-wrapper.jar
 **/*.war
 **/*.ear
-.mvn/
 mvnw.cmd
 **/target/jacoco.exec
 **/target/site/
