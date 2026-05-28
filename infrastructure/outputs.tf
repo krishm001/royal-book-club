@@ -12,3 +12,14 @@ output "backend_service_account_email" {
   description = "The email of the Cloud Run service account"
   value       = google_service_account.backend_sa.email
 }
+
+output "gcp_wif_provider" {
+  description = "Copy this value into GitHub Actions Secret: GCP_WIF_PROVIDER"
+  value       = google_iam_workload_identity_pool_provider.github_provider.name
+}
+
+output "gcp_wif_service_account" {
+  description = "Copy this value into GitHub Actions Secret: GCP_WIF_SERVICE_ACCOUNT"
+  value       = google_service_account.github_actions_sa.email
+}
+
