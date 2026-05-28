@@ -1,3 +1,10 @@
+locals {
+  allowed_repositories = [
+    "krishm001/royal-book-club",
+    "krishm001/royalbookclub"
+  ]
+}
+
 # 1. Create a Workload Identity Pool for GitHub Actions
 resource "google_iam_workload_identity_pool" "github_pool" {
   workload_identity_pool_id = "github-actions-pool"
@@ -18,7 +25,7 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
     "attribute.repository" = "assertion.repository"
   }
 
-  attribute_condition = "assertion.repository == 'krishm001/royal-book-club'"
+  attribute_condition = "assertion.repository == 'krishm001/royal-book-club' || assertion.repository == 'krishm001/royalbookclub'"
 
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
@@ -33,9 +40,10 @@ resource "google_service_account" "github_actions_sa" {
 
 # 4. Bind the GitHub Actions Service Account to authorize only your specific repository
 resource "google_service_account_iam_member" "wif_binding" {
+  for_each           = toset(local.allowed_repositories)
   service_account_id = google_service_account.github_actions_sa.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/krishm001/royal-book-club"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/${each.value}"
 }
 
 # 5. Grant the GitHub Actions Service Account permissions to build/push to Artifact Registry
