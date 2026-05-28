@@ -47,7 +47,7 @@
 }
 
 .filter-type-btn {
-  background: rgba(30, 30, 63, 0.3);
+  background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   color: var(--text-secondary);
   padding: 8px 20px;
@@ -63,7 +63,7 @@
 }
 
 .filter-type-btn.active {
-  background: linear-gradient(135deg, var(--accent) 0%, #b88655 100%);
+  background: var(--accent-gradient);
   color: var(--surface);
   border-color: transparent;
   font-weight: 600;

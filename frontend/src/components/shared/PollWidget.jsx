@@ -2,15 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, CheckCircle2, Users } from 'lucide-react';
 import './PollWidget.css';
 
+const DEFAULT_OPTIONS = [
+  { id: 'opt-1', text: 'The Picture of Dorian Gray — Oscar Wilde', initialVotes: 142 },
+  { id: 'opt-2', text: 'The Great Gatsby — F. Scott Fitzgerald', initialVotes: 98 },
+  { id: 'opt-3', text: 'Pride and Prejudice — Jane Austen', initialVotes: 167 },
+  { id: 'opt-4', text: 'Crime and Punishment — Fyodor Dostoevsky', initialVotes: 115 }
+];
+
 const PollWidget = ({ 
   pollId = 'weekly-book-poll', 
   question = 'Which masterwork should be selected for the Sovereign Guild Summer Read?',
-  options = [
-    { id: 'opt-1', text: 'The Picture of Dorian Gray — Oscar Wilde', initialVotes: 142 },
-    { id: 'opt-2', text: 'The Great Gatsby — F. Scott Fitzgerald', initialVotes: 98 },
-    { id: 'opt-3', text: 'Pride and Prejudice — Jane Austen', initialVotes: 167 },
-    { id: 'opt-4', text: 'Crime and Punishment — Fyodor Dostoevsky', initialVotes: 115 }
-  ]
+  options = DEFAULT_OPTIONS
 }) => {
   const [votedOptionId, setVotedOptionId] = useState(null);
   const [votesData, setVotesData] = useState([]);
@@ -39,7 +41,7 @@ const PollWidget = ({
       setVotesData(data);
       setTotalVotes(data.reduce((sum, opt) => sum + opt.votes, 0));
     }
-  }, [pollId, options]);
+  }, [pollId, JSON.stringify(options)]);
 
   useEffect(() => {
     if (votedOptionId) {

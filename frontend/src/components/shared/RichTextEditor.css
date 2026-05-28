@@ -33,8 +33,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
-  background: rgba(15, 15, 35, 0.6);
+  background: var(--surface-elevated);
   border-bottom: 1px solid var(--glass-border);
 }
 
@@ -65,7 +64,7 @@
 }
 
 .toolbar-btn.active {
-  background: linear-gradient(135deg, var(--accent) 0%, #b88655 100%);
+  background: var(--accent-gradient);
   color: var(--surface);
   box-shadow: var(--glow-shadow);
 }
@@ -130,7 +129,7 @@
   color: var(--text-primary);
   margin-top: 8px;
   margin-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--glass-border);
   padding-bottom: 4px;
 }
 
@@ -157,7 +156,7 @@
 }
 
 .ProseMirror pre {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--surface-elevated);
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius-sm);
   padding: 12px 16px;

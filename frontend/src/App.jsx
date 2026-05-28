@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, NavLink, Link } from 'react-router-dom';
-import { BookOpen, Calendar, BookText, Home, User, Compass, Sparkles, LogOut, Menu, X, Shield } from 'lucide-react';
+import { BookOpen, Calendar, BookText, Home, User, Compass, Sparkles, LogOut, Menu, X, Shield, Palette } from 'lucide-react';
 import { onAuthStateChanged, signInAnonymously, signOut } from 'firebase/auth';
 import { auth } from './config/firebase';
 import HomePage from './pages/HomePage';
@@ -19,6 +19,16 @@ function App() {
   const [user, setUser] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [theme, setTheme] = useState(() => localStorage.getItem('royal-theme') || 'dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('royal-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'academic' : 'dark'));
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -92,7 +102,19 @@ function App() {
               </NavLink>
             </nav>
 
-            {/* Profile / Auth Section */}
+            {/* Theme Toggle & Profile / Auth Section */}
+            <div className="theme-toggle-btn-container desktop-nav">
+              <button 
+                onClick={toggleTheme} 
+                className="theme-toggle-btn"
+                title="Switch Salon Theme"
+                id="theme-switcher-btn"
+              >
+                <Palette size={14} />
+                <span>{theme === 'dark' ? 'Salon' : 'Academic'}</span>
+              </button>
+            </div>
+
             <div className="auth-section">
               {loading ? (
                 <div className="loader-mini"></div>
@@ -139,6 +161,18 @@ function App() {
                 <NavLink to="/articles" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu}>
                   <BookText size={20} /> Articles
                 </NavLink>
+
+                <div className="mobile-theme-section">
+                  <button 
+                    onClick={toggleTheme} 
+                    className="theme-toggle-btn"
+                    style={{ width: '100%', justifyContent: 'center' }}
+                    id="mobile-theme-switcher-btn"
+                  >
+                    <Palette size={16} />
+                    <span>Theme: {theme === 'dark' ? 'Salon (Gold)' : 'Academic (Maroon)'}</span>
+                  </button>
+                </div>
 
                 <div className="mobile-auth">
                   {user ? (

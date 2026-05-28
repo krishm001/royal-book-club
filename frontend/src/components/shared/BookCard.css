@@ -23,7 +23,7 @@
   position: relative;
   overflow: hidden;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
-  background: #080814;
+  background: var(--book-cover-bg);
 }
 
 .book-cover-img {
@@ -64,7 +64,7 @@
   left: 0;
   bottom: 0;
   width: 6px;
-  background: linear-gradient(90deg, #b88655 0%, var(--accent) 50%, #b88655 100%);
+  background: var(--accent-gradient-90);
   box-shadow: 1px 0 5px rgba(0, 0, 0, 0.5);
   z-index: 3;
 }

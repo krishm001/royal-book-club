@@ -12,6 +12,11 @@
   --warning: #ffc857;
   --error: #ff6b6b;
 
+  /* Header/Footer background variables */
+  --header-bg: rgba(15, 15, 35, 0.75);
+  --footer-bg: #080814;
+  --overlay-bg: rgba(15, 15, 35, 0.98);
+
   /* Glassmorphism & Borders */
   --glass-bg: rgba(30, 30, 63, 0.4);
   --glass-border: rgba(212, 165, 116, 0.15);
@@ -19,6 +24,18 @@
   --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
   --glow-shadow: 0 0 15px rgba(212, 165, 116, 0.2);
   --glow-shadow-intense: 0 0 25px rgba(212, 165, 116, 0.45);
+
+  /* Gradients */
+  --accent-gradient: linear-gradient(135deg, var(--accent) 0%, #b88655 100%);
+  --accent-gradient-90: linear-gradient(90deg, #b88655 0%, var(--accent) 50%, #b88655 100%);
+  --accent-gradient-text: linear-gradient(135deg, var(--accent) 0%, #e8c59c 50%, #b88655 100%);
+
+  /* Adaptive backgrounds */
+  --book-cover-bg: #080814;
+  --badge-bg: rgba(15, 15, 35, 0.85);
+  --input-focus-bg: rgba(30, 30, 63, 0.6);
+  --glow-color: rgba(212, 165, 116, 0.3);
+  --glow-color-secondary: rgba(212, 165, 116, 0.1);
 
   /* Typography */
   --font-heading: 'Playfair Display', Georgia, serif;
@@ -29,6 +46,46 @@
   --border-radius-md: 12px;
   --border-radius-lg: 20px;
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="academic"] {
+  /* Beige & Maroon Academic Library Theme */
+  --primary: #58111a;              /* Elegant Maroon */
+  --secondary: #410d14;            /* Dark Burgundy */
+  --accent: #8d1222;               /* Crimson Accent */
+  --accent-hover: #b31c31;         /* Lighter Crimson */
+  --surface: #f5f2eb;              /* Warm Classical Beige Paper */
+  --surface-elevated: #eae5dc;     /* Darker Beige Paper */
+  --text-primary: #2c1a1c;         /* Dark Maroon-Black for readability */
+  --text-secondary: #654c4e;       /* Warm Slate Charcoal for secondary text */
+  --success: #2e7d32;              /* Darker Green for lightbg contrast */
+  --warning: #ef6c00;              /* Darker Amber for lightbg contrast */
+  --error: #c62828;                /* Darker Red for lightbg contrast */
+
+  /* Header/Footer background variables for Academic */
+  --header-bg: rgba(245, 242, 235, 0.85);
+  --footer-bg: #eeeae0;
+  --overlay-bg: rgba(245, 242, 235, 0.98);
+
+  /* Glassmorphism & Borders adapted for Warm Paper & Maroon accents */
+  --glass-bg: rgba(234, 229, 220, 0.7);
+  --glass-border: rgba(88, 17, 26, 0.12);
+  --glass-border-hover: rgba(88, 17, 26, 0.22);
+  --card-shadow: 0 8px 32px 0 rgba(88, 17, 26, 0.06);
+  --glow-shadow: 0 0 15px rgba(88, 17, 26, 0.12);
+  --glow-shadow-intense: 0 0 25px rgba(88, 17, 26, 0.22);
+
+  /* Gradients for Academic Theme */
+  --accent-gradient: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
+  --accent-gradient-90: linear-gradient(90deg, var(--secondary) 0%, var(--accent) 50%, var(--secondary) 100%);
+  --accent-gradient-text: linear-gradient(135deg, var(--accent) 0%, var(--text-primary) 50%, var(--secondary) 100%);
+
+  /* Adaptive backgrounds for Academic Theme */
+  --book-cover-bg: var(--surface-elevated);
+  --badge-bg: var(--surface);
+  --input-focus-bg: rgba(234, 229, 220, 0.95);
+  --glow-color: rgba(88, 17, 26, 0.15);
+  --glow-color-secondary: rgba(88, 17, 26, 0.05);
 }
 
 * {
@@ -92,7 +149,7 @@ a:hover {
 
 /* Common Interactive Elements */
 .royal-btn {
-  background: linear-gradient(135deg, var(--accent) 0%, #b88655 100%);
+  background: var(--accent-gradient);
   color: var(--surface);
   border: none;
   padding: 10px 24px;
@@ -171,7 +228,7 @@ a:hover {
   outline: none;
   border-color: var(--accent);
   box-shadow: var(--glow-shadow);
-  background: rgba(30, 30, 63, 0.6);
+  background: var(--input-focus-bg);
 }
 
 /* Glassmorphism Card Base */
@@ -209,11 +266,11 @@ main {
 
 /* Glow Typography */
 .glow-text {
-  text-shadow: 0 0 10px rgba(212, 165, 116, 0.3), 0 0 20px rgba(212, 165, 116, 0.1);
+  text-shadow: 0 0 10px var(--glow-color), 0 0 20px var(--glow-color-secondary);
 }
 
 .gold-gradient-text {
-  background: linear-gradient(135deg, var(--accent) 0%, #e8c59c 50%, #b88655 100%);
+  background: var(--accent-gradient-text);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

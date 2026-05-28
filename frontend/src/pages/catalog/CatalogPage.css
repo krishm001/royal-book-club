@@ -11,9 +11,8 @@
 .header-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(212, 165, 116, 0.08);
-  border: 1px solid rgba(212, 165, 116, 0.2);
+  background: var(--glow-color-secondary);
+  border: 1px solid var(--glass-border);
   padding: 6px 16px;
   border-radius: 50px;
   margin-bottom: 15px;
@@ -103,12 +102,12 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  border-top: 1px solid rgba(212, 165, 116, 0.1);
+  border-top: 1px solid var(--glass-border);
   padding-top: 20px;
 }
 
 .genre-tag-btn {
-  background: rgba(30, 30, 63, 0.3);
+  background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   color: var(--text-secondary);
   padding: 8px 16px;
@@ -125,7 +124,7 @@
 }
 
 .genre-tag-btn.active {
-  background: linear-gradient(135deg, var(--accent) 0%, #b88655 100%);
+  background: var(--accent-gradient);
   color: var(--surface);
   border-color: transparent;
   font-weight: 600;
