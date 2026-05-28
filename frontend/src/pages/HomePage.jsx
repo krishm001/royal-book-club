@@ -51,8 +51,8 @@ const HomePage = ({ user, onSignIn }) => {
             <span className="gold-gradient-text">ESTABLISHED MMXXVI</span>
           </div>
           <h1 className="hero-title glow-text">
-            Where Literature <br />
-            Meets <span className="gold-gradient-text">Sovereign Intellect</span>
+            Voices, Ideas, <br />
+            <span className="gold-gradient-text">Community</span>
           </h1>
           <p className="hero-subtitle">
             Enter an exclusive literary salon designed for the refined reader. Access an exquisite curated catalog of masterworks, RSVP to exclusive intellectual banquets, and publish deep literary dissertations.
