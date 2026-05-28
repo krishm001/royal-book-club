@@ -106,12 +106,11 @@ function App() {
             <div className="theme-toggle-btn-container desktop-nav">
               <button 
                 onClick={toggleTheme} 
-                className="theme-toggle-btn"
-                title="Switch Salon Theme"
+                className="theme-toggle-btn icon-only"
+                title={`Switch to ${theme === 'dark' ? 'Academic Theme (Beige & Maroon)' : 'Salon Theme (Gold & Blue)'}`}
                 id="theme-switcher-btn"
               >
-                <Palette size={14} />
-                <span>{theme === 'dark' ? 'Salon' : 'Academic'}</span>
+                <Palette size={16} />
               </button>
             </div>
 

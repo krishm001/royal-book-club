@@ -516,6 +516,14 @@
   box-shadow: var(--glow-shadow-intense);
 }
 
+.theme-toggle-btn.icon-only {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  justify-content: center;
+  border-radius: var(--border-radius-sm);
+}
+
 .theme-toggle-btn svg {
   transition: var(--transition-smooth);
 }
