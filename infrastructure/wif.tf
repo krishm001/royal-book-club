@@ -1,7 +1,11 @@
 locals {
   allowed_repositories = [
     "krishm001/royal-book-club",
-    "krishm001/royalbookclub"
+    "krishm001/royalbookclub",
+    "Krishm001/royal-book-club",
+    "Krishm001/royalbookclub",
+    "KrishM001/royal-book-club",
+    "KrishM001/royalbookclub"
   ]
 }
 
@@ -25,7 +29,7 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
     "attribute.repository" = "assertion.repository"
   }
 
-  attribute_condition = "assertion.repository == 'krishm001/royal-book-club' || assertion.repository == 'krishm001/royalbookclub'"
+  attribute_condition = "assertion.repository == 'krishm001/royal-book-club' || assertion.repository == 'krishm001/royalbookclub' || assertion.repository == 'Krishm001/royal-book-club' || assertion.repository == 'Krishm001/royalbookclub' || assertion.repository == 'KrishM001/royal-book-club' || assertion.repository == 'KrishM001/royalbookclub'"
 
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
