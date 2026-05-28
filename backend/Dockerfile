@@ -3,14 +3,14 @@ FROM eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /workspace
 
 # Copy Maven files
-COPY backend/pom.xml backend/mvnw ./
-COPY backend/.mvn .mvn
+COPY pom.xml mvnw ./
+COPY .mvn .mvn
 
 # Clean permissions and fetch dependencies to cache layer
 RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
 
 # Copy source and build jar
-COPY backend/src src
+COPY src src
 RUN ./mvnw package -DskipTests -B
 
 # ---- Stage 2: Runtime ----
