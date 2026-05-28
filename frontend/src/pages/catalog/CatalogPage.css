@@ -1,0 +1,195 @@
+/* Catalog Page Styles */
+.catalog-container {
+  padding-bottom: 60px;
+}
+
+.catalog-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(212, 165, 116, 0.08);
+  border: 1px solid rgba(212, 165, 116, 0.2);
+  padding: 6px 16px;
+  border-radius: 50px;
+  margin-bottom: 15px;
+}
+
+.gold-glow-icon {
+  color: var(--accent);
+  filter: drop-shadow(0 0 4px var(--accent));
+}
+
+.catalog-title {
+  font-size: 2.8rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.catalog-subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  max-width: 650px;
+  margin: 0 auto;
+}
+
+/* Catalog Controls Block */
+.catalog-controls {
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--accent);
+}
+
+.search-input {
+  padding-left: 48px !important;
+}
+
+.controls-action-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-toggle-btn.active {
+  background: rgba(212, 165, 116, 0.15) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent-hover) !important;
+}
+
+.sort-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sort-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.sort-select {
+  width: 240px !important;
+}
+
+/* Genre Filters Grid */
+.genre-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-top: 1px solid rgba(212, 165, 116, 0.1);
+  padding-top: 20px;
+}
+
+.genre-tag-btn {
+  background: rgba(30, 30, 63, 0.3);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  padding: 8px 16px;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  font-size: 0.85rem;
+}
+
+.genre-tag-btn:hover {
+  border-color: rgba(212, 165, 116, 0.4);
+  color: var(--text-primary);
+  background: rgba(212, 165, 116, 0.05);
+}
+
+.genre-tag-btn.active {
+  background: linear-gradient(135deg, var(--accent) 0%, #b88655 100%);
+  color: var(--surface);
+  border-color: transparent;
+  font-weight: 600;
+  box-shadow: var(--glow-shadow);
+}
+
+/* Books Grid */
+.catalog-grid-main {
+  width: 100%;
+}
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 30px;
+}
+
+/* No Results Card */
+.no-results-card {
+  text-align: center;
+  padding: 60px 20px !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+}
+
+.no-results-icon {
+  color: var(--text-secondary);
+  opacity: 0.4;
+  margin-bottom: 10px;
+}
+
+.no-results-card h3 {
+  font-size: 1.5rem;
+}
+
+.no-results-card p {
+  max-width: 450px;
+  margin-bottom: 10px;
+}
+
+/* Responsive Tweaks */
+@media (max-width: 768px) {
+  .catalog-title {
+    font-size: 2.2rem;
+  }
+  
+  .controls-action-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .sort-wrapper {
+    justify-content: space-between;
+  }
+  
+  .sort-select {
+    flex: 1;
+    width: auto !important;
+  }
+  
+  .catalog-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,219 @@
+/* User Management Styles */
+.user-mgmt-container {
+  padding-bottom: 60px;
+}
+
+.user-mgmt-header {
+  text-align: center;
+  margin-bottom: 45px;
+}
+
+.user-mgmt-title {
+  font-size: 2.8rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.user-mgmt-subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* Section heading block */
+.section-head-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid rgba(212, 165, 116, 0.15);
+  padding-bottom: 14px;
+  margin-bottom: 24px;
+}
+
+.section-head-with-icon h3 {
+  font-size: 1.4rem;
+  color: var(--accent);
+}
+
+.success-banner-mgmt {
+  margin-bottom: 20px;
+  margin-top: 0;
+}
+
+/* Ledger table styling */
+.ledger-table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.ledger-table th {
+  padding: 14px 18px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  border-bottom: 1px solid rgba(212, 165, 116, 0.12);
+  font-weight: 700;
+}
+
+.ledger-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: var(--transition-smooth);
+}
+
+.ledger-row:hover {
+  background: rgba(30, 30, 63, 0.2);
+}
+
+.ledger-table td {
+  padding: 16px 18px;
+  font-size: 0.95rem;
+}
+
+.member-name-td {
+  display: flex;
+  flex-direction: column;
+}
+
+.name-bold {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.id-sub {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* Role Pills */
+.role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 50px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.role-pill.ADMIN {
+  background: rgba(212, 165, 116, 0.1);
+  color: var(--accent);
+  border: 1px solid rgba(212, 165, 116, 0.25);
+}
+
+.role-pill.MEMBER {
+  background: rgba(139, 139, 163, 0.1);
+  color: var(--text-secondary);
+  border: 1px solid rgba(139, 139, 163, 0.2);
+}
+
+/* RFID tags */
+.rfid-assigned-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--success);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.pulse-signal {
+  color: var(--success);
+  animation: signal-pulse 1.5s infinite;
+}
+
+@keyframes signal-pulse {
+  0% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0.4; transform: scale(0.9); }
+}
+
+.rfid-empty-tag {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Actions styling */
+.actions-header {
+  text-align: right;
+}
+
+.actions-cell {
+  position: relative;
+  text-align: right;
+}
+
+.action-buttons-row {
+  display: inline-flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.mini-table-btn {
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+/* RFID form drawer */
+.rfid-assign-form {
+  position: absolute;
+  top: 100%;
+  right: 18px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--accent);
+  box-shadow: var(--card-shadow), var(--glow-shadow);
+  padding: 10px;
+  border-radius: var(--border-radius-sm);
+  z-index: 10;
+  margin-top: 5px;
+}
+
+.form-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mini-form-input {
+  width: 140px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+}
+
+.submit-rfid-btn {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+}
+
+.cancel-rfid-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 0.8rem;
+}
+
+.cancel-rfid-btn:hover {
+  color: var(--error);
+}
+
+/* Responsive Table overrides */
+@media (max-width: 850px) {
+  .user-mgmt-title {
+    font-size: 2.2rem;
+  }
+}

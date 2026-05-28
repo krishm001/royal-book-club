@@ -1,0 +1,26 @@
+package com.royalbookclub.api.checkout.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
+
+/**
+ * Model representing a book checkout transaction.
+ * Maps to the "checkouts" collection in Firestore.
+ */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Checkout {
+    private String id;
+    private String bookId; // ISBN
+    private String memberId;
+    private Instant checkedOutAt;
+    private Instant dueDate;
+    private Instant returnedAt;
+    private String status; // "CHECKED_OUT", "RETURNED", "OVERDUE"
+}

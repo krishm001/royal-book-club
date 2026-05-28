@@ -1,0 +1,242 @@
+/* Event Detail Page Styles */
+.event-detail-container {
+  padding-bottom: 60px;
+}
+
+.event-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 50px;
+}
+
+/* Visual Card Panel */
+.event-visual-card {
+  padding: 16px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.event-detail-img-container {
+  position: relative;
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+}
+
+.detail-event-img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  display: block;
+}
+
+.detail-event-badge {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--accent);
+  color: var(--accent-hover);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 50px;
+  letter-spacing: 0.05em;
+  box-shadow: var(--glow-shadow);
+}
+
+.event-quick-specs {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.quick-spec-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.spec-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.spec-title {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.spec-detail {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Info Panel */
+.event-detail-info-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.curator-info {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.event-detail-title {
+  font-size: 2.6rem;
+  line-height: 1.2;
+}
+
+.event-description-body h3 {
+  font-size: 1.2rem;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.brief-lead {
+  font-size: 1.1rem;
+  font-weight: 500;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+.extended-desc {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+/* Venue Section */
+.venue-details-section {
+  border-top: 1px solid rgba(212, 165, 116, 0.12);
+  padding-top: 20px;
+}
+
+.detail-subheading {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.address-details {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+.venue-simulation-map {
+  background: rgba(30, 30, 63, 0.3);
+  border: 1px solid var(--glass-border);
+  padding: 12px 16px;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* RSVP Block */
+.event-rsvp-cta-block {
+  border-top: 1px solid rgba(212, 165, 116, 0.12);
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.rsvp-capacity-tracker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+}
+
+.rsvp-submit-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 12px;
+  font-size: 0.95rem;
+}
+
+.rsvp-success-banner {
+  background: rgba(78, 204, 163, 0.08);
+  border: 1px solid rgba(78, 204, 163, 0.25);
+  padding: 16px;
+  border-radius: var(--border-radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.success-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.rsvp-success-banner h4 {
+  color: var(--success);
+  font-size: 1.05rem;
+  margin-bottom: 2px;
+}
+
+.rsvp-success-banner p {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.cancel-rsvp-trigger-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  color: var(--error);
+  padding: 8px;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.cancel-rsvp-trigger-btn:hover {
+  background: rgba(255, 107, 107, 0.08);
+  border-color: var(--error);
+  color: #ff8888;
+}
+
+/* Responsive styles */
+@media (max-width: 900px) {
+  .event-detail-grid {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  
+  .event-detail-visual {
+    max-width: 450px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  
+  .event-detail-title {
+    font-size: 2rem;
+  }
+}

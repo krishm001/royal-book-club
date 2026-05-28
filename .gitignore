@@ -1,0 +1,48 @@
+# --- IDE & OS ---
+.DS_Store
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# --- Java / Maven ---
+**/target/
+**/*.class
+**/*.jar
+**/*.war
+**/*.ear
+.mvn/
+mvnw.cmd
+**/target/jacoco.exec
+**/target/site/
+
+# --- Node / Frontend ---
+**/node_modules/
+**/dist/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.svelte-kit/
+.next/
+
+# --- Terraform ---
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+*.tfvars
+*.tfvars.json
+
+# --- Temporary ---
+tmp/
+temp/
+logs/
+*.log

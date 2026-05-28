@@ -1,0 +1,140 @@
+/* Admin Dashboard Styles */
+.admin-dashboard-container {
+  padding-bottom: 60px;
+}
+
+.admin-header {
+  text-align: center;
+  margin-bottom: 45px;
+}
+
+.header-badge-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(212, 165, 116, 0.08);
+  border: 1px solid var(--accent);
+  padding: 6px 18px;
+  border-radius: 50px;
+  margin-bottom: 16px;
+  box-shadow: var(--glow-shadow);
+}
+
+.admin-title {
+  font-size: 2.8rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.admin-subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* Metrics row */
+.admin-metrics-section {
+  margin-bottom: 50px;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 25px;
+}
+
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.metric-count {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.stat-icon-gold {
+  color: var(--accent);
+  filter: drop-shadow(0 0 4px var(--accent));
+}
+
+.metric-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.metric-change {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Actions panel grid */
+.admin-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 30px;
+}
+
+.action-panel-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  padding: 40px !important;
+}
+
+.panel-icon-wrapper {
+  background: rgba(212, 165, 116, 0.08);
+  border: 1.5px solid var(--accent);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--glow-shadow);
+  margin-bottom: 10px;
+}
+
+.action-panel-card h3 {
+  font-size: 1.5rem;
+}
+
+.action-panel-card p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  max-width: 320px;
+  color: var(--text-secondary);
+  flex-grow: 1;
+}
+
+.action-panel-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Responsive Override */
+@media (max-width: 768px) {
+  .admin-title {
+    font-size: 2.2rem;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .admin-actions-grid {
+    grid-template-columns: 1fr;
+  }
+}

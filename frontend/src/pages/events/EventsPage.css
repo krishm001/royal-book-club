@@ -1,0 +1,121 @@
+/* Events Page Styles */
+.events-container {
+  padding-bottom: 60px;
+}
+
+.events-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.events-title {
+  font-size: 2.8rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.events-subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  max-width: 650px;
+  margin: 0 auto;
+}
+
+/* Filter Bar Styles */
+.events-filter-bar {
+  margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.filter-tags-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-type-btn {
+  background: rgba(30, 30, 63, 0.3);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  padding: 8px 20px;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  font-size: 0.85rem;
+}
+
+.filter-type-btn:hover {
+  border-color: rgba(212, 165, 116, 0.4);
+  color: var(--text-primary);
+}
+
+.filter-type-btn.active {
+  background: linear-gradient(135deg, var(--accent) 0%, #b88655 100%);
+  color: var(--surface);
+  border-color: transparent;
+  font-weight: 600;
+  box-shadow: var(--glow-shadow);
+}
+
+/* Events Grid */
+.events-grid-main {
+  width: 100%;
+}
+
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 30px;
+}
+
+/* No Events Scheduled */
+.no-events-card {
+  text-align: center;
+  padding: 60px 20px !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.no-events-icon {
+  color: var(--text-secondary);
+  opacity: 0.3;
+}
+
+.no-events-card h3 {
+  font-size: 1.5rem;
+}
+
+.no-events-card p {
+  max-width: 450px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .events-title {
+    font-size: 2.2rem;
+  }
+  
+  .events-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filter-tags-group {
+    justify-content: flex-start;
+  }
+}

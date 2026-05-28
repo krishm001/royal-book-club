@@ -1,0 +1,240 @@
+/* Ingestion Console Styles */
+.ingestion-container {
+  padding-bottom: 60px;
+}
+
+.ingestion-header {
+  text-align: center;
+  margin-bottom: 45px;
+}
+
+.ingestion-title {
+  font-size: 2.8rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.ingestion-subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.section-p-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+/* Grids */
+.ingestion-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 30px;
+}
+
+.form-intake-card, .bulk-ingest-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-intake-card h3, .bulk-ingest-card h3 {
+  font-size: 1.35rem;
+  margin-bottom: 6px;
+  color: var(--accent);
+}
+
+/* Single intake elements */
+.isbn-query-wrapper {
+  margin-bottom: 20px;
+}
+
+.royal-input-label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.isbn-input-row {
+  display: flex;
+  gap: 12px;
+}
+
+.isbn-input-box {
+  flex: 1;
+}
+
+.lookup-btn {
+  padding: 10px 20px;
+}
+
+.spin-icon {
+  animation: spin 1.2s linear infinite;
+}
+
+.form-divider {
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  line-height: 0.1em;
+  margin: 25px 0;
+}
+
+.form-divider span {
+  background: var(--surface-elevated);
+  padding: 0 15px;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+
+.manual-intake-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.submit-row {
+  margin-top: 10px;
+}
+
+.submit-book-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.success-banner {
+  margin-top: 15px;
+  background: rgba(78, 204, 163, 0.1);
+  border: 1px solid var(--success);
+  color: var(--success);
+  padding: 12px 16px;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Bulk Upload Drag Zone */
+.drag-drop-zone-simulated {
+  border: 2px dashed rgba(212, 165, 116, 0.25);
+  border-radius: var(--border-radius-md);
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(30, 30, 63, 0.1);
+  flex-grow: 1;
+  min-height: 240px;
+}
+
+.drag-drop-zone-simulated:hover {
+  border-color: var(--accent);
+  background: rgba(212, 165, 116, 0.04);
+}
+
+.upload-logo-sim {
+  opacity: 0.7;
+}
+
+.upload-p {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.upload-sub {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Progress indicator */
+.progress-bar-wrapper {
+  width: 100%;
+  max-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-percentage-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.progress-outer {
+  background: var(--secondary);
+  height: 6px;
+  border-radius: 10px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.progress-inner {
+  background: linear-gradient(90deg, var(--accent) 0%, #b88655 100%);
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+/* Bulk Success indicators */
+.bulk-success-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.bulk-success-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.bulk-success-sub {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Barcode scans */
+.barcode-promo-frame {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: rgba(30, 30, 63, 0.2);
+  border: 1px solid var(--glass-border);
+  padding: 16px;
+  border-radius: var(--border-radius-sm);
+}
+
+.barcode-promo-frame h4 {
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.barcode-promo-frame p {
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .ingestion-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .drag-drop-zone-simulated {
+    min-height: 180px;
+  }
+}

@@ -1,0 +1,23 @@
+services:
+  firestore-emulator:
+    image: google/cloud-sdk:latest
+    command: >
+      gcloud emulators firestore start
+      --host-port=0.0.0.0:8081
+      --project=royal-book-club
+    ports:
+      - "8081:8081"
+    environment:
+      - FIRESTORE_EMULATOR_HOST=0.0.0.0:8081
+
+  backend:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - FIREBASE_PROJECT_ID=royal-book-club
+      - FIRESTORE_EMULATOR_HOST=firestore-emulator:8081
+      - CORS_ORIGINS=http://localhost:5173
+    depends_on:
+      - firestore-emulator
