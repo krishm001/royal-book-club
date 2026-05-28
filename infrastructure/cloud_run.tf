@@ -34,7 +34,7 @@ resource "google_cloud_run_v2_service" "backend_service" {
     service_account = google_service_account.backend_sa.email
 
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.docker_repo.repository_id}/${var.service_name}:latest"
+      image = "us-docker.pkg.dev/cloudrun/container/hello:latest"
 
       env {
         name  = "SPRING_PROFILES_ACTIVE"
