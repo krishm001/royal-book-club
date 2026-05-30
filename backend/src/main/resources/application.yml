@@ -28,7 +28,7 @@ openlibrary:
 # CORS
 app:
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,https://royalbookclub.com,https://krishm001.github.io}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000,https://royalbookclub.com,https://krishm001.github.io}
   jwt:
     # Firebase Auth handles JWT — this is for any custom token needs
     issuer: https://securetoken.google.com/royal-book-club

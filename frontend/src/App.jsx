@@ -13,6 +13,9 @@ import ArticleDetailPage from './pages/articles/ArticleDetailPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import BookIngestionConsole from './pages/admin/BookIngestionConsole';
 import UserManagementPage from './pages/admin/UserManagementPage';
+import AdminRequests from './pages/admin/AdminRequests';
+import SignIn from './pages/auth/SignIn';
+import SignUp from './pages/auth/SignUp';
 import './App.css';
 
 function App() {
@@ -50,6 +53,7 @@ function App() {
   }, []);
 
   const handleSignIn = async () => {
+    // keep anonymous fallback
     try {
       setLoading(true);
       await signInAnonymously(auth);
@@ -132,9 +136,9 @@ function App() {
                   </div>
                 </div>
               ) : (
-                <button onClick={handleSignIn} className="royal-btn header-btn" id="login-btn">
+                <Link to="/auth/signin" className="royal-btn header-btn" id="login-btn">
                   <User size={14} /> Enter Salon
-                </button>
+                </Link>
               )}
             </div>
 
@@ -216,6 +220,10 @@ function App() {
             <Route path="/admin" element={<AdminDashboard user={user} />} />
             <Route path="/admin/books" element={<BookIngestionConsole user={user} />} />
             <Route path="/admin/users" element={<UserManagementPage user={user} />} />
+            <Route path="/admin/requests" element={<AdminRequests user={user} />} />
+
+            <Route path="/auth/signin" element={<SignIn />} />
+            <Route path="/auth/signup" element={<SignUp />} />
           </Routes>
         </main>
 

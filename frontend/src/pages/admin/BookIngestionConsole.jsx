@@ -1,50 +1,107 @@
 import React, { useState } from 'react';
-import { Shield, PlusCircle, Sparkles, Upload, Scan, CheckCircle, RefreshCw } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw } from 'lucide-react';
+import { createBook, lookupBookByIsbn } from '../../services/libraryApi';
 import './BookIngestionConsole.css';
 
 const BookIngestionConsole = ({ user }) => {
   const [isbn, setIsbn] = useState('');
   const [fetchingMetadata, setFetchingMetadata] = useState(false);
   const [ingestionSuccess, setIngestionSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [manualTitle, setManualTitle] = useState('');
   const [manualAuthor, setManualAuthor] = useState('');
-  const [bulkProgress, setBulkProgress] = useState(-1); // -1 = idle, 0 to 100 = processing
+  const [publisher, setPublisher] = useState('');
+  const [publishDate, setPublishDate] = useState('');
+  const [coverUrl, setCoverUrl] = useState('');
+  const [description, setDescription] = useState('');
+  const [pages, setPages] = useState(0);
+  const [totalCopies, setTotalCopies] = useState(1);
+  const [availableCopies, setAvailableCopies] = useState(1);
+  const [bulkProgress, setBulkProgress] = useState(-1);
 
-  // Simulate scanning/fetching from Open Library API
-  const handleIsbnFetch = () => {
+  const handleIsbnFetch = async () => {
     if (!isbn.trim()) return;
+    setErrorMessage('');
     setFetchingMetadata(true);
 
-    setTimeout(() => {
+    try {
+      const metadata = await lookupBookByIsbn(isbn.trim());
+      setManualTitle(metadata.title || '');
+      setManualAuthor(Array.isArray(metadata.authors) ? metadata.authors.map((author) => author.name).join(', ') : metadata.authors || '');
+      setPublisher(metadata.publishers?.[0] || metadata.publisher || '');
+      setPublishDate(metadata.publish_date || '');
+      setCoverUrl(metadata.coverUrl || metadata.cover?.large || '');
+      setDescription(metadata.description || metadata.subtitle || '');
+      setPages(metadata.number_of_pages || 0);
+      setTotalCopies(1);
+      setAvailableCopies(1);
+    } catch (err) {
+      console.error(err);
+      setErrorMessage('Could not fetch book metadata from the backend lookup service.');
+    } finally {
       setFetchingMetadata(false);
-      // Simulate populating from Open Library lookup
-      setManualTitle('La Vérité sur l\'Affaire Harry Quebert');
-      setManualAuthor('Joël Dicker');
-    }, 1500);
+    }
   };
 
-  const handleIngestionSubmit = (e) => {
-    e.preventDefault();
-    if (!manualTitle || !manualAuthor) return;
+  const resetForm = () => {
+    setIsbn('');
+    setManualTitle('');
+    setManualAuthor('');
+    setPublisher('');
+    setPublishDate('');
+    setCoverUrl('');
+    setDescription('');
+    setPages(0);
+    setTotalCopies(1);
+    setAvailableCopies(1);
+  };
 
-    setIngestionSuccess(true);
-    setTimeout(() => {
-      setIngestionSuccess(false);
-      setManualTitle('');
-      setManualAuthor('');
-      setIsbn('');
-    }, 3000);
+  const handleIngestionSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!isbn.trim() || !manualTitle.trim() || !manualAuthor.trim()) {
+      setErrorMessage('ISBN, title, and author are required.');
+      return;
+    }
+
+    setErrorMessage('');
+
+    const authors = manualAuthor.split(',').map((name) => name.trim()).filter(Boolean);
+    const bookDto = {
+      isbn: isbn.trim(),
+      title: manualTitle.trim(),
+      subtitle: '',
+      authors,
+      publisher: publisher.trim(),
+      publishDate: publishDate.trim(),
+      description: description.trim(),
+      coverUrl: coverUrl.trim(),
+      pages: pages || 0,
+      totalCopies: totalCopies || 1,
+      availableCopies: availableCopies || 1,
+    };
+
+    try {
+      await createBook(bookDto);
+      setIngestionSuccess(true);
+      resetForm();
+      setTimeout(() => setIngestionSuccess(false), 3000);
+    } catch (err) {
+      console.error(err);
+      setErrorMessage('Unable to create book record at this time.');
+    }
   };
 
   const handleBulkUploadSimulate = (e) => {
     e.preventDefault();
+    if (bulkProgress >= 0) return;
+
     setBulkProgress(0);
     const interval = setInterval(() => {
-      setBulkProgress(prev => {
+      setBulkProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
-          setTimeout(() => setBulkProgress(-1), 2000); // clear progress
+          setTimeout(() => setBulkProgress(-1), 2000);
           return 100;
         }
         return prev + 25;
@@ -66,7 +123,6 @@ const BookIngestionConsole = ({ user }) => {
       </header>
 
       <div className="ingestion-grid">
-        {/* Left Side: Single Book Intake Form */}
         <div className="royal-card form-intake-card">
           <h3>Single Volume Intake</h3>
           <p className="section-p-desc">Register an individual book volume. Query metadata by ISBN or input details manually.</p>
@@ -74,15 +130,15 @@ const BookIngestionConsole = ({ user }) => {
           <div className="isbn-query-wrapper">
             <label className="royal-input-label">ISBN Lookup</label>
             <div className="isbn-input-row">
-              <input 
-                type="text" 
-                placeholder="e.g. 9780141439570" 
+              <input
+                type="text"
+                placeholder="e.g. 9780141439570"
                 className="royal-input isbn-input-box"
                 value={isbn}
                 onChange={(e) => setIsbn(e.target.value)}
               />
-              <button 
-                onClick={handleIsbnFetch} 
+              <button
+                onClick={handleIsbnFetch}
                 className="royal-btn lookup-btn"
                 disabled={fetchingMetadata}
                 id="isbn-lookup-btn"
@@ -97,9 +153,9 @@ const BookIngestionConsole = ({ user }) => {
           <form onSubmit={handleIngestionSubmit} className="manual-intake-form">
             <div className="input-group">
               <label className="royal-input-label">Volume Title</label>
-              <input 
-                type="text" 
-                placeholder="The Picture of Dorian Gray" 
+              <input
+                type="text"
+                placeholder="The Picture of Dorian Gray"
                 className="royal-input"
                 value={manualTitle}
                 onChange={(e) => setManualTitle(e.target.value)}
@@ -108,14 +164,91 @@ const BookIngestionConsole = ({ user }) => {
             </div>
 
             <div className="input-group">
-              <label className="royal-input-label">Author Name</label>
-              <input 
-                type="text" 
-                placeholder="Oscar Wilde" 
+              <label className="royal-input-label">Author Name(s)</label>
+              <input
+                type="text"
+                placeholder="Oscar Wilde, Mary Shelley"
                 className="royal-input"
                 value={manualAuthor}
                 onChange={(e) => setManualAuthor(e.target.value)}
                 required
+              />
+            </div>
+
+            <div className="input-group">
+              <label className="royal-input-label">Publisher</label>
+              <input
+                type="text"
+                className="royal-input"
+                value={publisher}
+                onChange={(e) => setPublisher(e.target.value)}
+              />
+            </div>
+
+            <div className="input-group">
+              <label className="royal-input-label">Publish Date</label>
+              <input
+                type="text"
+                className="royal-input"
+                value={publishDate}
+                onChange={(e) => setPublishDate(e.target.value)}
+                placeholder="e.g. 1890"
+              />
+            </div>
+
+            <div className="input-group">
+              <label className="royal-input-label">Cover Image URL</label>
+              <input
+                type="text"
+                className="royal-input"
+                value={coverUrl}
+                onChange={(e) => setCoverUrl(e.target.value)}
+                placeholder="https://..."
+              />
+            </div>
+
+            <div className="input-group">
+              <label className="royal-input-label">Description</label>
+              <textarea
+                className="royal-textarea"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+
+            <div className="form-grid-two">
+              <div className="input-group">
+                <label className="royal-input-label">Pages</label>
+                <input
+                  type="number"
+                  className="royal-input"
+                  min="0"
+                  value={pages}
+                  onChange={(e) => setPages(Number(e.target.value))}
+                />
+              </div>
+              <div className="input-group">
+                <label className="royal-input-label">Total Copies</label>
+                <input
+                  type="number"
+                  className="royal-input"
+                  min="1"
+                  value={totalCopies}
+                  onChange={(e) => setTotalCopies(Number(e.target.value))}
+                />
+              </div>
+            </div>
+
+            <div className="input-group">
+              <label className="royal-input-label">Available Copies</label>
+              <input
+                type="number"
+                className="royal-input"
+                min="0"
+                max={totalCopies}
+                value={availableCopies}
+                onChange={(e) => setAvailableCopies(Number(e.target.value))}
               />
             </div>
 
@@ -131,9 +264,14 @@ const BookIngestionConsole = ({ user }) => {
               <CheckCircle size={18} /> Volume successfully registered in Cloud Firestore ledger!
             </div>
           )}
+
+          {errorMessage && (
+            <div className="error-banner royal-card">
+              <p>{errorMessage}</p>
+            </div>
+          )}
         </div>
 
-        {/* Right Side: Bulk Upload spreadsheets & Scan option */}
         <div className="royal-card bulk-ingest-card">
           <h3>Asynchronous Bulk Upload</h3>
           <p className="section-p-desc">Ingest entire catalog archives asynchronously using spreadsheets (.csv or .xlsx formats).</p>

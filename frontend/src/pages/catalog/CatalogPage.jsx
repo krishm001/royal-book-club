@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, BookOpen, Sparkles } from 'lucide-react';
 import BookCard from '../../components/shared/BookCard';
+import { fetchBooks, checkoutBook } from '../../services/libraryApi';
 import './CatalogPage.css';
 
 const CatalogPage = ({ user }) => {
@@ -8,113 +9,72 @@ const CatalogPage = ({ user }) => {
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [sortBy, setSortBy] = useState('featured');
   const [showFilters, setShowFilters] = useState(false);
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock list of books matching the royal aesthetic and literary salon theme
-  const books = [
-    {
-      id: 'book-1',
-      title: 'The Picture of Dorian Gray',
-      author: 'Oscar Wilde',
-      genre: 'Classic Gothic',
-      rating: 4.9,
-      availability: 'available',
-      coverUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=300&q=80',
-      description: 'A philosophical novel tracing the moral and physical descent of a young aristocrat whose portrait bears the burden of his sins.',
-      publisher: 'Lippincott\'s Monthly Magazine',
-      publishYear: 1890,
-      isbn: '9780141439570'
-    },
-    {
-      id: 'book-2',
-      title: 'Frankenstein',
-      author: 'Mary Shelley',
-      genre: 'Gothic Fiction',
-      rating: 4.8,
-      availability: 'available',
-      coverUrl: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=300&q=80',
-      description: 'The sublime and horrifying tale of Victor Frankenstein and the sentient creature he brings to life in his quest to conquer mortality.',
-      publisher: 'Lackington, Hughes, Harding, Mavor, & Jones',
-      publishYear: 1818,
-      isbn: '9780141439471'
-    },
-    {
-      id: 'book-3',
-      title: 'The Divine Comedy',
-      author: 'Dante Alighieri',
-      genre: 'Epic Poetry',
-      rating: 5.0,
-      availability: 'checked-out',
-      coverUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=300&q=80',
-      description: 'An architectural epic detailing the soul\'s journey through Inferno, Purgatorio, and finally into the glorious light of Paradiso.',
-      publisher: 'John John',
-      publishYear: 1320,
-      isbn: '9780140448955'
-    },
-    {
-      id: 'book-4',
-      title: 'Beyond Good and Evil',
-      author: 'Friedrich Nietzsche',
-      genre: 'Philosophical Non-Fiction',
-      rating: 4.7,
-      availability: 'available',
-      coverUrl: 'https://images.unsplash.com/photo-1474932430478-367dbb6832c1?auto=format&fit=crop&w=300&q=80',
-      description: 'A scathing, brilliant critique of traditional morality, advocating for the master-moral virtues of noble, creative free spirits.',
-      publisher: 'C. G. Naumann',
-      publishYear: 1886,
-      isbn: '9780140449235'
-    },
-    {
-      id: 'book-5',
-      title: 'Les Fleurs du Mal',
-      author: 'Charles Baudelaire',
-      genre: 'Poetry',
-      rating: 4.9,
-      availability: 'available',
-      coverUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=300&q=80',
-      description: 'An exquisite, controversial collection of decadent poems exploring the relationship between beauty, melancholy, decay, and modernity.',
-      publisher: 'Poulet-Malassis & de Broise',
-      publishYear: 1857,
-      isbn: '9780199535583'
-    },
-    {
-      id: 'book-6',
-      title: 'The Great Gatsby',
-      author: 'F. Scott Fitzgerald',
-      genre: 'Modern Classic',
-      rating: 4.7,
-      availability: 'available',
-      coverUrl: 'https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=300&q=80',
-      description: 'A beautifully written fable of the Jazz Age, exploring the tragedy of the American Dream and the romantic obsession of Jay Gatsby.',
-      publisher: 'Charles Scribner\'s Sons',
-      publishYear: 1925,
-      isbn: '9780743273565'
+  useEffect(() => {
+    const loadBooks = async () => {
+      setLoading(true);
+      try {
+        const data = await fetchBooks();
+        setBooks(data || []);
+      } catch (err) {
+        setError('Unable to load the Royal catalog at this time.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBooks();
+  }, []);
+
+  const handleBookCheckout = async (book) => {
+    if (!user) {
+      throw new Error('Please sign in to perform a checkout.');
     }
-  ];
+
+    const bookId = book.isbn || book.bookId;
+    await checkoutBook(bookId, user.uid);
+    setBooks((currentBooks) =>
+      currentBooks.map((item) =>
+        (item.isbn === bookId || item.bookId === bookId)
+          ? {
+              ...item,
+              availableCopies: item.availableCopies > 0 ? item.availableCopies - 1 : 0,
+            }
+          : item
+      )
+    );
+  };
 
   const genres = ['All', 'Classic Gothic', 'Gothic Fiction', 'Epic Poetry', 'Philosophical Non-Fiction', 'Poetry', 'Modern Classic'];
 
-  // Handle filtering logic
   const filteredBooks = books
-    .filter(book => {
-      const matchesSearch = 
-        book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        book.isbn.includes(searchQuery);
-      
-      const matchesGenre = selectedGenre === 'All' || book.genre === selectedGenre;
-      
+    .filter((book) => {
+      const title = book.title || '';
+      const authors = Array.isArray(book.authors) ? book.authors.join(', ') : book.author || '';
+      const isbn = book.isbn || '';
+      const genre = book.genre || book.subtitle || 'Unknown';
+
+      const matchesSearch =
+        title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        authors.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        isbn.includes(searchQuery);
+
+      const matchesGenre = selectedGenre === 'All' || genre === selectedGenre;
+
       return matchesSearch && matchesGenre;
     })
     .sort((a, b) => {
-      if (sortBy === 'rating') return b.rating - a.rating;
-      if (sortBy === 'year-desc') return b.publishYear - a.publishYear;
-      if (sortBy === 'year-asc') return a.publishYear - b.publishYear;
-      return 0; // featured/default
+      if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+      if (sortBy === 'year-desc') return (b.publishYear || 0) - (a.publishYear || 0);
+      if (sortBy === 'year-asc') return (a.publishYear || 0) - (b.publishYear || 0);
+      return 0;
     });
 
   return (
     <div className="catalog-container animate-fade-in">
-      {/* Catalog Header */}
       <header className="catalog-header">
         <div className="header-badge">
           <Sparkles size={14} className="gold-glow-icon" />
@@ -126,7 +86,6 @@ const CatalogPage = ({ user }) => {
         </p>
       </header>
 
-      {/* Search and Filters Bar */}
       <section className="catalog-controls royal-card">
         <div className="search-input-wrapper">
           <Search className="search-icon" size={18} />
@@ -140,7 +99,7 @@ const CatalogPage = ({ user }) => {
         </div>
 
         <div className="controls-action-group">
-          <button 
+          <button
             className={`royal-btn-secondary filter-toggle-btn ${showFilters ? 'active' : ''}`}
             onClick={() => setShowFilters(!showFilters)}
           >
@@ -149,7 +108,7 @@ const CatalogPage = ({ user }) => {
 
           <div className="sort-wrapper">
             <span className="sort-label">Sort by:</span>
-            <select 
+            <select
               className="royal-select sort-select"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -162,7 +121,6 @@ const CatalogPage = ({ user }) => {
           </div>
         </div>
 
-        {/* Expandable Genre Tags Grid */}
         {showFilters && (
           <div className="genre-filter-row animate-fade-in">
             {genres.map((genre) => (
@@ -178,12 +136,24 @@ const CatalogPage = ({ user }) => {
         )}
       </section>
 
-      {/* Books Grid */}
       <main className="catalog-grid-main">
-        {filteredBooks.length > 0 ? (
+        {loading ? (
+          <div className="royal-card no-results-card">
+            <p>Loading the Royal catalog...</p>
+          </div>
+        ) : error ? (
+          <div className="royal-card no-results-card">
+            <p>{error}</p>
+          </div>
+        ) : filteredBooks.length > 0 ? (
           <div className="catalog-grid">
             {filteredBooks.map((book) => (
-              <BookCard key={book.id} book={book} />
+              <BookCard
+                key={book.isbn || book.title}
+                book={book}
+                user={user}
+                onCheckout={handleBookCheckout}
+              />
             ))}
           </div>
         ) : (
@@ -191,9 +161,12 @@ const CatalogPage = ({ user }) => {
             <BookOpen size={48} className="no-results-icon" />
             <h3>No Volumes Found</h3>
             <p>We could not find any masterworks matching your specific criteria in the Royal Library archives.</p>
-            <button 
+            <button
               className="royal-btn"
-              onClick={() => { setSearchQuery(''); setSelectedGenre('All'); }}
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedGenre('All');
+              }}
             >
               Reset Archives
             </button>

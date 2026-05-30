@@ -13,6 +13,11 @@ output "backend_service_account_email" {
   value       = google_service_account.backend_sa.email
 }
 
+output "firestore_database_name" {
+  description = "The name of the provisioned Firestore database"
+  value       = google_firestore_database.default.name
+}
+
 output "gcp_wif_provider" {
   description = "Copy this value into GitHub Actions Secret: GCP_WIF_PROVIDER"
   value       = google_iam_workload_identity_pool_provider.github_provider.name

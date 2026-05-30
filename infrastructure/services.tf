@@ -7,7 +7,8 @@ variable "gcp_services" {
     "iamcredentials.googleapis.com",
     "sts.googleapis.com",
     "run.googleapis.com",
-    "artifactregistry.googleapis.com"
+    "artifactregistry.googleapis.com",
+    "firestore.googleapis.com"
   ]
 }
 

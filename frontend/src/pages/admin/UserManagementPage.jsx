@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createAdminRequest } from '../../services/adminRequestApi';
 import { Shield, Users, Award, Radio, CheckCircle, RefreshCw, Key } from 'lucide-react';
 import './UserManagementPage.css';
 
@@ -58,6 +59,18 @@ const UserManagementPage = ({ user }) => {
           Administer salon credentials, grant administrator access, and register hardware RFID access keys for smart-lock entry.
         </p>
       </header>
+
+      <div style={{ marginTop: 12, marginBottom: 8 }}>
+        <button onClick={async () => {
+          try {
+            await createAdminRequest('Requesting admin access via UI');
+            triggerSuccess('Admin request submitted. Awaiting approval.');
+          } catch (e) {
+            console.error('Failed to submit admin request', e);
+            triggerSuccess('Failed to submit admin request');
+          }
+        }} className="royal-btn">Request Admin Access</button>
+      </div>
 
       {/* Main Registry Table */}
       <section className="user-registry-table-section royal-card">

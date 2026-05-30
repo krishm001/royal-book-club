@@ -182,4 +182,36 @@ public class UserService {
             throw new RuntimeException("Database error updating user", e);
         }
     }
+
+    /**
+     * Sets the role for an existing user and records an audit entry.
+     */
+    public void setUserRole(String id, Role role, String performedBy) {
+        DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(id);
+        try {
+            DocumentSnapshot document = docRef.get().get();
+            if (!document.exists()) {
+                throw new ResourceNotFoundException("User not found with ID: " + id);
+            }
+
+            ApiFuture<WriteResult> write = docRef.update("role", role, "updatedAt", new Date());
+            write.get();
+
+            // Write an audit entry
+            DocumentReference auditRef = firestore.collection("admin_actions").document();
+            ApiFuture<WriteResult> auditW = auditRef.set(new java.util.HashMap<String, Object>() {{
+                put("userId", id);
+                put("newRole", role.name());
+                put("performedBy", performedBy);
+                put("performedAt", new Date());
+            }});
+            auditW.get();
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Request interrupted", e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException("Database error updating user role", e);
+        }
+    }
 }

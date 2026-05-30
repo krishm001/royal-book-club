@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { BookOpen, Star, ArrowLeft, ShieldAlert, BadgeCheck, Compass, ShoppingBag, CheckCircle, Clock } from 'lucide-react';
+import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock } from 'lucide-react';
+import { fetchBookByIsbn, checkoutBook } from '../../services/libraryApi';
 import './BookDetailPage.css';
 
 const BookDetailPage = ({ user }) => {
   const { id } = useParams();
-  const [checkoutStatus, setCheckoutStatus] = useState('available'); // available, checking-out, checked-out
+  const [book, setBook] = useState(null);
+  const [checkoutStatus, setCheckoutStatus] = useState('available');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [reviewText, setReviewText] = useState('');
   const [reviews, setReviews] = useState([
     { id: 1, author: 'Archduke of Prose', content: 'An absolute masterpiece of gothic literature. The duality of human nature is painted with haunting elegance.', rating: 5, date: 'May 10, 2026' },
@@ -13,69 +17,53 @@ const BookDetailPage = ({ user }) => {
   ]);
   const [userRating, setUserRating] = useState(5);
 
-  // Fallback book search
-  const books = [
-    {
-      id: 'book-1',
-      title: 'The Picture of Dorian Gray',
-      author: 'Oscar Wilde',
-      genre: 'Classic Gothic',
-      rating: 4.9,
-      availability: 'available',
-      coverUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=600&q=80',
-      description: 'Oscar Wilde’s only novel is the fashionable salon sensation of its age, tracing the brilliant, aesthetic descent of a young aristocrat who remains ever youthful while his portrait bears the sins of his hedonistic soul.',
-      publisher: 'Lippincott\'s Monthly Magazine',
-      publishYear: 1890,
-      isbn: '9780141439570',
-      totalCopies: 3,
-      availableCopies: 3,
-      citation: '"To define is to limit." — Lord Henry Wotton',
-      extendedDetails: 'This gorgeous edition is bound in dark navy leather with gold gilding, fitting for our sovereign patrons. It includes critical essays and early reviews from the 1890 publication.'
-    },
-    {
-      id: 'book-2',
-      title: 'Frankenstein',
-      author: 'Mary Shelley',
-      genre: 'Gothic Fiction',
-      rating: 4.8,
-      availability: 'available',
-      coverUrl: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80',
-      description: 'The sublime and horrifying tale of Victor Frankenstein and the sentient creature he brings to life in his quest to conquer mortality.',
-      publisher: 'Lackington, Hughes, Harding, Mavor, & Jones',
-      publishYear: 1818,
-      isbn: '9780141439471',
-      totalCopies: 2,
-      availableCopies: 2,
-      citation: '"Beware; for I am fearless, and therefore powerful." — The Monster',
-      extendedDetails: 'Written during a rainy summer in Switzerland, Frankenstein explores isolation, the limits of science, and what it truly means to be human.'
-    },
-    {
-      id: 'book-3',
-      title: 'The Divine Comedy',
-      author: 'Dante Alighieri',
-      genre: 'Epic Poetry',
-      rating: 5.0,
-      availability: 'checked-out',
-      coverUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80',
-      description: 'An architectural epic detailing the soul\'s journey through Inferno, Purgatorio, and finally into the glorious light of Paradiso.',
-      publisher: 'John John',
-      publishYear: 1320,
-      isbn: '9780140448955',
-      totalCopies: 1,
-      availableCopies: 0,
-      citation: '"Abandon all hope, ye who enter here." — Inferno, Canto III',
-      extendedDetails: 'A beautiful three-volume bilingual translation with classic engravings that guide the reader through the depths of medieval theology and cosmology.'
+  useEffect(() => {
+    const loadBook = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const fetched = await fetchBookByIsbn(id);
+        setBook(fetched);
+        setCheckoutStatus(fetched.availableCopies > 0 ? 'available' : 'checked-out');
+      } catch (err) {
+        setError('Unable to load book details from the Royal catalog.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      loadBook();
     }
-  ];
+  }, [id]);
 
-  const book = books.find(b => b.id === id) || books[0];
+  useEffect(() => {
+    if (book) {
+      setCheckoutStatus(book.availableCopies > 0 ? 'available' : 'checked-out');
+    }
+  }, [book]);
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
+    if (!user) {
+      window.alert('Please sign in before checking out books.');
+      return;
+    }
     if (checkoutStatus !== 'available') return;
+
     setCheckoutStatus('checking-out');
-    setTimeout(() => {
+    try {
+      await checkoutBook(book.isbn, user.uid);
+      setBook((current) => ({
+        ...current,
+        availableCopies: current.availableCopies > 0 ? current.availableCopies - 1 : 0,
+      }));
       setCheckoutStatus('checked-out');
-    }, 1500);
+    } catch (err) {
+      console.error(err);
+      setCheckoutStatus(book.availableCopies > 0 ? 'available' : 'checked-out');
+      setError('Unable to complete checkout at this time.');
+    }
   };
 
   const handleSubmitReview = (e) => {
@@ -87,59 +75,82 @@ const BookDetailPage = ({ user }) => {
       author: user?.displayName || 'Royal Patron',
       content: reviewText,
       rating: userRating,
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     };
 
     setReviews([newReview, ...reviews]);
     setReviewText('');
   };
 
+  if (loading) {
+    return (
+      <div className="book-detail-container animate-fade-in">
+        <div className="royal-card no-results-card">
+          <p>Loading book details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !book) {
+    return (
+      <div className="book-detail-container animate-fade-in">
+        <div className="royal-card no-results-card">
+          <p>{error || 'Book not found in the Royal catalog.'}</p>
+          <Link to="/catalog" className="royal-btn">
+            Return to Catalog
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const authors = Array.isArray(book.authors) ? book.authors.join(', ') : book.author || 'Unknown Author';
+  const coverUrl = book.coverUrl || book.thumbnail || 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80';
+
   return (
     <div className="book-detail-container animate-fade-in">
-      {/* Back button */}
       <Link to="/catalog" className="back-link">
         <ArrowLeft size={16} /> Return to Archives
       </Link>
 
       <div className="book-detail-grid">
-        {/* Left Side - Visual Cover Panel */}
         <div className="book-cover-panel">
           <div className="cover-frame royal-card">
-            <img src={book.coverUrl} alt={book.title} className="detail-cover-img" />
+            <img src={coverUrl} alt={book.title} className="detail-cover-img" />
             <div className="gold-bookmark-spine"></div>
           </div>
-          {book.citation && (
+          {book.subtitle && (
             <blockquote className="detail-citation-blockquote">
-              {book.citation}
+              {book.subtitle}
             </blockquote>
           )}
         </div>
 
-        {/* Right Side - Information Panel */}
         <div className="book-info-panel royal-card">
           <div className="genre-rating-row">
-            <span className="detail-genre-tag">{book.genre}</span>
+            <span className="detail-genre-tag">{book.genre || book.publishDate || 'Library Edition'}</span>
             <div className="detail-stars">
               <Star size={16} fill="var(--accent)" stroke="var(--accent)" />
-              <span className="rating-num">{book.rating} / 5.0</span>
+              <span className="rating-num">{book.rating || '—'} / 5.0</span>
             </div>
           </div>
 
           <h1 className="detail-book-title glow-text">{book.title}</h1>
-          <h2 className="detail-book-author">by <span className="gold-gradient-text">{book.author}</span></h2>
+          <h2 className="detail-book-author">by <span className="gold-gradient-text">{authors}</span></h2>
 
           <div className="metadata-spec-grid">
             <div className="spec-item">
-              <span className="spec-label">ISBN-13</span>
+              <span className="spec-label">ISBN</span>
               <span className="spec-value">{book.isbn}</span>
             </div>
             <div className="spec-item">
-              <span className="spec-label">Chronology</span>
-              <span className="spec-value">{book.publishYear}</span>
+              <span className="spec-label">Publisher</span>
+              <span className="spec-value">{book.publisher || 'N/A'}</span>
             </div>
             <div className="spec-item">
-              <span className="spec-label">Publisher</span>
-              <span className="spec-value">{book.publisher}</span>
+              <span className="spec-label">Published</span>
+              <span className="spec-value">{book.publishDate || 'N/A'}</span>
             </div>
             <div className="spec-item">
               <span className="spec-label">Availability</span>
@@ -155,11 +166,10 @@ const BookDetailPage = ({ user }) => {
 
           <div className="detail-description-section">
             <h3>Literary Overview</h3>
-            <p>{book.description}</p>
-            {book.extendedDetails && <p className="extended-desc">{book.extendedDetails}</p>}
+            <p>{book.description || 'A refined volume from the Royal archives.'}</p>
+            {book.details && <p className="extended-desc">{book.details}</p>}
           </div>
 
-          {/* Checkout CTA */}
           <div className="detail-checkout-action-box">
             {checkoutStatus === 'available' ? (
               <button onClick={handleCheckout} className="royal-btn checkout-cta-btn" id="book-detail-checkout-btn">
@@ -174,7 +184,7 @@ const BookDetailPage = ({ user }) => {
                 <CheckCircle size={20} className="success-icon" />
                 <div>
                   <h4>Digital Checkout Authorized</h4>
-                  <p>A simulated hardware smart key has been emitted to your terminal. Enjoy reading.</p>
+                  <p>Your checkout has been recorded in the Firestore ledger.</p>
                 </div>
               </div>
             )}
@@ -182,11 +192,8 @@ const BookDetailPage = ({ user }) => {
         </div>
       </div>
 
-      {/* Review Section */}
       <section className="detail-reviews-section royal-card">
         <h3 className="section-title">Patron Dissertations & Reviews</h3>
-        
-        {/* Write a review */}
         {user ? (
           <form onSubmit={handleSubmitReview} className="write-review-form">
             <div className="review-rating-select">
@@ -211,7 +218,7 @@ const BookDetailPage = ({ user }) => {
               onChange={(e) => setReviewText(e.target.value)}
               rows={4}
               required
-            ></textarea>
+            />
             <button type="submit" className="royal-btn submit-review-btn">
               Publish Dissertation
             </button>
@@ -222,7 +229,6 @@ const BookDetailPage = ({ user }) => {
           </div>
         )}
 
-        {/* Reviews Feed */}
         <div className="reviews-feed">
           {reviews.map((rev) => (
             <div key={rev.id} className="review-item">
