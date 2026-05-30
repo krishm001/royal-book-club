@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { listAdminRequests, approveAdminRequest, rejectAdminRequest } from '../../services/adminRequestApi';
 
-export default function AdminRequests() {
+export default function AdminRequests({ user }) {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Check if user is admin
+  const isAdmin = user && user.role === 'ADMIN';
 
   const load = async () => {
     setLoading(true);
@@ -36,6 +39,15 @@ export default function AdminRequests() {
       console.error('Reject failed', e);
     }
   };
+
+  if (!isAdmin) {
+    return (
+      <div className="admin-requests">
+        <h3>Access Denied</h3>
+        <p>Only administrators can review admin requests.</p>
+      </div>
+    );
+  }
 
   if (loading) return <div>Loading admin requests...</div>;
 

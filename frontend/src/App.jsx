@@ -3,6 +3,7 @@ import { HashRouter as Router, Routes, Route, NavLink, Link } from 'react-router
 import { BookOpen, Calendar, BookText, Home, User, Compass, Sparkles, LogOut, Menu, X, Shield, Palette } from 'lucide-react';
 import { onAuthStateChanged, signInAnonymously, signOut } from 'firebase/auth';
 import { auth } from './config/firebase';
+import api from './api/apiClient';
 import HomePage from './pages/HomePage';
 import CatalogPage from './pages/catalog/CatalogPage';
 import BookDetailPage from './pages/catalog/BookDetailPage';
@@ -36,17 +37,37 @@ function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
-        setUser({
-          uid: firebaseUser.uid,
-          displayName: firebaseUser.displayName || 'Royal Patron',
-          email: firebaseUser.email || 'patron@royalbook.club',
-          photoURL: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=150&q=80', // Royal avatar representation
-          tier: 'Sovereign Reader'
-        });
+        // Fetch backend profile (roles, names) using ID token via apiClient
+        (async () => {
+          try {
+            const res = await api.get('/api/v1/auth/me');
+            const backendUser = res?.data?.data;
+
+            setUser({
+              uid: firebaseUser.uid,
+              displayName: firebaseUser.displayName || `${backendUser?.firstName || ''} ${backendUser?.lastName || ''}`.trim() || 'Royal Patron',
+              email: firebaseUser.email || backendUser?.email || 'patron@royalbook.club',
+              photoURL: firebaseUser.photoURL || backendUser?.photoUrl || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=150&q=80',
+              tier: backendUser?.role === 'ADMIN' ? 'Curator' : 'Sovereign Reader',
+              role: backendUser?.role || 'MEMBER'
+            });
+          } catch (err) {
+            console.error('Failed to fetch backend profile', err);
+            setUser({
+              uid: firebaseUser.uid,
+              displayName: firebaseUser.displayName || 'Royal Patron',
+              email: firebaseUser.email || 'patron@royalbook.club',
+              photoURL: firebaseUser.photoURL || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=150&q=80',
+              tier: 'Sovereign Reader'
+            });
+          } finally {
+            setLoading(false);
+          }
+        })();
       } else {
         setUser(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();

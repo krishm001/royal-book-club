@@ -1,5 +1,6 @@
 package com.royalbookclub.api.user.controller;
 
+import com.royalbookclub.api.auth.dto.RegisterRequest;
 import com.royalbookclub.api.common.dto.ApiResponse;
 import com.royalbookclub.api.user.model.User;
 import com.royalbookclub.api.user.service.UserService;
@@ -9,8 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -44,6 +44,29 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get list of all registered users (Admin only)", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<List<User>>> getAllUsers() {
+        List<User> users = userService.getAllUsers();
+        return ResponseEntity.ok(ApiResponse.success(users));
+    }
+
+    /**
+     * Public endpoint to register a new user in Firestore after Firebase Auth signup.
+     * Called by frontend after successful email/password registration.
+     */
+    @PostMapping("/api/v1/auth/register")
+    @Operation(summary = "Register new user in Firestore (called after Firebase signup)")
+    public ResponseEntity<ApiResponse<User>> registerUser(@RequestBody RegisterRequest request) {
+        User user = userService.getOrCreateUser(request.getUid(), request.getEmail(), request.getDisplayName());
+        return ResponseEntity.ok(ApiResponse.success(user));
+    }
+
+    /**
+     * Endpoint to fetch all users for non-admin display (e.g., member list).
+     * Returns only non-sensitive user fields.
+     */
+    @GetMapping("/api/v1/users")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Get list of all registered users (Admin only)", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<ApiResponse<List<User>>> listUsers() {
         List<User> users = userService.getAllUsers();
         return ResponseEntity.ok(ApiResponse.success(users));
     }

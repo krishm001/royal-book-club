@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw } from 'lucide-react';
+import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw, X } from 'lucide-react';
 import { createBook, lookupBookByIsbn } from '../../services/libraryApi';
+import { uploadBookImage } from '../../services/storageApi';
 import './BookIngestionConsole.css';
 
 const BookIngestionConsole = ({ user }) => {
@@ -18,6 +19,12 @@ const BookIngestionConsole = ({ user }) => {
   const [totalCopies, setTotalCopies] = useState(1);
   const [availableCopies, setAvailableCopies] = useState(1);
   const [bulkProgress, setBulkProgress] = useState(-1);
+  const [selectedImageFile, setSelectedImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Check if user is admin
+  const isAdmin = user && user.role === 'ADMIN';
 
   const handleIsbnFetch = async () => {
     if (!isbn.trim()) return;
@@ -54,6 +61,49 @@ const BookIngestionConsole = ({ user }) => {
     setPages(0);
     setTotalCopies(1);
     setAvailableCopies(1);
+    setSelectedImageFile(null);
+    setImagePreview(null);
+  };
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSelectedImageFile(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setImagePreview(event.target?.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageUpload = async () => {
+    if (!selectedImageFile) {
+      setErrorMessage('Please select an image file.');
+      return;
+    }
+
+    setUploadingImage(true);
+    setErrorMessage('');
+
+    try {
+      const uploadedUrl = await uploadBookImage(selectedImageFile);
+      setCoverUrl(uploadedUrl);
+      setSelectedImageFile(null);
+      setImagePreview(null);
+    } catch (err) {
+      console.error(err);
+      setErrorMessage(err.message || 'Failed to upload image.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const removeImagePreview = () => {
+    setSelectedImageFile(null);
+    setImagePreview(null);
   };
 
   const handleIngestionSubmit = async (e) => {
@@ -111,18 +161,27 @@ const BookIngestionConsole = ({ user }) => {
 
   return (
     <div className="ingestion-container animate-fade-in">
-      <header className="ingestion-header">
-        <div className="header-badge-admin">
-          <Shield size={14} className="gold-glow-icon" />
-          <span className="gold-gradient-text">ADMIN ACQUISITION</span>
-        </div>
-        <h1 className="ingestion-title glow-text">Acquisition Ingestion Console</h1>
-        <p className="ingestion-subtitle">
-          Acquire and register new physical and digital masterworks into the Royal Library ledger.
-        </p>
-      </header>
+      {!isAdmin ? (
+        <>
+          <header className="ingestion-header">
+            <h1 className="ingestion-title glow-text">Access Denied</h1>
+            <p className="ingestion-subtitle">Only administrators can access the book ingestion console.</p>
+          </header>
+        </>
+      ) : (
+        <>
+          <header className="ingestion-header">
+            <div className="header-badge-admin">
+              <Shield size={14} className="gold-glow-icon" />
+              <span className="gold-gradient-text">ADMIN ACQUISITION</span>
+            </div>
+            <h1 className="ingestion-title glow-text">Acquisition Ingestion Console</h1>
+            <p className="ingestion-subtitle">
+              Acquire and register new physical and digital masterworks into the Royal Library ledger.
+            </p>
+          </header>
 
-      <div className="ingestion-grid">
+          <div className="ingestion-grid">
         <div className="royal-card form-intake-card">
           <h3>Single Volume Intake</h3>
           <p className="section-p-desc">Register an individual book volume. Query metadata by ISBN or input details manually.</p>
@@ -197,13 +256,73 @@ const BookIngestionConsole = ({ user }) => {
             </div>
 
             <div className="input-group">
-              <label className="royal-input-label">Cover Image URL</label>
+              <label className="royal-input-label">Cover Image</label>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleImageSelect}
+                      style={{ display: 'none' }}
+                      id="image-file-input"
+                    />
+                    <label htmlFor="image-file-input" style={{ flex: 1 }}>
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById('image-file-input')?.click()}
+                        className="royal-btn"
+                        style={{ width: '100%' }}
+                      >
+                        {selectedImageFile ? `File: ${selectedImageFile.name}` : 'Upload Image'}
+                      </button>
+                    </label>
+                    {selectedImageFile && (
+                      <button
+                        type="button"
+                        onClick={handleImageUpload}
+                        className="royal-btn"
+                        disabled={uploadingImage}
+                      >
+                        {uploadingImage ? 'Uploading...' : 'Confirm Upload'}
+                      </button>
+                    )}
+                  </div>
+                  {imagePreview && (
+                    <div style={{ position: 'relative', marginBottom: '8px' }}>
+                      <img src={imagePreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '150px', borderRadius: '4px' }} />
+                      <button
+                        type="button"
+                        onClick={removeImagePreview}
+                        style={{
+                          position: 'absolute',
+                          top: '4px',
+                          right: '4px',
+                          background: 'rgba(0,0,0,0.6)',
+                          border: 'none',
+                          color: 'white',
+                          borderRadius: '50%',
+                          width: '24px',
+                          height: '24px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <p style={{ fontSize: '0.85rem', color: '#999', marginTop: '8px' }}>OR</p>
               <input
                 type="text"
                 className="royal-input"
                 value={coverUrl}
                 onChange={(e) => setCoverUrl(e.target.value)}
-                placeholder="https://..."
+                placeholder="Paste direct image URL (https://...)"
               />
             </div>
 
@@ -311,7 +430,9 @@ const BookIngestionConsole = ({ user }) => {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+        </>
+      )}
     </div>
   );
 };

@@ -1,9 +1,25 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Shield, BookOpen, Users, PlusCircle, Award, Settings, Layers, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { listAdminRequests } from '../../services/adminRequestApi';
 import './AdminDashboard.css';
 
 const AdminDashboard = ({ user }) => {
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+
+  useEffect(() => {
+    const loadPendingRequests = async () => {
+      try {
+        const requests = await listAdminRequests('PENDING');
+        setPendingRequestsCount(requests?.length || 0);
+      } catch (e) {
+        console.error('Failed to load pending requests', e);
+      }
+    };
+
+    loadPendingRequests();
+  }, []);
+
   // Premium quick metrics
   const adminStats = [
     { label: 'Registered Patrons', count: '1,420', change: '+12% this month', icon: <Users className="stat-icon-gold" /> },
@@ -67,6 +83,37 @@ const AdminDashboard = ({ user }) => {
             Manage Members
           </Link>
         </div>
+
+        {/* Admin Requests Panel */}
+        {pendingRequestsCount > 0 && (
+          <div className="royal-card action-panel-card" style={{ borderColor: '#d4af37', position: 'relative' }}>
+            <div style={{
+              position: 'absolute',
+              top: '8px',
+              right: '8px',
+              background: '#d4af37',
+              color: '#1a1a1a',
+              borderRadius: '50%',
+              width: '32px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              fontSize: '14px'
+            }}>
+              {pendingRequestsCount}
+            </div>
+            <div className="panel-icon-wrapper">
+              <Award size={28} className="gold-glow-icon" />
+            </div>
+            <h3>Pending Admin Requests</h3>
+            <p>{pendingRequestsCount} {pendingRequestsCount === 1 ? 'member has' : 'members have'} requested admin access.</p>
+            <Link to="/admin/requests" className="royal-btn action-panel-btn">
+              Review Requests
+            </Link>
+          </div>
+        )}
       </section>
     </div>
   );
