@@ -16,6 +16,7 @@
   --header-bg: rgba(15, 15, 35, 0.75);
   --footer-bg: #080814;
   --overlay-bg: rgba(15, 15, 35, 0.98);
+  --mobile-overlay-bg: linear-gradient(180deg, rgba(18, 27, 62, 0.96), rgba(10, 14, 34, 0.98));
 
   /* Glassmorphism & Borders */
   --glass-bg: rgba(30, 30, 63, 0.4);
@@ -66,6 +67,7 @@
   --header-bg: rgba(245, 242, 235, 0.85);
   --footer-bg: #eeeae0;
   --overlay-bg: rgba(245, 242, 235, 0.98);
+  --mobile-overlay-bg: linear-gradient(180deg, rgba(245, 242, 235, 0.96), rgba(141, 18, 34, 0.12));
 
   /* Glassmorphism & Borders adapted for Warm Paper & Maroon accents */
   --glass-bg: rgba(234, 229, 220, 0.7);

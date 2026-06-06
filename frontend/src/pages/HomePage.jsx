@@ -1,28 +1,58 @@
-import React from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { BookOpen, Calendar, BookText, Sparkles, ChevronRight, Award, Trophy, Users, ShieldAlert } from 'lucide-react';
 import PollWidget from '../components/shared/PollWidget';
+import { fetchBooks } from '../services/libraryApi';
 import './HomePage.css';
 
+const defaultFeaturedBook = {
+  id: 'book-1',
+  title: 'The Picture of Dorian Gray',
+  author: 'Oscar Wilde',
+  genre: 'Classic Gothic',
+  rating: 4.9,
+  coverUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=600&q=80',
+  description: 'Oscar Wilde’s only novel is the fashionable salon sensation of its age, tracing the brilliant, aesthetic descent of a young aristocrat who remains ever youthful while his portrait bears the sins of his hedonistic soul.',
+  citation: '"To define is to limit." — Lord Henry Wotton'
+};
+
 const HomePage = ({ user, onSignIn }) => {
-  // Mock data for featured sections
+  const [featuredBook, setFeaturedBook] = useState(defaultFeaturedBook);
+  const [featuredError, setFeaturedError] = useState(null);
+
+  useEffect(() => {
+    const loadFeatured = async () => {
+      try {
+        const books = await fetchBooks();
+        if (Array.isArray(books) && books.length > 0) {
+          const index = Math.floor(Math.random() * books.length);
+          const chosen = books[index];
+          setFeaturedBook({
+            id: chosen.isbn || chosen.bookId || chosen.id || 'book-1',
+            title: chosen.title || chosen.name || defaultFeaturedBook.title,
+            author: Array.isArray(chosen.authors) ? chosen.authors.join(', ') : chosen.author || defaultFeaturedBook.author,
+            genre: chosen.genre || chosen.subtitle || 'Selected Curation',
+            rating: chosen.rating || 4.8,
+            coverUrl: chosen.coverUrl || chosen.cover || defaultFeaturedBook.coverUrl,
+            description: chosen.description || chosen.subtitle || defaultFeaturedBook.description,
+            citation: chosen.citation || defaultFeaturedBook.citation,
+          });
+        }
+      } catch (err) {
+        console.warn('Unable to load featured book from catalog', err);
+        setFeaturedError('Featuring the most exquisite selection soon.');
+      }
+    };
+
+    loadFeatured();
+  }, []);
+
   const stats = [
     { label: 'Eminent Scholars', count: '1,420', icon: <Users className="stat-icon" /> },
     { label: 'Literary Tomes', count: '5,800', icon: <BookOpen className="stat-icon" /> },
     { label: 'Active Checkouts', count: '342', icon: <Sparkles className="stat-icon" /> },
     { label: 'Upcoming Salons', count: '12', icon: <Calendar className="stat-icon" /> },
   ];
-
-  const featuredBook = {
-    id: 'book-1',
-    title: 'The Picture of Dorian Gray',
-    author: 'Oscar Wilde',
-    genre: 'Classic Gothic',
-    rating: 4.9,
-    coverUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=600&q=80',
-    description: 'Oscar Wilde’s only novel is the fashionable salon sensation of its age, tracing the brilliant, aesthetic descent of a young aristocrat who remains ever youthful while his portrait bears the sins of his hedonistic soul.',
-    citation: '"To define is to limit." — Lord Henry Wotton'
-  };
 
   const activeEvents = [
     {
@@ -79,6 +109,7 @@ const HomePage = ({ user, onSignIn }) => {
                 <h3 className="highlight-title">{featuredBook.title}</h3>
                 <span className="highlight-author">by {featuredBook.author}</span>
                 <p className="highlight-desc">{featuredBook.description}</p>
+                {featuredError && <div className="highlight-note">{featuredError}</div>}
                 <blockquote className="highlight-quote">{featuredBook.citation}</blockquote>
                 <Link to={`/catalog/${featuredBook.id}`} className="highlight-action-btn">
                   Reserve This Volume <ChevronRight size={14} />

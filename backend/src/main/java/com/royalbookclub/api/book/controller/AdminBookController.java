@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,6 +25,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/v1/admin/books")
+@PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Admin Books Catalog", description = "Administrative endpoints to create, modify, delete, and bulk import books.")
 public class AdminBookController {
 

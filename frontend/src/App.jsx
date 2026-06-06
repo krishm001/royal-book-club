@@ -177,10 +177,12 @@ function App() {
             </button>
           </div>
 
+</header>
+
           {/* Mobile Navigation Drawer */}
           {mobileMenuOpen && (
-            <div className="mobile-nav-overlay animate-fade-in">
-              <nav className="mobile-nav">
+            <div className="mobile-nav-overlay animate-fade-in" role="dialog" aria-modal="true" onClick={closeMobileMenu}>
+              <nav className="mobile-nav" onClick={(e) => e.stopPropagation()}>
                 <NavLink to="/" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu} end>
                   <Home size={20} /> Home
                 </NavLink>
@@ -234,7 +236,6 @@ function App() {
               </nav>
             </div>
           )}
-        </header>
 
         {/* Main Content Area */}
         <main className="main-content">

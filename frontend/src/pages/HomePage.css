@@ -158,6 +158,14 @@
   margin-bottom: 12px;
 }
 
+.highlight-note {
+  color: var(--accent);
+  border-left: 3px solid rgba(212, 165, 116, 0.5);
+  padding-left: 12px;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+}
+
 .highlight-quote {
   border-left: 2px solid var(--accent);
   padding-left: 10px;

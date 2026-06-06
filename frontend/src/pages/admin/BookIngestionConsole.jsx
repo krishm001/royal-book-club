@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw, X } from 'lucide-react';
-import { createBook, lookupBookByIsbn } from '../../services/libraryApi';
+import { createBook, lookupBookByIsbn, fetchBookByIsbn } from '../../services/libraryApi';
 import { uploadBookImage } from '../../services/storageApi';
 import './BookIngestionConsole.css';
 
 const BookIngestionConsole = ({ user }) => {
   const [isbn, setIsbn] = useState('');
   const [fetchingMetadata, setFetchingMetadata] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [infoMessage, setInfoMessage] = useState('');
   const [ingestionSuccess, setIngestionSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [manualTitle, setManualTitle] = useState('');
@@ -29,22 +31,47 @@ const BookIngestionConsole = ({ user }) => {
   const handleIsbnFetch = async () => {
     if (!isbn.trim()) return;
     setErrorMessage('');
+    setInfoMessage('');
     setFetchingMetadata(true);
+    setIsEditMode(false);
 
     try {
-      const metadata = await lookupBookByIsbn(isbn.trim());
-      setManualTitle(metadata.title || '');
-      setManualAuthor(Array.isArray(metadata.authors) ? metadata.authors.map((author) => author.name).join(', ') : metadata.authors || '');
-      setPublisher(metadata.publishers?.[0] || metadata.publisher || '');
-      setPublishDate(metadata.publish_date || '');
-      setCoverUrl(metadata.coverUrl || metadata.cover?.large || '');
-      setDescription(metadata.description || metadata.subtitle || '');
-      setPages(metadata.number_of_pages || 0);
-      setTotalCopies(1);
-      setAvailableCopies(1);
-    } catch (err) {
-      console.error(err);
-      setErrorMessage('Could not fetch book metadata from the backend lookup service.');
+      const existingBook = await fetchBookByIsbn(isbn.trim());
+      if (existingBook && existingBook.title) {
+        setManualTitle(existingBook.title || '');
+        setManualAuthor(Array.isArray(existingBook.authors) ? existingBook.authors.join(', ') : existingBook.author || '');
+        setPublisher(existingBook.publisher || '');
+        setPublishDate(existingBook.publishDate || existingBook.publishYear || '');
+        setCoverUrl(existingBook.coverUrl || '');
+        setDescription(existingBook.description || existingBook.subtitle || '');
+        setPages(existingBook.pages || 0);
+        setTotalCopies(existingBook.totalCopies || 1);
+        setAvailableCopies(existingBook.availableCopies || existingBook.totalCopies || 1);
+        setIsEditMode(true);
+        setInfoMessage('Existing book found in catalog. Edit the fields and save the updated details.');
+      }
+    } catch (catalogError) {
+      if (catalogError?.response?.status === 404) {
+        try {
+          const metadata = await lookupBookByIsbn(isbn.trim());
+          setManualTitle(metadata.title || '');
+          setManualAuthor(Array.isArray(metadata.authors) ? metadata.authors.map((author) => author.name).join(', ') : metadata.authors || '');
+          setPublisher(metadata.publishers?.[0] || metadata.publisher || '');
+          setPublishDate(metadata.publish_date || '');
+          setCoverUrl(metadata.coverUrl || metadata.cover?.large || '');
+          setDescription(metadata.description || metadata.subtitle || '');
+          setPages(metadata.number_of_pages || 0);
+          setTotalCopies(1);
+          setAvailableCopies(1);
+          setInfoMessage('Lookup returned metadata from Open Library; complete any missing payload fields.');
+        } catch (lookupError) {
+          console.error(lookupError);
+          setErrorMessage('Could not fetch book metadata from the backend lookup service.');
+        }
+      } else {
+        console.error(catalogError);
+        setErrorMessage('Could not fetch book details from catalog lookup.');
+      }
     } finally {
       setFetchingMetadata(false);
     }
@@ -63,6 +90,8 @@ const BookIngestionConsole = ({ user }) => {
     setAvailableCopies(1);
     setSelectedImageFile(null);
     setImagePreview(null);
+    setIsEditMode(false);
+    setInfoMessage('');
   };
 
   const handleImageSelect = (e) => {
@@ -138,7 +167,7 @@ const BookIngestionConsole = ({ user }) => {
       setTimeout(() => setIngestionSuccess(false), 3000);
     } catch (err) {
       console.error(err);
-      setErrorMessage('Unable to create book record at this time.');
+      setErrorMessage(isEditMode ? 'Unable to update book record at this time.' : 'Unable to create book record at this time.');
     }
   };
 
@@ -210,6 +239,11 @@ const BookIngestionConsole = ({ user }) => {
           <div className="form-divider"><span>OR MANUAL ENTRY</span></div>
 
           <form onSubmit={handleIngestionSubmit} className="manual-intake-form">
+            {infoMessage && (
+              <div className="info-banner royal-card">
+                <p>{infoMessage}</p>
+              </div>
+            )}
             <div className="input-group">
               <label className="royal-input-label">Volume Title</label>
               <input
@@ -373,7 +407,7 @@ const BookIngestionConsole = ({ user }) => {
 
             <div className="submit-row">
               <button type="submit" className="royal-btn submit-book-btn" id="add-volume-btn">
-                Add Volume to Ledger
+                {isEditMode ? 'Save Updated Details' : 'Add Volume to Ledger'}
               </button>
             </div>
           </form>

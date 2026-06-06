@@ -202,6 +202,15 @@
   color: var(--success);
 }
 
+.info-banner {
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(212, 165, 116, 0.25);
+  color: #f6c860;
+  padding: 12px 14px;
+  border-radius: var(--border-radius-sm);
+  margin-bottom: 12px;
+}
+
 .bulk-success-sub {
   font-size: 0.8rem;
   color: var(--text-secondary);
