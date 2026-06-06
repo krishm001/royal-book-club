@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createAdminRequest } from '../../services/adminRequestApi';
-import { getAllUsers } from '../../services/userApi';
+import { getAllUsers, updateUserRole } from '../../services/userApi';
 import { Shield, Users, Award, Radio, CheckCircle, RefreshCw, Key } from 'lucide-react';
 import './UserManagementPage.css';
 
@@ -31,15 +31,29 @@ const UserManagementPage = ({ user }) => {
     fetchUsers();
   }, []);
 
-  const handleToggleRole = (memberId) => {
-    setMembers(prev => prev.map(m => {
-      if (m.id === memberId) {
-        const newRole = m.role === 'ADMIN' ? 'MEMBER' : 'ADMIN';
-        triggerSuccess(`Role updated to ${newRole} for ${m.firstName} ${m.lastName}`);
-        return { ...m, role: newRole };
-      }
-      return m;
-    }));
+  const handleToggleRole = async (member) => {
+    if (!member?.id) {
+      return;
+    }
+
+    const isSelf = user?.uid === member.id;
+    const targetRole = member.role === 'ADMIN' ? 'MEMBER' : 'ADMIN';
+
+    if (isSelf && targetRole !== 'ADMIN') {
+      triggerSuccess('Administrators cannot downgrade their own role.');
+      return;
+    }
+
+    try {
+      const response = await updateUserRole(member.id, targetRole);
+      const updatedUser = response?.data || response;
+      setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, role: updatedUser.role || targetRole } : m)));
+      triggerSuccess(`Role updated to ${targetRole} for ${member.firstName} ${member.lastName}`);
+    } catch (e) {
+      console.error('Failed to update role', e);
+      const message = e?.response?.data?.message || e.message || 'Could not update role.';
+      triggerSuccess(message);
+    }
   };
 
   const triggerSuccess = (msg) => {
@@ -153,11 +167,15 @@ const UserManagementPage = ({ user }) => {
                     <td className="actions-cell">
                       <div className="action-buttons-row">
                         <button 
-                          onClick={() => handleToggleRole(member.id)} 
+                          onClick={() => handleToggleRole(member)} 
                           className="royal-btn-secondary mini-table-btn"
                           id={`toggle-role-btn-${member.id}`}
+                          disabled={user?.uid === member.id && member.role === 'ADMIN'}
+                          title={user?.uid === member.id && member.role === 'ADMIN' ? 'You cannot change your own admin rank' : ''}
                         >
-                          Change Rank
+                          {user?.uid === member.id
+                            ? 'Current Admin'
+                            : member.role === 'ADMIN' ? 'Demote' : 'Promote to Admin'}
                         </button>
                         <button 
                           onClick={() => setAssigningRfidId(member.id)} 

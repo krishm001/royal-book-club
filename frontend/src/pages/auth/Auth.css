@@ -46,6 +46,43 @@
   margin-bottom: 16px;
 }
 
+.social-divider {
+  margin: 12px 0 10px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.social-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 1px solid #dcdcdc;
+  border-radius: 6px;
+  color: #202124;
+  font-weight: 700;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.social-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.04);
+}
+
+.google-button {
+  border-color: #d93025;
+}
+
+.social-button img {
+  width: 18px;
+  height: 18px;
+}
+
 .auth-form > div {
   text-align: center;
   font-size: 0.95rem;
@@ -58,7 +95,28 @@
   text-decoration: none;
 }
 
-  .auth-error {
+.auth-link {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.auth-error {
+  color: #e74c3c;
+  margin-bottom: 16px;
+  padding: 10px;
+  background-color: rgba(231, 76, 60, 0.1);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.auth-success {
+  color: #2ecc71;
+  margin-bottom: 16px;
+  padding: 10px;
+  background-color: rgba(46, 204, 113, 0.1);
+  border-radius: 4px;
+  font-size: 0.9rem;
 }
 
 .checkbox-field {

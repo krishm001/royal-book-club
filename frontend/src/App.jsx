@@ -19,6 +19,7 @@ import PrivacyNotice from './pages/PrivacyNotice';
 import TermsAndConditions from './pages/TermsAndConditions';
 import SignIn from './pages/auth/SignIn';
 import SignUp from './pages/auth/SignUp';
+import ResetPassword from './pages/auth/ResetPassword';
 import './App.css';
 
 function App() {
@@ -253,6 +254,7 @@ function App() {
             <Route path="/terms" element={<TermsAndConditions />} />
 
             <Route path="/auth/signin" element={<SignIn />} />
+            <Route path="/auth/reset" element={<ResetPassword />} />
             <Route path="/auth/signup" element={<SignUp />} />
           </Routes>
         </main>

@@ -2,6 +2,7 @@ package com.royalbookclub.api.user.service;
 
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
+import com.royalbookclub.api.common.exception.BusinessRuleException;
 import com.royalbookclub.api.common.exception.ResourceNotFoundException;
 import com.royalbookclub.api.user.model.Role;
 import com.royalbookclub.api.user.model.User;
@@ -187,6 +188,13 @@ public class UserService {
      * Sets the role for an existing user and records an audit entry.
      */
     public void setUserRole(String id, Role role, String performedBy) {
+        if (role == null) {
+            throw new BusinessRuleException("Target role must be provided.");
+        }
+        if (performedBy != null && performedBy.equals(id) && role != Role.ADMIN) {
+            throw new BusinessRuleException("Administrators cannot downgrade their own role.");
+        }
+
         DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(id);
         try {
             DocumentSnapshot document = docRef.get().get();

@@ -2,11 +2,14 @@ package com.royalbookclub.api.user.controller;
 
 import com.royalbookclub.api.auth.dto.RegisterRequest;
 import com.royalbookclub.api.common.dto.ApiResponse;
+import com.royalbookclub.api.user.dto.UpdateRoleRequest;
+import com.royalbookclub.api.user.model.Role;
 import com.royalbookclub.api.user.model.User;
 import com.royalbookclub.api.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -69,5 +72,23 @@ public class UserController {
     public ResponseEntity<ApiResponse<List<User>>> listUsers() {
         List<User> users = userService.getAllUsers();
         return ResponseEntity.ok(ApiResponse.success(users));
+    }
+
+    @PutMapping("/api/v1/admin/users/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Update a user's role, admin-only", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<ApiResponse<User>> updateUserRole(
+            @PathVariable String id,
+            @Valid @RequestBody UpdateRoleRequest request,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        Role requestedRole = request.getRole();
+        if (currentUser != null && currentUser.getId() != null && currentUser.getId().equals(id) && requestedRole != Role.ADMIN) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Administrators may not downgrade their own role."));
+        }
+
+        userService.setUserRole(id, requestedRole, currentUser != null ? currentUser.getId() : null);
+        User updated = userService.getUserById(id);
+        return ResponseEntity.ok(ApiResponse.success(updated, "User role updated successfully."));
     }
 }
