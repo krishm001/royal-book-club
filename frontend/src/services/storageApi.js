@@ -1,7 +1,7 @@
 import { storage } from '../config/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-const STORAGE_BUCKET = 'gs://royalbookclubimages';
+// Use the default storage bucket configured in Firebase app (from firebaseConfig)
 
 export const uploadBookImage = async (file) => {
   if (!file) {
@@ -36,6 +36,8 @@ export const uploadBookImage = async (file) => {
     return publicUrl;
   } catch (error) {
     console.error('Error uploading image:', error);
-    throw new Error(`Failed to upload image: ${error.message}`);
+    const code = error?.code || 'UNKNOWN_ERROR';
+    const message = error?.message || String(error);
+    throw new Error(`Failed to upload image (${code}): ${message}`);
   }
 };

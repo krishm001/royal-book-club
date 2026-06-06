@@ -15,6 +15,8 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import BookIngestionConsole from './pages/admin/BookIngestionConsole';
 import UserManagementPage from './pages/admin/UserManagementPage';
 import AdminRequests from './pages/admin/AdminRequests';
+import PrivacyNotice from './pages/PrivacyNotice';
+import TermsAndConditions from './pages/TermsAndConditions';
 import SignIn from './pages/auth/SignIn';
 import SignUp from './pages/auth/SignUp';
 import './App.css';
@@ -125,6 +127,11 @@ function App() {
               <NavLink to="/articles" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <BookText size={16} /> Articles
               </NavLink>
+              {user?.role === 'ADMIN' && (
+                <NavLink to="/admin" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                  <Shield size={16} /> Curator Console
+                </NavLink>
+              )}
             </nav>
 
             {/* Theme Toggle & Profile / Auth Section */}
@@ -218,9 +225,9 @@ function App() {
                       </div>
                     </div>
                   ) : (
-                    <button onClick={() => { handleSignIn(); closeMobileMenu(); }} className="royal-btn mobile-login-btn">
+                    <Link to="/auth/signin" onClick={closeMobileMenu} className="royal-btn mobile-login-btn" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                       Enter Salon
-                    </button>
+                    </Link>
                   )}
                 </div>
               </nav>
@@ -242,6 +249,8 @@ function App() {
             <Route path="/admin/books" element={<BookIngestionConsole user={user} />} />
             <Route path="/admin/users" element={<UserManagementPage user={user} />} />
             <Route path="/admin/requests" element={<AdminRequests user={user} />} />
+            <Route path="/privacy" element={<PrivacyNotice />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
 
             <Route path="/auth/signin" element={<SignIn />} />
             <Route path="/auth/signup" element={<SignUp />} />
@@ -263,6 +272,8 @@ function App() {
               <Link to="/catalog">Browse Catalog</Link>
               <Link to="/events">Upcoming Litfests</Link>
               <Link to="/articles">Intellectual Essays</Link>
+              <Link to="/terms">Terms & Conditions</Link>
+              <Link to="/privacy">Privacy Notice</Link>
             </div>
             <div className="footer-motto">
               <blockquote>
