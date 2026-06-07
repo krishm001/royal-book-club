@@ -19,7 +19,7 @@ const defaultFeaturedBook = {
   citation: '"To define is to limit." — Lord Henry Wotton'
 };
 
-const HomePage = ({ user, onSignIn }) => {
+const HomePage = ({ user, onSignIn, theme }) => {
   const [featuredBook, setFeaturedBook] = useState(defaultFeaturedBook);
   const [featuredError, setFeaturedError] = useState(null);
   const [activeEvents, setActiveEvents] = useState([]);
@@ -27,7 +27,9 @@ const HomePage = ({ user, onSignIn }) => {
   const [heroConfig, setHeroConfig] = useState({
     title: 'Voices, Ideas, Community',
     subtitle: 'Enter an exclusive literary salon designed for the refined reader. Access an exquisite curated catalog of masterworks, RSVP to exclusive intellectual banquets, and publish deep literary dissertations.',
-    backgroundImageUrl: ''
+    backgroundImageUrl: '',
+    backgroundImageUrlSalon: '',
+    backgroundImageUrlAcademic: ''
   });
 
   useEffect(() => {
@@ -43,6 +45,29 @@ const HomePage = ({ user, onSignIn }) => {
     };
     loadHero();
   }, []);
+
+  const getHeroBackgroundStyle = () => {
+    const activeImage = (theme === 'dark' || theme === 'salon')
+      ? (heroConfig.backgroundImageUrlSalon || heroConfig.backgroundImageUrl)
+      : (heroConfig.backgroundImageUrlAcademic || heroConfig.backgroundImageUrl);
+
+    if (activeImage) {
+      const gradient = (theme === 'dark' || theme === 'salon')
+        ? 'linear-gradient(to right, rgba(12, 15, 29, 0.9) 0%, rgba(12, 15, 29, 0.45) 100%)'
+        : 'linear-gradient(to right, rgba(250, 245, 235, 0.95) 0%, rgba(250, 245, 235, 0.5) 100%)';
+      return {
+        backgroundImage: `${gradient}, url(${activeImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        padding: '40px 30px',
+        borderRadius: 'var(--border-radius-md)',
+        border: '1px solid var(--glass-border)',
+        boxShadow: '0 12px 40px rgba(0, 0, 0, 0.15)',
+        marginBottom: '20px'
+      };
+    }
+    return {};
+  };
 
   useEffect(() => {
     const loadFeatured = async () => {
@@ -104,7 +129,7 @@ const HomePage = ({ user, onSignIn }) => {
   return (
     <div className="homepage-container animate-fade-in">
       {/* Hero Section */}
-      <section className="hero-section" style={heroConfig.backgroundImageUrl ? { backgroundImage: `url(${heroConfig.backgroundImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}>
+      <section className="hero-section" style={getHeroBackgroundStyle()}>
         <div className="hero-content">
           <div className="hero-badge">
             <Award size={14} className="gold-glow-icon" />

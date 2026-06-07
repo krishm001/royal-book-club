@@ -23,4 +23,20 @@ public class User {
     private String rfidToken;
     private Date createdAt;
     private Date updatedAt;
+
+    public String getFullName() {
+        String first = firstName != null ? firstName.trim() : "";
+        String last = lastName != null ? lastName.trim() : "";
+        if ("null".equalsIgnoreCase(first)) {
+            first = "";
+        }
+        if ("null".equalsIgnoreCase(last)) {
+            last = "";
+        }
+        String full = (first + " " + last).trim();
+        if (full.isEmpty() || "null null".equalsIgnoreCase(full) || "null".equalsIgnoreCase(full)) {
+            return email != null && email.contains("@") ? email.split("@")[0] : "Royal Patron";
+        }
+        return full;
+    }
 }

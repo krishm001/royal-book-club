@@ -47,6 +47,8 @@ public class HeroConfigService {
                         .title(document.getString("title"))
                         .subtitle(document.getString("subtitle"))
                         .backgroundImageUrl(document.getString("backgroundImageUrl"))
+                        .backgroundImageUrlSalon(document.getString("backgroundImageUrlSalon"))
+                        .backgroundImageUrlAcademic(document.getString("backgroundImageUrlAcademic"))
                         .build();
             } else {
                 log.info("No Home Hero settings found. Returning default aesthetic values.");
@@ -55,6 +57,8 @@ public class HeroConfigService {
                         .title("Voices, Ideas, Community")
                         .subtitle("Where literature meets high society. Welcome to the Royal Salon of letters.")
                         .backgroundImageUrl("")
+                        .backgroundImageUrlSalon("")
+                        .backgroundImageUrlAcademic("")
                         .build();
             }
         } catch (InterruptedException e) {
@@ -79,6 +83,8 @@ public class HeroConfigService {
             map.put("title", config.getTitle() != null ? config.getTitle().trim() : "");
             map.put("subtitle", config.getSubtitle() != null ? config.getSubtitle().trim() : "");
             map.put("backgroundImageUrl", config.getBackgroundImageUrl() != null ? config.getBackgroundImageUrl().trim() : "");
+            map.put("backgroundImageUrlSalon", config.getBackgroundImageUrlSalon() != null ? config.getBackgroundImageUrlSalon().trim() : "");
+            map.put("backgroundImageUrlAcademic", config.getBackgroundImageUrlAcademic() != null ? config.getBackgroundImageUrlAcademic().trim() : "");
 
             ApiFuture<WriteResult> writeFuture = docRef.set(map);
             writeFuture.get();
@@ -93,6 +99,25 @@ public class HeroConfigService {
         } catch (ExecutionException e) {
             log.error("Error saving Home Hero configurations", e);
             throw new RuntimeException("Failed to save settings", e);
+        }
+    }
+
+    /**
+     * Delete Home Hero configuration.
+     */
+    public void deleteHeroConfig() {
+        log.info("Deleting Home Hero configuration settings");
+        try {
+            DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(DOCUMENT_ID);
+            docRef.delete().get();
+            log.info("Successfully deleted Home Hero config document");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Interrupted while deleting Home Hero configurations", e);
+            throw new RuntimeException("Failed to delete settings", e);
+        } catch (ExecutionException e) {
+            log.error("Error deleting Home Hero configurations", e);
+            throw new RuntimeException("Failed to delete settings", e);
         }
     }
 }

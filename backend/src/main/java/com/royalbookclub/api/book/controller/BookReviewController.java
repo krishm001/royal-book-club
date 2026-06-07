@@ -63,7 +63,7 @@ public class BookReviewController {
         // Fill user details from principal to keep data secure and genuine
         review.setIsbn(isbn);
         review.setUserId(user.getId());
-        review.setAuthor(user.getFirstName() + " " + user.getLastName());
+        review.setAuthor(user.getFullName());
 
         BookReview savedReview = bookReviewService.saveReview(review);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(savedReview, "Review published successfully"));

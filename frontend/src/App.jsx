@@ -28,7 +28,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [theme, setTheme] = useState(() => localStorage.getItem('royal-theme') || 'dark');
+  const [theme, setTheme] = useState(() => localStorage.getItem('royal-theme') || 'academic');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -47,10 +47,30 @@ function App() {
           try {
             const res = await api.get('/api/v1/auth/me');
             const backendUser = res?.data?.data;
+            const cleanName = (() => {
+              if (firebaseUser.displayName && firebaseUser.displayName !== 'null' && firebaseUser.displayName !== 'null null') {
+                return firebaseUser.displayName;
+              }
+              if (backendUser) {
+                const first = backendUser.firstName && backendUser.firstName !== 'null' ? backendUser.firstName : '';
+                const last = backendUser.lastName && backendUser.lastName !== 'null' ? backendUser.lastName : '';
+                const full = `${first} ${last}`.trim();
+                if (full && full !== 'null' && full !== 'null null') {
+                  return full;
+                }
+                if (backendUser.email) {
+                  return backendUser.email.split('@')[0];
+                }
+              }
+              if (firebaseUser.email) {
+                return firebaseUser.email.split('@')[0];
+              }
+              return 'Royal Patron';
+            })();
 
             setUser({
               uid: firebaseUser.uid,
-              displayName: firebaseUser.displayName || `${backendUser?.firstName || ''} ${backendUser?.lastName || ''}`.trim() || 'Royal Patron',
+              displayName: cleanName,
               email: firebaseUser.email || backendUser?.email || 'patron@royalbook.club',
               photoURL: firebaseUser.photoURL || backendUser?.photoUrl || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=150&q=80',
               tier: backendUser?.role === 'ADMIN' ? 'Curator' : 'Sovereign Reader',
@@ -58,9 +78,12 @@ function App() {
             });
           } catch (err) {
             console.error('Failed to fetch backend profile', err);
+            const fallbackName = firebaseUser.displayName && firebaseUser.displayName !== 'null' && firebaseUser.displayName !== 'null null'
+              ? firebaseUser.displayName
+              : (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'Royal Patron');
             setUser({
               uid: firebaseUser.uid,
-              displayName: firebaseUser.displayName || 'Royal Patron',
+              displayName: fallbackName,
               email: firebaseUser.email || 'patron@royalbook.club',
               photoURL: firebaseUser.photoURL || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=150&q=80',
               tier: 'Sovereign Reader'
@@ -242,7 +265,7 @@ function App() {
         {/* Main Content Area */}
         <main className="main-content">
           <Routes>
-            <Route path="/" element={<HomePage user={user} onSignIn={handleSignIn} />} />
+            <Route path="/" element={<HomePage user={user} onSignIn={handleSignIn} theme={theme} />} />
             <Route path="/catalog" element={<CatalogPage user={user} />} />
             <Route path="/catalog/:id" element={<BookDetailPage user={user} />} />
             <Route path="/events" element={<EventsPage user={user} />} />

@@ -18,4 +18,6 @@ public class HeroConfig {
     private String title;
     private String subtitle;
     private String backgroundImageUrl;
+    private String backgroundImageUrlSalon;
+    private String backgroundImageUrlAcademic;
 }

@@ -24,3 +24,8 @@ export const replyToDebate = async (id, reply) => {
   const response = await api.post(`/api/v1/discourses/${id}/reply`, reply);
   return response.data;
 };
+
+export const updateDiscourse = async (id, payload) => {
+  const response = await api.put(`/api/v1/discourses/${id}`, payload);
+  return response.data;
+};

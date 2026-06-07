@@ -50,4 +50,17 @@ public class HeroConfigController {
         HeroConfig saved = heroConfigService.saveHeroConfig(config);
         return ResponseEntity.ok(ApiResponse.success(saved, "Hero section configurations updated successfully"));
     }
+
+    /**
+     * Reset/Delete the home hero configuration.
+     * Restricted to ADMINISTRATORs only.
+     */
+    @DeleteMapping("/api/v1/admin/hero")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Reset/Delete Home Hero configuration", description = "Delete the customized homepage hero, falling back to default theme styling. Admin only.")
+    public ResponseEntity<ApiResponse<Void>> deleteHeroConfig() {
+        log.info("Admin request to delete Home Hero configuration");
+        heroConfigService.deleteHeroConfig();
+        return ResponseEntity.ok(ApiResponse.success(null, "Hero section configurations reset successfully"));
+    }
 }

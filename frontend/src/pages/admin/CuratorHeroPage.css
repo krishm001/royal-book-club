@@ -194,3 +194,136 @@
   font-weight: 700;
   border: none;
 }
+
+/* New Theme Upload Grid & Previews */
+.theme-images-upload-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+@media (max-width: 600px) {
+  .theme-images-upload-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.banner-mini-preview {
+  margin-top: 10px;
+  width: 100%;
+  height: 80px;
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.banner-mini-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Actions styling */
+.hero-action-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.reset-hero-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 50px;
+  background: rgba(220, 53, 69, 0.1);
+  color: #ff6b6b;
+  border: 1px solid rgba(220, 53, 69, 0.2);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.reset-hero-btn:hover:not(:disabled) {
+  background: rgba(220, 53, 69, 0.2);
+  border-color: rgba(220, 53, 69, 0.4);
+  color: #ff4757;
+}
+
+/* Live Preview Section Header & Toggle Tabs */
+.preview-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.preview-label-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preview-theme-selector {
+  display: flex;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 3px;
+  border-radius: 50px;
+}
+
+.preview-toggle-tab {
+  background: transparent;
+  border: none;
+  padding: 5px 14px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 50px;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.preview-toggle-tab:hover {
+  color: #ffffff;
+}
+
+.preview-toggle-tab.active {
+  background: var(--accent);
+  color: #0c0f1d;
+}
+
+/* Academic Preview Adjustments */
+.live-hero-preview-frame.academic .live-preview-overlay {
+  background: radial-gradient(circle, rgba(250, 245, 235, 0.1) 0%, rgba(58, 12, 12, 0.85) 100%) !important;
+}
+
+.live-hero-preview-frame.academic .live-badge {
+  background: rgba(141, 14, 14, 0.15) !important;
+  border: 1px solid rgba(141, 14, 14, 0.3) !important;
+  color: #ff6b6b !important;
+}
+
+.live-hero-preview-frame.academic .mini-btn-live {
+  background: linear-gradient(135deg, #8d0e0e 0%, #580c0c 100%) !important;
+  color: #faf5eb !important;
+  box-shadow: 0 4px 12px rgba(141, 14, 14, 0.3) !important;
+}
+
+/* Salon Preview Adjustments */
+.live-hero-preview-frame.salon .live-preview-overlay {
+  background: radial-gradient(circle, rgba(12, 15, 29, 0.3) 0%, rgba(12, 15, 29, 0.85) 100%) !important;
+}
+
+.live-hero-preview-frame.salon .live-badge {
+  background: rgba(212, 175, 55, 0.1) !important;
+  border: 1px solid rgba(212, 175, 55, 0.2) !important;
+  color: var(--accent) !important;
+}
+
+.live-hero-preview-frame.salon .mini-btn-live {
+  background: linear-gradient(135deg, #d4af37 0%, #aa8422 100%) !important;
+  color: #0c0f1d !important;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2) !important;
+}

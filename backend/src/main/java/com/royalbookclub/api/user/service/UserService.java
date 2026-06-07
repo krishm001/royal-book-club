@@ -30,6 +30,18 @@ public class UserService {
         this.firestore = firestore;
     }
 
+    private String sanitizeName(String name) {
+        if (name == null) return "";
+        String trimmed = name.trim();
+        if (trimmed.isEmpty() || 
+            "null".equalsIgnoreCase(trimmed) || 
+            "null null".equalsIgnoreCase(trimmed) || 
+            "null null null".equalsIgnoreCase(trimmed)) {
+            return "";
+        }
+        return trimmed;
+    }
+
     /**
      * Retrieves a user from Firestore, or creates it if it doesn't exist yet.
      */
@@ -43,6 +55,37 @@ public class UserService {
                 User user = document.toObject(User.class);
                 if (user != null) {
                     user.setId(document.getId());
+                    boolean needsUpdate = false;
+                    
+                    String fName = sanitizeName(user.getFirstName());
+                    String lName = sanitizeName(user.getLastName());
+                    
+                    if (!fName.equals(user.getFirstName())) {
+                        user.setFirstName(fName);
+                        needsUpdate = true;
+                    }
+                    if (!lName.equals(user.getLastName())) {
+                        user.setLastName(lName);
+                        needsUpdate = true;
+                    }
+                    
+                    String sanitizedFullName = sanitizeName(fullName);
+                    if (fName.isEmpty() && !sanitizedFullName.isEmpty()) {
+                        String[] parts = sanitizedFullName.split("\\s+", 2);
+                        user.setFirstName(parts[0]);
+                        if (parts.length > 1) {
+                            user.setLastName(parts[1]);
+                        } else {
+                            user.setLastName("");
+                        }
+                        needsUpdate = true;
+                    }
+                    
+                    if (needsUpdate) {
+                        user.setUpdatedAt(new Date());
+                        docRef.set(user).get();
+                        log.info("Synchronized profile name for existing user {} from Google token name: {}", uid, fullName);
+                    }
                     return user;
                 }
             }
@@ -50,8 +93,9 @@ public class UserService {
             // User does not exist, provision a new one in Firestore
             String firstName = "";
             String lastName = "";
-            if (fullName != null && !fullName.trim().isEmpty()) {
-                String[] parts = fullName.trim().split("\\s+", 2);
+            String sanitizedFullName = sanitizeName(fullName);
+            if (!sanitizedFullName.isEmpty()) {
+                String[] parts = sanitizedFullName.split("\\s+", 2);
                 firstName = parts[0];
                 if (parts.length > 1) {
                     lastName = parts[1];

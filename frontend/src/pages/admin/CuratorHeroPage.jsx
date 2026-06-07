@@ -10,21 +10,27 @@ import {
   FileText
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { fetchHeroConfig, updateHeroConfig } from '../../services/heroApi';
+import { fetchHeroConfig, updateHeroConfig, deleteHeroConfig } from '../../services/heroApi';
 import { uploadBookImage } from '../../services/storageApi';
+import { RotateCcw } from 'lucide-react';
 import './CuratorHeroPage.css';
 
 const CuratorHeroPage = () => {
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
-  const [backgroundImageUrl, setBackgroundImageUrl] = useState('');
+  const [backgroundImageUrlSalon, setBackgroundImageUrlSalon] = useState('');
+  const [backgroundImageUrlAcademic, setBackgroundImageUrlAcademic] = useState('');
 
-  // Local state for uploading image
-  const [coverFile, setCoverFile] = useState(null);
-  const [coverPreview, setCoverPreview] = useState('');
+  // Local state for uploading images
+  const [coverFileSalon, setCoverFileSalon] = useState(null);
+  const [coverPreviewSalon, setCoverPreviewSalon] = useState('');
+  const [coverFileAcademic, setCoverFileAcademic] = useState(null);
+  const [coverPreviewAcademic, setCoverPreviewAcademic] = useState('');
+  
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [activePreviewTheme, setActivePreviewTheme] = useState('academic'); // academic is default now!
 
   useEffect(() => {
     loadHeroConfigData();
@@ -37,8 +43,12 @@ const CuratorHeroPage = () => {
       if (res && res.success && res.data) {
         setTitle(res.data.title || '');
         setSubtitle(res.data.subtitle || '');
-        setBackgroundImageUrl(res.data.backgroundImageUrl || '');
-        setCoverPreview(res.data.backgroundImageUrl || '');
+        const salonImg = res.data.backgroundImageUrlSalon || res.data.backgroundImageUrl || '';
+        const acadImg = res.data.backgroundImageUrlAcademic || res.data.backgroundImageUrl || '';
+        setBackgroundImageUrlSalon(salonImg);
+        setCoverPreviewSalon(salonImg);
+        setBackgroundImageUrlAcademic(acadImg);
+        setCoverPreviewAcademic(acadImg);
       }
     } catch (err) {
       console.error('Error fetching hero config:', err);
@@ -47,13 +57,24 @@ const CuratorHeroPage = () => {
     }
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChangeSalon = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setCoverFile(file);
+    setCoverFileSalon(file);
     const reader = new FileReader();
     reader.onloadend = () => {
-      setCoverPreview(reader.result);
+      setCoverPreviewSalon(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileChangeAcademic = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setCoverFileAcademic(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCoverPreviewAcademic(reader.result);
     };
     reader.readAsDataURL(file);
   };
@@ -64,36 +85,86 @@ const CuratorHeroPage = () => {
 
     try {
       setIsSaving(true);
-      let uploadedUrl = backgroundImageUrl;
+      let uploadedUrlSalon = backgroundImageUrlSalon;
+      let uploadedUrlAcademic = backgroundImageUrlAcademic;
 
-      if (coverFile) {
+      if (coverFileSalon || coverFileAcademic) {
         setIsUploading(true);
+      }
+
+      if (coverFileSalon) {
         try {
-          uploadedUrl = await uploadBookImage(coverFile);
-          setBackgroundImageUrl(uploadedUrl);
+          uploadedUrlSalon = await uploadBookImage(coverFileSalon);
+          setBackgroundImageUrlSalon(uploadedUrlSalon);
         } catch (uploadErr) {
-          alert(`Hero Image Upload Failed: ${uploadErr.message}`);
+          alert(`Salon Image Upload Failed: ${uploadErr.message}`);
           setIsSaving(false);
           setIsUploading(false);
           return;
         }
-        setIsUploading(false);
       }
+
+      if (coverFileAcademic) {
+        try {
+          uploadedUrlAcademic = await uploadBookImage(coverFileAcademic);
+          setBackgroundImageUrlAcademic(uploadedUrlAcademic);
+        } catch (uploadErr) {
+          alert(`Academic Image Upload Failed: ${uploadErr.message}`);
+          setIsSaving(false);
+          setIsUploading(false);
+          return;
+        }
+      }
+      
+      setIsUploading(false);
 
       const payload = {
         id: 'homeHero',
         title: title.trim(),
         subtitle: subtitle.trim(),
-        backgroundImageUrl: uploadedUrl || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80'
+        backgroundImageUrl: uploadedUrlAcademic || uploadedUrlSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
+        backgroundImageUrlSalon: uploadedUrlSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
+        backgroundImageUrlAcademic: uploadedUrlAcademic || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1600&q=80'
       };
 
       const res = await updateHeroConfig(payload);
       if (res && res.success) {
         alert('Home Hero configurations updated successfully!');
+        setCoverFileSalon(null);
+        setCoverFileAcademic(null);
+        loadHeroConfigData();
       }
     } catch (err) {
       console.error('Failed to update hero config:', err);
       alert('Failed to save Hero configurations. Check backend console.');
+    } finally {
+      setIsSaving(false);
+      setIsUploading(false);
+    }
+  };
+
+  const handleReset = async () => {
+    if (!window.confirm('Are you sure you want to reset/delete the home hero custom configuration? This will restore the default homepage details.')) {
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const res = await deleteHeroConfig();
+      if (res && res.success) {
+        alert('Home Hero configurations deleted. Fallback defaults will be loaded.');
+        setTitle('');
+        setSubtitle('');
+        setBackgroundImageUrlSalon('');
+        setBackgroundImageUrlAcademic('');
+        setCoverPreviewSalon('');
+        setCoverPreviewAcademic('');
+        setCoverFileSalon(null);
+        setCoverFileAcademic(null);
+      }
+    } catch (err) {
+      console.error('Failed to reset hero config:', err);
+      alert('Failed to reset Hero configurations.');
     } finally {
       setIsSaving(false);
     }
@@ -154,29 +225,67 @@ const CuratorHeroPage = () => {
                 />
               </div>
 
-              <div className="form-group">
-                <label className="royal-label">Lounge Painting Banner</label>
-                <div className="banner-upload-zone">
-                  <input
-                    type="file"
-                    id="hero-banner-file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    style={{ display: 'none' }}
-                  />
-                  <label htmlFor="hero-banner-file" className="banner-upload-trigger">
-                    <Upload size={16} /> Choose Image Banner
-                  </label>
+              <div className="theme-images-upload-grid">
+                <div className="form-group">
+                  <label className="royal-label">Salon Theme Banner (Dark/Gold)</label>
+                  <div className="banner-upload-zone">
+                    <input
+                      type="file"
+                      id="hero-banner-salon"
+                      accept="image/*"
+                      onChange={handleFileChangeSalon}
+                      style={{ display: 'none' }}
+                    />
+                    <label htmlFor="hero-banner-salon" className="banner-upload-trigger">
+                      <Upload size={14} /> Salon Banner
+                    </label>
+                  </div>
+                  {coverPreviewSalon && (
+                    <div className="banner-mini-preview">
+                      <img src={coverPreviewSalon} alt="Salon preview" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label className="royal-label">Academic Theme Banner (Beige/Maroon)</label>
+                  <div className="banner-upload-zone">
+                    <input
+                      type="file"
+                      id="hero-banner-academic"
+                      accept="image/*"
+                      onChange={handleFileChangeAcademic}
+                      style={{ display: 'none' }}
+                    />
+                    <label htmlFor="hero-banner-academic" className="banner-upload-trigger">
+                      <Upload size={14} /> Academic Banner
+                    </label>
+                  </div>
+                  {coverPreviewAcademic && (
+                    <div className="banner-mini-preview">
+                      <img src={coverPreviewAcademic} alt="Academic preview" />
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="form-actions">
+              <div className="form-actions hero-action-buttons">
                 <button 
                   type="submit" 
                   disabled={isSaving}
                   className="royal-btn save-hero-btn"
                 >
                   <Save size={16} /> {isSaving ? (isUploading ? 'Uploading Banner...' : 'Refining Hero...') : 'Apply Curation'}
+                </button>
+
+                <button 
+                  type="button" 
+                  onClick={handleReset}
+                  disabled={isSaving}
+                  className="royal-btn-secondary reset-hero-btn"
+                  title="Reset to Factory Defaults"
+                >
+                  <RotateCcw size={16} /> Reset defaults
                 </button>
               </div>
             </form>
@@ -185,16 +294,45 @@ const CuratorHeroPage = () => {
           {/* Live Preview Side */}
           <section className="live-preview-section">
             <div className="preview-label">
-              <Eye size={14} /> LIVE CURATOR PREVIEW
+              <div className="preview-label-text">
+                <Eye size={14} /> LIVE CURATOR PREVIEW
+              </div>
+              <div className="preview-theme-selector">
+                <button 
+                  type="button" 
+                  className={`preview-toggle-tab ${activePreviewTheme === 'salon' ? 'active' : ''}`}
+                  onClick={() => setActivePreviewTheme('salon')}
+                >
+                  Salon View
+                </button>
+                <button 
+                  type="button" 
+                  className={`preview-toggle-tab ${activePreviewTheme === 'academic' ? 'active' : ''}`}
+                  onClick={() => setActivePreviewTheme('academic')}
+                >
+                  Academic View
+                </button>
+              </div>
             </div>
             
-            <div className="live-hero-preview-frame" style={{ backgroundImage: `url(${coverPreview || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80'})` }}>
+            <div 
+              className={`live-hero-preview-frame ${activePreviewTheme}`} 
+              style={{ 
+                backgroundImage: `url(${
+                  activePreviewTheme === 'salon' 
+                    ? (coverPreviewSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80') 
+                    : (coverPreviewAcademic || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1600&q=80')
+                })` 
+              }}
+            >
               <div className="live-preview-overlay"></div>
               <div className="live-preview-content">
-                <span className="live-badge">EXQUISITE LITERARY SALON</span>
+                <span className="live-badge">
+                  {activePreviewTheme === 'salon' ? 'EXQUISITE LITERARY SALON' : 'ROYAL ACADEMIC STUDY'}
+                </span>
                 <h1 className="live-title">{title || 'Where Literature Reigns Supreme'}</h1>
                 <p className="live-subtitle">{subtitle || 'Enter a world of curated academic papers, fine leather volumes, and intimate fireside symposiums.'}</p>
-                <button className="royal-btn mini-btn-live">Enter the Salon</button>
+                <button className="royal-btn mini-btn-live">Enter the Study</button>
               </div>
             </div>
           </section>

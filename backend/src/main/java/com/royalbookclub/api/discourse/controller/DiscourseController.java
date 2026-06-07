@@ -89,7 +89,7 @@ public class DiscourseController {
 
         // Fill author details
         discourse.setAuthorId(user.getId());
-        discourse.setAuthorName(user.getFirstName() + " " + user.getLastName());
+        discourse.setAuthorName(user.getFullName());
         discourse.setParentId(null); // Force as root
 
         Discourse saved = discourseService.saveDiscourse(discourse);
@@ -117,7 +117,7 @@ public class DiscourseController {
         // Setup comment properties
         comment.setDiscourseId(id);
         comment.setAuthorId(user.getId());
-        comment.setAuthorName(user.getFirstName() + " " + user.getLastName());
+        comment.setAuthorName(user.getFullName());
 
         DiscourseComment saved = discourseService.saveChronicleComment(comment);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(saved, "Comment published successfully"));
@@ -145,9 +145,57 @@ public class DiscourseController {
         reply.setType("DEBATE");
         reply.setParentId(id);
         reply.setAuthorId(user.getId());
-        reply.setAuthorName(user.getFirstName() + " " + user.getLastName());
+        reply.setAuthorName(user.getFullName());
 
         Discourse saved = discourseService.saveDiscourse(reply);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(saved, "Reply posted successfully"));
+    }
+
+    /**
+     * Update an existing Discourse (Chronicle or Debate).
+     */
+    @PutMapping("/{id}")
+    @Operation(summary = "Update a discourse", description = "Updates an existing Chronicle or Debate. Can only be done by the author or an ADMIN.")
+    public ResponseEntity<ApiResponse<Discourse>> updateDiscourse(
+            @PathVariable String id,
+            @RequestBody Discourse updatePayload,
+            @AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Authentication required to update"));
+        }
+
+        return discourseService.getDiscourseById(id)
+                .map(existing -> {
+                    boolean isAuthor = user.getId().equals(existing.getAuthorId());
+                    boolean isAdmin = user.getRole() == com.royalbookclub.api.user.model.Role.ADMIN;
+                    if (!isAuthor && !isAdmin) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.<Discourse>error("Only the author or a Curator can edit this discourse"));
+                    }
+
+                    log.info("User {} is updating discourse ID: {}", user.getId(), id);
+                    if (updatePayload.getContent() == null || updatePayload.getContent().isBlank()) {
+                        return ResponseEntity.badRequest().body(ApiResponse.<Discourse>error("Content cannot be empty"));
+                    }
+
+                    existing.setContent(updatePayload.getContent());
+                    if ("CHRONICLE".equalsIgnoreCase(existing.getType())) {
+                        if (updatePayload.getTitle() != null && !updatePayload.getTitle().isBlank()) {
+                            existing.setTitle(updatePayload.getTitle());
+                        }
+                        if (updatePayload.getCoverUrl() != null) {
+                            existing.setCoverUrl(updatePayload.getCoverUrl());
+                        }
+                        if (updatePayload.getHouse() != null && !updatePayload.getHouse().isBlank()) {
+                            existing.setHouse(updatePayload.getHouse());
+                        }
+                        if (updatePayload.getTags() != null) {
+                            existing.setTags(updatePayload.getTags());
+                        }
+                    }
+
+                    Discourse saved = discourseService.saveDiscourse(existing);
+                    return ResponseEntity.ok(ApiResponse.success(saved, "Discourse updated successfully"));
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 }

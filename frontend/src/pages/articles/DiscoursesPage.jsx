@@ -24,7 +24,8 @@ import {
   fetchDiscourseById, 
   publishDiscourse, 
   commentOnChronicle, 
-  replyToDebate 
+  replyToDebate,
+  updateDiscourse
 } from '../../services/discourseApi';
 import { fetchBlogHouses } from '../../services/genreApi';
 import { uploadBookImage } from '../../services/storageApi';
@@ -46,6 +47,7 @@ const DiscoursesPage = ({ user }) => {
 
   // Form states
   const [isCreating, setIsCreating] = useState(false);
+  const [editingDiscourse, setEditingDiscourse] = useState(null);
   const [formType, setFormType] = useState('CHRONICLE'); // 'CHRONICLE' or 'DEBATE'
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -167,13 +169,30 @@ const DiscoursesPage = ({ user }) => {
     setTagsList(tagsList.filter(t => t !== tagToRemove));
   };
 
+  const handleStartEdit = (discourse) => {
+    setEditingDiscourse(discourse);
+    setFormType(discourse.type);
+    setTitle(discourse.title || '');
+    setContent(discourse.content || '');
+    if (discourse.type === 'CHRONICLE') {
+      setSelectedHouse(discourse.house || (houses.length > 0 ? houses[0].name : ''));
+      setTagsList(discourse.tags || []);
+      setCoverPreview(discourse.coverUrl || '');
+    } else {
+      setCoverPreview('');
+    }
+    setIsCreating(true);
+    handleCloseChronicle();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handlePublish = async (e) => {
     e.preventDefault();
     if (!title.trim() || !user || isPublishing) return;
 
     try {
       setIsPublishing(true);
-      let uploadedCoverUrl = '';
+      let uploadedCoverUrl = editingDiscourse?.coverUrl || '';
 
       if (formType === 'CHRONICLE' && coverFile) {
         setIsUploading(true);
@@ -197,14 +216,20 @@ const DiscoursesPage = ({ user }) => {
         coverUrl: uploadedCoverUrl || (formType === 'CHRONICLE' ? 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80' : '')
       };
 
-      const res = await publishDiscourse(payload);
+      let res;
+      if (editingDiscourse) {
+        res = await updateDiscourse(editingDiscourse.id, payload);
+      } else {
+        res = await publishDiscourse(payload);
+      }
+
       if (res && res.success) {
         setIsCreating(false);
         resetForm();
         loadDiscourses();
       }
     } catch (err) {
-      console.error('Error publishing discourse:', err);
+      console.error('Error saving discourse:', err);
     } finally {
       setIsPublishing(false);
     }
@@ -217,6 +242,7 @@ const DiscoursesPage = ({ user }) => {
     setTagInput('');
     setCoverFile(null);
     setCoverPreview('');
+    setEditingDiscourse(null);
   };
 
   // Debates
@@ -398,6 +424,16 @@ const DiscoursesPage = ({ user }) => {
                     </div>
                   </div>
 
+                  {user && (user.uid === chronicleDetail.authorId || user.role === 'ADMIN') && (
+                    <button 
+                      onClick={() => handleStartEdit(chronicleDetail)} 
+                      className="royal-btn edit-discourse-btn"
+                      style={{ marginTop: '12px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '0.85rem' }}
+                    >
+                      <PenTool size={14} /> Edit Chronicle
+                    </button>
+                  )}
+
                   <div 
                     className="focal-content-html"
                     dangerouslySetInnerHTML={{ __html: chronicleDetail.content }}
@@ -521,7 +557,7 @@ const DiscoursesPage = ({ user }) => {
           ) : (
             <div className="royal-card composition-card animate-fade-in">
               <div className="comp-header">
-                <h3>{formType === 'CHRONICLE' ? 'Scribe New Intellectual Chronicle' : 'Ignite Courtyard Debate Topic'}</h3>
+                <h3>{editingDiscourse ? (formType === 'CHRONICLE' ? 'Edit Intellectual Chronicle' : 'Edit Courtyard Debate Topic') : (formType === 'CHRONICLE' ? 'Scribe New Intellectual Chronicle' : 'Ignite Courtyard Debate Topic')}</h3>
                 <button onClick={() => { setIsCreating(false); resetForm(); }} className="close-comp-btn">
                   <X size={16} />
                 </button>
@@ -628,7 +664,7 @@ const DiscoursesPage = ({ user }) => {
                     disabled={isPublishing || (formType === 'CHRONICLE' && !content)}
                     className="royal-btn comp-submit-btn"
                   >
-                    {isPublishing ? (isUploading ? 'Uploading cover image...' : 'Transcribing lore...') : 'Publish to Portico'}
+                    {isPublishing ? (isUploading ? 'Uploading cover image...' : 'Transcribing lore...') : (editingDiscourse ? 'Save Sovereign Updates' : 'Publish to Portico')}
                   </button>
                 </div>
               </form>
@@ -709,6 +745,16 @@ const DiscoursesPage = ({ user }) => {
                   {isExpanded && (
                     <div className="debate-expanded-body animate-fade-in">
                       <p className="debate-lead-concept">{disc.content}</p>
+                      
+                      {user && (user.uid === disc.authorId || user.role === 'ADMIN') && (
+                        <button 
+                          onClick={() => handleStartEdit(disc)} 
+                          className="royal-btn edit-discourse-btn"
+                          style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', fontSize: '0.8rem' }}
+                        >
+                          <PenTool size={12} /> Edit Debate Topic
+                        </button>
+                      )}
                       
                       <div className="debate-dialectic-portico">
                         <h5>
