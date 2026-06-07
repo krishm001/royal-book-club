@@ -68,6 +68,11 @@ const DiscoursesPage = ({ user }) => {
   const [replyText, setReplyText] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
 
+  // Reply edit states
+  const [editingReplyId, setEditingReplyId] = useState(null);
+  const [editingReplyText, setEditingReplyText] = useState('');
+  const [isSubmittingReplyEdit, setIsSubmittingReplyEdit] = useState(false);
+
   // Load basic data
   useEffect(() => {
     loadDiscourses();
@@ -306,6 +311,58 @@ const DiscoursesPage = ({ user }) => {
     }
   };
 
+  const handleStartEditReply = (reply) => {
+    setEditingReplyId(reply.id);
+    setEditingReplyText(reply.content);
+  };
+
+  const handleSaveEditReply = async (e, reply) => {
+    e.preventDefault();
+    if (!editingReplyText.trim() || isSubmittingReplyEdit) return;
+
+    try {
+      setIsSubmittingReplyEdit(true);
+      const payload = {
+        ...reply,
+        content: editingReplyText.trim()
+      };
+      const res = await updateDiscourse(reply.id, payload);
+      if (res && res.success) {
+        setEditingReplyId(null);
+        // Refresh replies for expanded debate
+        const detailRes = await fetchDiscourseById(expandedDebate.id);
+        if (detailRes && detailRes.success) {
+          setDebateReplies(detailRes.data.responses || []);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to update reply:', err);
+    } finally {
+      setIsSubmittingReplyEdit(false);
+    }
+  };
+
+  const handleDeleteReply = async (replyId) => {
+    if (!window.confirm("Are you certain you wish to purge this dialectic reply? This action is irreversible.")) {
+      return;
+    }
+    try {
+      const res = await deleteDiscourse(replyId);
+      if (res && res.success) {
+        // Refresh replies for expanded debate
+        const detailRes = await fetchDiscourseById(expandedDebate.id);
+        if (detailRes && detailRes.success) {
+          setDebateReplies(detailRes.data.responses || []);
+        }
+      } else {
+        alert(res?.message || "Failed to delete reply");
+      }
+    } catch (err) {
+      console.error('Failed to delete reply:', err);
+      alert("Error deleting reply");
+    }
+  };
+
   const filteredDiscourses = discourses.filter(disc => {
     const titleMatch = disc.title?.toLowerCase().includes(searchQuery.toLowerCase());
     const contentMatch = disc.content?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -347,10 +404,31 @@ const DiscoursesPage = ({ user }) => {
                 {reply.createdAt ? new Date(reply.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now'}
               </span>
             </div>
-            <p className="reply-text-content">{reply.content}</p>
+            {editingReplyId === reply.id ? (
+              <form onSubmit={(e) => handleSaveEditReply(e, reply)} className="reply-edit-form animate-fade-in" style={{ marginTop: '8px', padding: '4px' }}>
+                <textarea
+                  className="royal-input reply-edit-textarea"
+                  value={editingReplyText}
+                  onChange={(e) => setEditingReplyText(e.target.value)}
+                  required
+                  rows={2}
+                  style={{ width: '100%', marginBottom: '8px', padding: '8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(212,175,55,0.3)' }}
+                />
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button type="submit" disabled={isSubmittingReplyEdit} className="royal-btn reply-save-btn" style={{ padding: '4px 10px', fontSize: '0.75rem' }}>
+                    Save
+                  </button>
+                  <button type="button" onClick={() => setEditingReplyId(null)} className="royal-btn reply-cancel-btn" style={{ padding: '4px 10px', fontSize: '0.75rem', background: 'none', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <p className="reply-text-content">{reply.content}</p>
+            )}
             
             {user && (
-              <div className="reply-actions">
+              <div className="reply-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <button 
                   onClick={() => {
                     setReplyInputId(replyInputId === reply.id ? null : reply.id);
@@ -360,6 +438,25 @@ const DiscoursesPage = ({ user }) => {
                 >
                   <MessageCircle size={12} /> Reply
                 </button>
+
+                {(user.uid === reply.authorId || user.id === reply.authorId || user.role === 'ADMIN') && (
+                  <>
+                    <button 
+                      onClick={() => handleStartEditReply(reply)}
+                      className="reply-edit-btn"
+                      style={{ background: 'none', border: 'none', color: '#d4af37', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', padding: '0 4px' }}
+                    >
+                      <PenTool size={12} /> Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteReply(reply.id)}
+                      className="reply-delete-btn"
+                      style={{ background: 'none', border: 'none', color: '#e63946', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', padding: '0 4px' }}
+                    >
+                      <Trash2 size={12} /> Delete
+                    </button>
+                  </>
+                )}
               </div>
             )}
 
@@ -445,7 +542,7 @@ const DiscoursesPage = ({ user }) => {
                     </div>
                   </div>
 
-                  {user && (user.uid === chronicleDetail.authorId || user.role === 'ADMIN') && (
+                  {user && (user.uid === chronicleDetail.authorId || user.id === chronicleDetail.authorId || user.role === 'ADMIN') && (
                     <div style={{ display: 'flex', gap: '8px', marginTop: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
                       <button 
                         onClick={() => handleStartEdit(chronicleDetail)} 
@@ -776,7 +873,7 @@ const DiscoursesPage = ({ user }) => {
                     <div className="debate-expanded-body animate-fade-in">
                       <p className="debate-lead-concept">{disc.content}</p>
                       
-                      {user && (user.uid === disc.authorId || user.role === 'ADMIN') && (
+                      {user && (user.uid === disc.authorId || user.id === disc.authorId || user.role === 'ADMIN') && (
                         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
                           <button 
                             onClick={() => handleStartEdit(disc)} 
