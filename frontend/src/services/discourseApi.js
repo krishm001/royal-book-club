@@ -29,3 +29,8 @@ export const updateDiscourse = async (id, payload) => {
   const response = await api.put(`/api/v1/discourses/${id}`, payload);
   return response.data;
 };
+
+export const deleteDiscourse = async (id) => {
+  const response = await api.delete(`/api/v1/discourses/${id}`);
+  return response.data;
+};

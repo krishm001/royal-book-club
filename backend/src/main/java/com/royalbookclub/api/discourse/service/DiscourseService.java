@@ -236,6 +236,48 @@ public class DiscourseService {
         }
     }
 
+    /**
+     * Delete a discourse and its associated comments or replies.
+     */
+    public void deleteDiscourse(String id) {
+        log.info("Deleting discourse ID: {}", id);
+        try {
+            Optional<Discourse> discOpt = getDiscourseById(id);
+            if (discOpt.isPresent()) {
+                Discourse d = discOpt.get();
+                // 1. Delete associated comments or replies
+                if ("CHRONICLE".equalsIgnoreCase(d.getType())) {
+                    // Delete comments in COMMENTS_COLLECTION
+                    ApiFuture<QuerySnapshot> commentsQuery = firestore.collection(COMMENTS_COLLECTION)
+                            .whereEqualTo("discourseId", id)
+                            .get();
+                    for (DocumentSnapshot doc : commentsQuery.get().getDocuments()) {
+                        firestore.collection(COMMENTS_COLLECTION).document(doc.getId()).delete().get();
+                    }
+                } else if ("DEBATE".equalsIgnoreCase(d.getType())) {
+                    // Delete replies in DISCOURSES_COLLECTION
+                    ApiFuture<QuerySnapshot> repliesQuery = firestore.collection(DISCOURSES_COLLECTION)
+                            .whereEqualTo("parentId", id)
+                            .get();
+                    for (DocumentSnapshot doc : repliesQuery.get().getDocuments()) {
+                        firestore.collection(DISCOURSES_COLLECTION).document(doc.getId()).delete().get();
+                    }
+                }
+                
+                // 2. Delete the main discourse document
+                firestore.collection(DISCOURSES_COLLECTION).document(id).delete().get();
+                log.info("Successfully deleted discourse: {}", id);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Interrupted while deleting discourse: {}", id, e);
+            throw new RuntimeException("Failed to delete discourse", e);
+        } catch (ExecutionException e) {
+            log.error("Error deleting discourse: {}", id, e);
+            throw new RuntimeException("Failed to delete discourse", e);
+        }
+    }
+
     private Map<String, Object> discourseToMap(Discourse d) {
         Map<String, Object> map = new HashMap<>();
         map.put("id", d.getId());

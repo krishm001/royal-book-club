@@ -17,7 +17,8 @@ import {
   Plus, 
   X, 
   ArrowLeft,
-  BookOpen
+  BookOpen,
+  Trash2
 } from 'lucide-react';
 import { 
   fetchDiscourses, 
@@ -25,7 +26,8 @@ import {
   publishDiscourse, 
   commentOnChronicle, 
   replyToDebate,
-  updateDiscourse
+  updateDiscourse,
+  deleteDiscourse
 } from '../../services/discourseApi';
 import { fetchBlogHouses } from '../../services/genreApi';
 import { uploadBookImage } from '../../services/storageApi';
@@ -245,6 +247,25 @@ const DiscoursesPage = ({ user }) => {
     setEditingDiscourse(null);
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you certain you wish to purge this academic discourse? This action is irreversible and will also remove all associated comments or replies.")) {
+      return;
+    }
+    try {
+      const res = await deleteDiscourse(id);
+      if (res && res.success) {
+        handleCloseChronicle();
+        setExpandedDebate(null);
+        loadDiscourses();
+      } else {
+        alert(res?.message || "Failed to delete discourse");
+      }
+    } catch (err) {
+      console.error('Failed to delete discourse:', err);
+      alert("Error deleting discourse");
+    }
+  };
+
   // Debates
   const handleOpenDebate = async (debate) => {
     if (expandedDebate?.id === debate.id) {
@@ -425,13 +446,22 @@ const DiscoursesPage = ({ user }) => {
                   </div>
 
                   {user && (user.uid === chronicleDetail.authorId || user.role === 'ADMIN') && (
-                    <button 
-                      onClick={() => handleStartEdit(chronicleDetail)} 
-                      className="royal-btn edit-discourse-btn"
-                      style={{ marginTop: '12px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '0.85rem' }}
-                    >
-                      <PenTool size={14} /> Edit Chronicle
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                      <button 
+                        onClick={() => handleStartEdit(chronicleDetail)} 
+                        className="royal-btn edit-discourse-btn"
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '0.85rem' }}
+                      >
+                        <PenTool size={14} /> Edit Chronicle
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(chronicleDetail.id)} 
+                        className="royal-btn delete-discourse-btn"
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '0.85rem', backgroundColor: '#e63946', borderColor: '#e63946', color: '#fff' }}
+                      >
+                        <Trash2 size={14} /> Delete Chronicle
+                      </button>
+                    </div>
                   )}
 
                   <div 
@@ -747,13 +777,22 @@ const DiscoursesPage = ({ user }) => {
                       <p className="debate-lead-concept">{disc.content}</p>
                       
                       {user && (user.uid === disc.authorId || user.role === 'ADMIN') && (
-                        <button 
-                          onClick={() => handleStartEdit(disc)} 
-                          className="royal-btn edit-discourse-btn"
-                          style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', fontSize: '0.8rem' }}
-                        >
-                          <PenTool size={12} /> Edit Debate Topic
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                          <button 
+                            onClick={() => handleStartEdit(disc)} 
+                            className="royal-btn edit-discourse-btn"
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', fontSize: '0.8rem' }}
+                          >
+                            <PenTool size={12} /> Edit Debate Topic
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(disc.id)} 
+                            className="royal-btn delete-discourse-btn"
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', fontSize: '0.8rem', backgroundColor: '#e63946', borderColor: '#e63946', color: '#fff' }}
+                          >
+                            <Trash2 size={12} /> Delete Topic
+                          </button>
+                        </div>
                       )}
                       
                       <div className="debate-dialectic-portico">

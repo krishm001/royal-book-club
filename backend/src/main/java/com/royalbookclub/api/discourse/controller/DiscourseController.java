@@ -198,4 +198,31 @@ public class DiscourseController {
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    /**
+     * Delete an existing Discourse (Chronicle or Debate).
+     */
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete a discourse", description = "Deletes an existing Chronicle or Debate. Can only be done by the author or an ADMIN.")
+    public ResponseEntity<ApiResponse<Void>> deleteDiscourse(
+            @PathVariable String id,
+            @AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Authentication required to delete"));
+        }
+
+        return discourseService.getDiscourseById(id)
+                .map(existing -> {
+                    boolean isAuthor = user.getId().equals(existing.getAuthorId());
+                    boolean isAdmin = user.getRole() == com.royalbookclub.api.user.model.Role.ADMIN;
+                    if (!isAuthor && !isAdmin) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.<Void>error("Only the author or a Curator can delete this discourse"));
+                    }
+
+                    log.info("User {} is deleting discourse ID: {}", user.getId(), id);
+                    discourseService.deleteDiscourse(id);
+                    return ResponseEntity.ok(ApiResponse.<Void>success(null, "Discourse deleted successfully"));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
