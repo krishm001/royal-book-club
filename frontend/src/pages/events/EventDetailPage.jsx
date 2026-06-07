@@ -1,64 +1,127 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Sparkles, MapPin, Clock, Users, Calendar, HelpCircle, CheckCircle, Info } from 'lucide-react';
+import { fetchEventById, rsvpToEvent, cancelRsvpToEvent } from '../../services/eventApi';
 import './EventDetailPage.css';
 
 const EventDetailPage = ({ user }) => {
   const { id } = useParams();
+  const [event, setEvent] = useState(null);
   const [rsvpState, setRsvpState] = useState('none'); // none, rsvping, rsvped
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Sample static events lookup
-  const events = [
-    {
-      id: 'event-1',
-      title: 'Sovereign Reader Autumn Litfest',
-      description: 'An elegant evening of tea, sonnets, and philosophical debates on 19th-century gothic romance.',
-      extendedDescription: 'The Annual Autumn Litfest stands as the jewel of our club gatherings. Standard program includes opening recitations of Keats and Byron, a panel critique on Mary Shelley\'s masterworks, followed by a formal discussion session on gothic elements in Victorian aesthetic prose.',
-      date: '2026-10-15',
-      time: '18:00 - 21:30',
-      location: 'The Velvet Library Lounge',
-      address: 'Suite 402, Royal Opera Crescent, Chelsea',
-      type: 'Litfest',
-      curator: 'Archduke of Prose',
-      rsvps: 42,
-      capacity: 60,
-      imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=600&q=80',
-    },
-    {
-      id: 'event-2',
-      title: 'Wilde & Aestheticism Seminar',
-      description: 'A deep dive discussion into the philosophical elements of the Aesthetic movement and Dorian Gray.',
-      extendedDescription: 'This intense seminar explores Oscar Wilde’s philosophical relationship with decadent aestheticism. We will analyze how Dorian Gray reflects Victorian taboos, classical hellenic ideals, and Wilde’s core artistic manifesto.',
-      date: '2026-11-02',
-      time: '19:30 - 21:00',
-      location: 'Grand Salon Hall',
-      address: 'Salon Room II, Westminster Abbey Lane',
-      type: 'Discussion',
-      curator: 'Lady Chesterfield',
-      rsvps: 18,
-      capacity: 25,
-      imageUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=600&q=80',
-    }
-  ];
-
-  const event = events.find(e => e.id === id) || events[0];
-
-  const handleRsvp = () => {
-    if (rsvpState !== 'none') return;
-    setRsvpState('rsvping');
-    setTimeout(() => {
-      setRsvpState('rsvped');
-    }, 1200);
+  const isUserRsvped = (evt) => {
+    if (!user || !evt?.rsvps || !Array.isArray(evt.rsvps)) return false;
+    return evt.rsvps.includes(user.uid || user.id);
   };
 
-  const handleCancelRsvp = () => {
-    setRsvpState('none');
+  const getRsvpCount = (evt) => {
+    if (!evt?.rsvps) return 0;
+    return Array.isArray(evt.rsvps) ? evt.rsvps.length : (typeof evt.rsvps === 'number' ? evt.rsvps : 0);
+  };
+
+  useEffect(() => {
+    const loadEventDetails = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetchEventById(id);
+        if (res?.success && res?.data) {
+          setEvent(res.data);
+          setRsvpState(isUserRsvped(res.data) ? 'rsvped' : 'none');
+        } else {
+          setError('We could not retrieve details for this specific literary gathering.');
+        }
+      } catch (err) {
+        console.error('Failed to load event details', err);
+        setError('Unable to load gathering details. This salon might have been adjourned.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      loadEventDetails();
+    }
+  }, [id, user]);
+
+  const handleRsvp = async () => {
+    if (!user) {
+      window.alert('Please enter the Royal Salon (sign in) before requesting an invitation.');
+      return;
+    }
+    if (rsvpState !== 'none') return;
+    setRsvpState('rsvping');
+    try {
+      const res = await rsvpToEvent(id);
+      if (res?.success && res?.data) {
+        setEvent(res.data);
+        setRsvpState('rsvped');
+      } else {
+        setRsvpState('none');
+        window.alert(res?.message || 'Failed to register reservation.');
+      }
+    } catch (err) {
+      console.error(err);
+      setRsvpState('none');
+      window.alert(err.response?.data?.message || 'Unable to register reservation.');
+    }
+  };
+
+  const handleCancelRsvp = async () => {
+    if (rsvpState !== 'rsvped') return;
+    setRsvpState('rsvping');
+    try {
+      const res = await cancelRsvpToEvent(id);
+      if (res?.success && res?.data) {
+        setEvent(res.data);
+        setRsvpState('none');
+      } else {
+        setRsvpState('rsvped');
+        window.alert(res?.message || 'Failed to cancel reservation.');
+      }
+    } catch (err) {
+      console.error(err);
+      setRsvpState('rsvped');
+      window.alert(err.response?.data?.message || 'Unable to cancel reservation.');
+    }
   };
 
   const formatDate = (dateStr) => {
+    if (!dateStr) return '';
     const d = new Date(dateStr);
     return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   };
+
+  if (loading) {
+    return (
+      <div className="event-detail-container animate-fade-in">
+        <Link to="/events" className="back-link">
+          <ArrowLeft size={16} /> Return to Gatherings
+        </Link>
+        <div className="royal-card no-results-card" style={{ padding: '5rem 2rem' }}>
+          <div className="loader-mini" style={{ marginBottom: '1rem' }}></div>
+          <p>Consulting the Royal ledger for gathering details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !event) {
+    return (
+      <div className="event-detail-container animate-fade-in">
+        <Link to="/events" className="back-link">
+          <ArrowLeft size={16} /> Return to Gatherings
+        </Link>
+        <div className="royal-card no-results-card" style={{ padding: '5rem 2rem' }}>
+          <HelpCircle size={48} className="no-events-icon" />
+          <h3>Assembly Adjourned</h3>
+          <p>{error || 'This assembly could not be localized within our registers.'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="event-detail-container animate-fade-in">
@@ -105,19 +168,19 @@ const EventDetailPage = ({ user }) => {
         {/* Right Side: Informative Body */}
         <div className="event-detail-info-panel royal-card">
           <header className="event-info-header">
-            <span className="curator-info">Curated by <strong className="gold-gradient-text">{event.curator}</strong></span>
+            <span className="curator-info">Curated by <strong className="gold-gradient-text">{event.curator || 'The Royal Curators'}</strong></span>
             <h1 className="event-detail-title glow-text">{event.title}</h1>
           </header>
 
           <section className="event-description-body">
             <h3>Gathering Prospectus</h3>
             <p className="brief-lead">{event.description}</p>
-            <p className="extended-desc">{event.extendedDescription}</p>
+            <p className="extended-desc">{event.extendedDescription || 'No further description is available for this gathering.'}</p>
           </section>
 
           <section className="venue-details-section">
             <h4 className="detail-subheading">Venue & Directions</h4>
-            <p className="address-details">{event.address}</p>
+            <p className="address-details">{event.address || 'In the Private Library Chambers'}</p>
             <div className="venue-simulation-map">
               <Info size={14} /> Localized within the exclusive, gated private halls of the Royal Book Club estate.
             </div>
@@ -127,14 +190,20 @@ const EventDetailPage = ({ user }) => {
           <footer className="event-rsvp-cta-block">
             <div className="rsvp-capacity-tracker">
               <Users size={16} className="gold-glow-icon" />
-              <span>Current Registrations: <strong>{rsvpState === 'rsvped' ? event.rsvps + 1 : event.rsvps}</strong> / <strong>{event.capacity}</strong> Patrons</span>
+              <span>Current Registrations: <strong>{getRsvpCount(event)}</strong> / <strong>{event.capacity || 50}</strong> Patrons</span>
             </div>
 
             <div className="rsvp-action-trigger">
               {rsvpState === 'none' ? (
-                <button onClick={handleRsvp} className="royal-btn rsvp-submit-btn" id="event-detail-rsvp-btn">
-                  Claim Seat Invitation
-                </button>
+                (getRsvpCount(event) >= (event.capacity || 50)) ? (
+                  <button className="royal-btn-disabled rsvp-submit-btn" disabled>
+                    Fully Booked
+                  </button>
+                ) : (
+                  <button onClick={handleRsvp} className="royal-btn rsvp-submit-btn" id="event-detail-rsvp-btn">
+                    Claim Seat Invitation
+                  </button>
+                )
               ) : rsvpState === 'rsvping' ? (
                 <button className="royal-btn-disabled rsvp-submit-btn" disabled>
                   <div className="loader-mini"></div> Authorizing Attendance...

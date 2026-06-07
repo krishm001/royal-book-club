@@ -64,7 +64,10 @@ public class SecurityConfig {
                                 "/api/v1/auth/signup",
                                 "/api/v1/auth/register",
                                 "/api/v1/public/**",
-                                "/api/v1/books/**"
+                                "/api/v1/books/**",
+                                "/api/v1/events/**",
+                                "/api/v1/genres/**",
+                                "/api/v1/discourses/**"
                         ).permitAll()
                         // Any other request must be authenticated
                         .anyRequest().authenticated()

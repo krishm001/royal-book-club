@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw, X } from 'lucide-react';
 import { createBook, lookupBookByIsbn, fetchBookByIsbn } from '../../services/libraryApi';
+import { fetchBookHouses } from '../../services/genreApi';
 import { uploadBookImage } from '../../services/storageApi';
 import './BookIngestionConsole.css';
 
@@ -25,8 +26,40 @@ const BookIngestionConsole = ({ user }) => {
   const [imagePreview, setImagePreview] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  // New fields
+  const [selectedHouse, setSelectedHouse] = useState('');
+  const [houses, setHouses] = useState([]);
+  const [tagsInput, setTagsInput] = useState('');
+
   // Check if user is admin
   const isAdmin = user && user.role === 'ADMIN';
+
+  useEffect(() => {
+    if (isAdmin) {
+      const loadHouses = async () => {
+        try {
+          const res = await fetchBookHouses();
+          if (res?.success && Array.isArray(res.data)) {
+            const names = res.data.map(h => h.name);
+            setHouses(names);
+            if (names.length > 0) {
+              setSelectedHouse(names[0]);
+            }
+          } else {
+            const defaults = ['Classic Gothic', 'Gothic Fiction', 'Epic Poetry', 'Philosophical Non-Fiction', 'Poetry', 'Modern Classic'];
+            setHouses(defaults);
+            setSelectedHouse(defaults[0]);
+          }
+        } catch (err) {
+          console.warn('Unable to load book houses', err);
+          const defaults = ['Classic Gothic', 'Gothic Fiction', 'Epic Poetry', 'Philosophical Non-Fiction', 'Poetry', 'Modern Classic'];
+          setHouses(defaults);
+          setSelectedHouse(defaults[0]);
+        }
+      };
+      loadHouses();
+    }
+  }, [isAdmin]);
 
   const handleIsbnFetch = async () => {
     if (!isbn.trim()) return;
@@ -47,6 +80,11 @@ const BookIngestionConsole = ({ user }) => {
         setPages(existingBook.pages || 0);
         setTotalCopies(existingBook.totalCopies || 1);
         setAvailableCopies(existingBook.availableCopies || existingBook.totalCopies || 1);
+        
+        // Populate new fields
+        setSelectedHouse(existingBook.genre || (houses.length > 0 ? houses[0] : ''));
+        setTagsInput(Array.isArray(existingBook.tags) ? existingBook.tags.join(', ') : '');
+        
         setIsEditMode(true);
         setInfoMessage('Existing book found in catalog. Edit the fields and save the updated details.');
       }
@@ -63,6 +101,7 @@ const BookIngestionConsole = ({ user }) => {
           setPages(metadata.number_of_pages || 0);
           setTotalCopies(1);
           setAvailableCopies(1);
+          setTagsInput('');
           setInfoMessage('Lookup returned metadata from Open Library; complete any missing payload fields.');
         } catch (lookupError) {
           console.error(lookupError);
@@ -92,6 +131,10 @@ const BookIngestionConsole = ({ user }) => {
     setImagePreview(null);
     setIsEditMode(false);
     setInfoMessage('');
+    setTagsInput('');
+    if (houses.length > 0) {
+      setSelectedHouse(houses[0]);
+    }
   };
 
   const handleImageSelect = (e) => {
@@ -146,6 +189,14 @@ const BookIngestionConsole = ({ user }) => {
     setErrorMessage('');
 
     const authors = manualAuthor.split(',').map((name) => name.trim()).filter(Boolean);
+    
+    // Trim and deduplicate tags
+    const tags = tagsInput
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+    const deduplicatedTags = Array.from(new Set(tags));
+
     const bookDto = {
       isbn: isbn.trim(),
       title: manualTitle.trim(),
@@ -158,6 +209,8 @@ const BookIngestionConsole = ({ user }) => {
       pages: pages || 0,
       totalCopies: totalCopies || 1,
       availableCopies: availableCopies || 1,
+      genre: selectedHouse,
+      tags: deduplicatedTags,
     };
 
     try {
@@ -211,260 +264,288 @@ const BookIngestionConsole = ({ user }) => {
           </header>
 
           <div className="ingestion-grid">
-        <div className="royal-card form-intake-card">
-          <h3>Single Volume Intake</h3>
-          <p className="section-p-desc">Register an individual book volume. Query metadata by ISBN or input details manually.</p>
+            <div className="royal-card form-intake-card">
+              <h3>Single Volume Intake</h3>
+              <p className="section-p-desc">Register an individual book volume. Query metadata by ISBN or input details manually.</p>
 
-          <div className="isbn-query-wrapper">
-            <label className="royal-input-label">ISBN Lookup</label>
-            <div className="isbn-input-row">
-              <input
-                type="text"
-                placeholder="e.g. 9780141439570"
-                className="royal-input isbn-input-box"
-                value={isbn}
-                onChange={(e) => setIsbn(e.target.value)}
-              />
-              <button
-                onClick={handleIsbnFetch}
-                className="royal-btn lookup-btn"
-                disabled={fetchingMetadata}
-                id="isbn-lookup-btn"
-              >
-                {fetchingMetadata ? <RefreshCw className="spin-icon" size={14} /> : 'Fetch'}
-              </button>
-            </div>
-          </div>
-
-          <div className="form-divider"><span>OR MANUAL ENTRY</span></div>
-
-          <form onSubmit={handleIngestionSubmit} className="manual-intake-form">
-            {infoMessage && (
-              <div className="info-banner royal-card">
-                <p>{infoMessage}</p>
+              <div className="isbn-query-wrapper">
+                <label className="royal-input-label">ISBN Lookup</label>
+                <div className="isbn-input-row">
+                  <input
+                    type="text"
+                    placeholder="e.g. 9780141439570"
+                    className="royal-input isbn-input-box"
+                    value={isbn}
+                    onChange={(e) => setIsbn(e.target.value)}
+                  />
+                  <button
+                    onClick={handleIsbnFetch}
+                    className="royal-btn lookup-btn"
+                    disabled={fetchingMetadata}
+                    id="isbn-lookup-btn"
+                  >
+                    {fetchingMetadata ? <RefreshCw className="spin-icon" size={14} /> : 'Fetch'}
+                  </button>
+                </div>
               </div>
-            )}
-            <div className="input-group">
-              <label className="royal-input-label">Volume Title</label>
-              <input
-                type="text"
-                placeholder="The Picture of Dorian Gray"
-                className="royal-input"
-                value={manualTitle}
-                onChange={(e) => setManualTitle(e.target.value)}
-                required
-              />
-            </div>
 
-            <div className="input-group">
-              <label className="royal-input-label">Author Name(s)</label>
-              <input
-                type="text"
-                placeholder="Oscar Wilde, Mary Shelley"
-                className="royal-input"
-                value={manualAuthor}
-                onChange={(e) => setManualAuthor(e.target.value)}
-                required
-              />
-            </div>
+              <div className="form-divider"><span>OR MANUAL ENTRY</span></div>
 
-            <div className="input-group">
-              <label className="royal-input-label">Publisher</label>
-              <input
-                type="text"
-                className="royal-input"
-                value={publisher}
-                onChange={(e) => setPublisher(e.target.value)}
-              />
-            </div>
-
-            <div className="input-group">
-              <label className="royal-input-label">Publish Date</label>
-              <input
-                type="text"
-                className="royal-input"
-                value={publishDate}
-                onChange={(e) => setPublishDate(e.target.value)}
-                placeholder="e.g. 1890"
-              />
-            </div>
-
-            <div className="input-group">
-              <label className="royal-input-label">Cover Image</label>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handleImageSelect}
-                      style={{ display: 'none' }}
-                      id="image-file-input"
-                    />
-                    <label htmlFor="image-file-input" style={{ flex: 1 }}>
-                      <button
-                        type="button"
-                        onClick={() => document.getElementById('image-file-input')?.click()}
-                        className="royal-btn"
-                        style={{ width: '100%' }}
-                      >
-                        {selectedImageFile ? `File: ${selectedImageFile.name}` : 'Upload Image'}
-                      </button>
-                    </label>
-                    {selectedImageFile && (
-                      <button
-                        type="button"
-                        onClick={handleImageUpload}
-                        className="royal-btn"
-                        disabled={uploadingImage}
-                      >
-                        {uploadingImage ? 'Uploading...' : 'Confirm Upload'}
-                      </button>
-                    )}
+              <form onSubmit={handleIngestionSubmit} className="manual-intake-form">
+                {infoMessage && (
+                  <div className="info-banner royal-card">
+                    <p>{infoMessage}</p>
                   </div>
-                  {imagePreview && (
-                    <div style={{ position: 'relative', marginBottom: '8px' }}>
-                      <img src={imagePreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '150px', borderRadius: '4px' }} />
-                      <button
-                        type="button"
-                        onClick={removeImagePreview}
-                        style={{
-                          position: 'absolute',
-                          top: '4px',
-                          right: '4px',
-                          background: 'rgba(0,0,0,0.6)',
-                          border: 'none',
-                          color: 'white',
-                          borderRadius: '50%',
-                          width: '24px',
-                          height: '24px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                      >
-                        <X size={16} />
-                      </button>
+                )}
+                <div className="input-group">
+                  <label className="royal-input-label">Volume Title</label>
+                  <input
+                    type="text"
+                    placeholder="The Picture of Dorian Gray"
+                    className="royal-input"
+                    value={manualTitle}
+                    onChange={(e) => setManualTitle(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label className="royal-input-label">Author Name(s)</label>
+                  <input
+                    type="text"
+                    placeholder="Oscar Wilde, Mary Shelley"
+                    className="royal-input"
+                    value={manualAuthor}
+                    onChange={(e) => setManualAuthor(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label className="royal-input-label">Publisher</label>
+                  <input
+                    type="text"
+                    className="royal-input"
+                    value={publisher}
+                    onChange={(e) => setPublisher(e.target.value)}
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label className="royal-input-label">Publish Date</label>
+                  <input
+                    type="text"
+                    className="royal-input"
+                    value={publishDate}
+                    onChange={(e) => setPublishDate(e.target.value)}
+                    placeholder="e.g. 1890"
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label className="royal-input-label">Assign Salon House</label>
+                  <select
+                    className="royal-select"
+                    value={selectedHouse}
+                    onChange={(e) => setSelectedHouse(e.target.value)}
+                    required
+                  >
+                    {houses.map((house) => (
+                      <option key={house} value={house}>
+                        {house}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="input-group">
+                  <label className="royal-input-label">Acquisition Labels / Tags</label>
+                  <input
+                    type="text"
+                    className="royal-input"
+                    value={tagsInput}
+                    onChange={(e) => setTagsInput(e.target.value)}
+                    placeholder="e.g. aesthetic, victorian, philosophy"
+                  />
+                  <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>Provide free text tags separated by commas. Trimming and deduplication will be applied automatically.</span>
+                </div>
+
+                <div className="input-group">
+                  <label className="royal-input-label">Cover Image</label>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={handleImageSelect}
+                          style={{ display: 'none' }}
+                          id="image-file-input"
+                        />
+                        <label htmlFor="image-file-input" style={{ flex: 1 }}>
+                          <button
+                            type="button"
+                            onClick={() => document.getElementById('image-file-input')?.click()}
+                            className="royal-btn"
+                            style={{ width: '100%' }}
+                          >
+                            {selectedImageFile ? `File: ${selectedImageFile.name}` : 'Upload Image'}
+                          </button>
+                        </label>
+                        {selectedImageFile && (
+                          <button
+                            type="button"
+                            onClick={handleImageUpload}
+                            className="royal-btn"
+                            disabled={uploadingImage}
+                          >
+                            {uploadingImage ? 'Uploading...' : 'Confirm Upload'}
+                          </button>
+                        )}
+                      </div>
+                      {imagePreview && (
+                        <div style={{ position: 'relative', marginBottom: '8px' }}>
+                          <img src={imagePreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '150px', borderRadius: '4px' }} />
+                          <button
+                            type="button"
+                            onClick={removeImagePreview}
+                            style={{
+                              position: 'absolute',
+                              top: '4px',
+                              right: '4px',
+                              background: 'rgba(0,0,0,0.6)',
+                              border: 'none',
+                              color: 'white',
+                              borderRadius: '50%',
+                              width: '24px',
+                              height: '24px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
+                  <p style={{ fontSize: '0.85rem', color: '#999', marginTop: '8px' }}>OR</p>
+                  <input
+                    type="text"
+                    className="royal-input"
+                    value={coverUrl}
+                    onChange={(e) => setCoverUrl(e.target.value)}
+                    placeholder="Paste direct image URL (https://...)"
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label className="royal-input-label">Description</label>
+                  <textarea
+                    className="royal-textarea"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+
+                <div className="form-grid-two">
+                  <div className="input-group">
+                    <label className="royal-input-label">Pages</label>
+                    <input
+                      type="number"
+                      className="royal-input"
+                      min="0"
+                      value={pages}
+                      onChange={(e) => setPages(Number(e.target.value))}
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label className="royal-input-label">Total Copies</label>
+                    <input
+                      type="number"
+                      className="royal-input"
+                      min="1"
+                      value={totalCopies}
+                      onChange={(e) => setTotalCopies(Number(e.target.value))}
+                    />
+                  </div>
+                </div>
+
+                <div className="input-group">
+                  <label className="royal-input-label">Available Copies</label>
+                  <input
+                    type="number"
+                    className="royal-input"
+                    min="0"
+                    max={totalCopies}
+                    value={availableCopies}
+                    onChange={(e) => setAvailableCopies(Number(e.target.value))}
+                  />
+                </div>
+
+                <div className="submit-row">
+                  <button type="submit" className="royal-btn submit-book-btn" id="add-volume-btn">
+                    {isEditMode ? 'Save Updated Details' : 'Add Volume to Ledger'}
+                  </button>
+                </div>
+              </form>
+
+              {ingestionSuccess && (
+                <div className="success-banner animate-fade-in">
+                  <CheckCircle size={18} /> Volume successfully registered in Cloud Firestore ledger!
+                </div>
+              )}
+
+              {errorMessage && (
+                <div className="error-banner royal-card">
+                  <p>{errorMessage}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="royal-card bulk-ingest-card">
+              <h3>Asynchronous Bulk Upload</h3>
+              <p className="section-p-desc">Ingest entire catalog archives asynchronously using spreadsheets (.csv or .xlsx formats).</p>
+
+              <div className="drag-drop-zone-simulated" onClick={handleBulkUploadSimulate}>
+                <Upload size={32} className="gold-glow-icon upload-logo-sim" />
+                {bulkProgress === -1 ? (
+                  <>
+                    <p className="upload-p">Drag & Drop Catalog Spreadsheet</p>
+                    <span className="upload-sub">or click here to simulate bulk upload</span>
+                  </>
+                ) : bulkProgress < 100 ? (
+                  <div className="progress-bar-wrapper">
+                    <span className="progress-percentage-label">Ingesting... {bulkProgress}%</span>
+                    <div className="progress-outer">
+                      <div className="progress-inner" style={{ width: `${bulkProgress}%` }}></div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bulk-success-wrapper animate-fade-in">
+                    <CheckCircle size={24} className="text-success" />
+                    <p className="bulk-success-title">Spreadsheet Parsing Complete</p>
+                    <span className="bulk-success-sub">Ledger updated with parsed records asynchronously.</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="form-divider"><span>OR BARCODE INTEGRATION</span></div>
+
+              <div className="barcode-scan-section">
+                <div className="barcode-promo-frame">
+                  <Scan size={24} className="gold-glow-icon" />
+                  <div>
+                    <h4>Interactive Barcode Scanner</h4>
+                    <p>Use local scanner modules in Phase 2 to scan printed books instantly using hardware RFID/ISBN scan sweeps.</p>
+                  </div>
                 </div>
               </div>
-              <p style={{ fontSize: '0.85rem', color: '#999', marginTop: '8px' }}>OR</p>
-              <input
-                type="text"
-                className="royal-input"
-                value={coverUrl}
-                onChange={(e) => setCoverUrl(e.target.value)}
-                placeholder="Paste direct image URL (https://...)"
-              />
-            </div>
-
-            <div className="input-group">
-              <label className="royal-input-label">Description</label>
-              <textarea
-                className="royal-textarea"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
-
-            <div className="form-grid-two">
-              <div className="input-group">
-                <label className="royal-input-label">Pages</label>
-                <input
-                  type="number"
-                  className="royal-input"
-                  min="0"
-                  value={pages}
-                  onChange={(e) => setPages(Number(e.target.value))}
-                />
-              </div>
-              <div className="input-group">
-                <label className="royal-input-label">Total Copies</label>
-                <input
-                  type="number"
-                  className="royal-input"
-                  min="1"
-                  value={totalCopies}
-                  onChange={(e) => setTotalCopies(Number(e.target.value))}
-                />
-              </div>
-            </div>
-
-            <div className="input-group">
-              <label className="royal-input-label">Available Copies</label>
-              <input
-                type="number"
-                className="royal-input"
-                min="0"
-                max={totalCopies}
-                value={availableCopies}
-                onChange={(e) => setAvailableCopies(Number(e.target.value))}
-              />
-            </div>
-
-            <div className="submit-row">
-              <button type="submit" className="royal-btn submit-book-btn" id="add-volume-btn">
-                {isEditMode ? 'Save Updated Details' : 'Add Volume to Ledger'}
-              </button>
-            </div>
-          </form>
-
-          {ingestionSuccess && (
-            <div className="success-banner animate-fade-in">
-              <CheckCircle size={18} /> Volume successfully registered in Cloud Firestore ledger!
-            </div>
-          )}
-
-          {errorMessage && (
-            <div className="error-banner royal-card">
-              <p>{errorMessage}</p>
-            </div>
-          )}
-        </div>
-
-        <div className="royal-card bulk-ingest-card">
-          <h3>Asynchronous Bulk Upload</h3>
-          <p className="section-p-desc">Ingest entire catalog archives asynchronously using spreadsheets (.csv or .xlsx formats).</p>
-
-          <div className="drag-drop-zone-simulated" onClick={handleBulkUploadSimulate}>
-            <Upload size={32} className="gold-glow-icon upload-logo-sim" />
-            {bulkProgress === -1 ? (
-              <>
-                <p className="upload-p">Drag & Drop Catalog Spreadsheet</p>
-                <span className="upload-sub">or click here to simulate bulk upload</span>
-              </>
-            ) : bulkProgress < 100 ? (
-              <div className="progress-bar-wrapper">
-                <span className="progress-percentage-label">Ingesting... {bulkProgress}%</span>
-                <div className="progress-outer">
-                  <div className="progress-inner" style={{ width: `${bulkProgress}%` }}></div>
-                </div>
-              </div>
-            ) : (
-              <div className="bulk-success-wrapper animate-fade-in">
-                <CheckCircle size={24} className="text-success" />
-                <p className="bulk-success-title">Spreadsheet Parsing Complete</p>
-                <span className="bulk-success-sub">Ledger updated with parsed records asynchronously.</span>
-              </div>
-            )}
-          </div>
-
-          <div className="form-divider"><span>OR BARCODE INTEGRATION</span></div>
-
-          <div className="barcode-scan-section">
-            <div className="barcode-promo-frame">
-              <Scan size={24} className="gold-glow-icon" />
-              <div>
-                <h4>Interactive Barcode Scanner</h4>
-                <p>Use local scanner modules in Phase 2 to scan printed books instantly using hardware RFID/ISBN scan sweeps.</p>
-              </div>
             </div>
           </div>
-        </div>
-        </div>
         </>
       )}
     </div>

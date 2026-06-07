@@ -1,50 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Sparkles, Filter, CheckCircle2 } from 'lucide-react';
 import EventCard from '../../components/shared/EventCard';
+import { fetchEvents } from '../../services/eventApi';
 import './EventsPage.css';
 
 const EventsPage = ({ user }) => {
   const [selectedType, setSelectedType] = useState('All');
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Premium salon and literary gatherings
-  const events = [
-    {
-      id: 'event-1',
-      title: 'Sovereign Reader Autumn Litfest',
-      description: 'An elegant evening of tea, sonnets, and philosophical debates on 19th-century gothic romance.',
-      date: '2026-10-15',
-      time: '18:00',
-      location: 'The Velvet Library Lounge',
-      type: 'Litfest',
-      rsvps: 42,
-      capacity: 60,
-      imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=600&q=80',
-    },
-    {
-      id: 'event-2',
-      title: 'Wilde & Aestheticism Seminar',
-      description: 'A deep dive discussion into the philosophical elements of the Aesthetic movement and Dorian Gray.',
-      date: '2026-11-02',
-      time: '19:30',
-      location: 'Grand Salon Hall',
-      type: 'Discussion',
-      rsvps: 18,
-      capacity: 25,
-      imageUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=600&q=80',
-    },
-    {
-      id: 'event-3',
-      title: 'Poetry Under the Crimson Skylight',
-      description: 'An exquisite evening reciting symbolist and romantic poetry with bespoke violin accompaniments.',
-      date: '2026-11-20',
-      time: '20:00',
-      location: 'The Crimson Skylight Conservatory',
-      type: 'Meetup',
-      rsvps: 30,
-      capacity: 30, // Full
-      imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80',
-    }
-  ];
+  useEffect(() => {
+    const loadEvents = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetchEvents();
+        if (res?.success && Array.isArray(res.data)) {
+          setEvents(res.data);
+        } else if (Array.isArray(res)) {
+          setEvents(res);
+        } else {
+          setEvents([]);
+        }
+      } catch (err) {
+        console.error('Failed to load events', err);
+        setError('Unable to load active literary gatherings. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadEvents();
+  }, []);
 
   const types = ['All', 'Litfest', 'Discussion', 'Meetup'];
 
@@ -87,10 +74,21 @@ const EventsPage = ({ user }) => {
 
       {/* Events Grid */}
       <main className="events-grid-main">
-        {filteredEvents.length > 0 ? (
+        {loading ? (
+          <div className="royal-card no-events-card">
+            <div className="loader-mini" style={{ marginBottom: '1rem', width: '24px', height: '24px', borderWidth: '3px' }}></div>
+            <h3>Searching the Royal Registries...</h3>
+            <p>Retrieving active salon dates and litfests.</p>
+          </div>
+        ) : error ? (
+          <div className="royal-card no-events-card">
+            <h3>Registry Search Failure</h3>
+            <p>{error}</p>
+          </div>
+        ) : filteredEvents.length > 0 ? (
           <div className="events-grid">
             {filteredEvents.map((event) => (
-              <EventCard key={event.id} event={event} />
+              <EventCard key={event.id} event={event} user={user} />
             ))}
           </div>
         ) : (

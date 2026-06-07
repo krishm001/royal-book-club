@@ -120,6 +120,8 @@ public class BookService {
                         .title(bookDto.getTitle())
                         .subtitle(bookDto.getSubtitle())
                         .authors(bookDto.getAuthors())
+                        .genre(bookDto.getGenre())
+                        .tags(bookDto.getTags() != null ? bookDto.getTags() : new ArrayList<>())
                         .publisher(bookDto.getPublisher())
                         .publishDate(bookDto.getPublishDate())
                         .description(bookDto.getDescription())
@@ -137,6 +139,8 @@ public class BookService {
                         .title(bookDto.getTitle())
                         .subtitle(bookDto.getSubtitle())
                         .authors(bookDto.getAuthors())
+                        .genre(bookDto.getGenre())
+                        .tags(bookDto.getTags() != null ? bookDto.getTags() : new ArrayList<>())
                         .publisher(bookDto.getPublisher())
                         .publishDate(bookDto.getPublishDate())
                         .description(bookDto.getDescription())
@@ -193,6 +197,8 @@ public class BookService {
         map.put("title", book.getTitle());
         map.put("subtitle", book.getSubtitle());
         map.put("authors", book.getAuthors());
+        map.put("genre", book.getGenre());
+        map.put("tags", book.getTags());
         map.put("publisher", book.getPublisher());
         map.put("publishDate", book.getPublishDate());
         map.put("description", book.getDescription());
@@ -213,12 +219,15 @@ public class BookService {
         com.google.cloud.Timestamp updatedTimestamp = doc.getTimestamp("updatedAt");
 
         List<String> authors = (List<String>) doc.get("authors");
+        List<String> tags = (List<String>) doc.get("tags");
 
         return Book.builder()
                 .isbn(doc.getString("isbn"))
                 .title(doc.getString("title"))
                 .subtitle(doc.getString("subtitle"))
                 .authors(authors != null ? authors : new ArrayList<>())
+                .genre(doc.getString("genre"))
+                .tags(tags != null ? tags : new ArrayList<>())
                 .publisher(doc.getString("publisher"))
                 .publishDate(doc.getString("publishDate"))
                 .description(doc.getString("description"))

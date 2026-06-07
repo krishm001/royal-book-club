@@ -31,6 +31,8 @@ public class BookDto {
     @NotEmpty(message = "At least one author is required")
     private List<String> authors;
 
+    private String genre;
+    private List<String> tags;
     private String publisher;
     private String publishDate;
     private String description;

@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, BookOpen, Sparkles } from 'lucide-react';
 import BookCard from '../../components/shared/BookCard';
 import { fetchBooks, checkoutBook } from '../../services/libraryApi';
+import { fetchBookHouses } from '../../services/genreApi';
 import './CatalogPage.css';
 
 const CatalogPage = ({ user }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGenre, setSelectedGenre] = useState('All');
+  const [selectedHouse, setSelectedHouse] = useState('All');
   const [sortBy, setSortBy] = useState('featured');
   const [showFilters, setShowFilters] = useState(false);
   const [books, setBooks] = useState([]);
+  const [houses, setHouses] = useState(['All']);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -20,13 +22,30 @@ const CatalogPage = ({ user }) => {
         const data = await fetchBooks();
         setBooks(data || []);
       } catch (err) {
-        setError('Unable to load the Royal catalog at this time.');
+        setError('Unable to load the Royal study catalog at this time.');
       } finally {
         setLoading(false);
       }
     };
 
+    const loadHouses = async () => {
+      try {
+        const res = await fetchBookHouses();
+        if (res?.success && Array.isArray(res.data)) {
+          const names = res.data.map(h => h.name);
+          setHouses(['All', ...names]);
+        } else {
+          // fallback default houses if empty
+          setHouses(['All', 'Classic Gothic', 'Gothic Fiction', 'Epic Poetry', 'Philosophical Non-Fiction', 'Poetry', 'Modern Classic']);
+        }
+      } catch (err) {
+        console.warn('Unable to load book houses, using defaults', err);
+        setHouses(['All', 'Classic Gothic', 'Gothic Fiction', 'Epic Poetry', 'Philosophical Non-Fiction', 'Poetry', 'Modern Classic']);
+      }
+    };
+
     loadBooks();
+    loadHouses();
   }, []);
 
   const handleBookCheckout = async (book) => {
@@ -48,23 +67,23 @@ const CatalogPage = ({ user }) => {
     );
   };
 
-  const genres = ['All', 'Classic Gothic', 'Gothic Fiction', 'Epic Poetry', 'Philosophical Non-Fiction', 'Poetry', 'Modern Classic'];
-
   const filteredBooks = books
     .filter((book) => {
       const title = book.title || '';
       const authors = Array.isArray(book.authors) ? book.authors.join(', ') : book.author || '';
       const isbn = book.isbn || '';
       const genre = book.genre || book.subtitle || 'Unknown';
+      const tags = Array.isArray(book.tags) ? book.tags : [];
 
       const matchesSearch =
         title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         authors.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        isbn.includes(searchQuery);
+        isbn.includes(searchQuery) ||
+        tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      const matchesGenre = selectedGenre === 'All' || genre === selectedGenre;
+      const matchesHouse = selectedHouse === 'All' || genre === selectedHouse;
 
-      return matchesSearch && matchesGenre;
+      return matchesSearch && matchesHouse;
     })
     .sort((a, b) => {
       if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
@@ -78,9 +97,9 @@ const CatalogPage = ({ user }) => {
       <header className="catalog-header">
         <div className="header-badge">
           <Sparkles size={14} className="gold-glow-icon" />
-          <span className="gold-gradient-text">THE ROYAL COLLECTION</span>
+          <span className="gold-gradient-text">THE STUDY ARCHIVES</span>
         </div>
-        <h1 className="catalog-title glow-text">Exquisite Library Archives</h1>
+        <h1 className="catalog-title glow-text">Exquisite Study Catalog</h1>
         <p className="catalog-subtitle">
           Browse our highly curated selection of masterworks. Digital volumes are available for instant royal patronage checkouts.
         </p>
@@ -91,7 +110,7 @@ const CatalogPage = ({ user }) => {
           <Search className="search-icon" size={18} />
           <input
             type="text"
-            placeholder="Search by Title, Author, or ISBN..."
+            placeholder="Search by Title, Author, ISBN, or Tags..."
             className="royal-input search-input"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -103,7 +122,7 @@ const CatalogPage = ({ user }) => {
             className={`royal-btn-secondary filter-toggle-btn ${showFilters ? 'active' : ''}`}
             onClick={() => setShowFilters(!showFilters)}
           >
-            <SlidersHorizontal size={16} /> Filters
+            <SlidersHorizontal size={16} /> Filter Houses
           </button>
 
           <div className="sort-wrapper">
@@ -123,13 +142,13 @@ const CatalogPage = ({ user }) => {
 
         {showFilters && (
           <div className="genre-filter-row animate-fade-in">
-            {genres.map((genre) => (
+            {houses.map((house) => (
               <button
-                key={genre}
-                onClick={() => setSelectedGenre(genre)}
-                className={`genre-tag-btn ${selectedGenre === genre ? 'active' : ''}`}
+                key={house}
+                onClick={() => setSelectedHouse(house)}
+                className={`genre-tag-btn ${selectedHouse === house ? 'active' : ''}`}
               >
-                {genre}
+                {house}
               </button>
             ))}
           </div>
@@ -139,7 +158,7 @@ const CatalogPage = ({ user }) => {
       <main className="catalog-grid-main">
         {loading ? (
           <div className="royal-card no-results-card">
-            <p>Loading the Royal catalog...</p>
+            <p>Loading the Royal Study archives...</p>
           </div>
         ) : error ? (
           <div className="royal-card no-results-card">
@@ -160,12 +179,12 @@ const CatalogPage = ({ user }) => {
           <div className="royal-card no-results-card">
             <BookOpen size={48} className="no-results-icon" />
             <h3>No Volumes Found</h3>
-            <p>We could not find any masterworks matching your specific criteria in the Royal Library archives.</p>
+            <p>We could not find any masterworks matching your specific criteria in the Study archives.</p>
             <button
               className="royal-btn"
               onClick={() => {
                 setSearchQuery('');
-                setSelectedGenre('All');
+                setSelectedHouse('All');
               }}
             >
               Reset Archives

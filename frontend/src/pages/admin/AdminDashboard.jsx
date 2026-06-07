@@ -84,6 +84,42 @@ const AdminDashboard = ({ user }) => {
           </Link>
         </div>
 
+        {/* Sovereign Gatherings Panel */}
+        <div className="royal-card action-panel-card">
+          <div className="panel-icon-wrapper">
+            <Calendar size={28} className="gold-glow-icon" />
+          </div>
+          <h3>Sovereign Gatherings</h3>
+          <p>Schedule upcoming meetups, literary festivals, and symposiums. Manage flyer assets and seat reservations.</p>
+          <Link to="/admin/gatherings" className="royal-btn action-panel-btn">
+            Manage Gatherings
+          </Link>
+        </div>
+
+        {/* Salon Houses Panel */}
+        <div className="royal-card action-panel-card">
+          <div className="panel-icon-wrapper">
+            <Layers size={28} className="gold-glow-icon" />
+          </div>
+          <h3>Sovereign Houses</h3>
+          <p>Establish or dissolve categories/Houses for Books and Blog Chronicles to maintain catalog hierarchy.</p>
+          <Link to="/admin/houses" className="royal-btn action-panel-btn">
+            Manage Houses
+          </Link>
+        </div>
+
+        {/* Landing Hero Customizer Panel */}
+        <div className="royal-card action-panel-card">
+          <div className="panel-icon-wrapper">
+            <Award size={28} className="gold-glow-icon" />
+          </div>
+          <h3>Landing Hero Editor</h3>
+          <p>Update high-impact header messages, subtitles, and upload cover painting backgrounds for the entrance hall.</p>
+          <Link to="/admin/hero" className="royal-btn action-panel-btn">
+            Configure Hero
+          </Link>
+        </div>
+
         {/* Admin Requests Panel */}
         {pendingRequestsCount > 0 && (
           <div className="royal-card action-panel-card" style={{ borderColor: '#d4af37', position: 'relative' }}>

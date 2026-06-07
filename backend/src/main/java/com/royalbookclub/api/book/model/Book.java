@@ -25,6 +25,11 @@ public class Book {
     @Builder.Default
     private List<String> authors = new ArrayList<>();
     
+    private String genre;
+    
+    @Builder.Default
+    private List<String> tags = new ArrayList<>();
+    
     private String publisher;
     private String publishDate;
     private String description;
@@ -35,3 +40,4 @@ public class Book {
     private Instant createdAt;
     private Instant updatedAt;
 }
+

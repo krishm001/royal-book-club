@@ -27,3 +27,13 @@ export const createBook = async (bookDto) => {
   const response = await api.post('/api/v1/admin/books', bookDto);
   return response.data;
 };
+
+export const fetchBookReviews = async (isbn) => {
+  const response = await api.get(`/api/v1/books/${encodeURIComponent(isbn)}/reviews`);
+  return response.data;
+};
+
+export const submitBookReview = async (isbn, review) => {
+  const response = await api.post(`/api/v1/books/${encodeURIComponent(isbn)}/reviews`, review);
+  return response.data;
+};

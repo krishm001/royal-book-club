@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock } from 'lucide-react';
-import { fetchBookByIsbn, checkoutBook } from '../../services/libraryApi';
+import { fetchBookByIsbn, checkoutBook, fetchBookReviews, submitBookReview } from '../../services/libraryApi';
 import './BookDetailPage.css';
 
 const BookDetailPage = ({ user }) => {
@@ -11,14 +11,11 @@ const BookDetailPage = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reviewText, setReviewText] = useState('');
-  const [reviews, setReviews] = useState([
-    { id: 1, author: 'Archduke of Prose', content: 'An absolute masterpiece of gothic literature. The duality of human nature is painted with haunting elegance.', rating: 5, date: 'May 10, 2026' },
-    { id: 2, author: 'Lady Chesterfield', content: 'Oscar Wilde’s lyrical style remains unparalleled. A stunning addition to our Royal salon collection.', rating: 5, date: 'May 18, 2026' }
-  ]);
+  const [reviews, setReviews] = useState([]);
   const [userRating, setUserRating] = useState(5);
 
   useEffect(() => {
-    const loadBook = async () => {
+    const loadBookAndReviews = async () => {
       setLoading(true);
       setError(null);
 
@@ -26,6 +23,14 @@ const BookDetailPage = ({ user }) => {
         const fetched = await fetchBookByIsbn(id);
         setBook(fetched);
         setCheckoutStatus(fetched.availableCopies > 0 ? 'available' : 'checked-out');
+        
+        // Fetch real reviews
+        const reviewsRes = await fetchBookReviews(id);
+        if (reviewsRes?.success && Array.isArray(reviewsRes.data)) {
+          setReviews(reviewsRes.data);
+        } else if (Array.isArray(reviewsRes)) {
+          setReviews(reviewsRes);
+        }
       } catch (err) {
         setError('Unable to load book details from the Royal catalog.');
       } finally {
@@ -34,7 +39,7 @@ const BookDetailPage = ({ user }) => {
     };
 
     if (id) {
-      loadBook();
+      loadBookAndReviews();
     }
   }, [id]);
 
@@ -66,20 +71,30 @@ const BookDetailPage = ({ user }) => {
     }
   };
 
-  const handleSubmitReview = (e) => {
+  const handleSubmitReview = async (e) => {
     e.preventDefault();
     if (!reviewText.trim()) return;
 
-    const newReview = {
-      id: Date.now(),
-      author: user?.displayName || 'Royal Patron',
-      content: reviewText,
-      rating: userRating,
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-    };
+    try {
+      const res = await submitBookReview(id, {
+        rating: userRating,
+        content: reviewText,
+      });
 
-    setReviews([newReview, ...reviews]);
-    setReviewText('');
+      if (res?.success && res?.data) {
+        setReviews([res.data, ...reviews]);
+      } else {
+        // Refresh feed
+        const refreshed = await fetchBookReviews(id);
+        if (refreshed?.success && Array.isArray(refreshed.data)) {
+          setReviews(refreshed.data);
+        }
+      }
+      setReviewText('');
+    } catch (err) {
+      console.error('Failed to publish dissertation', err);
+      window.alert('Unable to publish review at this time.');
+    }
   };
 
   if (loading) {
@@ -170,6 +185,19 @@ const BookDetailPage = ({ user }) => {
             {book.details && <p className="extended-desc">{book.details}</p>}
           </div>
 
+          {book.tags && Array.isArray(book.tags) && book.tags.length > 0 && (
+            <div style={{ marginTop: '1.5rem' }}>
+              <h4 style={{ fontSize: '0.9rem', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>Acquisition Labels</h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {book.tags.map((tag, idx) => (
+                  <span key={idx} style={{ background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.15)', color: 'var(--accent)', borderRadius: '4px', padding: '3px 8px', fontSize: '0.75rem', fontWeight: '500' }}>
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="detail-checkout-action-box">
             {checkoutStatus === 'available' ? (
               <button onClick={handleCheckout} className="royal-btn checkout-cta-btn" id="book-detail-checkout-btn">
@@ -230,20 +258,30 @@ const BookDetailPage = ({ user }) => {
         )}
 
         <div className="reviews-feed">
-          {reviews.map((rev) => (
-            <div key={rev.id} className="review-item">
-              <div className="review-item-header">
-                <span className="review-author">{rev.author}</span>
-                <span className="review-date">{rev.date}</span>
+          {reviews.length > 0 ? (
+            reviews.map((rev) => (
+              <div key={rev.id} className="review-item">
+                <div className="review-item-header">
+                  <span className="review-author">{rev.author}</span>
+                  <span className="review-date">
+                    {rev.createdAt
+                      ? new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : 'Recently'}
+                  </span>
+                </div>
+                <div className="review-stars-row">
+                  {Array.from({ length: rev.rating || 5 }).map((_, i) => (
+                    <Star key={i} size={14} fill="var(--accent)" stroke="var(--accent)" />
+                  ))}
+                </div>
+                <p className="review-content">"{rev.content}"</p>
               </div>
-              <div className="review-stars-row">
-                {Array.from({ length: rev.rating }).map((_, i) => (
-                  <Star key={i} size={14} fill="var(--accent)" stroke="var(--accent)" />
-                ))}
-              </div>
-              <p className="review-content">"{rev.content}"</p>
+            ))
+          ) : (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>
+              No critiques have been published on this volume yet. Scribe the very first dissertation!
             </div>
-          ))}
+          )}
         </div>
       </section>
     </div>

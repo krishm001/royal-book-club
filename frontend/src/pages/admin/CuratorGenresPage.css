@@ -1,0 +1,176 @@
+/* CuratorGenresPage Curation Stylesheet */
+
+.curator-genres-container {
+  padding-bottom: 80px;
+}
+
+.curator-genres-header {
+  margin-bottom: 45px;
+}
+
+.curator-genres-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-bottom: 10px;
+}
+
+.curator-genres-subtitle {
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  max-width: 740px;
+  line-height: 1.6;
+}
+
+/* Dual Column Layout */
+.genres-dual-columns-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+
+@media (max-width: 768px) {
+  .genres-dual-columns-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.genre-column-card {
+  height: 100%;
+  background: var(--surface) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  padding: 30px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.column-heading-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  padding-bottom: 18px;
+}
+
+.col-heading-icon-frame {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.column-heading-wrapper h3 {
+  font-size: 1.25rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.column-subtext {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Form Styles */
+.add-genre-form {
+  display: flex;
+  gap: 12px;
+}
+
+.add-genre-form .royal-input {
+  flex-grow: 1;
+}
+
+.add-genre-submit-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* Pill Cards Styles */
+.genre-badges-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 5px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) rgba(0,0,0,0.1);
+}
+
+.genre-pill-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 10px 18px;
+  border-radius: var(--border-radius-sm);
+  transition: var(--transition-smooth);
+}
+
+.genre-pill-card:hover {
+  border-color: rgba(212, 175, 55, 0.15);
+  background: rgba(212, 175, 55, 0.02);
+}
+
+.genre-pill-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.genre-pill-delete {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.genre-pill-delete:hover {
+  background: rgba(255, 74, 74, 0.08);
+  color: #ff4a4a;
+}
+
+/* Fallback/Placeholders */
+.mini-loader-boundary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  padding: 20px 0;
+}
+
+.no-genres-placeholder {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.no-genres-placeholder .placeholder-icon {
+  opacity: 0.2;
+}
+
+.no-genres-placeholder p {
+  font-size: 0.9rem;
+}

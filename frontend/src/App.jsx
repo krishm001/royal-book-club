@@ -9,12 +9,14 @@ import CatalogPage from './pages/catalog/CatalogPage';
 import BookDetailPage from './pages/catalog/BookDetailPage';
 import EventsPage from './pages/events/EventsPage';
 import EventDetailPage from './pages/events/EventDetailPage';
-import ArticlesPage from './pages/articles/ArticlesPage';
-import ArticleDetailPage from './pages/articles/ArticleDetailPage';
+import DiscoursesPage from './pages/articles/DiscoursesPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import BookIngestionConsole from './pages/admin/BookIngestionConsole';
 import UserManagementPage from './pages/admin/UserManagementPage';
 import AdminRequests from './pages/admin/AdminRequests';
+import CuratorGatheringsPage from './pages/admin/CuratorGatheringsPage';
+import CuratorGenresPage from './pages/admin/CuratorGenresPage';
+import CuratorHeroPage from './pages/admin/CuratorHeroPage';
 import PrivacyNotice from './pages/PrivacyNotice';
 import TermsAndConditions from './pages/TermsAndConditions';
 import SignIn from './pages/auth/SignIn';
@@ -120,13 +122,13 @@ function App() {
                 <Home size={16} /> Home
               </NavLink>
               <NavLink to="/catalog" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <BookOpen size={16} /> Library Catalog
+                <BookOpen size={16} /> Study
               </NavLink>
               <NavLink to="/events" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <Calendar size={16} /> Meetups & Litfests
               </NavLink>
-              <NavLink to="/articles" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <BookText size={16} /> Articles
+              <NavLink to="/discourses" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <BookText size={16} /> Discourses
               </NavLink>
               {user?.role === 'ADMIN' && (
                 <NavLink to="/admin" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
@@ -187,13 +189,13 @@ function App() {
                   <Home size={20} /> Home
                 </NavLink>
                 <NavLink to="/catalog" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu}>
-                  <BookOpen size={20} /> Library Catalog
+                  <BookOpen size={20} /> Study
                 </NavLink>
                 <NavLink to="/events" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu}>
                   <Calendar size={20} /> Meetups & Litfests
                 </NavLink>
-                <NavLink to="/articles" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu}>
-                  <BookText size={20} /> Articles
+                <NavLink to="/discourses" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu}>
+                  <BookText size={20} /> Discourses
                 </NavLink>
 
                 <div className="mobile-theme-section">
@@ -245,12 +247,14 @@ function App() {
             <Route path="/catalog/:id" element={<BookDetailPage user={user} />} />
             <Route path="/events" element={<EventsPage user={user} />} />
             <Route path="/events/:id" element={<EventDetailPage user={user} />} />
-            <Route path="/articles" element={<ArticlesPage user={user} />} />
-            <Route path="/articles/:id" element={<ArticleDetailPage user={user} />} />
+            <Route path="/discourses" element={<DiscoursesPage user={user} />} />
             <Route path="/admin" element={<AdminDashboard user={user} />} />
             <Route path="/admin/books" element={<BookIngestionConsole user={user} />} />
             <Route path="/admin/users" element={<UserManagementPage user={user} />} />
             <Route path="/admin/requests" element={<AdminRequests user={user} />} />
+            <Route path="/admin/gatherings" element={<CuratorGatheringsPage user={user} />} />
+            <Route path="/admin/houses" element={<CuratorGenresPage user={user} />} />
+            <Route path="/admin/hero" element={<CuratorHeroPage user={user} />} />
             <Route path="/privacy" element={<PrivacyNotice />} />
             <Route path="/terms" element={<TermsAndConditions />} />
 
@@ -272,9 +276,9 @@ function App() {
             </div>
             <div className="footer-links">
               <h4>The Library</h4>
-              <Link to="/catalog">Browse Catalog</Link>
+              <Link to="/catalog">Study</Link>
               <Link to="/events">Upcoming Litfests</Link>
-              <Link to="/articles">Intellectual Essays</Link>
+              <Link to="/discourses">Discourses</Link>
               <Link to="/terms">Terms & Conditions</Link>
               <Link to="/privacy">Privacy Notice</Link>
             </div>

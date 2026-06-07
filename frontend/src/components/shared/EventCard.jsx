@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar as CalendarIcon, MapPin, Users, CheckCircle2, Award, Clock } from 'lucide-react';
 import './EventCard.css';
+
+import { rsvpToEvent, cancelRsvpToEvent } from '../../services/eventApi';
 
 const EventCard = ({
   event = {
@@ -12,14 +14,31 @@ const EventCard = ({
     time: '18:00',
     location: 'The Velvet Library Lounge',
     type: 'Litfest', // Litfest, Meetup, Discussion
-    rsvps: 42,
+    rsvps: [],
     capacity: 60,
     imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=400&q=80',
   },
+  user,
   onRsvpSuccess = () => {}
 }) => {
-  const [rsvpState, setRsvpState] = useState('none'); // none, rsvping, rsvped
-  const [rsvpCount, setRsvpCount] = useState(event.rsvps);
+  const isUserRsvped = () => {
+    if (!user || !event?.rsvps || !Array.isArray(event.rsvps)) return false;
+    return event.rsvps.includes(user.uid || user.id);
+  };
+
+  const getInitialRsvpCount = () => {
+    if (!event?.rsvps) return 0;
+    return Array.isArray(event.rsvps) ? event.rsvps.length : (typeof event.rsvps === 'number' ? event.rsvps : 0);
+  };
+
+  const [rsvpState, setRsvpState] = useState(isUserRsvped() ? 'rsvped' : 'none');
+  const [rsvpCount, setRsvpCount] = useState(getInitialRsvpCount());
+
+  // Keep state sync'd with prop changes
+  useEffect(() => {
+    setRsvpState(isUserRsvped() ? 'rsvped' : 'none');
+    setRsvpCount(getInitialRsvpCount());
+  }, [event, user]);
 
   // Format date helper: "Oct 15, 2026"
   const formatDate = (dateStr) => {
@@ -37,28 +56,56 @@ const EventCard = ({
     return d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
   };
 
-  const handleRsvp = (e) => {
+  const handleRsvp = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!user) {
+      window.alert('Please enter the Royal Salon (sign in) before requesting an invitation.');
+      return;
+    }
 
     if (rsvpState !== 'none') return;
 
     setRsvpState('rsvping');
-    setTimeout(() => {
-      setRsvpState('rsvped');
-      setRsvpCount(prev => prev + 1);
-      onRsvpSuccess(event);
-    }, 1200);
+    try {
+      const res = await rsvpToEvent(event.id);
+      if (res?.success) {
+        setRsvpState('rsvped');
+        setRsvpCount(prev => prev + 1);
+        onRsvpSuccess(res.data || event);
+      } else {
+        setRsvpState('none');
+        window.alert(res?.message || 'Failed to request invitation.');
+      }
+    } catch (err) {
+      console.error(err);
+      setRsvpState('none');
+      window.alert(err.response?.data?.message || 'An error occurred while reserving your seat.');
+    }
   };
 
-  const handleCancelRsvp = (e) => {
+  const handleCancelRsvp = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
     if (rsvpState !== 'rsvped') return;
 
-    setRsvpState('none');
-    setRsvpCount(prev => Math.max(0, prev - 1));
+    setRsvpState('rsvping');
+    try {
+      const res = await cancelRsvpToEvent(event.id);
+      if (res?.success) {
+        setRsvpState('none');
+        setRsvpCount(prev => Math.max(0, prev - 1));
+      } else {
+        setRsvpState('rsvped');
+        window.alert(res?.message || 'Failed to cancel RSVP.');
+      }
+    } catch (err) {
+      console.error(err);
+      setRsvpState('rsvped');
+      window.alert(err.response?.data?.message || 'An error occurred while canceling your RSVP.');
+    }
   };
 
   const isFull = rsvpCount >= event.capacity;
