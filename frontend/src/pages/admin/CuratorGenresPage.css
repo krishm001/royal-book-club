@@ -84,6 +84,17 @@
 }
 
 .add-genre-form .royal-input {
+  font-size: 18px;
+  caret-color: #222;
+  color: var(--text-primary);
+  direction: ltr;
+  text-align: left;
+  min-height: 44px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-sizing: border-box;
+
   flex-grow: 1;
 }
 
