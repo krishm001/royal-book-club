@@ -5,6 +5,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.Instant;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Model representing a comment on an Intellectual Chronicle.
@@ -14,6 +18,7 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@SuppressWarnings("Lombok")
 public class DiscourseComment {
     private String id;
     private String discourseId; // ID of the CHRONICLE
@@ -21,5 +26,9 @@ public class DiscourseComment {
     private String authorName;
     private String authorPhotoUrl;
     private String content;
+
+    @Builder.Default
+    private Map<String, List<String>> reactions = new HashMap<>(); // Reaction -> User UIDs list
+
     private Instant createdAt;
 }

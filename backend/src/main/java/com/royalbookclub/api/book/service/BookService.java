@@ -129,6 +129,7 @@ public class BookService {
                         .pages(bookDto.getPages())
                         .totalCopies(bookDto.getTotalCopies())
                         .availableCopies(bookDto.getAvailableCopies() != null ? bookDto.getAvailableCopies() : newAvailable)
+                        .ntagUid(bookDto.getNtagUid())
                         .createdAt(existing.getCreatedAt())
                         .updatedAt(now)
                         .build();
@@ -148,6 +149,7 @@ public class BookService {
                         .pages(bookDto.getPages())
                         .totalCopies(bookDto.getTotalCopies())
                         .availableCopies(bookDto.getAvailableCopies() != null ? bookDto.getAvailableCopies() : bookDto.getTotalCopies())
+                        .ntagUid(bookDto.getNtagUid())
                         .createdAt(now)
                         .updatedAt(now)
                         .build();
@@ -206,6 +208,7 @@ public class BookService {
         map.put("pages", book.getPages());
         map.put("totalCopies", book.getTotalCopies());
         map.put("availableCopies", book.getAvailableCopies());
+        map.put("ntagUid", book.getNtagUid());
         map.put("createdAt", book.getCreatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(book.getCreatedAt().getEpochSecond(), book.getCreatedAt().getNano()) : null);
         map.put("updatedAt", book.getUpdatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(book.getUpdatedAt().getEpochSecond(), book.getUpdatedAt().getNano()) : null);
         return map;
@@ -235,6 +238,7 @@ public class BookService {
                 .pages(doc.getLong("pages") != null ? doc.getLong("pages").intValue() : null)
                 .totalCopies(doc.getLong("totalCopies") != null ? doc.getLong("totalCopies").intValue() : null)
                 .availableCopies(doc.getLong("availableCopies") != null ? doc.getLong("availableCopies").intValue() : null)
+                .ntagUid(doc.getString("ntagUid"))
                 .createdAt(createdTimestamp != null ? Instant.ofEpochSecond(createdTimestamp.getSeconds(), createdTimestamp.getNanos()) : null)
                 .updatedAt(updatedTimestamp != null ? Instant.ofEpochSecond(updatedTimestamp.getSeconds(), updatedTimestamp.getNanos()) : null)
                 .build();

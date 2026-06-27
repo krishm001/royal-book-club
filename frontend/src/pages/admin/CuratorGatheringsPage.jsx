@@ -13,7 +13,8 @@ import {
   Upload,
   User,
   Activity,
-  ChevronRight
+  ChevronRight,
+  Shield
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { fetchEvents, createOrUpdateEvent, deleteEvent } from '../../services/eventApi';
@@ -43,9 +44,12 @@ const CuratorGatheringsPage = ({ user }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  const isAdmin = user && user.role === 'ADMIN';
+
   useEffect(() => {
+    if (!isAdmin) return;
     loadEvents();
-  }, []);
+  }, [isAdmin]);
 
   const loadEvents = async () => {
     try {
@@ -173,6 +177,27 @@ const CuratorGatheringsPage = ({ user }) => {
       setIsSaving(false);
     }
   };
+
+  if (!isAdmin) {
+    return (
+      <div className="admin-access-denied-container animate-fade-in">
+        <div className="royal-card denied-card">
+          <div className="denied-icon-wrapper">
+            <Shield size={48} className="denied-shield-icon" />
+          </div>
+          <h2 className="denied-title gold-gradient-text">Privileged Sanctuary</h2>
+          <p className="denied-message">
+            Your current credentials do not grant access to the Curator Curation registry. Curation of the Royal Library is reserved for assigned Curators.
+          </p>
+          <div className="denied-actions">
+            <Link to="/" className="royal-btn return-home-btn">
+              Return to Entrance Hall
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="curator-gatherings-container animate-fade-in">

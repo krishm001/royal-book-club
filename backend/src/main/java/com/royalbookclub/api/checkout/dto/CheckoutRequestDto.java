@@ -23,4 +23,6 @@ public class CheckoutRequestDto {
 
     @Builder.Default
     private int durationDays = 14; // Default checkout window: 2 weeks
+
+    private String ntagUid;
 }

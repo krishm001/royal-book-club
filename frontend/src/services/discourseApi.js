@@ -34,3 +34,13 @@ export const deleteDiscourse = async (id) => {
   const response = await api.delete(`/api/v1/discourses/${id}`);
   return response.data;
 };
+
+export const toggleDiscourseReaction = async (id, reactionType) => {
+  const response = await api.post(`/api/v1/discourses/${id}/react?reactionType=${encodeURIComponent(reactionType)}`);
+  return response.data;
+};
+
+export const toggleCommentReaction = async (commentId, reactionType) => {
+  const response = await api.post(`/api/v1/discourses/comment/${commentId}/react?reactionType=${encodeURIComponent(reactionType)}`);
+  return response.data;
+};

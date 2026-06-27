@@ -144,34 +144,50 @@ public class DiscourseService {
     }
 
     /**
-     * Get replies to a debate thread.
+     * Get replies to a debate thread recursively.
      */
     public List<Discourse> getDebateReplies(String debateId) {
-        log.debug("Fetching replies for debate ID: {}", debateId);
+        log.debug("Fetching recursive replies for debate ID: {}", debateId);
+        List<Discourse> allReplies = new ArrayList<>();
+        java.util.Set<String> visited = new java.util.HashSet<>();
+        collectRepliesHelper(debateId, allReplies, visited);
+
+        // Sort by createdAt ascending (debates flow forwards in time)
+        allReplies.sort((d1, d2) -> {
+            if (d1.getCreatedAt() == null || d2.getCreatedAt() == null) return 0;
+            return d1.getCreatedAt().compareTo(d2.getCreatedAt());
+        });
+
+        return allReplies;
+    }
+
+    private void collectRepliesHelper(String parentId, List<Discourse> accumulator, java.util.Set<String> visited) {
+        if (parentId == null || parentId.isBlank() || visited.contains(parentId)) {
+            return;
+        }
+        visited.add(parentId);
         try {
             ApiFuture<QuerySnapshot> query = firestore.collection(DISCOURSES_COLLECTION)
                     .whereEqualTo("type", "DEBATE")
-                    .whereEqualTo("parentId", debateId)
+                    .whereEqualTo("parentId", parentId)
                     .get();
             QuerySnapshot querySnapshot = query.get();
-            List<Discourse> list = new ArrayList<>();
+            List<Discourse> children = new ArrayList<>();
             for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                list.add(mapToDiscourse(doc));
+                children.add(mapToDiscourse(doc));
             }
-
-            // Sort by createdAt ascending (debates flow forwards in time)
-            list.sort((d1, d2) -> {
-                if (d1.getCreatedAt() == null || d2.getCreatedAt() == null) return 0;
-                return d1.getCreatedAt().compareTo(d2.getCreatedAt());
-            });
-
-            return list;
+            if (!children.isEmpty()) {
+                accumulator.addAll(children);
+                for (Discourse child : children) {
+                    collectRepliesHelper(child.getId(), accumulator, visited);
+                }
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.error("Interrupted while reading debate replies for: {}", debateId, e);
+            log.error("Interrupted while reading recursive replies for parent: {}", parentId, e);
             throw new RuntimeException("Failed to read debate replies", e);
         } catch (ExecutionException e) {
-            log.error("Error reading debate replies for: {}", debateId, e);
+            log.error("Error reading recursive replies for parent: {}", parentId, e);
             throw new RuntimeException("Failed to read debate replies", e);
         }
     }
@@ -237,7 +253,7 @@ public class DiscourseService {
     }
 
     /**
-     * Delete a discourse and its associated comments or replies.
+     * Delete a discourse and its associated comments or replies recursively.
      */
     public void deleteDiscourse(String id) {
         log.info("Deleting discourse ID: {}", id);
@@ -255,13 +271,8 @@ public class DiscourseService {
                         firestore.collection(COMMENTS_COLLECTION).document(doc.getId()).delete().get();
                     }
                 } else if ("DEBATE".equalsIgnoreCase(d.getType())) {
-                    // Delete replies in DISCOURSES_COLLECTION
-                    ApiFuture<QuerySnapshot> repliesQuery = firestore.collection(DISCOURSES_COLLECTION)
-                            .whereEqualTo("parentId", id)
-                            .get();
-                    for (DocumentSnapshot doc : repliesQuery.get().getDocuments()) {
-                        firestore.collection(DISCOURSES_COLLECTION).document(doc.getId()).delete().get();
-                    }
+                    // Delete replies in DISCOURSES_COLLECTION recursively
+                    deleteRepliesRecursive(id);
                 }
                 
                 // 2. Delete the main discourse document
@@ -278,6 +289,143 @@ public class DiscourseService {
         }
     }
 
+    private void deleteRepliesRecursive(String parentId) throws InterruptedException, ExecutionException {
+        if (parentId == null || parentId.isBlank()) {
+            return;
+        }
+        ApiFuture<QuerySnapshot> repliesQuery = firestore.collection(DISCOURSES_COLLECTION)
+                .whereEqualTo("type", "DEBATE")
+                .whereEqualTo("parentId", parentId)
+                .get();
+        for (DocumentSnapshot doc : repliesQuery.get().getDocuments()) {
+            String childId = doc.getId();
+            // First, delete child's replies recursively
+            deleteRepliesRecursive(childId);
+            // Then, delete the child document itself
+            firestore.collection(DISCOURSES_COLLECTION).document(childId).delete().get();
+        }
+    }
+
+    /**
+     * Toggle a quick-emoji reaction on a discourse (CHRONICLE or DEBATE node/reply).
+     */
+    @SuppressWarnings("unchecked")
+    public Discourse toggleReaction(String discourseId, String reactionType, String userId) {
+        log.info("Toggling reaction: {} by user: {} on discourse: {}", reactionType, userId, discourseId);
+        DocumentReference docRef = firestore.collection(DISCOURSES_COLLECTION).document(discourseId);
+
+        try {
+            firestore.runTransaction(transaction -> {
+                DocumentSnapshot doc = transaction.get(docRef).get();
+                if (!doc.exists()) {
+                    throw new IllegalArgumentException("Discourse not found with ID: " + discourseId);
+                }
+
+                Map<String, Object> data = doc.getData();
+                Map<String, List<String>> reactions = null;
+                if (data != null) {
+                    reactions = (Map<String, List<String>>) data.get("reactions");
+                }
+                if (reactions == null) {
+                    reactions = new HashMap<>();
+                } else {
+                    reactions = new HashMap<>(reactions);
+                }
+
+                List<String> users = reactions.get(reactionType);
+                if (users == null) {
+                    users = new ArrayList<>();
+                } else {
+                    users = new ArrayList<>(users);
+                }
+
+                if (users.contains(userId)) {
+                    users.remove(userId);
+                } else {
+                    users.add(userId);
+                }
+
+                if (users.isEmpty()) {
+                    reactions.remove(reactionType);
+                } else {
+                    reactions.put(reactionType, users);
+                }
+
+                transaction.update(docRef, "reactions", reactions);
+                return null;
+            }).get();
+
+            return getDiscourseById(discourseId)
+                    .orElseThrow(() -> new RuntimeException("Failed to read discourse after toggling reaction."));
+        } catch (Exception e) {
+            log.error("Error toggling reaction: {} on discourse: {}", reactionType, discourseId, e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new RuntimeException("Failed to toggle reaction: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Toggle a quick-emoji reaction on a comment.
+     */
+    @SuppressWarnings("unchecked")
+    public DiscourseComment toggleCommentReaction(String commentId, String reactionType, String userId) {
+        log.info("Toggling reaction: {} by user: {} on comment: {}", reactionType, userId, commentId);
+        DocumentReference docRef = firestore.collection(COMMENTS_COLLECTION).document(commentId);
+
+        try {
+            firestore.runTransaction(transaction -> {
+                DocumentSnapshot doc = transaction.get(docRef).get();
+                if (!doc.exists()) {
+                    throw new IllegalArgumentException("Comment not found with ID: " + commentId);
+                }
+
+                Map<String, Object> data = doc.getData();
+                Map<String, List<String>> reactions = null;
+                if (data != null) {
+                    reactions = (Map<String, List<String>>) data.get("reactions");
+                }
+                if (reactions == null) {
+                    reactions = new HashMap<>();
+                } else {
+                    reactions = new HashMap<>(reactions);
+                }
+
+                List<String> users = reactions.get(reactionType);
+                if (users == null) {
+                    users = new ArrayList<>();
+                } else {
+                    users = new ArrayList<>(users);
+                }
+
+                if (users.contains(userId)) {
+                    users.remove(userId);
+                } else {
+                    users.add(userId);
+                }
+
+                if (users.isEmpty()) {
+                    reactions.remove(reactionType);
+                } else {
+                    reactions.put(reactionType, users);
+                }
+
+                transaction.update(docRef, "reactions", reactions);
+                return null;
+            }).get();
+
+            DocumentSnapshot docSnap = docRef.get().get();
+            return mapToComment(docSnap);
+        } catch (Exception e) {
+            log.error("Error toggling reaction: {} on comment: {}", reactionType, commentId, e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new RuntimeException("Failed to toggle comment reaction: " + e.getMessage(), e);
+        }
+    }
+
     private Map<String, Object> discourseToMap(Discourse d) {
         Map<String, Object> map = new HashMap<>();
         map.put("id", d.getId());
@@ -291,6 +439,7 @@ public class DiscourseService {
         map.put("house", d.getHouse());
         map.put("tags", d.getTags() != null ? d.getTags() : new ArrayList<String>());
         map.put("parentId", d.getParentId());
+        map.put("reactions", d.getReactions() != null ? d.getReactions() : new HashMap<String, List<String>>());
         map.put("createdAt", d.getCreatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(d.getCreatedAt().getEpochSecond(), d.getCreatedAt().getNano()) : null);
         map.put("updatedAt", d.getUpdatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(d.getUpdatedAt().getEpochSecond(), d.getUpdatedAt().getNano()) : null);
         return map;
@@ -303,6 +452,7 @@ public class DiscourseService {
         com.google.cloud.Timestamp createdTimestamp = doc.getTimestamp("createdAt");
         com.google.cloud.Timestamp updatedTimestamp = doc.getTimestamp("updatedAt");
         List<String> tags = (List<String>) doc.get("tags");
+        Map<String, List<String>> reactions = (Map<String, List<String>>) doc.get("reactions");
 
         return Discourse.builder()
                 .id(doc.getString("id"))
@@ -316,6 +466,7 @@ public class DiscourseService {
                 .house(doc.getString("house"))
                 .tags(tags != null ? tags : new ArrayList<>())
                 .parentId(doc.getString("parentId"))
+                .reactions(reactions != null ? reactions : new HashMap<>())
                 .createdAt(createdTimestamp != null ? Instant.ofEpochSecond(createdTimestamp.getSeconds(), createdTimestamp.getNanos()) : null)
                 .updatedAt(updatedTimestamp != null ? Instant.ofEpochSecond(updatedTimestamp.getSeconds(), updatedTimestamp.getNanos()) : null)
                 .build();
@@ -329,14 +480,17 @@ public class DiscourseService {
         map.put("authorName", c.getAuthorName());
         map.put("authorPhotoUrl", c.getAuthorPhotoUrl());
         map.put("content", c.getContent());
+        map.put("reactions", c.getReactions() != null ? c.getReactions() : new HashMap<String, List<String>>());
         map.put("createdAt", c.getCreatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(c.getCreatedAt().getEpochSecond(), c.getCreatedAt().getNano()) : null);
         return map;
     }
 
+    @SuppressWarnings("unchecked")
     private DiscourseComment mapToComment(DocumentSnapshot doc) {
         if (!doc.exists()) return null;
 
         com.google.cloud.Timestamp createdTimestamp = doc.getTimestamp("createdAt");
+        Map<String, List<String>> reactions = (Map<String, List<String>>) doc.get("reactions");
 
         return DiscourseComment.builder()
                 .id(doc.getString("id"))
@@ -345,6 +499,7 @@ public class DiscourseService {
                 .authorName(doc.getString("authorName"))
                 .authorPhotoUrl(doc.getString("authorPhotoUrl"))
                 .content(doc.getString("content"))
+                .reactions(reactions != null ? reactions : new HashMap<>())
                 .createdAt(createdTimestamp != null ? Instant.ofEpochSecond(createdTimestamp.getSeconds(), createdTimestamp.getNanos()) : null)
                 .build();
     }

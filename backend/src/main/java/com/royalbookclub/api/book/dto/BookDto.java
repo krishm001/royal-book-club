@@ -47,4 +47,6 @@ public class BookDto {
 
     @Min(value = 0, message = "Available copies cannot be negative")
     private Integer availableCopies;
+
+    private String ntagUid;
 }

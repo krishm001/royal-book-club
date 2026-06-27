@@ -5,6 +5,7 @@ import com.royalbookclub.api.checkout.dto.IotKeyTokenResponseDto;
 import com.royalbookclub.api.checkout.dto.ReturnRequestDto;
 import com.royalbookclub.api.checkout.model.Checkout;
 import com.royalbookclub.api.checkout.service.CheckoutService;
+import com.royalbookclub.api.user.model.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -12,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
@@ -45,6 +47,118 @@ public class CheckoutController {
         log.info("REST request to checkout book ISBN: {} for member: {}", request.getBookId(), request.getMemberId());
         Checkout checkout = checkoutService.checkoutBook(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(checkout);
+    }
+
+    /**
+     * Get all checkout transactions.
+     */
+    @GetMapping
+    @Operation(summary = "Get all checkouts", description = "Retrieve all checkout transactions in system.")
+    public ResponseEntity<List<Checkout>> getAllCheckouts() {
+        log.info("REST request to fetch all checkouts");
+        return ResponseEntity.ok(checkoutService.getAllCheckouts());
+    }
+
+    /**
+     * Submit a checkout request.
+     */
+    @PostMapping("/request")
+    @Operation(summary = "Request book checkout", description = "Creates a pending checkout request in system.")
+    public ResponseEntity<Checkout> createCheckoutRequest(@Valid @RequestBody CheckoutRequestDto request) {
+        log.info("REST request to submit checkout request for Book: {}, Member: {}", request.getBookId(), request.getMemberId());
+        Checkout checkout = checkoutService.createCheckoutRequest(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(checkout);
+    }
+
+    /**
+     * Helper to resolve adminId from request parameter or authenticated user.
+     */
+    private String resolveAdminId(String adminId, User user) {
+        if (adminId != null && !adminId.trim().isEmpty() && !"undefined".equals(adminId) && !"null".equals(adminId)) {
+            return adminId.trim();
+        }
+        if (user != null && user.getId() != null) {
+            return user.getId();
+        }
+        return "SYSTEM";
+    }
+
+    /**
+     * Approve a checkout request.
+     */
+    @PostMapping("/approve/{id}")
+    @Operation(summary = "Approve checkout request", description = "Approve pending book checkout request.")
+    public ResponseEntity<Checkout> approveCheckoutRequest(
+            @PathVariable String id,
+            @RequestParam(required = false) String adminId,
+            @AuthenticationPrincipal User user) {
+        String resolvedAdminId = resolveAdminId(adminId, user);
+        log.info("REST request to approve checkout request: {} by admin: {} (resolved: {})", id, adminId, resolvedAdminId);
+        Checkout checkout = checkoutService.approveCheckoutRequest(id, resolvedAdminId);
+        return ResponseEntity.ok(checkout);
+    }
+
+    /**
+     * Reject a checkout request.
+     */
+    @PostMapping("/reject/{id}")
+    @Operation(summary = "Reject checkout request", description = "Reject pending book checkout request.")
+    public ResponseEntity<Checkout> rejectCheckoutRequest(
+            @PathVariable String id,
+            @RequestParam(required = false) String adminId,
+            @AuthenticationPrincipal User user) {
+        String resolvedAdminId = resolveAdminId(adminId, user);
+        log.info("REST request to reject checkout request: {} by admin: {} (resolved: {})", id, adminId, resolvedAdminId);
+        Checkout checkout = checkoutService.rejectCheckoutRequest(id, resolvedAdminId);
+        return ResponseEntity.ok(checkout);
+    }
+
+    /**
+     * Submit a return request.
+     */
+    @PostMapping("/request-return")
+    @Operation(summary = "Request book return", description = "Creates a pending return request in system.")
+    public ResponseEntity<Checkout> createReturnRequest(@Valid @RequestBody ReturnRequestDto request) {
+        log.info("REST request to submit return request for Book: {}, Member: {}", request.getBookId(), request.getMemberId());
+        Checkout checkout = checkoutService.createReturnRequest(request);
+        return ResponseEntity.ok(checkout);
+    }
+
+    /**
+     * Approve a return request.
+     */
+    @PostMapping("/approve-return/{id}")
+    @Operation(summary = "Approve return request", description = "Approve pending book return request.")
+    public ResponseEntity<Checkout> approveReturnRequest(
+            @PathVariable String id,
+            @RequestParam(required = false) String adminId,
+            @AuthenticationPrincipal User user) {
+        String resolvedAdminId = resolveAdminId(adminId, user);
+        log.info("REST request to approve return request: {} by admin: {} (resolved: {})", id, adminId, resolvedAdminId);
+        Checkout checkout = checkoutService.approveReturnRequest(id, resolvedAdminId);
+        return ResponseEntity.ok(checkout);
+    }
+
+    /**
+     * Complete direct verified checkout via Web NFC.
+     */
+    @PostMapping("/verified")
+    @Operation(summary = "Direct verified checkout", description = "Direct checkout with matching Web NFC tag.")
+    public ResponseEntity<Checkout> verifiedCheckout(@Valid @RequestBody CheckoutRequestDto request) {
+        log.info("REST request for verified direct checkout: Book: {}, Member: {}", request.getBookId(), request.getMemberId());
+        Checkout checkout = checkoutService.verifiedCheckout(request);
+        return ResponseEntity.ok(checkout);
+    }
+
+    /**
+     * Complete direct verified return via Web NFC.
+     */
+    @PostMapping("/verified-return")
+    @Operation(summary = "Direct verified return", description = "Direct return with matching Web NFC tag.")
+    public ResponseEntity<Checkout> verifiedReturn(@Valid @RequestBody ReturnRequestDto request) {
+        log.info("REST request for verified direct return: Book: {}, Member: {}", request.getBookId(), request.getMemberId());
+        Checkout checkout = checkoutService.verifiedReturn(request);
+        return ResponseEntity.ok(checkout);
     }
 
     /**

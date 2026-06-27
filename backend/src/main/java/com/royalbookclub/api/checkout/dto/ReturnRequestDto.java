@@ -23,4 +23,6 @@ public class ReturnRequestDto {
 
     @NotBlank(message = "Member ID is required")
     private String memberId;
+
+    private String ntagUid;
 }

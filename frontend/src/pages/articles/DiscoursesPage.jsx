@@ -27,7 +27,9 @@ import {
   commentOnChronicle, 
   replyToDebate,
   updateDiscourse,
-  deleteDiscourse
+  deleteDiscourse,
+  toggleDiscourseReaction,
+  toggleCommentReaction
 } from '../../services/discourseApi';
 import { fetchBlogHouses } from '../../services/genreApi';
 import { uploadBookImage } from '../../services/storageApi';
@@ -372,25 +374,212 @@ const DiscoursesPage = ({ user }) => {
     return titleMatch || contentMatch || authorMatch || houseMatch || tagsMatch;
   });
 
+  // Socratic reaction helpers
+  const toggleLocalReaction = (reactionsMap, reactionType, userId) => {
+    const currentReactions = reactionsMap ? { ...reactionsMap } : {};
+    const userList = currentReactions[reactionType] ? [...currentReactions[reactionType]] : [];
+    
+    const userIdx = userList.indexOf(userId);
+    if (userIdx > -1) {
+      userList.splice(userIdx, 1);
+    } else {
+      userList.push(userId);
+    }
+    
+    currentReactions[reactionType] = userList;
+    return currentReactions;
+  };
+
+  const handleToggleReaction = async (id, reactionType, targetType) => {
+    if (!user) {
+      alert("You must be logged in to participate in academic reactions.");
+      return;
+    }
+    const userId = user.uid || user.id;
+
+    // Optimistic Update
+    if (targetType === 'chronicle' || targetType === 'debate') {
+      // 1. Update in discourses list
+      setDiscourses(prev => prev.map(d => {
+        if (d.id === id) {
+          return { ...d, reactions: toggleLocalReaction(d.reactions, reactionType, userId) };
+        }
+        return d;
+      }));
+
+      // 2. Update in selected chronicle detail if open
+      if (chronicleDetail && chronicleDetail.id === id) {
+        setChronicleDetail(prev => ({
+          ...prev,
+          reactions: toggleLocalReaction(prev.reactions, reactionType, userId)
+        }));
+      }
+
+      // 3. Update in expanded debate if open
+      if (expandedDebate && expandedDebate.id === id) {
+        setExpandedDebate(prev => ({
+          ...prev,
+          reactions: toggleLocalReaction(prev.reactions, reactionType, userId)
+        }));
+      }
+
+      // Call API
+      try {
+        await toggleDiscourseReaction(id, reactionType);
+      } catch (err) {
+        console.error("Failed to toggle discourse reaction:", err);
+        // Revert or reload if error
+        loadDiscourses();
+        if (chronicleDetail && chronicleDetail.id === id) {
+          handleOpenChronicle(chronicleDetail);
+        }
+      }
+    } else if (targetType === 'comment') {
+      // Update in chronicle comments array
+      setChronicleComments(prev => prev.map(c => {
+        if (c.id === id) {
+          return { ...c, reactions: toggleLocalReaction(c.reactions, reactionType, userId) };
+        }
+        return c;
+      }));
+
+      // Call API
+      try {
+        await toggleCommentReaction(id, reactionType);
+      } catch (err) {
+        console.error("Failed to toggle comment reaction:", err);
+        // Revert or reload if error
+        if (selectedChronicle) {
+          handleOpenChronicle(selectedChronicle);
+        }
+      }
+    } else if (targetType === 'reply') {
+      // Update in debate replies array
+      setDebateReplies(prev => prev.map(r => {
+        if (r.id === id) {
+          return { ...r, reactions: toggleLocalReaction(r.reactions, reactionType, userId) };
+        }
+        return r;
+      }));
+
+      // Call API (debate replies are Discourse objects!)
+      try {
+        await toggleDiscourseReaction(id, reactionType);
+      } catch (err) {
+        console.error("Failed to toggle reply reaction:", err);
+        // Revert or reload if error
+        if (expandedDebate) {
+          const detailRes = await fetchDiscourseById(expandedDebate.id);
+          if (detailRes && detailRes.success) {
+            setDebateReplies(detailRes.data.responses || []);
+          }
+        }
+      }
+    }
+  };
+
+  const renderReactions = (node, targetType) => {
+    const emojis = ["👍", "❤️", "💡", "🎓"];
+    const reactions = node.reactions || {};
+    const userId = user?.uid || user?.id;
+
+    return (
+      <div className="socratic-reactions-wrapper">
+        {/* Current reactions display */}
+        <div className="active-reactions-list">
+          {emojis.map(emoji => {
+            const users = reactions[emoji] || [];
+            const count = users.length;
+            if (count === 0) return null;
+            const hasReacted = userId && users.includes(userId);
+            return (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => handleToggleReaction(node.id, emoji, targetType)}
+                className={`reaction-pill-badge ${hasReacted ? 'active' : ''}`}
+                title={`${count} patron(s) reacted`}
+              >
+                <span className="pill-emoji">{emoji}</span>
+                <span className="pill-count">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Hoverable reaction picker */}
+        {user && (
+          <div className="reaction-picker-trigger-wrapper">
+            <button type="button" className="reaction-picker-trigger" title="Voice Academic Response">
+              <Sparkles size={12} className="trigger-icon" />
+              <span className="trigger-lbl">React</span>
+            </button>
+            <div className="hover-emoji-bar glassmorphic animate-scale-up">
+              {emojis.map(emoji => {
+                const users = reactions[emoji] || [];
+                const hasReacted = userId && users.includes(userId);
+                return (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => handleToggleReaction(node.id, emoji, targetType)}
+                    className={`picker-emoji-btn ${hasReacted ? 'active' : ''}`}
+                    title={emoji === "👍" ? "Concur" : emoji === "❤️" ? "Adore" : emoji === "💡" ? "Inspiriting" : "Scholarly"}
+                  >
+                    {emoji}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Construct debate threaded replies locally
   const buildThreadedReplies = () => {
-    // Top-level replies to the root debate
+    // 1. Find all root-level replies to the expanded debate topic
     const rootReplies = debateReplies.filter(r => r.parentId === expandedDebate.id);
-    const replyChildrenMap = {};
+
+    // 2. Build a mapping of ALL replies for easy lookup (e.g. for citations)
+    const repliesMap = {};
     debateReplies.forEach(r => {
-      if (r.parentId !== expandedDebate.id) {
-        if (!replyChildrenMap[r.parentId]) {
-          replyChildrenMap[r.parentId] = [];
-        }
-        replyChildrenMap[r.parentId].push(r);
-      }
+      repliesMap[r.id] = r;
     });
 
-    const renderReplyNode = (reply, depth = 0) => {
-      const children = replyChildrenMap[reply.id] || [];
+    // 3. Helper to recursively collect all descendants of a reply to flatten them
+    const getDescendants = (parentId) => {
+      let descendants = [];
+      const children = debateReplies.filter(r => r.parentId === parentId);
+      children.forEach(child => {
+        descendants.push(child);
+        descendants = descendants.concat(getDescendants(child.id));
+      });
+      return descendants;
+    };
+
+    // 4. Render a single reply node
+    const renderReplyCard = (reply, depth, rootReplyId) => {
+      const isMe = user && (user.uid === reply.authorId || user.id === reply.authorId);
+      const isFlattened = depth === 1 && reply.parentId !== rootReplyId;
+      const parentReply = isFlattened ? repliesMap[reply.parentId] : null;
+
       return (
-        <div key={reply.id} className="debate-reply-node" style={{ marginLeft: `${Math.min(depth * 20, 100)}px` }}>
-          <div className="debate-reply-card royal-card glassmorphic">
+        <div 
+          key={reply.id} 
+          className={`debate-reply-node ${isMe ? 'reply-mine' : 'reply-other'} depth-${depth}`}
+        >
+          <div className={`debate-reply-card royal-card glassmorphic ${isMe ? 'bubble-mine' : 'bubble-other'}`}>
+            
+            {/* Citation Quote Card for flattened sub-replies */}
+            {isFlattened && parentReply && (
+              <div className="socratic-citation-card">
+                <span className="citation-author">Replying to {parentReply.authorName}</span>
+                <p className="citation-text">"{parentReply.content.slice(0, 60)}{parentReply.content.length > 60 ? '...' : ''}"</p>
+              </div>
+            )}
+
             <div className="reply-header">
               <div className="reply-author-info">
                 {reply.authorPhotoUrl ? (
@@ -404,6 +593,7 @@ const DiscoursesPage = ({ user }) => {
                 {reply.createdAt ? new Date(reply.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now'}
               </span>
             </div>
+
             {editingReplyId === reply.id ? (
               <form onSubmit={(e) => handleSaveEditReply(e, reply)} className="reply-edit-form animate-fade-in" style={{ marginTop: '8px', padding: '4px' }}>
                 <textarea
@@ -412,13 +602,12 @@ const DiscoursesPage = ({ user }) => {
                   onChange={(e) => setEditingReplyText(e.target.value)}
                   required
                   rows={2}
-                  style={{ width: '100%', marginBottom: '8px', padding: '8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(212,175,55,0.3)' }}
                 />
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button type="submit" disabled={isSubmittingReplyEdit} className="royal-btn reply-save-btn" style={{ padding: '4px 10px', fontSize: '0.75rem' }}>
+                <div className="reply-edit-actions-row">
+                  <button type="submit" disabled={isSubmittingReplyEdit} className="royal-btn reply-save-btn">
                     Save
                   </button>
-                  <button type="button" onClick={() => setEditingReplyId(null)} className="royal-btn reply-cancel-btn" style={{ padding: '4px 10px', fontSize: '0.75rem', background: 'none', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}>
+                  <button type="button" onClick={() => setEditingReplyId(null)} className="royal-btn-secondary reply-cancel-btn">
                     Cancel
                   </button>
                 </div>
@@ -426,9 +615,12 @@ const DiscoursesPage = ({ user }) => {
             ) : (
               <p className="reply-text-content">{reply.content}</p>
             )}
-            
+
+            {/* Quick Socratic Reactions Bar inside the reply card */}
+            {renderReactions(reply, 'reply')}
+
             {user && (
-              <div className="reply-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div className="reply-actions">
                 <button 
                   onClick={() => {
                     setReplyInputId(replyInputId === reply.id ? null : reply.id);
@@ -444,14 +636,12 @@ const DiscoursesPage = ({ user }) => {
                     <button 
                       onClick={() => handleStartEditReply(reply)}
                       className="reply-edit-btn"
-                      style={{ background: 'none', border: 'none', color: '#d4af37', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', padding: '0 4px' }}
                     >
                       <PenTool size={12} /> Edit
                     </button>
                     <button 
                       onClick={() => handleDeleteReply(reply.id)}
                       className="reply-delete-btn"
-                      style={{ background: 'none', border: 'none', color: '#e63946', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', padding: '0 4px' }}
                     >
                       <Trash2 size={12} /> Delete
                     </button>
@@ -477,14 +667,6 @@ const DiscoursesPage = ({ user }) => {
               </form>
             )}
           </div>
-          {children.length > 0 && (
-            <div className="nested-replies-container">
-              <div className="nested-connector-line"></div>
-              <div className="nested-replies-list">
-                {children.map(child => renderReplyNode(child, depth + 1))}
-              </div>
-            </div>
-          )}
         </div>
       );
     };
@@ -492,7 +674,25 @@ const DiscoursesPage = ({ user }) => {
     return (
       <div className="debate-discussion-tree">
         {rootReplies.length > 0 ? (
-          rootReplies.map(reply => renderReplyNode(reply, 0))
+          rootReplies.map(rootReply => {
+            const descendants = getDescendants(rootReply.id);
+            return (
+              <div key={rootReply.id} className="debate-root-reply-group">
+                {/* Render the root-level reply (depth 0) */}
+                {renderReplyCard(rootReply, 0, rootReply.id)}
+
+                {/* Render all descendant sub-replies flattened to depth 1 */}
+                {descendants.length > 0 && (
+                  <div className="nested-replies-container">
+                    <div className="nested-connector-line"></div>
+                    <div className="nested-replies-list">
+                      {descendants.map(descendant => renderReplyCard(descendant, 1, rootReply.id))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
         ) : (
           <div className="no-replies-placeholder">
             <HelpCircle size={24} className="gold-glow-icon" />
@@ -574,6 +774,8 @@ const DiscoursesPage = ({ user }) => {
                     </div>
                   )}
 
+                  {renderReactions(chronicleDetail, 'chronicle')}
+
                   <hr className="focal-divider" />
 
                   {/* Comments Section */}
@@ -619,6 +821,7 @@ const DiscoursesPage = ({ user }) => {
                             </span>
                           </div>
                           <p className="comment-text-content">"{c.content}"</p>
+                          {renderReactions(c, 'comment')}
                         </div>
                       ))}
                     </div>
@@ -837,6 +1040,7 @@ const DiscoursesPage = ({ user }) => {
                   </div>
                   <h3 className="chron-title">{disc.title}</h3>
                   <div className="chron-excerpt" dangerouslySetInnerHTML={{ __html: disc.content.substring(0, 160) + '...' }} />
+                  {renderReactions(disc, 'chronicle')}
                   <div className="chron-footer">
                     <span className="chron-author">by <strong className="gold-gradient-text">{disc.authorName}</strong></span>
                     <button onClick={() => handleOpenChronicle(disc)} className="chron-read-btn">
@@ -872,6 +1076,7 @@ const DiscoursesPage = ({ user }) => {
                   {isExpanded && (
                     <div className="debate-expanded-body animate-fade-in">
                       <p className="debate-lead-concept">{disc.content}</p>
+                      {renderReactions(disc, 'debate')}
                       
                       {user && (user.uid === disc.authorId || user.id === disc.authorId || user.role === 'ADMIN') && (
                         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>

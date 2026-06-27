@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Model representing a Discourse in the Royal Book Club.
@@ -17,6 +19,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@SuppressWarnings("Lombok")
 public class Discourse {
     private String id;
     private String type; // "CHRONICLE" or "DEBATE"
@@ -30,6 +33,9 @@ public class Discourse {
     
     @Builder.Default
     private List<String> tags = new ArrayList<>(); // Chronicles only
+
+    @Builder.Default
+    private Map<String, List<String>> reactions = new HashMap<>(); // Reaction -> User UIDs list
     
     private String parentId; // For debate thread replies (null if root thread)
     private Instant createdAt;

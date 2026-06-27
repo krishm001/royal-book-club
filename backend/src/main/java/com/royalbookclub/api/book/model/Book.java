@@ -37,6 +37,7 @@ public class Book {
     private Integer pages;
     private Integer totalCopies;
     private Integer availableCopies;
+    private String ntagUid;
     private Instant createdAt;
     private Instant updatedAt;
 }

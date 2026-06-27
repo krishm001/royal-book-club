@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, BookOpen, Users, PlusCircle, Award, Settings, Layers, Calendar } from 'lucide-react';
+import { Shield, BookOpen, Users, PlusCircle, Award, Settings, Layers, Calendar, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { listAdminRequests } from '../../services/adminRequestApi';
+import { fetchCheckouts } from '../../services/libraryApi';
 import './AdminDashboard.css';
 
 const AdminDashboard = ({ user }) => {
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [pendingCirculationCount, setPendingCirculationCount] = useState(0);
+
+  const isAdmin = user && user.role === 'ADMIN';
 
   useEffect(() => {
+    if (!isAdmin) return;
+    
     const loadPendingRequests = async () => {
       try {
         const requests = await listAdminRequests('PENDING');
@@ -17,7 +23,20 @@ const AdminDashboard = ({ user }) => {
       }
     };
 
+    const loadPendingCirculation = async () => {
+      try {
+        const checkoutsList = await fetchCheckouts();
+        const pendingCount = (checkoutsList || []).filter(
+          c => c.status === 'REQUESTED_CHECKOUT' || c.status === 'REQUESTED_RETURN'
+        ).length;
+        setPendingCirculationCount(pendingCount);
+      } catch (e) {
+        console.error('Failed to load pending circulation requests', e);
+      }
+    };
+
     loadPendingRequests();
+    loadPendingCirculation();
   }, []);
 
   // Premium quick metrics
@@ -27,6 +46,27 @@ const AdminDashboard = ({ user }) => {
     { label: 'Active Checkouts', count: '342', change: '4 overdue', icon: <Layers className="stat-icon-gold" /> },
     { label: 'Scheduled Meetups', count: '12', change: 'Next on Oct 15', icon: <Calendar className="stat-icon-gold" /> }
   ];
+
+  if (!isAdmin) {
+    return (
+      <div className="admin-access-denied-container animate-fade-in">
+        <div className="royal-card denied-card">
+          <div className="denied-icon-wrapper">
+            <Shield size={48} className="denied-shield-icon" />
+          </div>
+          <h2 className="denied-title gold-gradient-text">Privileged Sanctuary</h2>
+          <p className="denied-message">
+            Your current credentials do not grant access to the Curator Central Console. Curation of the Royal Library is reserved for assigned Curators.
+          </p>
+          <div className="denied-actions">
+            <Link to="/" className="royal-btn return-home-btn">
+              Return to Entrance Hall
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-dashboard-container animate-fade-in">
@@ -117,6 +157,37 @@ const AdminDashboard = ({ user }) => {
           <p>Update high-impact header messages, subtitles, and upload cover painting backgrounds for the entrance hall.</p>
           <Link to="/admin/hero" className="royal-btn action-panel-btn">
             Configure Hero
+          </Link>
+        </div>
+
+        {/* Patron Circulation Panel */}
+        <div className="royal-card action-panel-card" style={pendingCirculationCount > 0 ? { borderColor: '#d2a574', position: 'relative' } : {}}>
+          {pendingCirculationCount > 0 && (
+            <div style={{
+              position: 'absolute',
+              top: '8px',
+              right: '8px',
+              background: '#d2a574',
+              color: '#1a1a1a',
+              borderRadius: '50%',
+              width: '32px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              fontSize: '14px'
+            }}>
+              {pendingCirculationCount}
+            </div>
+          )}
+          <div className="panel-icon-wrapper">
+            <Layers size={28} className="gold-glow-icon" />
+          </div>
+          <h3>Patron Circulation Desk</h3>
+          <p>Process checkout bookings, verify smart card return requests, and audit the active Royal library ledger.</p>
+          <Link to="/admin/book-requests" className="royal-btn action-panel-btn">
+            Manage Circulation
           </Link>
         </div>
 

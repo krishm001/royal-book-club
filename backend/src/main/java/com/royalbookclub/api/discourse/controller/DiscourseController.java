@@ -225,4 +225,38 @@ public class DiscourseController {
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    /**
+     * Toggle reaction on a discourse.
+     */
+    @PostMapping("/{id}/react")
+    @Operation(summary = "Toggle discourse reaction", description = "Toggles an intellectual/scholarly reaction (like 👍, ❤️, 💡, 🎓) on a discourse node.")
+    public ResponseEntity<ApiResponse<Discourse>> toggleReaction(
+            @PathVariable String id,
+            @RequestParam String reactionType,
+            @AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Authentication required to react"));
+        }
+        log.info("User {} toggling reaction {} on discourse: {}", user.getId(), reactionType, id);
+        Discourse updated = discourseService.toggleReaction(id, reactionType, user.getId());
+        return ResponseEntity.ok(ApiResponse.success(updated, "Reaction toggled successfully"));
+    }
+
+    /**
+     * Toggle reaction on a comment.
+     */
+    @PostMapping("/comment/{commentId}/react")
+    @Operation(summary = "Toggle comment reaction", description = "Toggles an intellectual/scholarly reaction (like 👍, ❤️, 💡, 🎓) on a chronicle comment.")
+    public ResponseEntity<ApiResponse<DiscourseComment>> toggleCommentReaction(
+            @PathVariable String commentId,
+            @RequestParam String reactionType,
+            @AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Authentication required to react"));
+        }
+        log.info("User {} toggling reaction {} on comment: {}", user.getId(), reactionType, commentId);
+        DiscourseComment updated = discourseService.toggleCommentReaction(commentId, reactionType, user.getId());
+        return ResponseEntity.ok(ApiResponse.success(updated, "Comment reaction toggled successfully"));
+    }
 }

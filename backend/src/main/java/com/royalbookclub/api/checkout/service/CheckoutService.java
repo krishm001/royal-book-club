@@ -85,6 +85,8 @@ public class CheckoutService {
                 checkoutData.put("checkedOutAt", toTimestamp(checkedOutAt));
                 checkoutData.put("dueDate", toTimestamp(dueDate));
                 checkoutData.put("returnedAt", null);
+                checkoutData.put("approvedAt", toTimestamp(checkedOutAt));
+                checkoutData.put("approvedBy", "SYSTEM_DIRECT");
 
                 transaction.set(checkoutRef, checkoutData);
                 return null;
@@ -105,6 +107,272 @@ public class CheckoutService {
                 throw (RuntimeException) cause;
             }
             throw new RuntimeException("Checkout transaction failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Create a checkout request (status: REQUESTED_CHECKOUT).
+     * Does NOT decrement book inventory copies.
+     */
+    public Checkout createCheckoutRequest(CheckoutRequestDto request) {
+        String cleanIsbn = request.getBookId().trim().replace("-", "");
+        String memberId = request.getMemberId().trim();
+
+        DocumentReference bookRef = firestore.collection("books").document(cleanIsbn);
+        DocumentReference checkoutRef = firestore.collection(COLLECTION_NAME).document();
+        String checkoutId = checkoutRef.getId();
+
+        log.info("Creating checkout request. Member: {}, Book: {}", memberId, cleanIsbn);
+
+        try {
+            DocumentSnapshot bookDoc = bookRef.get().get();
+            if (!bookDoc.exists()) {
+                throw new IllegalArgumentException("Book with ISBN " + cleanIsbn + " does not exist in catalog.");
+            }
+
+            // Prevent duplicate pending requests or active checkouts
+            Query pendingQuery = firestore.collection(COLLECTION_NAME)
+                    .whereEqualTo("memberId", memberId)
+                    .whereEqualTo("bookId", cleanIsbn)
+                    .whereIn("status", Arrays.asList("REQUESTED_CHECKOUT", "CHECKED_OUT", "REQUESTED_RETURN"));
+            QuerySnapshot pendingSnap = pendingQuery.get().get();
+            if (!pendingSnap.isEmpty()) {
+                throw new IllegalStateException("Member already has a pending transaction or active checkout for this book.");
+            }
+
+            Instant now = Instant.now();
+            Map<String, Object> checkoutData = new HashMap<>();
+            checkoutData.put("id", checkoutId);
+            checkoutData.put("bookId", cleanIsbn);
+            checkoutData.put("memberId", memberId);
+            checkoutData.put("status", "REQUESTED_CHECKOUT");
+            checkoutData.put("requestedAt", toTimestamp(now));
+            checkoutData.put("ntagUid", request.getNtagUid());
+
+            checkoutRef.set(checkoutData).get();
+
+            return getCheckoutById(checkoutId)
+                    .orElseThrow(() -> new RuntimeException("Failed to read checkout request."));
+        } catch (Exception e) {
+            log.error("Failed to create checkout request", e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new RuntimeException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Atomically approve a checkout request.
+     * Decrements availableCopies and transitions status to CHECKED_OUT.
+     */
+    public Checkout approveCheckoutRequest(String checkoutId, String adminId) {
+        log.info("Approving checkout request ID: {} by Admin: {}", checkoutId, adminId);
+        DocumentReference checkoutRef = firestore.collection(COLLECTION_NAME).document(checkoutId);
+
+        try {
+            firestore.runTransaction(transaction -> {
+                DocumentSnapshot checkoutDoc = transaction.get(checkoutRef).get();
+                if (!checkoutDoc.exists()) {
+                    throw new IllegalArgumentException("Checkout request not found.");
+                }
+
+                String status = checkoutDoc.getString("status");
+                if (!"REQUESTED_CHECKOUT".equals(status)) {
+                    throw new IllegalStateException("Checkout request is not in REQUESTED_CHECKOUT state.");
+                }
+
+                String cleanIsbn = checkoutDoc.getString("bookId");
+                DocumentReference bookRef = firestore.collection("books").document(cleanIsbn);
+                DocumentSnapshot bookDoc = transaction.get(bookRef).get();
+
+                if (!bookDoc.exists()) {
+                    throw new IllegalArgumentException("Book with ISBN " + cleanIsbn + " does not exist.");
+                }
+
+                Long availableCopies = bookDoc.getLong("availableCopies");
+                if (availableCopies == null || availableCopies <= 0) {
+                    throw new IllegalStateException("No copies available in catalog to approve checkout.");
+                }
+
+                // Update Book copies
+                transaction.update(bookRef, "availableCopies", availableCopies - 1);
+
+                // Update Checkout status & metadata
+                Instant now = Instant.now();
+                Instant dueDate = now.plus(14, ChronoUnit.DAYS);
+
+                transaction.update(checkoutRef,
+                        "status", "CHECKED_OUT",
+                        "checkedOutAt", toTimestamp(now),
+                        "dueDate", toTimestamp(dueDate),
+                        "approvedAt", toTimestamp(now),
+                        "approvedBy", adminId
+                );
+
+                return null;
+            }).get();
+
+            return getCheckoutById(checkoutId)
+                    .orElseThrow(() -> new RuntimeException("Failed to read updated checkout."));
+        } catch (Exception e) {
+            log.error("Failed to approve checkout request: {}", checkoutId, e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new RuntimeException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Reject a checkout request.
+     */
+    public Checkout rejectCheckoutRequest(String checkoutId, String adminId) {
+        log.info("Rejecting checkout request ID: {} by Admin: {}", checkoutId, adminId);
+        DocumentReference checkoutRef = firestore.collection(COLLECTION_NAME).document(checkoutId);
+        try {
+            firestore.runTransaction(transaction -> {
+                DocumentSnapshot checkoutDoc = transaction.get(checkoutRef).get();
+                if (!checkoutDoc.exists()) {
+                    throw new IllegalArgumentException("Checkout request not found.");
+                }
+
+                String status = checkoutDoc.getString("status");
+                if (!"REQUESTED_CHECKOUT".equals(status)) {
+                    throw new IllegalStateException("Checkout request is not in REQUESTED_CHECKOUT state.");
+                }
+
+                transaction.update(checkoutRef,
+                        "status", "REJECTED",
+                        "approvedAt", toTimestamp(Instant.now()),
+                        "approvedBy", adminId
+                );
+                return null;
+            }).get();
+
+            return getCheckoutById(checkoutId)
+                    .orElseThrow(() -> new RuntimeException("Failed to read updated checkout."));
+        } catch (Exception e) {
+            log.error("Failed to reject checkout request: {}", checkoutId, e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new RuntimeException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Create a return request (status: REQUESTED_RETURN).
+     */
+    public Checkout createReturnRequest(ReturnRequestDto request) {
+        String cleanIsbn = request.getBookId().trim().replace("-", "");
+        String memberId = request.getMemberId().trim();
+        String checkoutId = request.getCheckoutId() != null ? request.getCheckoutId().trim() : null;
+
+        log.info("Creating return request. Member: {}, Book: {}, Checkout ID: {}", memberId, cleanIsbn, checkoutId);
+
+        try {
+            DocumentReference checkoutRef;
+            DocumentSnapshot checkoutDoc;
+
+            if (checkoutId != null && !checkoutId.isBlank()) {
+                checkoutRef = firestore.collection(COLLECTION_NAME).document(checkoutId);
+                checkoutDoc = checkoutRef.get().get();
+            } else {
+                Query activeQuery = firestore.collection(COLLECTION_NAME)
+                        .whereEqualTo("memberId", memberId)
+                        .whereEqualTo("bookId", cleanIsbn)
+                        .whereEqualTo("status", "CHECKED_OUT")
+                        .limit(1);
+                QuerySnapshot activeSnap = activeQuery.get().get();
+                if (activeSnap.isEmpty()) {
+                    throw new IllegalArgumentException("No active checkout found for Member: " + memberId + " and Book: " + cleanIsbn);
+                }
+                checkoutDoc = activeSnap.getDocuments().get(0);
+                checkoutRef = checkoutDoc.getReference();
+            }
+
+            if (!checkoutDoc.exists()) {
+                throw new IllegalArgumentException("Checkout record not found.");
+            }
+
+            String status = checkoutDoc.getString("status");
+            if (!"CHECKED_OUT".equals(status)) {
+                throw new IllegalStateException("Checkout is not in CHECKED_OUT state.");
+            }
+
+            Instant now = Instant.now();
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("status", "REQUESTED_RETURN");
+            updates.put("requestedAt", toTimestamp(now));
+            updates.put("ntagUid", request.getNtagUid());
+
+            checkoutRef.update(updates).get();
+
+            return getCheckoutById(checkoutRef.getId())
+                    .orElseThrow(() -> new RuntimeException("Failed to read updated return request."));
+        } catch (Exception e) {
+            log.error("Failed to create return request", e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new RuntimeException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Atomically approve a return request.
+     * Increments availableCopies and transitions status to RETURNED.
+     */
+    public Checkout approveReturnRequest(String checkoutId, String adminId) {
+        log.info("Approving return request ID: {} by Admin: {}", checkoutId, adminId);
+        DocumentReference checkoutRef = firestore.collection(COLLECTION_NAME).document(checkoutId);
+
+        try {
+            firestore.runTransaction(transaction -> {
+                DocumentSnapshot checkoutDoc = transaction.get(checkoutRef).get();
+                if (!checkoutDoc.exists()) {
+                    throw new IllegalArgumentException("Checkout record not found.");
+                }
+
+                String status = checkoutDoc.getString("status");
+                if (!"REQUESTED_RETURN".equals(status)) {
+                    throw new IllegalStateException("Checkout record is not in REQUESTED_RETURN state.");
+                }
+
+                String cleanIsbn = checkoutDoc.getString("bookId");
+                DocumentReference bookRef = firestore.collection("books").document(cleanIsbn);
+                DocumentSnapshot bookDoc = transaction.get(bookRef).get();
+
+                if (bookDoc.exists()) {
+                    Long available = bookDoc.getLong("availableCopies");
+                    Long total = bookDoc.getLong("totalCopies");
+                    long newAvailable = (available != null ? available : 0) + 1;
+                    if (total != null && newAvailable > total) {
+                        newAvailable = total;
+                    }
+                    transaction.update(bookRef, "availableCopies", newAvailable);
+                }
+
+                Instant now = Instant.now();
+                transaction.update(checkoutRef,
+                        "status", "RETURNED",
+                        "returnedAt", toTimestamp(now),
+                        "approvedAt", toTimestamp(now),
+                        "approvedBy", adminId
+                );
+
+                return null;
+            }).get();
+
+            return getCheckoutById(checkoutId)
+                    .orElseThrow(() -> new RuntimeException("Failed to read updated checkout."));
+        } catch (Exception e) {
+            log.error("Failed to approve return request: {}", checkoutId, e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new RuntimeException(e.getMessage(), e);
         }
     }
 
@@ -194,6 +462,201 @@ public class CheckoutService {
     }
 
     /**
+     * Direct verified checkout via Web NFC.
+     * Validates matching tag UID in catalog and atomically check outs.
+     */
+    public Checkout verifiedCheckout(CheckoutRequestDto request) {
+        String cleanIsbn = request.getBookId().trim().replace("-", "");
+        String memberId = request.getMemberId().trim();
+        String tagUid = request.getNtagUid();
+
+        if (tagUid == null || tagUid.isBlank()) {
+            throw new IllegalArgumentException("NFC Tag UID is required for verified checkout.");
+        }
+
+        DocumentReference bookRef = firestore.collection("books").document(cleanIsbn);
+        DocumentReference checkoutRef = firestore.collection(COLLECTION_NAME).document();
+        String checkoutId = checkoutRef.getId();
+
+        log.info("Initiating verified checkout. Member: {}, Book: {}, Tag: {}", memberId, cleanIsbn, tagUid);
+
+        try {
+            firestore.runTransaction(transaction -> {
+                // 1. Validate Book existence, copy availability, and Tag UID match
+                DocumentSnapshot bookDoc = transaction.get(bookRef).get();
+                if (!bookDoc.exists()) {
+                    throw new IllegalArgumentException("Book with ISBN " + cleanIsbn + " does not exist in catalog.");
+                }
+
+                String bookNtagUid = bookDoc.getString("ntagUid");
+                if (bookNtagUid == null || bookNtagUid.isBlank()) {
+                    throw new IllegalStateException("Book does not have an NTAG213 tag bound to it in the system.");
+                }
+
+                if (!bookNtagUid.equalsIgnoreCase(tagUid.trim())) {
+                    throw new IllegalArgumentException("Scanned NFC Tag UID does not match the bound tag for this book.");
+                }
+
+                Long availableCopies = bookDoc.getLong("availableCopies");
+                if (availableCopies == null || availableCopies <= 0) {
+                    throw new IllegalStateException("Book with ISBN " + cleanIsbn + " has no copies available for checkout.");
+                }
+
+                // 2. Prevent duplicate active checkouts of the SAME book by the SAME member
+                Query activeQuery = firestore.collection(COLLECTION_NAME)
+                        .whereEqualTo("memberId", memberId)
+                        .whereEqualTo("bookId", cleanIsbn)
+                        .whereEqualTo("status", "CHECKED_OUT");
+                QuerySnapshot activeSnap = transaction.get(activeQuery).get();
+                if (!activeSnap.isEmpty()) {
+                    throw new IllegalStateException("Member already holds active checkout for ISBN: " + cleanIsbn);
+                }
+
+                // 3. Update Book Catalog copies
+                transaction.update(bookRef, "availableCopies", availableCopies - 1);
+
+                // 4. Construct Checkout Transaction Record
+                Instant checkedOutAt = Instant.now();
+                Instant dueDate = checkedOutAt.plus(request.getDurationDays(), ChronoUnit.DAYS);
+
+                Map<String, Object> checkoutData = new HashMap<>();
+                checkoutData.put("id", checkoutId);
+                checkoutData.put("bookId", cleanIsbn);
+                checkoutData.put("memberId", memberId);
+                checkoutData.put("status", "CHECKED_OUT");
+                checkoutData.put("checkedOutAt", toTimestamp(checkedOutAt));
+                checkoutData.put("dueDate", toTimestamp(dueDate));
+                checkoutData.put("returnedAt", null);
+                checkoutData.put("ntagUid", tagUid);
+                checkoutData.put("approvedAt", toTimestamp(checkedOutAt));
+                checkoutData.put("approvedBy", "NFC_VERIFIED");
+
+                transaction.set(checkoutRef, checkoutData);
+                return null;
+            }).get();
+
+            log.info("Verified checkout successful. ID: {}", checkoutId);
+            return getCheckoutById(checkoutId)
+                    .orElseThrow(() -> new RuntimeException("Failed to read checkout transaction after creation."));
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Verified checkout interrupted for Member: {}, Book: {}", memberId, cleanIsbn, e);
+            throw new RuntimeException("Checkout operation interrupted", e);
+        } catch (ExecutionException e) {
+            log.error("Verified checkout failed for Member: {}, Book: {}", memberId, cleanIsbn, e);
+            Throwable cause = e.getCause();
+            if (cause instanceof IllegalArgumentException || cause instanceof IllegalStateException) {
+                throw (RuntimeException) cause;
+            }
+            throw new RuntimeException("Verified checkout failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Direct verified return via Web NFC.
+     * Validates matching tag UID and atomically returns the book.
+     */
+    public Checkout verifiedReturn(ReturnRequestDto request) {
+        String cleanIsbn = request.getBookId().trim().replace("-", "");
+        String memberId = request.getMemberId().trim();
+        String tagUid = request.getNtagUid();
+        String checkoutId = request.getCheckoutId() != null ? request.getCheckoutId().trim() : null;
+
+        if (tagUid == null || tagUid.isBlank()) {
+            throw new IllegalArgumentException("NFC Tag UID is required for verified return.");
+        }
+
+        log.info("Initiating verified return. Member: {}, Book: {}, Tag: {}", memberId, cleanIsbn, tagUid);
+
+        try {
+            String finalCheckoutId = firestore.runTransaction(transaction -> {
+                DocumentReference checkoutRef;
+                DocumentSnapshot checkoutDoc;
+
+                if (checkoutId != null && !checkoutId.isBlank()) {
+                    checkoutRef = firestore.collection(COLLECTION_NAME).document(checkoutId);
+                    checkoutDoc = transaction.get(checkoutRef).get();
+                } else {
+                    // Try to resolve the active checkout dynamically
+                    Query activeQuery = firestore.collection(COLLECTION_NAME)
+                            .whereEqualTo("memberId", memberId)
+                            .whereEqualTo("bookId", cleanIsbn)
+                            .whereIn("status", Arrays.asList("CHECKED_OUT", "REQUESTED_RETURN"))
+                            .limit(1);
+                    QuerySnapshot activeSnap = transaction.get(activeQuery).get();
+                    if (activeSnap.isEmpty()) {
+                        throw new IllegalArgumentException("No active checkout or return request found for Member: " + memberId + " and Book: " + cleanIsbn);
+                    }
+                    checkoutDoc = activeSnap.getDocuments().get(0);
+                    checkoutRef = checkoutDoc.getReference();
+                }
+
+                if (!checkoutDoc.exists()) {
+                    throw new IllegalArgumentException("Checkout transaction not found.");
+                }
+
+                String status = checkoutDoc.getString("status");
+                if ("RETURNED".equals(status)) {
+                    throw new IllegalStateException("This book checkout is already marked as returned.");
+                }
+
+                String resolvedBookId = checkoutDoc.getString("bookId");
+                DocumentReference bookRef = firestore.collection("books").document(resolvedBookId);
+                DocumentSnapshot bookDoc = transaction.get(bookRef).get();
+
+                if (!bookDoc.exists()) {
+                    throw new IllegalArgumentException("Book not found.");
+                }
+
+                String bookNtagUid = bookDoc.getString("ntagUid");
+                if (bookNtagUid == null || bookNtagUid.isBlank()) {
+                    throw new IllegalStateException("Book does not have an NTAG213 tag bound to it in the system.");
+                }
+
+                if (!bookNtagUid.equalsIgnoreCase(tagUid.trim())) {
+                    throw new IllegalArgumentException("Scanned NFC Tag UID does not match the bound tag for this book.");
+                }
+
+                Long available = bookDoc.getLong("availableCopies");
+                Long total = bookDoc.getLong("totalCopies");
+                long newAvailable = (available != null ? available : 0) + 1;
+                if (total != null && newAvailable > total) {
+                    newAvailable = total;
+                }
+                transaction.update(bookRef, "availableCopies", newAvailable);
+
+                Instant now = Instant.now();
+                transaction.update(checkoutRef,
+                        "status", "RETURNED",
+                        "returnedAt", toTimestamp(now),
+                        "approvedAt", toTimestamp(now),
+                        "approvedBy", "NFC_VERIFIED",
+                        "ntagUid", tagUid
+                );
+
+                return checkoutRef.getId();
+            }).get();
+
+            log.info("Verified return successful. Transaction ID: {}", finalCheckoutId);
+            return getCheckoutById(finalCheckoutId)
+                    .orElseThrow(() -> new RuntimeException("Failed to read checkout transaction after return."));
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Verified return interrupted for Member: {}, Book: {}", memberId, cleanIsbn, e);
+            throw new RuntimeException("Return operation interrupted", e);
+        } catch (ExecutionException e) {
+            log.error("Verified return failed for Member: {}, Book: {}", memberId, cleanIsbn, e);
+            Throwable cause = e.getCause();
+            if (cause instanceof IllegalArgumentException || cause instanceof IllegalStateException) {
+                throw (RuntimeException) cause;
+            }
+            throw new RuntimeException("Verified return failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * Retrieve a specific checkout record by ID.
      */
     public Optional<Checkout> getCheckoutById(String checkoutId) {
@@ -265,6 +728,10 @@ public class CheckoutService {
                 .checkedOutAt(toInstant(doc.getTimestamp("checkedOutAt")))
                 .dueDate(toInstant(doc.getTimestamp("dueDate")))
                 .returnedAt(toInstant(doc.getTimestamp("returnedAt")))
+                .requestedAt(toInstant(doc.getTimestamp("requestedAt")))
+                .approvedAt(toInstant(doc.getTimestamp("approvedAt")))
+                .approvedBy(doc.getString("approvedBy"))
+                .ntagUid(doc.getString("ntagUid"))
                 .build();
     }
 }

@@ -7,7 +7,8 @@ import {
   BookOpen, 
   Layers, 
   FileText,
-  BadgeAlert
+  BadgeAlert,
+  Shield
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { 
@@ -20,7 +21,7 @@ import {
 } from '../../services/genreApi';
 import './CuratorGenresPage.css';
 
-const CuratorGenresPage = () => {
+const CuratorGenresPage = ({ user }) => {
   const [bookHouses, setBookHouses] = useState([]);
   const [blogHouses, setBlogHouses] = useState([]);
   const [loadingBooks, setLoadingBooks] = useState(true);
@@ -32,10 +33,13 @@ const CuratorGenresPage = () => {
   const [isSubmittingBook, setIsSubmittingBook] = useState(false);
   const [isSubmittingBlog, setIsSubmittingBlog] = useState(false);
 
+  const isAdmin = user && user.role === 'ADMIN';
+
   useEffect(() => {
+    if (!isAdmin) return;
     loadBookHousesData();
     loadBlogHousesData();
-  }, []);
+  }, [isAdmin]);
 
   const loadBookHousesData = async () => {
     try {
@@ -138,6 +142,27 @@ const CuratorGenresPage = () => {
       alert('Failed to dissolve Blog House.');
     }
   };
+
+  if (!isAdmin) {
+    return (
+      <div className="admin-access-denied-container animate-fade-in">
+        <div className="royal-card denied-card">
+          <div className="denied-icon-wrapper">
+            <Shield size={48} className="denied-shield-icon" />
+          </div>
+          <h2 className="denied-title gold-gradient-text">Privileged Sanctuary</h2>
+          <p className="denied-message">
+            Your current credentials do not grant access to the Curator House configuration. Curation of the Royal Library is reserved for assigned Curators.
+          </p>
+          <div className="denied-actions">
+            <Link to="/" className="royal-btn return-home-btn">
+              Return to Entrance Hall
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="curator-genres-container animate-fade-in">

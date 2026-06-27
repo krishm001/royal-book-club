@@ -6,44 +6,24 @@ import './BookCard.css';
 const BookCard = ({
   book = {},
   user,
-  onCheckout = async () => {},
+  resolvedStatus,
+  onCheckoutClick,
+  onReturnClick,
 }) => {
   const [checkoutStatus, setCheckoutStatus] = useState(
-    book.availableCopies > 0 ? 'available' : 'checked-out'
+    resolvedStatus || (book.availableCopies > 0 ? 'available' : 'checked-out-by-other')
   );
-  const [isProcessing, setIsProcessing] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const author = Array.isArray(book.authors) ? book.authors.join(', ') : book.author || 'Unknown Author';
   const bookId = book.isbn || book.id || ''; 
 
   useEffect(() => {
-    setCheckoutStatus(book.availableCopies > 0 ? 'available' : 'checked-out');
-  }, [book.availableCopies]);
-
-  const handleCheckout = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (checkoutStatus !== 'available' || isProcessing) return;
-
-    if (!user) {
-      window.alert('Please enter the Royal Salon to checkout books.');
-      return;
+    if (resolvedStatus) {
+      setCheckoutStatus(resolvedStatus);
+    } else {
+      setCheckoutStatus(book.availableCopies > 0 ? 'available' : 'checked-out-by-other');
     }
-
-    setIsProcessing(true);
-    setCheckoutStatus('checking-out');
-
-    try {
-      await onCheckout(book);
-      setCheckoutStatus('checked-out');
-    } catch (error) {
-      console.error('Checkout failed', error);
-      setCheckoutStatus(book.availableCopies > 0 ? 'available' : 'checked-out');
-      window.alert(error?.message || 'Checkout failed. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  }, [resolvedStatus, book.availableCopies]);
 
   const coverUrl = book.coverUrl || book.thumbnail || 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=300&q=80';
 
@@ -76,11 +56,16 @@ const BookCard = ({
             </div>
             <span className={`availability-badge ${checkoutStatus}`}>
               {checkoutStatus === 'available' && <span className="status-dot green"></span>}
-              {checkoutStatus === 'checking-out' && <span className="status-dot pulse"></span>}
-              {checkoutStatus === 'checked-out' && <span className="status-dot red"></span>}
+              {checkoutStatus === 'checked-out' && <span className="status-dot green"></span>}
+              {checkoutStatus === 'requested-checkout' && <span className="status-dot pulse"></span>}
+              {checkoutStatus === 'requested-return' && <span className="status-dot pulse"></span>}
+              {checkoutStatus === 'checked-out-by-other' && <span className="status-dot red"></span>}
+              
               {checkoutStatus === 'available' && 'In Salon'}
-              {checkoutStatus === 'checking-out' && 'Registering...'}
-              {checkoutStatus === 'checked-out' && 'Borrowed'}
+              {checkoutStatus === 'checked-out' && 'In Your Study'}
+              {checkoutStatus === 'requested-checkout' && 'Pending Checkout'}
+              {checkoutStatus === 'requested-return' && 'Pending Return'}
+              {checkoutStatus === 'checked-out-by-other' && 'In Circulation'}
             </span>
           </div>
 
@@ -92,21 +77,69 @@ const BookCard = ({
 
       <div className="book-card-action">
         {checkoutStatus === 'available' ? (
-          <button
-            onClick={handleCheckout}
-            className="royal-btn book-checkout-btn"
-            id={`checkout-btn-${bookId}`}
-            disabled={isProcessing}
-          >
-            <ShoppingBag size={14} /> {isProcessing ? 'Processing...' : 'Checkout'}
+          onCheckoutClick ? (
+            <button
+              onClick={() => onCheckoutClick(book)}
+              className="royal-btn book-checkout-btn"
+              id={`checkout-btn-${bookId}`}
+            >
+              <ShoppingBag size={14} style={{ marginRight: '6px' }} /> Checkout
+            </button>
+          ) : (
+            <Link
+              to={`/catalog/${encodeURIComponent(bookId)}`}
+              className="royal-btn book-checkout-btn"
+              id={`checkout-btn-${bookId}`}
+            >
+              <ShoppingBag size={14} style={{ marginRight: '6px' }} /> Checkout
+            </Link>
+          )
+        ) : checkoutStatus === 'checked-out' ? (
+          onReturnClick ? (
+            <button
+              onClick={() => onReturnClick(book)}
+              className="royal-btn book-checkout-btn return-action-btn"
+              id={`return-btn-${bookId}`}
+              style={{ 
+                background: 'transparent', 
+                border: '1px solid var(--accent)', 
+                color: 'var(--accent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              Return Volume
+            </button>
+          ) : (
+            <Link
+              to={`/catalog/${encodeURIComponent(bookId)}?action=return`}
+              className="royal-btn book-checkout-btn return-action-btn"
+              id={`return-btn-${bookId}`}
+              style={{ 
+                background: 'transparent', 
+                border: '1px solid var(--accent)', 
+                color: 'var(--accent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textDecoration: 'none'
+              }}
+            >
+              Return Volume
+            </Link>
+          )
+        ) : checkoutStatus === 'requested-checkout' ? (
+          <button className="royal-btn-disabled book-checkout-btn" disabled style={{ opacity: 0.6, cursor: 'not-allowed' }}>
+            Pending Checkout
           </button>
-        ) : checkoutStatus === 'checking-out' ? (
-          <button className="royal-btn-disabled book-checkout-btn" disabled>
-            <div className="loader-mini"></div> Reserving...
+        ) : checkoutStatus === 'requested-return' ? (
+          <button className="royal-btn-disabled book-checkout-btn" disabled style={{ opacity: 0.6, cursor: 'not-allowed' }}>
+            Pending Return
           </button>
         ) : (
           <button className="borrowed-indicator-btn" disabled id={`borrowed-btn-${bookId}`}>
-            <CheckCircle size={14} /> Digital Copy Issued
+            In Circulation
           </button>
         )}
       </div>

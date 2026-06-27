@@ -7,15 +7,16 @@ import {
   Image, 
   Eye, 
   Type,
-  FileText
+  FileText,
+  RotateCcw,
+  Shield
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { fetchHeroConfig, updateHeroConfig, deleteHeroConfig } from '../../services/heroApi';
 import { uploadBookImage } from '../../services/storageApi';
-import { RotateCcw } from 'lucide-react';
 import './CuratorHeroPage.css';
 
-const CuratorHeroPage = () => {
+const CuratorHeroPage = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
@@ -32,9 +33,12 @@ const CuratorHeroPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [activePreviewTheme, setActivePreviewTheme] = useState('academic'); // academic is default now!
 
+  const isAdmin = user && user.role === 'ADMIN';
+
   useEffect(() => {
+    if (!isAdmin) return;
     loadHeroConfigData();
-  }, []);
+  }, [isAdmin]);
 
   const loadHeroConfigData = async () => {
     try {
@@ -169,6 +173,27 @@ const CuratorHeroPage = () => {
       setIsSaving(false);
     }
   };
+
+  if (!isAdmin) {
+    return (
+      <div className="admin-access-denied-container animate-fade-in">
+        <div className="royal-card denied-card">
+          <div className="denied-icon-wrapper">
+            <Shield size={48} className="denied-shield-icon" />
+          </div>
+          <h2 className="denied-title gold-gradient-text">Privileged Sanctuary</h2>
+          <p className="denied-message">
+            Your current credentials do not grant access to the Curator Hero Editor. Curation of the Royal Library is reserved for assigned Curators.
+          </p>
+          <div className="denied-actions">
+            <Link to="/" className="royal-btn return-home-btn">
+              Return to Entrance Hall
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="curator-hero-container animate-fade-in">

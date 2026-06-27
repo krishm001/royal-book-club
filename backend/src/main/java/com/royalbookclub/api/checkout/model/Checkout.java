@@ -22,5 +22,9 @@ public class Checkout {
     private Instant checkedOutAt;
     private Instant dueDate;
     private Instant returnedAt;
-    private String status; // "CHECKED_OUT", "RETURNED", "OVERDUE"
+    private String status; // "REQUESTED_CHECKOUT", "CHECKED_OUT", "REQUESTED_RETURN", "RETURNED", "REJECTED"
+    private Instant requestedAt;
+    private Instant approvedAt;
+    private String approvedBy;
+    private String ntagUid;
 }

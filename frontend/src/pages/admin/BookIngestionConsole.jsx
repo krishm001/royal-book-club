@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw, X, Camera, Cpu, Smartphone, Check } from 'lucide-react';
 import { createBook, lookupBookByIsbn, fetchBookByIsbn } from '../../services/libraryApi';
 import { fetchBookHouses } from '../../services/genreApi';
 import { uploadBookImage } from '../../services/storageApi';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import './BookIngestionConsole.css';
 
 const BookIngestionConsole = ({ user }) => {
@@ -30,6 +31,22 @@ const BookIngestionConsole = ({ user }) => {
   const [selectedHouse, setSelectedHouse] = useState('');
   const [houses, setHouses] = useState([]);
   const [tagsInput, setTagsInput] = useState('');
+
+  // NTAG213 and Camera Hardware states
+  const [ntagUid, setNtagUid] = useState('');
+  const [isNfcReading, setIsNfcReading] = useState(false);
+  const [writeIosRedirect, setWriteIosRedirect] = useState(false);
+  const [nfcError, setNfcError] = useState('');
+  const [nfcSuccess, setNfcSuccess] = useState(false);
+
+  const [cameraModalOpen, setCameraModalOpen] = useState(false);
+  const [cameraMode, setCameraMode] = useState('isbn'); // 'isbn' or 'cover'
+  const [cameraError, setCameraError] = useState('');
+  const [cameraStream, setCameraStream] = useState(null);
+
+  const videoRef = useRef(null);
+  const barcodeIntervalRef = useRef(null);
+  const html5QrCodeRef = useRef(null);
 
   // Check if user is admin
   const isAdmin = user && user.role === 'ADMIN';
@@ -61,15 +78,16 @@ const BookIngestionConsole = ({ user }) => {
     }
   }, [isAdmin]);
 
-  const handleIsbnFetch = async () => {
-    if (!isbn.trim()) return;
+  const handleIsbnFetch = async (forcedIsbn) => {
+    const targetIsbn = typeof forcedIsbn === 'string' ? forcedIsbn : isbn;
+    if (!targetIsbn || !targetIsbn.trim()) return;
     setErrorMessage('');
     setInfoMessage('');
     setFetchingMetadata(true);
     setIsEditMode(false);
 
     try {
-      const existingBook = await fetchBookByIsbn(isbn.trim());
+      const existingBook = await fetchBookByIsbn(targetIsbn.trim());
       if (existingBook && existingBook.title) {
         setManualTitle(existingBook.title || '');
         setManualAuthor(Array.isArray(existingBook.authors) ? existingBook.authors.join(', ') : existingBook.author || '');
@@ -84,6 +102,7 @@ const BookIngestionConsole = ({ user }) => {
         // Populate new fields
         setSelectedHouse(existingBook.genre || (houses.length > 0 ? houses[0] : ''));
         setTagsInput(Array.isArray(existingBook.tags) ? existingBook.tags.join(', ') : '');
+        setNtagUid(existingBook.ntagUid || '');
         
         setIsEditMode(true);
         setInfoMessage('Existing book found in catalog. Edit the fields and save the updated details.');
@@ -91,7 +110,7 @@ const BookIngestionConsole = ({ user }) => {
     } catch (catalogError) {
       if (catalogError?.response?.status === 404) {
         try {
-          const metadata = await lookupBookByIsbn(isbn.trim());
+          const metadata = await lookupBookByIsbn(targetIsbn.trim());
           setManualTitle(metadata.title || '');
           setManualAuthor(Array.isArray(metadata.authors) ? metadata.authors.map((author) => author.name).join(', ') : metadata.authors || '');
           setPublisher(metadata.publishers?.[0] || metadata.publisher || '');
@@ -102,6 +121,7 @@ const BookIngestionConsole = ({ user }) => {
           setTotalCopies(1);
           setAvailableCopies(1);
           setTagsInput('');
+          setNtagUid('');
           setInfoMessage('Lookup returned metadata from Open Library; complete any missing payload fields.');
         } catch (lookupError) {
           console.error(lookupError);
@@ -115,6 +135,233 @@ const BookIngestionConsole = ({ user }) => {
       setFetchingMetadata(false);
     }
   };
+
+  // Camera & Scanner Handlers
+  const startCamera = async (mode) => {
+    setCameraError('');
+    setCameraMode(mode);
+    setCameraModalOpen(true);
+
+    if (mode === 'cover') {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            frameRate: { ideal: 30 }
+          }
+        });
+        setCameraStream(stream);
+        setTimeout(() => {
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        }, 100);
+      } catch (err) {
+        console.error('Camera access error:', err);
+        setCameraError('Camera access denied or unavailable. Please upload a file manually.');
+      }
+    }
+  };
+
+  const stopCamera = async () => {
+    if (html5QrCodeRef.current) {
+      try {
+        if (html5QrCodeRef.current.isScanning) {
+          await html5QrCodeRef.current.stop();
+        }
+      } catch (err) {
+        console.error('Error stopping html5QrCode during manual stop:', err);
+      }
+      html5QrCodeRef.current = null;
+    }
+
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    if (barcodeIntervalRef.current) {
+      clearInterval(barcodeIntervalRef.current);
+      barcodeIntervalRef.current = null;
+    }
+    setCameraModalOpen(false);
+  };
+
+  useEffect(() => {
+    if (cameraModalOpen && cameraMode === 'isbn') {
+      const timer = setTimeout(() => {
+        const qrReaderElem = document.getElementById('qr-reader');
+        if (!qrReaderElem) {
+          console.error('qr-reader element not found in DOM');
+          return;
+        }
+
+        try {
+          const formats = [
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.CODE_93
+          ];
+
+          const html5QrCode = new Html5Qrcode("qr-reader", {
+            formatsToSupport: formats,
+            verbose: false,
+            experimentalFeatures: {
+              useBarCodeDetectorIfSupported: true
+            }
+          });
+          html5QrCodeRef.current = html5QrCode;
+
+          html5QrCode.start(
+            { facingMode: "environment" },
+            {
+              fps: 20,
+              aspectRatio: 1.777778,
+              qrbox: { width: 400, height: 150 },
+              videoConstraints: {
+                width: { min: 640, ideal: 1280, max: 1920 },
+                height: { min: 480, ideal: 720, max: 1080 },
+                aspectRatio: 1.777778
+              }
+            },
+            (decodedText, decodedResult) => {
+              console.log(`Barcode decoded successfully: ${decodedText}`);
+              setIsbn(decodedText);
+              html5QrCode.stop().then(() => {
+                html5QrCodeRef.current = null;
+                setCameraModalOpen(false);
+                handleIsbnFetch(decodedText);
+              }).catch(err => {
+                console.error('Failed to stop html5Qrcode', err);
+                setCameraModalOpen(false);
+                handleIsbnFetch(decodedText);
+              });
+            },
+            (errorMessage) => {
+              // Ignore scan failures per frame
+            }
+          ).catch(err => {
+            console.error('Html5Qrcode start error:', err);
+            setCameraError(`Failed to start barcode scanner: ${err.message || err}`);
+          });
+        } catch (err) {
+          console.error('Html5Qrcode initialization error:', err);
+          setCameraError(`Failed to initialize scanner: ${err.message || err}`);
+        }
+      }, 150);
+
+      return () => {
+        clearTimeout(timer);
+        if (html5QrCodeRef.current) {
+          const currentScanner = html5QrCodeRef.current;
+          if (currentScanner.isScanning) {
+            currentScanner.stop().then(() => {
+              html5QrCodeRef.current = null;
+            }).catch(err => {
+              console.error('Failed to stop html5Qrcode in cleanup', err);
+            });
+          } else {
+            html5QrCodeRef.current = null;
+          }
+        }
+      };
+    }
+  }, [cameraModalOpen, cameraMode]);
+
+  const captureCoverPhoto = () => {
+    if (!videoRef.current) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = videoRef.current.videoWidth || 640;
+    canvas.height = videoRef.current.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const file = new File([blob], `cover_snapshot_${Date.now()}.png`, { type: 'image/png' });
+        setSelectedImageFile(file);
+        
+        // Preview
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setImagePreview(event.target?.result);
+        };
+        reader.readAsDataURL(file);
+        
+        stopCamera();
+      }
+    }, 'image/png');
+  };
+
+  const handleSimulateIsbnScan = () => {
+    const demoIsbns = [
+      '9780141439570', // The Picture of Dorian Gray
+      '9780451524935', // 1984
+      '9780743273565', // The Great Gatsby
+      '9780486280615', // Frankenstein
+    ];
+    const chosenIsbn = demoIsbns[Math.floor(Math.random() * demoIsbns.length)];
+    setIsbn(chosenIsbn);
+    stopCamera();
+    handleIsbnFetch(chosenIsbn);
+  };
+
+  // Web NFC NTAG213 Scanning Logic
+  const startNfcRead = async () => {
+    setNfcError('');
+    setNfcSuccess(false);
+    
+    if (!('NDEFReader' in window)) {
+      setNfcError('Web NFC is not supported on this browser/device. Hold tag near phone or tap "Simulate NTAG213 Tag Tap".');
+      setIsNfcReading(true); // Still open the visual simulator so they can test
+      return;
+    }
+
+    try {
+      setIsNfcReading(true);
+      const ndef = new window.NDEFReader();
+      await ndef.scan();
+      
+      ndef.addEventListener("readingerror", () => {
+        setNfcError("NFC Reading Error: Cannot read data from the tag. Try again.");
+      });
+
+      ndef.addEventListener("reading", ({ serialNumber }) => {
+        console.log(`NFC tag read. Serial Number: ${serialNumber}`);
+        setNtagUid(serialNumber || '04:7A:B2:C5:D1:29:80');
+        setNfcSuccess(true);
+        setIsNfcReading(false);
+      });
+    } catch (error) {
+      console.error("NFC reading error: ", error);
+      setNfcError(`NFC activation failed: ${error.message || error}`);
+    }
+  };
+
+  const handleSimulateNfcTap = () => {
+    const bytes = Array.from({ length: 7 }, () => 
+      Math.floor(Math.random() * 256).toString(16).toUpperCase().padStart(2, '0')
+    );
+    const mockUid = bytes.join(':');
+    setNtagUid(mockUid);
+    setNfcSuccess(true);
+    setNfcError('');
+    setIsNfcReading(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (barcodeIntervalRef.current) clearInterval(barcodeIntervalRef.current);
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [cameraStream]);
 
   const resetForm = () => {
     setIsbn('');
@@ -211,6 +458,7 @@ const BookIngestionConsole = ({ user }) => {
       availableCopies: availableCopies || 1,
       genre: selectedHouse,
       tags: deduplicatedTags,
+      ntagUid: ntagUid ? ntagUid.trim() : null
     };
 
     try {
@@ -278,6 +526,15 @@ const BookIngestionConsole = ({ user }) => {
                     value={isbn}
                     onChange={(e) => setIsbn(e.target.value)}
                   />
+                  <button
+                    type="button"
+                    onClick={() => startCamera('isbn')}
+                    className="royal-btn lookup-btn"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    title="Scan Barcode with Camera"
+                  >
+                    <Camera size={14} />
+                  </button>
                   <button
                     onClick={handleIsbnFetch}
                     className="royal-btn lookup-btn"
@@ -392,6 +649,14 @@ const BookIngestionConsole = ({ user }) => {
                             {selectedImageFile ? `File: ${selectedImageFile.name}` : 'Upload Image'}
                           </button>
                         </label>
+                        <button
+                          type="button"
+                          onClick={() => startCamera('cover')}
+                          className="royal-btn"
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          <Camera size={14} /> Snap Photo
+                        </button>
                         {selectedImageFile && (
                           <button
                             type="button"
@@ -486,6 +751,59 @@ const BookIngestionConsole = ({ user }) => {
                   />
                 </div>
 
+                <div className="input-group nfc-binding-section">
+                  <label className="royal-input-label">NTAG213 UID (NFC Registration)</label>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <input
+                      type="text"
+                      className="royal-input"
+                      value={ntagUid}
+                      onChange={(e) => setNtagUid(e.target.value)}
+                      placeholder="e.g. 04:A3:B2:C1:D0:E9:80 (Optional)"
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={startNfcRead}
+                      className={`royal-btn ${isNfcReading ? 'loading-btn' : ''}`}
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      {isNfcReading ? <RefreshCw className="spin-icon" size={14} /> : <Smartphone size={14} />}
+                      {isNfcReading ? 'Reading...' : 'Scan NFC'}
+                    </button>
+                  </div>
+
+                  {isNfcReading && (
+                    <div className="nfc-pulse-overlay royal-card">
+                      <div className="nfc-scanner-pulse">
+                        <Smartphone size={32} className="gold-glow-icon animate-pulse" />
+                        <div className="pulse-ring"></div>
+                      </div>
+                      <p className="pulse-help-text">Tap NTAG213 Tag to register this book volume in the ledger.</p>
+                      <button
+                        type="button"
+                        onClick={handleSimulateNfcTap}
+                        className="royal-btn simulate-btn"
+                        style={{ marginTop: '12px', fontSize: '0.8rem', padding: '6px 14px' }}
+                      >
+                        Simulate NTAG213 Tag Tap
+                      </button>
+                    </div>
+                  )}
+
+                  {nfcSuccess && (
+                    <p className="nfc-success-text" style={{ fontSize: '0.85rem', color: 'var(--success)', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Check size={14} /> NTAG213 serial number bound successfully.
+                    </p>
+                  )}
+
+                  {nfcError && (
+                    <p className="nfc-error-text" style={{ fontSize: '0.85rem', color: '#ff7b72', marginTop: '6px' }}>
+                      {nfcError}
+                    </p>
+                  )}
+                </div>
+
                 <div className="submit-row">
                   <button type="submit" className="royal-btn submit-book-btn" id="add-volume-btn">
                     {isEditMode ? 'Save Updated Details' : 'Add Volume to Ledger'}
@@ -547,6 +865,76 @@ const BookIngestionConsole = ({ user }) => {
             </div>
           </div>
         </>
+      )}
+
+      {/* Hardware Camera Modal Overlay */}
+      {cameraModalOpen && (
+        <div className="camera-modal-overlay">
+          <div className="royal-card camera-modal-card">
+            <div className="camera-modal-header">
+              <h3>
+                {cameraMode === 'isbn' ? 'Scanning Volume ISBN Barcode' : 'Capture Masterwork Cover'}
+              </h3>
+              <button onClick={stopCamera} className="close-camera-btn">
+                <X size={18} />
+              </button>
+            </div>
+            
+            {cameraError ? (
+              <div className="camera-error-view">
+                <p className="camera-error-text">{cameraError}</p>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '16px', justifyContent: 'center' }}>
+                  {cameraMode === 'isbn' && (
+                    <button onClick={handleSimulateIsbnScan} className="royal-btn">
+                      Simulate ISBN Scan
+                    </button>
+                  )}
+                  <button onClick={stopCamera} className="royal-btn-secondary">
+                    Close
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="camera-stream-wrapper">
+                {cameraMode === 'isbn' ? (
+                  <div id="qr-reader" style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} />
+                ) : (
+                  <video ref={videoRef} autoPlay playsInline muted className="camera-video" />
+                )}
+                
+                {cameraMode === 'isbn' ? (
+                  <div className="isbn-scanning-laser-guide">
+                    <div className="scanning-focus-box">
+                      <div className="scanning-laser"></div>
+                      <div className="scanning-bracket top-left"></div>
+                      <div className="scanning-bracket top-right"></div>
+                      <div className="scanning-bracket bottom-left"></div>
+                      <div className="scanning-bracket bottom-right"></div>
+                    </div>
+                    <span className="scanning-help-text">Align barcode inside the frame</span>
+                  </div>
+                ) : (
+                  <div className="cover-capture-guide">
+                    <div className="cover-frame-outline"></div>
+                    <span className="scanning-help-text">Position cover inside the gold boundaries</span>
+                  </div>
+                )}
+
+                <div className="camera-controls-bar">
+                  {cameraMode === 'cover' ? (
+                    <button onClick={captureCoverPhoto} className="royal-btn capture-action-btn">
+                      <Camera size={16} /> Snap Cover Photo
+                    </button>
+                  ) : (
+                    <button onClick={handleSimulateIsbnScan} className="royal-btn capture-action-btn simulation-badge">
+                      <Sparkles size={16} /> Simulate Barcode Detection
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

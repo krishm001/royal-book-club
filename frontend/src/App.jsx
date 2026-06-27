@@ -17,6 +17,7 @@ import AdminRequests from './pages/admin/AdminRequests';
 import CuratorGatheringsPage from './pages/admin/CuratorGatheringsPage';
 import CuratorGenresPage from './pages/admin/CuratorGenresPage';
 import CuratorHeroPage from './pages/admin/CuratorHeroPage';
+import CuratorCheckoutsPage from './pages/admin/CuratorCheckoutsPage';
 import PrivacyNotice from './pages/PrivacyNotice';
 import TermsAndConditions from './pages/TermsAndConditions';
 import SignIn from './pages/auth/SignIn';
@@ -278,6 +279,7 @@ function App() {
             <Route path="/admin/gatherings" element={<CuratorGatheringsPage user={user} />} />
             <Route path="/admin/houses" element={<CuratorGenresPage user={user} />} />
             <Route path="/admin/hero" element={<CuratorHeroPage user={user} />} />
+            <Route path="/admin/book-requests" element={<CuratorCheckoutsPage user={user} />} />
             <Route path="/privacy" element={<PrivacyNotice />} />
             <Route path="/terms" element={<TermsAndConditions />} />
 
