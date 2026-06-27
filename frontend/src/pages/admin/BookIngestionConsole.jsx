@@ -217,38 +217,82 @@ const BookIngestionConsole = ({ user }) => {
           });
           html5QrCodeRef.current = html5QrCode;
 
-          html5QrCode.start(
-            { facingMode: "environment" },
-            {
-              fps: 20,
-              aspectRatio: 1.777778,
-              qrbox: { width: 400, height: 150 },
-              videoConstraints: {
-                width: { min: 640, ideal: 1280, max: 1920 },
-                height: { min: 480, ideal: 720, max: 1080 },
-                aspectRatio: 1.777778
+          const startScanning = (cameraIdOrConfig) => {
+            if (!html5QrCodeRef.current) return;
+            html5QrCode.start(
+              cameraIdOrConfig,
+              {
+                fps: 25,
+                qrbox: (w, h) => {
+                  // Make qrbox highly responsive: 85% of stream width or max 400, 35% of stream height or max 150
+                  const boxWidth = Math.floor(Math.min(w * 0.85, 400));
+                  const boxHeight = Math.floor(Math.min(h * 0.35, 150));
+                  return { width: boxWidth, height: boxHeight };
+                },
+                videoConstraints: {
+                  facingMode: "environment"
+                }
+              },
+              (decodedText, decodedResult) => {
+                console.log(`Barcode decoded successfully: ${decodedText}`);
+                setIsbn(decodedText);
+                html5QrCode.stop().then(() => {
+                  html5QrCodeRef.current = null;
+                  setCameraModalOpen(false);
+                  handleIsbnFetch(decodedText);
+                }).catch(err => {
+                  console.error('Failed to stop html5Qrcode', err);
+                  setCameraModalOpen(false);
+                  handleIsbnFetch(decodedText);
+                });
+              },
+              (errorMessage) => {
+                // Ignore scan failures per frame
               }
-            },
-            (decodedText, decodedResult) => {
-              console.log(`Barcode decoded successfully: ${decodedText}`);
-              setIsbn(decodedText);
-              html5QrCode.stop().then(() => {
-                html5QrCodeRef.current = null;
-                setCameraModalOpen(false);
-                handleIsbnFetch(decodedText);
-              }).catch(err => {
-                console.error('Failed to stop html5Qrcode', err);
-                setCameraModalOpen(false);
-                handleIsbnFetch(decodedText);
+            ).catch(err => {
+              console.error('Html5Qrcode start error:', err);
+              // Fallback to simpler facingMode config object if device ID string start failed
+              if (typeof cameraIdOrConfig === 'string') {
+                console.log('Retrying barcode scanner with facingMode constraint object...');
+                startScanning({ facingMode: "environment" });
+              } else {
+                setCameraError(`Failed to start barcode scanner: ${err.message || err}`);
+              }
+            });
+          };
+
+          // Actively probe for hardware back cameras first for robust mobile compatibility
+          Html5Qrcode.getCameras().then(devices => {
+            if (devices && devices.length > 0) {
+              console.log("Ingestion barcode scanner detected video devices:", devices);
+              
+              // Filter to find physical back/rear/environment cameras
+              let selectedDevice = devices.find(device => {
+                const label = device.label.toLowerCase();
+                return label.includes('back') || label.includes('rear') || label.includes('environment') || label.includes('main') || label.includes('external');
               });
-            },
-            (errorMessage) => {
-              // Ignore scan failures per frame
+              
+              // Fallback: any camera that doesn't state it's a front-facing lens
+              if (!selectedDevice) {
+                selectedDevice = devices.find(device => {
+                  const label = device.label.toLowerCase();
+                  return !label.includes('front') && !label.includes('selfie') && !label.includes('user');
+                });
+              }
+              
+              // Fallback to the last video input device (rear cameras are usually indexed last on standard dual-camera mobiles)
+              const finalCameraId = selectedDevice ? selectedDevice.id : devices[devices.length - 1].id;
+              console.log(`Starting barcode scanner with camera ID: ${finalCameraId} (${selectedDevice?.label || 'Last input fallback'})`);
+              startScanning(finalCameraId);
+            } else {
+              console.log("No video devices listed. Starting with environment constraint directly.");
+              startScanning({ facingMode: "environment" });
             }
-          ).catch(err => {
-            console.error('Html5Qrcode start error:', err);
-            setCameraError(`Failed to start barcode scanner: ${err.message || err}`);
+          }).catch(err => {
+            console.warn("getCameras failed or denied, attempting default environment startup:", err);
+            startScanning({ facingMode: "environment" });
           });
+
         } catch (err) {
           console.error('Html5Qrcode initialization error:', err);
           setCameraError(`Failed to initialize scanner: ${err.message || err}`);
@@ -275,11 +319,43 @@ const BookIngestionConsole = ({ user }) => {
 
   const captureCoverPhoto = () => {
     if (!videoRef.current) return;
+    
+    const vWidth = videoRef.current.videoWidth || 1280;
+    const vHeight = videoRef.current.videoHeight || 720;
+    const streamAspect = vWidth / vHeight;
+    const targetAspect = 3 / 4; // Portrait 3:4 aspect ratio
+    
+    // Create high-resolution 3:4 canvas for beautiful premium cover crops
     const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth || 640;
-    canvas.height = videoRef.current.videoHeight || 480;
+    canvas.width = 900;
+    canvas.height = 1200;
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    
+    let sx, sy, sWidth, sHeight;
+    
+    if (streamAspect > targetAspect) {
+      // Source stream is wider than target aspect ratio (typical landscape/webcam streams)
+      // Crop extra sides off horizontally
+      sHeight = vHeight;
+      sWidth = vHeight * targetAspect;
+      sx = (vWidth - sWidth) / 2;
+      sy = 0;
+    } else {
+      // Source stream is taller than target aspect ratio (uncommon portrait streams)
+      // Crop extra top/bottom vertically
+      sWidth = vWidth;
+      sHeight = vWidth / targetAspect;
+      sx = 0;
+      sy = (vHeight - sHeight) / 2;
+    }
+    
+    console.log(`Cropping live capture stream (${vWidth}x${vHeight}) to 3:4 aspect ratio: sx=${sx}, sy=${sy}, width=${sWidth}, height=${sHeight}`);
+    
+    ctx.drawImage(
+      videoRef.current,
+      sx, sy, sWidth, sHeight, // Source crop rectangle
+      0, 0, canvas.width, canvas.height // Destination rectangle
+    );
     
     canvas.toBlob((blob) => {
       if (blob) {
@@ -870,7 +946,7 @@ const BookIngestionConsole = ({ user }) => {
       {/* Hardware Camera Modal Overlay */}
       {cameraModalOpen && (
         <div className="camera-modal-overlay">
-          <div className="royal-card camera-modal-card">
+          <div className={`royal-card camera-modal-card ${cameraMode === 'cover' ? 'cover-mode' : 'isbn-mode'}`}>
             <div className="camera-modal-header">
               <h3>
                 {cameraMode === 'isbn' ? 'Scanning Volume ISBN Barcode' : 'Capture Masterwork Cover'}
@@ -895,7 +971,7 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
               </div>
             ) : (
-              <div className="camera-stream-wrapper">
+              <div className={`camera-stream-wrapper ${cameraMode === 'cover' ? 'cover-mode' : 'isbn-mode'}`}>
                 {cameraMode === 'isbn' ? (
                   <div id="qr-reader" style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} />
                 ) : (
@@ -919,7 +995,7 @@ const BookIngestionConsole = ({ user }) => {
                     <span className="scanning-help-text">Position cover inside the gold boundaries</span>
                   </div>
                 )}
-
+ 
                 <div className="camera-controls-bar">
                   {cameraMode === 'cover' ? (
                     <button onClick={captureCoverPhoto} className="royal-btn capture-action-btn">
