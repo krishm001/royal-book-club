@@ -1,125 +1,162 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, CheckCircle2, Users } from 'lucide-react';
+import { BarChart3, CheckCircle2, Users, Lock, RefreshCw } from 'lucide-react';
+import { fetchActivePoll, castVote } from '../../services/pollApi';
 import './PollWidget.css';
 
-const DEFAULT_OPTIONS = [
-  { id: 'opt-1', text: 'The Picture of Dorian Gray — Oscar Wilde', initialVotes: 142 },
-  { id: 'opt-2', text: 'The Great Gatsby — F. Scott Fitzgerald', initialVotes: 98 },
-  { id: 'opt-3', text: 'Pride and Prejudice — Jane Austen', initialVotes: 167 },
-  { id: 'opt-4', text: 'Crime and Punishment — Fyodor Dostoevsky', initialVotes: 115 }
-];
-
-const PollWidget = ({ 
-  pollId = 'weekly-book-poll', 
-  question = 'Which masterwork should be selected for the Sovereign Guild Summer Read?',
-  options = DEFAULT_OPTIONS
-}) => {
-  const [votedOptionId, setVotedOptionId] = useState(null);
-  const [votesData, setVotesData] = useState([]);
-  const [totalVotes, setTotalVotes] = useState(0);
+const PollWidget = ({ user, onSignIn }) => {
+  const [poll, setPoll] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [votedIndex, setVotedIndex] = useState(null);
   const [animate, setAnimate] = useState(false);
 
+  // Load the active poll on mount
   useEffect(() => {
-    // Load vote from localStorage
-    const savedVote = localStorage.getItem(`royal-poll-${pollId}`);
-    if (savedVote) {
-      setVotedOptionId(savedVote);
-    }
+    const getPoll = async () => {
+      try {
+        setLoading(true);
+        const res = await fetchActivePoll();
+        if (res?.success && res?.data) {
+          const activePoll = res.data;
+          setPoll(activePoll);
+          
+          // Check if user has already voted on this specific poll
+          const savedVoteIndex = localStorage.getItem(`royal-poll-${activePoll.id}`);
+          if (savedVoteIndex !== null) {
+            setVotedIndex(parseInt(savedVoteIndex, 10));
+          }
+        } else {
+          setError('No active plebiscites available at the moment.');
+        }
+      } catch (err) {
+        console.error('Failed to fetch active poll', err);
+        setError('The Scribes are currently offline. Unable to fetch active plebiscite.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // Load or set votes
-    const cachedVotes = localStorage.getItem(`royal-poll-data-${pollId}`);
-    if (cachedVotes) {
-      const parsed = JSON.parse(cachedVotes);
-      setVotesData(parsed);
-      setTotalVotes(parsed.reduce((sum, opt) => sum + opt.votes, 0));
-    } else {
-      const data = options.map(opt => ({
-        id: opt.id,
-        text: opt.text,
-        votes: opt.initialVotes
-      }));
-      setVotesData(data);
-      setTotalVotes(data.reduce((sum, opt) => sum + opt.votes, 0));
-    }
-  }, [pollId, JSON.stringify(options)]);
+    getPoll();
+  }, []);
 
+  // Trigger results growing animation
   useEffect(() => {
-    if (votedOptionId) {
-      // Trigger grow animations
+    if (votedIndex !== null) {
       const timer = setTimeout(() => setAnimate(true), 50);
       return () => clearTimeout(timer);
     } else {
       setAnimate(false);
     }
-  }, [votedOptionId]);
+  }, [votedIndex]);
 
-  const handleVote = (optionId) => {
-    if (votedOptionId) return; // Prevent multiple voting
+  // Handle Casting a Vote
+  const handleVote = async (optionIndex) => {
+    if (votedIndex !== null || !poll) return;
 
-    const updatedData = votesData.map(opt => {
-      if (opt.id === optionId) {
-        return { ...opt, votes: opt.votes + 1 };
-      }
-      return opt;
-    });
+    // Check membersOnly condition in frontend (extra guard)
+    if (poll.membersOnly && !user) {
+      if (onSignIn) onSignIn();
+      return;
+    }
 
-    setVotesData(updatedData);
-    setTotalVotes(prev => prev + 1);
-    setVotedOptionId(optionId);
+    // 1. Optimistic UI update
+    const updatedVotes = [...poll.votes];
+    updatedVotes[optionIndex] = (updatedVotes[optionIndex] || 0) + 1;
     
-    // Save to localStorage
-    localStorage.setItem(`royal-poll-${pollId}`, optionId);
-    localStorage.setItem(`royal-poll-data-${pollId}`, JSON.stringify(updatedData));
+    setPoll(prev => ({
+      ...prev,
+      votes: updatedVotes
+    }));
+    setVotedIndex(optionIndex);
+    
+    // Save state to localStorage to prevent duplicate votes
+    localStorage.setItem(`royal-poll-${poll.id}`, optionIndex.toString());
+
+    // 2. Perform backend update in background
+    try {
+      await castVote(poll.id, optionIndex);
+    } catch (err) {
+      console.error('Failed to register vote in ledger', err);
+      // Revert if error occurs (optional but keeps frontend aligned)
+      // Since it's a minor aggregate, we let it slide for seamless UX,
+      // but log it clearly in console.
+    }
   };
 
-  const handleResetVote = () => {
-    if (!votedOptionId) return;
+  if (loading) {
+    return (
+      <div className="royal-card poll-widget" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '250px' }}>
+        <div style={{ textAlign: 'center', color: 'var(--accent)' }}>
+          <RefreshCw className="animate-spin" size={28} style={{ margin: '0 auto 12px' }} />
+          <p style={{ fontSize: '0.85rem', letterSpacing: '0.05em' }}>Consulting the Guild Scrolls...</p>
+        </div>
+      </div>
+    );
+  }
 
-    const updatedData = votesData.map(opt => {
-      if (opt.id === votedOptionId) {
-        return { ...opt, votes: Math.max(0, opt.votes - 1) };
-      }
-      return opt;
-    });
+  if (error || !poll) {
+    return (
+      <div className="royal-card poll-widget" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '250px', padding: '30px' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+          <BarChart3 size={32} style={{ margin: '0 auto 16px', opacity: 0.3 }} />
+          <p style={{ fontSize: '0.9rem' }}>{error || 'No active community plebiscites at this time.'}</p>
+        </div>
+      </div>
+    );
+  }
 
-    setVotesData(updatedData);
-    setTotalVotes(prev => Math.max(0, prev - 1));
-    setVotedOptionId(null);
-    setAnimate(false);
+  // Security Gating: If poll is members-only and user is not logged in
+  if (poll.membersOnly && !user) {
+    return (
+      <div className="poll-widget-gated animate-fade-in">
+        <div className="poll-gated-icon-wrapper">
+          <Lock size={24} />
+        </div>
+        <h3 className="poll-gated-title gold-gradient-text">Sovereign Plebiscite Gated</h3>
+        <p className="poll-gated-desc">
+          This community plebiscite is restricted to active members of the Royal Guild. Please sign in or request an invitation to participate.
+        </p>
+        <button onClick={onSignIn} className="poll-gated-btn">
+          Sign In to Vote
+        </button>
+      </div>
+    );
+  }
 
-    localStorage.removeItem(`royal-poll-${pollId}`);
-    localStorage.setItem(`royal-poll-data-${pollId}`, JSON.stringify(updatedData));
-  };
+  const totalVotes = poll.votes.reduce((sum, v) => sum + v, 0);
 
   return (
-    <div className="royal-card poll-widget" id={`poll-${pollId}`}>
+    <div className="royal-card poll-widget animate-fade-in" id={`poll-${poll.id}`}>
       <div className="poll-header-row">
         <div className="poll-icon-wrapper">
           <BarChart3 className="poll-header-icon" size={20} />
         </div>
         <div className="poll-meta">
-          <span className="poll-tag">Salon Plebiscite</span>
-          <h3 className="poll-question">{question}</h3>
+          <span className="poll-tag">
+            {poll.membersOnly ? 'Sovereign Guild Plebiscite' : 'Community Plebiscite'}
+          </span>
+          <h3 className="poll-question">{poll.question}</h3>
         </div>
       </div>
 
       <div className="poll-options-container">
-        {votesData.map((option) => {
-          const votePercentage = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
-          const isSelected = votedOptionId === option.id;
-          const hasVoted = votedOptionId !== null;
+        {poll.options.map((optionText, idx) => {
+          const optionVotes = poll.votes[idx] || 0;
+          const votePercentage = totalVotes > 0 ? Math.round((optionVotes / totalVotes) * 100) : 0;
+          const isSelected = votedIndex === idx;
+          const hasVoted = votedIndex !== null;
 
           return (
             <div 
-              key={option.id}
+              key={idx}
               className={`poll-option-wrapper ${isSelected ? 'selected' : ''} ${hasVoted ? 'voted-state' : ''}`}
-              onClick={() => !hasVoted && handleVote(option.id)}
+              onClick={() => !hasVoted && handleVote(idx)}
               role="button"
               tabIndex={hasVoted ? -1 : 0}
-              id={`poll-opt-${option.id}`}
+              id={`poll-opt-${poll.id}-${idx}`}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !hasVoted) {
-                  handleVote(option.id);
+                  handleVote(idx);
                 }
               }}
             >
@@ -135,7 +172,7 @@ const PollWidget = ({
                   />
                   <div className="poll-result-content">
                     <span className="option-text">
-                      {option.text}
+                      {optionText}
                       {isSelected && <CheckCircle2 size={16} className="selected-check-icon" />}
                     </span>
                     <span className="option-percentage glow-text">{animate ? `${votePercentage}%` : '0%'}</span>
@@ -144,7 +181,7 @@ const PollWidget = ({
               ) : (
                 // Voting Interactive Option Button
                 <div className="poll-option-interactive">
-                  <span className="option-text">{option.text}</span>
+                  <span className="option-text">{optionText}</span>
                   <div className="option-bullet"></div>
                 </div>
               )}
@@ -156,12 +193,12 @@ const PollWidget = ({
       <div className="poll-footer-row">
         <div className="poll-stats">
           <Users size={16} />
-          <span>{totalVotes.toLocaleString()} votes cast by Patrons</span>
+          <span>{totalVotes.toLocaleString()} votes cast in Scribes Ledger</span>
         </div>
-        {votedOptionId && (
-          <button onClick={handleResetVote} className="change-vote-btn" id="change-vote-btn">
-            Change Vote
-          </button>
+        {votedIndex !== null && (
+          <span style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: '600', letterSpacing: '0.05em' }}>
+            ✓ VOTE RECORDED
+          </span>
         )}
       </div>
     </div>

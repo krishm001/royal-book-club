@@ -6,6 +6,7 @@ import { fetchBooks } from '../services/libraryApi';
 import { fetchHeroConfig } from '../services/heroApi';
 import { fetchEvents } from '../services/eventApi';
 import { fetchDiscourses } from '../services/discourseApi';
+import { fetchStatsSummary } from '../services/statsApi';
 import './HomePage.css';
 
 const defaultFeaturedBook = {
@@ -31,6 +32,12 @@ const HomePage = ({ user, onSignIn, theme }) => {
     backgroundImageUrlSalon: '',
     backgroundImageUrlAcademic: ''
   });
+  const [liveStats, setLiveStats] = useState({
+    membersCount: 0,
+    booksCount: 0,
+    activeCheckoutsCount: 0,
+    upcomingSalonsCount: 0
+  });
 
   useEffect(() => {
     const loadHero = async () => {
@@ -43,7 +50,20 @@ const HomePage = ({ user, onSignIn, theme }) => {
         console.warn('Unable to load hero config', err);
       }
     };
+
+    const loadLiveStats = async () => {
+      try {
+        const res = await fetchStatsSummary();
+        if (res?.success && res?.data) {
+          setLiveStats(res.data);
+        }
+      } catch (err) {
+        console.warn('Unable to load stats summary', err);
+      }
+    };
+
     loadHero();
+    loadLiveStats();
   }, []);
 
   const getHeroBackgroundStyle = () => {
@@ -120,10 +140,10 @@ const HomePage = ({ user, onSignIn, theme }) => {
   }, []);
 
   const stats = [
-    { label: 'Eminent Scholars', count: '1,420', icon: <Users className="stat-icon" /> },
-    { label: 'Literary Tomes', count: '5,800', icon: <BookOpen className="stat-icon" /> },
-    { label: 'Active Checkouts', count: '342', icon: <Sparkles className="stat-icon" /> },
-    { label: 'Upcoming Salons', count: '12', icon: <Calendar className="stat-icon" /> },
+    { label: 'Eminent Scholars', count: liveStats.membersCount.toLocaleString(), icon: <Users className="stat-icon" /> },
+    { label: 'Literary Tomes', count: liveStats.booksCount.toLocaleString(), icon: <BookOpen className="stat-icon" /> },
+    { label: 'Active Checkouts', count: liveStats.activeCheckoutsCount.toLocaleString(), icon: <Sparkles className="stat-icon" /> },
+    { label: 'Upcoming Salons', count: liveStats.upcomingSalonsCount.toLocaleString(), icon: <Calendar className="stat-icon" /> },
   ];
 
   return (
@@ -194,7 +214,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
         {/* Left Column: Poll and Community interactions */}
         <div className="left-column">
           <div className="royal-card interactive-poll-section">
-            <PollWidget />
+            <PollWidget user={user} onSignIn={onSignIn} />
           </div>
         </div>
 

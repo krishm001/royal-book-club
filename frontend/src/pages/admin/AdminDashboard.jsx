@@ -3,11 +3,19 @@ import { Shield, BookOpen, Users, PlusCircle, Award, Settings, Layers, Calendar,
 import { Link } from 'react-router-dom';
 import { listAdminRequests } from '../../services/adminRequestApi';
 import { fetchCheckouts } from '../../services/libraryApi';
+import { fetchStatsSummary } from '../../services/statsApi';
 import './AdminDashboard.css';
 
 const AdminDashboard = ({ user }) => {
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [pendingCirculationCount, setPendingCirculationCount] = useState(0);
+
+  const [liveStats, setLiveStats] = useState({
+    membersCount: 0,
+    booksCount: 0,
+    activeCheckoutsCount: 0,
+    upcomingSalonsCount: 0
+  });
 
   const isAdmin = user && user.role === 'ADMIN';
 
@@ -35,16 +43,28 @@ const AdminDashboard = ({ user }) => {
       }
     };
 
+    const loadLiveStats = async () => {
+      try {
+        const res = await fetchStatsSummary();
+        if (res?.success && res?.data) {
+          setLiveStats(res.data);
+        }
+      } catch (e) {
+        console.error('Failed to load stats summary', e);
+      }
+    };
+
     loadPendingRequests();
     loadPendingCirculation();
-  }, []);
+    loadLiveStats();
+  }, [isAdmin]);
 
   // Premium quick metrics
   const adminStats = [
-    { label: 'Registered Patrons', count: '1,420', change: '+12% this month', icon: <Users className="stat-icon-gold" /> },
-    { label: 'Archived Volumes', count: '5,800', change: '6 added today', icon: <BookOpen className="stat-icon-gold" /> },
-    { label: 'Active Checkouts', count: '342', change: '4 overdue', icon: <Layers className="stat-icon-gold" /> },
-    { label: 'Scheduled Meetups', count: '12', change: 'Next on Oct 15', icon: <Calendar className="stat-icon-gold" /> }
+    { label: 'Registered Patrons', count: liveStats.membersCount.toLocaleString(), change: 'Live from Ledger', icon: <Users className="stat-icon-gold" /> },
+    { label: 'Archived Volumes', count: liveStats.booksCount.toLocaleString(), change: 'Cataloged Items', icon: <BookOpen className="stat-icon-gold" /> },
+    { label: 'Active Checkouts', count: liveStats.activeCheckoutsCount.toLocaleString(), change: 'In Circulation', icon: <Layers className="stat-icon-gold" /> },
+    { label: 'Scheduled Meetups', count: liveStats.upcomingSalonsCount.toLocaleString(), change: 'Upcoming Salons', icon: <Calendar className="stat-icon-gold" /> }
   ];
 
   if (!isAdmin) {
