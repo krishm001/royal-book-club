@@ -272,9 +272,9 @@ const CatalogPage = ({ user }) => {
           <Sparkles size={14} className="gold-glow-icon" />
           <span className="gold-gradient-text">THE STUDY ARCHIVES</span>
         </div>
-        <h1 className="catalog-title glow-text">Exquisite Study Catalog</h1>
+        <h1 className="catalog-title glow-text">Works That Changed Minds. Chosen to Change Yours.</h1>
         <p className="catalog-subtitle">
-          Browse our highly curated selection of masterworks. Digital volumes are available for instant royal patronage checkouts.
+          The books that shape minds are rarely the ones that top charts. Find them here. Read them now.
         </p>
       </header>
 

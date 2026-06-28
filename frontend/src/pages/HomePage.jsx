@@ -9,13 +9,13 @@ import { fetchDiscourses } from '../services/discourseApi';
 import './HomePage.css';
 
 const defaultFeaturedBook = {
-  id: 'book-1',
-  title: 'The Picture of Dorian Gray',
-  author: 'Oscar Wilde',
-  genre: 'Classic Gothic',
+  id: '9789394201071',
+  title: 'A History of Indian Philosophy Vol III',
+  author: 'Surendranath Dasgupta',
+  genre: 'Indian Philosophy',
   rating: 4.9,
-  coverUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=600&q=80',
-  description: 'Oscar Wilde’s only novel is the fashionable salon sensation of its age, tracing the brilliant, aesthetic descent of a young aristocrat who remains ever youthful while his portrait bears the sins of his hedonistic soul.',
+  coverUrl: 'https://firebasestorage.googleapis.com/v0/b/royal-book-club.firebasestorage.app/o/books%2F1782581290512_cover_snapshot_1782581257008.png?alt=media&token=9ccc517c-a239-450a-8934-7c54e9c2e7f3',
+  description: 'Dr Surendranath Dasgupta’s in-depth work is mainly intended to provide a holistic exposition of Indian thought, based on original texts and commentaries. Occasionally, however, the author has discussed the views of other writers in the assessment of the chronology of facts.Years of dedicated study and painstaking collation of data yielded this phenomenal collection of all the strains of philosophic thought propagated by various schools and philosophers in India down the ages. Originally published in five volumes, the last being posthumous, A History of Indian Philosophy remains a seminal work for scholars and students alike.This edition presents the original work in three volumes for the first time, making it more accessible and easier to handle. Nothing of the original has been abridged or sacrificed to the book.',
   citation: '"To define is to limit." — Lord Henry Wotton'
 };
 
@@ -25,8 +25,8 @@ const HomePage = ({ user, onSignIn, theme }) => {
   const [activeEvents, setActiveEvents] = useState([]);
   const [dissertations, setDissertations] = useState([]);
   const [heroConfig, setHeroConfig] = useState({
-    title: 'Voices, Ideas, Community',
-    subtitle: 'Enter an exclusive literary salon designed for the refined reader. Access an exquisite curated catalog of masterworks, RSVP to exclusive intellectual banquets, and publish deep literary dissertations.',
+    title: 'Words, Wisdom, Will.',
+    subtitle: 'The wisest humans were not the most connected. They were the most read. They had no feed, no followers, no notifications. They had books. And they shaped the world.',
     backgroundImageUrl: '',
     backgroundImageUrlSalon: '',
     backgroundImageUrlAcademic: ''
@@ -143,7 +143,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
           </p>
           <div className="hero-cta-group">
             <Link to="/catalog" className="royal-btn">
-              Explore Library <BookOpen size={16} />
+              Enter the Study <BookOpen size={16} />
             </Link>
             {!user && (
               <button onClick={onSignIn} className="royal-btn-secondary">

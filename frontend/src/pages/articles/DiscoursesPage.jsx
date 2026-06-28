@@ -846,7 +846,7 @@ const DiscoursesPage = ({ user }) => {
         </div>
         <h1 className="discourses-title glow-text">The Socratic Portico</h1>
         <p className="discourses-subtitle">
-          Participate in nested salon debates or read rich critical dissertations written by club scholars and curators.
+          Where questions matter more than answers. In a world drowning in opinions, Royal Book Club offers something rare - rigorous inquiry. Through 'Intellectual Chronicles' and 'Courtyard Debates', we do not tell you what to think. We dare you to.
         </p>
 
         {/* Tab Selector */}

@@ -136,20 +136,20 @@ function App() {
               <Sparkles className="brand-icon gold-glow" />
               <div className="brand-text">
                 <span className="brand-title gold-gradient-text">Royal Book Club</span>
-                <span className="brand-tagline">Exquisite Literary Salon</span>
+                <span className="brand-tagline">To Read Deeply is to Remain Human</span>
               </div>
             </Link>
 
             {/* Desktop Navigation */}
             <nav className="desktop-nav">
               <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} end>
-                <Home size={16} /> Home
+                <Home size={16} /> Pavilion
               </NavLink>
               <NavLink to="/catalog" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <BookOpen size={16} /> Study
               </NavLink>
               <NavLink to="/events" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <Calendar size={16} /> Meetups & Litfests
+                <Calendar size={16} /> Assembly
               </NavLink>
               <NavLink to="/discourses" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <BookText size={16} /> Discourses
@@ -186,13 +186,13 @@ function App() {
                       <Shield size={12} /> Curator Console
                     </Link>
                     <button onClick={handleSignOut} className="sign-out-btn" id="logout-btn">
-                      <LogOut size={14} /> Leave Salon
+                      <LogOut size={14} /> Leave the Realm
                     </button>
                   </div>
                 </div>
               ) : (
                 <Link to="/auth/signin" className="royal-btn header-btn" id="login-btn">
-                  <User size={14} /> Enter Salon
+                  <User size={14} /> Enter The Archway
                 </Link>
               )}
             </div>
@@ -210,13 +210,13 @@ function App() {
             <div className="mobile-nav-overlay animate-fade-in" role="dialog" aria-modal="true" onClick={closeMobileMenu}>
               <nav className="mobile-nav" onClick={(e) => e.stopPropagation()}>
                 <NavLink to="/" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu} end>
-                  <Home size={20} /> Home
+                  <Home size={20} /> Pavilion
                 </NavLink>
                 <NavLink to="/catalog" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu}>
                   <BookOpen size={20} /> Study
                 </NavLink>
                 <NavLink to="/events" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu}>
-                  <Calendar size={20} /> Meetups & Litfests
+                  <Calendar size={20} /> Assembly
                 </NavLink>
                 <NavLink to="/discourses" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu}>
                   <BookText size={20} /> Discourses
@@ -255,7 +255,7 @@ function App() {
                     </div>
                   ) : (
                     <Link to="/auth/signin" onClick={closeMobileMenu} className="royal-btn mobile-login-btn" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                      Enter Salon
+                      Enter The Archway
                     </Link>
                   )}
                 </div>
@@ -297,7 +297,7 @@ function App() {
                 <Sparkles className="gold-glow" size={20} />
                 <span className="gold-gradient-text">The Royal Book Club</span>
               </div>
-              <p>Curating exceptional literature and foster refined intellectual community since 2026.</p>
+              <p>Constantly surpassing our bad faith towards absolute freedom by cultivating intellectual community since 2026.</p>
             </div>
             <div className="footer-links">
               <h4>The Library</h4>
@@ -309,7 +309,7 @@ function App() {
             </div>
             <div className="footer-motto">
               <blockquote>
-                "A truly great book should be read in youth, again in maturity and once more in old age."
+                "A word, deeply read, becomes conviction. A conviction becomes a life. You do not read a great book. You are slowly, quietly, being rewritten by it."
                 <cite>— Sovereign Reader Guild</cite>
               </blockquote>
             </div>
