@@ -21,5 +21,6 @@ public class BookReview {
     private String author; // User's name, e.g. "Keats Byron"
     private String content;
     private Integer rating; // 1 to 5 stars
+    private Boolean approved;
     private Instant createdAt;
 }

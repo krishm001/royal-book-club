@@ -31,6 +31,8 @@ const BookIngestionConsole = ({ user }) => {
   const [selectedHouse, setSelectedHouse] = useState('');
   const [houses, setHouses] = useState([]);
   const [tagsInput, setTagsInput] = useState('');
+  const [editingTagIndex, setEditingTagIndex] = useState(null);
+  const [editingTagValue, setEditingTagValue] = useState('');
 
   // NTAG213 and Camera Hardware states
   const [ntagUid, setNtagUid] = useState('');
@@ -439,6 +441,28 @@ const BookIngestionConsole = ({ user }) => {
     };
   }, [cameraStream]);
 
+  const handleStartTagEdit = (index, value) => {
+    setEditingTagIndex(index);
+    setEditingTagValue(value);
+  };
+
+  const handleSaveTagEdit = (index) => {
+    const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
+    if (editingTagValue.trim()) {
+      tags[index] = editingTagValue.trim();
+    } else {
+      tags.splice(index, 1);
+    }
+    setTagsInput(tags.join(', '));
+    setEditingTagIndex(null);
+  };
+
+  const handleRemoveTag = (index) => {
+    const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
+    tags.splice(index, 1);
+    setTagsInput(tags.join(', '));
+  };
+
   const resetForm = () => {
     setIsbn('');
     setManualTitle('');
@@ -455,6 +479,7 @@ const BookIngestionConsole = ({ user }) => {
     setIsEditMode(false);
     setInfoMessage('');
     setTagsInput('');
+    setNtagUid('');
     if (houses.length > 0) {
       setSelectedHouse(houses[0]);
     }
@@ -700,7 +725,64 @@ const BookIngestionConsole = ({ user }) => {
                     onChange={(e) => setTagsInput(e.target.value)}
                     placeholder="e.g. aesthetic, victorian, philosophy"
                   />
-                  <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>Provide free text tags separated by commas. Trimming and deduplication will be applied automatically.</span>
+                  <div className="interactive-tags-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                    {tagsInput.split(',').map(t => t.trim()).filter(Boolean).map((tag, idx) => (
+                      editingTagIndex === idx ? (
+                        <input
+                          key={idx}
+                          type="text"
+                          value={editingTagValue}
+                          onChange={(e) => setEditingTagValue(e.target.value)}
+                          onBlur={() => handleSaveTagEdit(idx)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleSaveTagEdit(idx);
+                            } else if (e.key === 'Escape') {
+                              setEditingTagIndex(null);
+                            }
+                          }}
+                          autoFocus
+                          className="royal-input"
+                          style={{ width: '100px', padding: '2px 6px', fontSize: '0.8rem', height: 'auto', display: 'inline-block' }}
+                        />
+                      ) : (
+                        <span
+                          key={idx}
+                          className="tag-pill-interactive"
+                          onClick={() => handleStartTagEdit(idx, tag)}
+                          style={{
+                            background: 'rgba(210, 165, 116, 0.1)',
+                            border: '1px solid rgba(210, 165, 116, 0.25)',
+                            color: 'var(--accent)',
+                            padding: '4px 10px',
+                            borderRadius: '12px',
+                            fontSize: '0.8rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            userSelect: 'none',
+                            transition: 'all 0.2s ease',
+                          }}
+                          title="Click to edit"
+                        >
+                          <span>{tag}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveTag(idx);
+                            }}
+                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', padding: 0, cursor: 'pointer', fontSize: '10px' }}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      )
+                    ))}
+                  </div>
+                  <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>Provide free text tags separated by commas. Click any tag pill above to edit inline. Trimming and deduplication will be applied automatically.</span>
                 </div>
 
                 <div className="input-group">
@@ -780,6 +862,33 @@ const BookIngestionConsole = ({ user }) => {
                     onChange={(e) => setCoverUrl(e.target.value)}
                     placeholder="Paste direct image URL (https://...)"
                   />
+                  {coverUrl && (
+                    <div style={{ position: 'relative', marginTop: '12px', border: '1px solid rgba(255,255,255,0.05)', padding: '6px', borderRadius: '6px', background: 'rgba(0,0,0,0.2)', display: 'inline-block', maxWidth: '100%' }}>
+                      <img src={coverUrl} alt="Cover Preview" style={{ maxWidth: '100%', maxHeight: '180px', borderRadius: '4px', display: 'block' }} />
+                      <button
+                        type="button"
+                        onClick={() => setCoverUrl('')}
+                        style={{
+                          position: 'absolute',
+                          top: '6px',
+                          right: '6px',
+                          background: 'rgba(0,0,0,0.7)',
+                          border: 'none',
+                          color: 'white',
+                          borderRadius: '50%',
+                          width: '24px',
+                          height: '24px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                        title="Clear cover URL"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="input-group">

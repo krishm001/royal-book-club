@@ -25,4 +25,8 @@ public class CheckoutRequestDto {
     private int durationDays = 14; // Default checkout window: 2 weeks
 
     private String ntagUid;
+
+    private String memberEmail;
+    private String memberName;
 }
+

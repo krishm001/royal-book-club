@@ -18,11 +18,14 @@ import CuratorGatheringsPage from './pages/admin/CuratorGatheringsPage';
 import CuratorGenresPage from './pages/admin/CuratorGenresPage';
 import CuratorHeroPage from './pages/admin/CuratorHeroPage';
 import CuratorCheckoutsPage from './pages/admin/CuratorCheckoutsPage';
+import CuratorSettingsPage from './pages/admin/CuratorSettingsPage';
+import CuratorModerationPage from './pages/admin/CuratorModerationPage';
 import PrivacyNotice from './pages/PrivacyNotice';
 import TermsAndConditions from './pages/TermsAndConditions';
 import SignIn from './pages/auth/SignIn';
 import SignUp from './pages/auth/SignUp';
 import ResetPassword from './pages/auth/ResetPassword';
+import ProfilePage from './pages/member/ProfilePage';
 import './App.css';
 
 function App() {
@@ -182,9 +185,14 @@ function App() {
                   <div className="user-info-dropdown">
                     <div className="user-name">{user.displayName}</div>
                     <div className="user-tier">{user.tier}</div>
-                    <Link to="/admin" className="admin-portal-link" style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '4px' }}>
-                      <Shield size={12} /> Curator Console
+                    <Link to="/profile" className="admin-portal-link" style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '4px' }}>
+                      <User size={12} /> Profile Ledger
                     </Link>
+                    {user?.role === 'ADMIN' && (
+                      <Link to="/admin" className="admin-portal-link" style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '4px' }}>
+                        <Shield size={12} /> Curator Console
+                      </Link>
+                    )}
                     <button onClick={handleSignOut} className="sign-out-btn" id="logout-btn">
                       <LogOut size={14} /> Leave the Realm
                     </button>
@@ -244,11 +252,18 @@ function App() {
                           <div className="mobile-user-tier">{user.tier}</div>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <Link to="/admin" onClick={closeMobileMenu} className="royal-btn-secondary" style={{ flex: 1, justifyContent: 'center', fontSize: '0.75rem', padding: '6px 12px' }}>
-                          Curator Console
-                        </Link>
-                        <button onClick={() => { handleSignOut(); closeMobileMenu(); }} className="sign-out-btn" style={{ flex: 1, padding: '6px 12px' }}>
+                      <div style={{ display: 'flex', gap: '10px', flexDirection: 'column', width: '100%' }}>
+                        <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+                          <Link to="/profile" onClick={closeMobileMenu} className="royal-btn-secondary" style={{ flex: 1, justifyContent: 'center', fontSize: '0.75rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            Profile Ledger
+                          </Link>
+                          {user?.role === 'ADMIN' && (
+                            <Link to="/admin" onClick={closeMobileMenu} className="royal-btn-secondary" style={{ flex: 1, justifyContent: 'center', fontSize: '0.75rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              Curator Console
+                            </Link>
+                          )}
+                        </div>
+                        <button onClick={() => { handleSignOut(); closeMobileMenu(); }} className="sign-out-btn" style={{ width: '100%', padding: '6px 12px' }}>
                           Sign Out
                         </button>
                       </div>
@@ -280,6 +295,9 @@ function App() {
             <Route path="/admin/houses" element={<CuratorGenresPage user={user} />} />
             <Route path="/admin/hero" element={<CuratorHeroPage user={user} />} />
             <Route path="/admin/book-requests" element={<CuratorCheckoutsPage user={user} />} />
+            <Route path="/admin/settings" element={<CuratorSettingsPage user={user} />} />
+            <Route path="/admin/moderation" element={<CuratorModerationPage user={user} />} />
+            <Route path="/profile" element={<ProfilePage user={user} />} />
             <Route path="/privacy" element={<PrivacyNotice />} />
             <Route path="/terms" element={<TermsAndConditions />} />
 

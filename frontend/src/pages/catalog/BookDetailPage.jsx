@@ -219,9 +219,9 @@ const BookDetailPage = ({ user }) => {
 
     try {
       if (nfcActionType === 'checkout') {
-        await verifiedCheckout({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: targetUid });
+        await verifiedCheckout({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
       } else {
-        await verifiedReturn({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: targetUid });
+        await verifiedReturn({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
       }
       setNfcSuccess(true);
       setNfcReading(false);
@@ -237,9 +237,9 @@ const BookDetailPage = ({ user }) => {
     setFallbackLoading(true);
     try {
       if (nfcActionType === 'checkout') {
-        await requestCheckout({ bookId: book.isbn, memberId: user.uid || user.id });
+        await requestCheckout({ bookId: book.isbn, memberId: user.uid || user.id, memberName: user?.displayName, memberEmail: user?.email });
       } else {
-        await requestReturn({ bookId: book.isbn, memberId: user.uid || user.id });
+        await requestReturn({ bookId: book.isbn, memberId: user.uid || user.id, memberName: user?.displayName, memberEmail: user?.email });
       }
       setFallbackSuccess(true);
       setFallbackLoading(false);

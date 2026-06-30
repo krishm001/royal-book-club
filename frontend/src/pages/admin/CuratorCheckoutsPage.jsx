@@ -198,7 +198,7 @@ export default function CuratorCheckoutsPage({ user }) {
     );
   };
 
-  const renderMemberCell = (memberId) => {
+  const renderMemberCell = (memberId, tx) => {
     const member = userMap[memberId];
     let name = '';
     if (member) {
@@ -209,10 +209,13 @@ export default function CuratorCheckoutsPage({ user }) {
         name = member.email.split('@')[0];
       }
     }
+    if (!name && tx) {
+      name = tx.memberName || '';
+    }
     if (!name) {
       name = 'Unknown Patron';
     }
-    const email = member?.email || 'No email';
+    const email = member?.email || tx?.memberEmail || 'No email';
     return (
       <div className="ledger-member-cell">
         <div className="avatar-mini-circle">
@@ -323,7 +326,7 @@ export default function CuratorCheckoutsPage({ user }) {
                 <div key={r.id} className="compact-request-row animate-fade-in">
                   <div className="compact-row-meta">
                     {renderBookCell(r.bookId)}
-                    {renderMemberCell(r.memberId)}
+                    {renderMemberCell(r.memberId, r)}
                     <div className="request-time">
                       <Clock size={12} className="inline-icon" />
                       <span>{r.requestedAt ? new Date(r.requestedAt).toLocaleDateString() : 'Today'}</span>
@@ -374,7 +377,7 @@ export default function CuratorCheckoutsPage({ user }) {
                 <div key={r.id} className="compact-request-row animate-fade-in">
                   <div className="compact-row-meta">
                     {renderBookCell(r.bookId)}
-                    {renderMemberCell(r.memberId)}
+                    {renderMemberCell(r.memberId, r)}
                     <div className="request-time">
                       <Clock size={12} className="inline-icon" />
                       <span>{r.requestedAt ? new Date(r.requestedAt).toLocaleDateString() : 'Today'}</span>
@@ -459,7 +462,7 @@ export default function CuratorCheckoutsPage({ user }) {
                 {getFilteredList().map(entry => (
                   <tr key={entry.id} className="ledger-tr animate-fade-in">
                     <td>{renderBookCell(entry.bookId)}</td>
-                    <td>{renderMemberCell(entry.memberId)}</td>
+                    <td>{renderMemberCell(entry.memberId, entry)}</td>
                     <td>
                       <div className="date-cell">
                         <span className="primary-date">

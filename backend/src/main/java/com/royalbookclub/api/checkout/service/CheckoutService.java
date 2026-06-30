@@ -5,6 +5,10 @@ import com.google.cloud.firestore.*;
 import com.royalbookclub.api.checkout.dto.CheckoutRequestDto;
 import com.royalbookclub.api.checkout.dto.ReturnRequestDto;
 import com.royalbookclub.api.checkout.model.Checkout;
+import com.royalbookclub.api.config.service.CheckoutSettingsService;
+import com.royalbookclub.api.user.service.UserService;
+import com.royalbookclub.api.user.model.User;
+import com.royalbookclub.api.common.exception.BusinessRuleException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,9 +29,49 @@ public class CheckoutService {
     private static final String COLLECTION_NAME = "checkouts";
 
     private final Firestore firestore;
+    private final CheckoutSettingsService checkoutSettingsService;
+    private final UserService userService;
 
-    public CheckoutService(Firestore firestore) {
+    public CheckoutService(Firestore firestore, CheckoutSettingsService checkoutSettingsService, UserService userService) {
         this.firestore = firestore;
+        this.checkoutSettingsService = checkoutSettingsService;
+        this.userService = userService;
+    }
+
+    private void verifyUserProfileRequirements(String memberId) {
+        var settings = checkoutSettingsService.getCheckoutSettings();
+        if (settings == null) {
+            return;
+        }
+
+        if (settings.isPhoneMandatory() || settings.isHouseNoMandatory() || settings.isStreetMandatory() || settings.isCityMandatory() || settings.isPinCodeMandatory()) {
+            var user = userService.getUserById(memberId);
+            if (user == null) {
+                throw new BusinessRuleException("Member profile not found. Please complete your profile before checking out books.");
+            }
+
+            List<String> missingFields = new ArrayList<>();
+            if (settings.isPhoneMandatory() && (user.getPhone() == null || user.getPhone().trim().isEmpty())) {
+                missingFields.add("Phone Number");
+            }
+            if (settings.isHouseNoMandatory() && (user.getHouseNo() == null || user.getHouseNo().trim().isEmpty())) {
+                missingFields.add("House/Apartment Number");
+            }
+            if (settings.isStreetMandatory() && (user.getStreet() == null || user.getStreet().trim().isEmpty())) {
+                missingFields.add("Street Address");
+            }
+            if (settings.isCityMandatory() && (user.getCity() == null || user.getCity().trim().isEmpty())) {
+                missingFields.add("City");
+            }
+            if (settings.isPinCodeMandatory() && (user.getPinCode() == null || user.getPinCode().trim().isEmpty())) {
+                missingFields.add("Postal/PIN Code");
+            }
+
+            if (!missingFields.isEmpty()) {
+                String missingMsg = String.join(", ", missingFields);
+                throw new BusinessRuleException("Checkout Gated: Please update your profile with required information: " + missingMsg + ".");
+            }
+        }
     }
 
     /**
@@ -40,6 +84,9 @@ public class CheckoutService {
     public Checkout checkoutBook(CheckoutRequestDto request) {
         String cleanIsbn = request.getBookId().trim().replace("-", "");
         String memberId = request.getMemberId().trim();
+
+        // Profile details validation
+        verifyUserProfileRequirements(memberId);
 
         DocumentReference bookRef = firestore.collection("books").document(cleanIsbn);
         DocumentReference checkoutRef = firestore.collection(COLLECTION_NAME).document();
@@ -77,6 +124,22 @@ public class CheckoutService {
                 Instant checkedOutAt = Instant.now();
                 Instant dueDate = checkedOutAt.plus(request.getDurationDays(), ChronoUnit.DAYS);
 
+                String email = request.getMemberEmail();
+                String name = request.getMemberName();
+                try {
+                    User dbUser = userService.getUserById(memberId);
+                    if (dbUser != null) {
+                        if (email == null || email.trim().isEmpty()) {
+                            email = dbUser.getEmail();
+                        }
+                        if (name == null || name.trim().isEmpty()) {
+                            name = dbUser.getFullName();
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Could not load user profile for memberId {} to populate checkout metadata: {}", memberId, e.getMessage());
+                }
+
                 Map<String, Object> checkoutData = new HashMap<>();
                 checkoutData.put("id", checkoutId);
                 checkoutData.put("bookId", cleanIsbn);
@@ -87,6 +150,8 @@ public class CheckoutService {
                 checkoutData.put("returnedAt", null);
                 checkoutData.put("approvedAt", toTimestamp(checkedOutAt));
                 checkoutData.put("approvedBy", "SYSTEM_DIRECT");
+                checkoutData.put("memberEmail", email);
+                checkoutData.put("memberName", name);
 
                 transaction.set(checkoutRef, checkoutData);
                 return null;
@@ -118,6 +183,9 @@ public class CheckoutService {
         String cleanIsbn = request.getBookId().trim().replace("-", "");
         String memberId = request.getMemberId().trim();
 
+        // Profile details validation
+        verifyUserProfileRequirements(memberId);
+
         DocumentReference bookRef = firestore.collection("books").document(cleanIsbn);
         DocumentReference checkoutRef = firestore.collection(COLLECTION_NAME).document();
         String checkoutId = checkoutRef.getId();
@@ -141,6 +209,23 @@ public class CheckoutService {
             }
 
             Instant now = Instant.now();
+
+            String email = request.getMemberEmail();
+            String name = request.getMemberName();
+            try {
+                User dbUser = userService.getUserById(memberId);
+                if (dbUser != null) {
+                    if (email == null || email.trim().isEmpty()) {
+                        email = dbUser.getEmail();
+                    }
+                    if (name == null || name.trim().isEmpty()) {
+                        name = dbUser.getFullName();
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Could not load user profile for memberId {} to populate checkout metadata: {}", memberId, e.getMessage());
+            }
+
             Map<String, Object> checkoutData = new HashMap<>();
             checkoutData.put("id", checkoutId);
             checkoutData.put("bookId", cleanIsbn);
@@ -148,6 +233,8 @@ public class CheckoutService {
             checkoutData.put("status", "REQUESTED_CHECKOUT");
             checkoutData.put("requestedAt", toTimestamp(now));
             checkoutData.put("ntagUid", request.getNtagUid());
+            checkoutData.put("memberEmail", email);
+            checkoutData.put("memberName", name);
 
             checkoutRef.set(checkoutData).get();
 
@@ -306,6 +393,26 @@ public class CheckoutService {
             updates.put("status", "REQUESTED_RETURN");
             updates.put("requestedAt", toTimestamp(now));
             updates.put("ntagUid", request.getNtagUid());
+
+            if (checkoutDoc.getString("memberEmail") == null) {
+                String email = request.getMemberEmail();
+                String name = request.getMemberName();
+                try {
+                    User dbUser = userService.getUserById(memberId);
+                    if (dbUser != null) {
+                        if (email == null || email.trim().isEmpty()) {
+                            email = dbUser.getEmail();
+                        }
+                        if (name == null || name.trim().isEmpty()) {
+                            name = dbUser.getFullName();
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Could not load user profile for memberId {} to populate return metadata: {}", memberId, e.getMessage());
+                }
+                if (email != null) updates.put("memberEmail", email);
+                if (name != null) updates.put("memberName", name);
+            }
 
             checkoutRef.update(updates).get();
 
@@ -469,6 +576,9 @@ public class CheckoutService {
         String cleanIsbn = request.getBookId().trim().replace("-", "");
         String memberId = request.getMemberId().trim();
         String tagUid = request.getNtagUid();
+
+        // Profile details validation
+        verifyUserProfileRequirements(memberId);
 
         if (tagUid == null || tagUid.isBlank()) {
             throw new IllegalArgumentException("NFC Tag UID is required for verified checkout.");

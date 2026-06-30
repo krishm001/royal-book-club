@@ -27,4 +27,7 @@ public class Checkout {
     private Instant approvedAt;
     private String approvedBy;
     private String ntagUid;
+    private String memberEmail;
+    private String memberName;
 }
+

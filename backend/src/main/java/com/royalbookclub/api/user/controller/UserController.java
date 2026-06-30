@@ -41,6 +41,22 @@ public class UserController {
     }
 
     /**
+     * Updates the authenticated user's profile address and telephone.
+     */
+    @PutMapping("/api/v1/users/profile")
+    @Operation(summary = "Update user profile details", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<ApiResponse<User>> updateProfile(
+            @AuthenticationPrincipal User currentUser,
+            @RequestBody User profileUpdate
+    ) {
+        if (currentUser == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("Unauthorized"));
+        }
+        User updated = userService.updateUser(currentUser.getId(), profileUpdate);
+        return ResponseEntity.ok(ApiResponse.success(updated, "Profile updated successfully."));
+    }
+
+    /**
      * Admin-only endpoint to fetch all registered club users.
      */
     @GetMapping("/api/v1/admin/users")

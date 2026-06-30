@@ -8,6 +8,8 @@ import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
 import com.royalbookclub.api.discourse.model.Discourse;
 import com.royalbookclub.api.discourse.model.DiscourseComment;
+import com.royalbookclub.api.moderation.service.ContentModerationService;
+import com.royalbookclub.api.user.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -32,9 +34,28 @@ public class DiscourseService {
     private static final String COMMENTS_COLLECTION = "discourse_comments";
 
     private final Firestore firestore;
+    private final ContentModerationService moderationService;
+    private final UserService userService;
 
-    public DiscourseService(Firestore firestore) {
+    public DiscourseService(Firestore firestore, ContentModerationService moderationService, UserService userService) {
         this.firestore = firestore;
+        this.moderationService = moderationService;
+        this.userService = userService;
+    }
+
+    private String getUserEmail(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return "anonymous@royalbookclub.com";
+        }
+        try {
+            var user = userService.getUserById(userId);
+            if (user != null && user.getEmail() != null) {
+                return user.getEmail();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch user email for userId: {}", userId, e);
+        }
+        return "anonymous@royalbookclub.com";
     }
 
     /**
@@ -60,13 +81,18 @@ public class DiscourseService {
             List<Discourse> list = new ArrayList<>();
             for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
                 Discourse d = mapToDiscourse(doc);
+                if (d != null && d.getApproved() != null && !d.getApproved()) {
+                    continue;
+                }
                 // For debates, filter root threads in memory to avoid index requirement for null matches
                 if ("DEBATE".equalsIgnoreCase(type)) {
-                    if (d.getParentId() == null || d.getParentId().isBlank()) {
+                    if (d != null && (d.getParentId() == null || d.getParentId().isBlank())) {
                         list.add(d);
                     }
                 } else {
-                    list.add(d);
+                    if (d != null) {
+                        list.add(d);
+                    }
                 }
             }
 
@@ -100,7 +126,11 @@ public class DiscourseService {
             ApiFuture<DocumentSnapshot> future = docRef.get();
             DocumentSnapshot document = future.get();
             if (document.exists()) {
-                return Optional.of(mapToDiscourse(document));
+                Discourse d = mapToDiscourse(document);
+                if (d != null && d.getApproved() != null && !d.getApproved()) {
+                    return Optional.empty();
+                }
+                return Optional.ofNullable(d);
             }
             return Optional.empty();
         } catch (InterruptedException e) {
@@ -126,7 +156,20 @@ public class DiscourseService {
         }
         discourse.setUpdatedAt(now);
 
-        log.info("Saving discourse ID: {}, Type: {}", discourse.getId(), discourse.getType());
+        // Content Moderation
+        String email = getUserEmail(discourse.getAuthorId());
+        boolean contentApproved = moderationService.moderateText(discourse.getContent(), discourse.getAuthorId(), email, discourse.getType());
+        boolean titleApproved = true;
+        if (discourse.getTitle() != null) {
+            titleApproved = moderationService.moderateText(discourse.getTitle(), discourse.getAuthorId(), email, discourse.getType() + "_TITLE");
+        }
+        boolean imageApproved = true;
+        if (discourse.getCoverUrl() != null && !discourse.getCoverUrl().isBlank()) {
+            imageApproved = moderationService.moderateImage(discourse.getCoverUrl(), discourse.getAuthorId(), email);
+        }
+        discourse.setApproved(contentApproved && titleApproved && imageApproved);
+
+        log.info("Saving discourse ID: {}, Type: {}, Approved: {}", discourse.getId(), discourse.getType(), discourse.getApproved());
         try {
             DocumentReference docRef = firestore.collection(DISCOURSES_COLLECTION).document(discourse.getId());
             ApiFuture<WriteResult> writeFuture = docRef.set(discourseToMap(discourse));
@@ -174,7 +217,13 @@ public class DiscourseService {
             QuerySnapshot querySnapshot = query.get();
             List<Discourse> children = new ArrayList<>();
             for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                children.add(mapToDiscourse(doc));
+                Discourse d = mapToDiscourse(doc);
+                if (d != null && d.getApproved() != null && !d.getApproved()) {
+                    continue;
+                }
+                if (d != null) {
+                    children.add(d);
+                }
             }
             if (!children.isEmpty()) {
                 accumulator.addAll(children);
@@ -203,7 +252,12 @@ public class DiscourseService {
             comment.setCreatedAt(Instant.now());
         }
 
-        log.info("Saving comment ID: {} for chronicle ID: {}", comment.getId(), comment.getDiscourseId());
+        // Content Moderation
+        String email = getUserEmail(comment.getAuthorId());
+        boolean approved = moderationService.moderateText(comment.getContent(), comment.getAuthorId(), email, "COMMENT");
+        comment.setApproved(approved);
+
+        log.info("Saving comment ID: {} for chronicle ID: {}, Approved: {}", comment.getId(), comment.getDiscourseId(), comment.getApproved());
         try {
             DocumentReference docRef = firestore.collection(COMMENTS_COLLECTION).document(comment.getId());
             ApiFuture<WriteResult> writeFuture = docRef.set(commentToMap(comment));
@@ -232,7 +286,13 @@ public class DiscourseService {
             QuerySnapshot querySnapshot = query.get();
             List<DiscourseComment> list = new ArrayList<>();
             for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                list.add(mapToComment(doc));
+                DiscourseComment c = mapToComment(doc);
+                if (c != null && c.getApproved() != null && !c.getApproved()) {
+                    continue;
+                }
+                if (c != null) {
+                    list.add(c);
+                }
             }
 
             // Sort by createdAt descending (newest comments first)
@@ -440,6 +500,7 @@ public class DiscourseService {
         map.put("tags", d.getTags() != null ? d.getTags() : new ArrayList<String>());
         map.put("parentId", d.getParentId());
         map.put("reactions", d.getReactions() != null ? d.getReactions() : new HashMap<String, List<String>>());
+        map.put("approved", d.getApproved() != null ? d.getApproved() : true);
         map.put("createdAt", d.getCreatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(d.getCreatedAt().getEpochSecond(), d.getCreatedAt().getNano()) : null);
         map.put("updatedAt", d.getUpdatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(d.getUpdatedAt().getEpochSecond(), d.getUpdatedAt().getNano()) : null);
         return map;
@@ -466,6 +527,7 @@ public class DiscourseService {
                 .house(doc.getString("house"))
                 .tags(tags != null ? tags : new ArrayList<>())
                 .parentId(doc.getString("parentId"))
+                .approved(doc.contains("approved") ? doc.getBoolean("approved") : true)
                 .reactions(reactions != null ? reactions : new HashMap<>())
                 .createdAt(createdTimestamp != null ? Instant.ofEpochSecond(createdTimestamp.getSeconds(), createdTimestamp.getNanos()) : null)
                 .updatedAt(updatedTimestamp != null ? Instant.ofEpochSecond(updatedTimestamp.getSeconds(), updatedTimestamp.getNanos()) : null)
@@ -481,6 +543,7 @@ public class DiscourseService {
         map.put("authorPhotoUrl", c.getAuthorPhotoUrl());
         map.put("content", c.getContent());
         map.put("reactions", c.getReactions() != null ? c.getReactions() : new HashMap<String, List<String>>());
+        map.put("approved", c.getApproved() != null ? c.getApproved() : true);
         map.put("createdAt", c.getCreatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(c.getCreatedAt().getEpochSecond(), c.getCreatedAt().getNano()) : null);
         return map;
     }
@@ -499,6 +562,7 @@ public class DiscourseService {
                 .authorName(doc.getString("authorName"))
                 .authorPhotoUrl(doc.getString("authorPhotoUrl"))
                 .content(doc.getString("content"))
+                .approved(doc.contains("approved") ? doc.getBoolean("approved") : true)
                 .reactions(reactions != null ? reactions : new HashMap<>())
                 .createdAt(createdTimestamp != null ? Instant.ofEpochSecond(createdTimestamp.getSeconds(), createdTimestamp.getNanos()) : null)
                 .build();

@@ -25,4 +25,8 @@ public class ReturnRequestDto {
     private String memberId;
 
     private String ntagUid;
+
+    private String memberEmail;
+    private String memberName;
 }
+

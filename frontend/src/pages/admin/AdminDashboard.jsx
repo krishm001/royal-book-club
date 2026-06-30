@@ -180,7 +180,7 @@ const AdminDashboard = ({ user }) => {
           </Link>
         </div>
 
-        {/* Patron Circulation Panel */}
+        {/* Patron Circulation Desk */}
         <div className="royal-card action-panel-card" style={pendingCirculationCount > 0 ? { borderColor: '#d2a574', position: 'relative' } : {}}>
           {pendingCirculationCount > 0 && (
             <div style={{
@@ -210,6 +210,31 @@ const AdminDashboard = ({ user }) => {
             Manage Circulation
           </Link>
         </div>
+
+        {/* Self-Checkout Gating Settings */}
+        <div className="royal-card action-panel-card">
+          <div className="panel-icon-wrapper">
+            <Settings size={28} className="gold-glow-icon" />
+          </div>
+          <h3>Self-Checkout Gating</h3>
+          <p>Configure and toggle which registration fields (phone, address coordinates) are mandatory for members to self-checkout books.</p>
+          <Link to="/admin/settings" className="royal-btn action-panel-btn">
+            Configure Gating
+          </Link>
+        </div>
+
+        {/* Content Moderation Panel */}
+        <div className="royal-card action-panel-card">
+          <div className="panel-icon-wrapper">
+            <Shield size={28} className="gold-glow-icon" />
+          </div>
+          <h3>Content Moderation</h3>
+          <p>Review flagged spam, profanity, and toxic submissions. Approve pending articles, book reviews, or comments flagged by the AI.</p>
+          <Link to="/admin/moderation" className="royal-btn action-panel-btn">
+            Manage Moderation
+          </Link>
+        </div>
+
 
         {/* Admin Requests Panel */}
         {pendingRequestsCount > 0 && (

@@ -30,5 +30,6 @@ public class DiscourseComment {
     @Builder.Default
     private Map<String, List<String>> reactions = new HashMap<>(); // Reaction -> User UIDs list
 
+    private Boolean approved;
     private Instant createdAt;
 }

@@ -21,6 +21,11 @@ public class User {
     private String lastName;
     private Role role;
     private String rfidToken;
+    private String phone;
+    private String houseNo;
+    private String street;
+    private String city;
+    private String pinCode;
     private Date createdAt;
     private Date updatedAt;
 

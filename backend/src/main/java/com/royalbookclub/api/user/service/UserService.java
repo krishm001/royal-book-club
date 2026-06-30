@@ -209,6 +209,11 @@ public class UserService {
             existing.setFirstName(updatedUser.getFirstName());
             existing.setLastName(updatedUser.getLastName());
             existing.setRfidToken(updatedUser.getRfidToken());
+            existing.setPhone(updatedUser.getPhone());
+            existing.setHouseNo(updatedUser.getHouseNo());
+            existing.setStreet(updatedUser.getStreet());
+            existing.setCity(updatedUser.getCity());
+            existing.setPinCode(updatedUser.getPinCode());
             existing.setUpdatedAt(new Date());
 
             // Protect role changes from general updates
