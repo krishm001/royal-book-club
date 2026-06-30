@@ -20,4 +20,5 @@ public class CheckoutSettings {
     private boolean streetMandatory;
     private boolean cityMandatory;
     private boolean pinCodeMandatory;
+    private boolean autoModerateBlogs;
 }

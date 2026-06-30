@@ -10,6 +10,7 @@ import com.royalbookclub.api.discourse.model.Discourse;
 import com.royalbookclub.api.discourse.model.DiscourseComment;
 import com.royalbookclub.api.moderation.service.ContentModerationService;
 import com.royalbookclub.api.user.service.UserService;
+import com.royalbookclub.api.config.service.CheckoutSettingsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -36,11 +37,13 @@ public class DiscourseService {
     private final Firestore firestore;
     private final ContentModerationService moderationService;
     private final UserService userService;
+    private final CheckoutSettingsService checkoutSettingsService;
 
-    public DiscourseService(Firestore firestore, ContentModerationService moderationService, UserService userService) {
+    public DiscourseService(Firestore firestore, ContentModerationService moderationService, UserService userService, CheckoutSettingsService checkoutSettingsService) {
         this.firestore = firestore;
         this.moderationService = moderationService;
         this.userService = userService;
+        this.checkoutSettingsService = checkoutSettingsService;
     }
 
     private String getUserEmail(String userId) {
@@ -158,16 +161,48 @@ public class DiscourseService {
 
         // Content Moderation
         String email = getUserEmail(discourse.getAuthorId());
-        boolean contentApproved = moderationService.moderateText(discourse.getContent(), discourse.getAuthorId(), email, discourse.getType());
-        boolean titleApproved = true;
-        if (discourse.getTitle() != null) {
-            titleApproved = moderationService.moderateText(discourse.getTitle(), discourse.getAuthorId(), email, discourse.getType() + "_TITLE");
+
+        if ("CHRONICLE".equalsIgnoreCase(discourse.getType())) {
+            boolean autoModerateBlogs = checkoutSettingsService.getCheckoutSettings().isAutoModerateBlogs();
+            if (!autoModerateBlogs) {
+                // By default, Chronicles (blogs) always go to admin approval (approved = false)
+                // However, we still run the local RegEx checks to instantly block actual offensive words/spam!
+                moderationService.checkLocalRegexText(discourse.getContent(), discourse.getAuthorId(), email, discourse.getType());
+                if (discourse.getTitle() != null) {
+                    moderationService.checkLocalRegexText(discourse.getTitle(), discourse.getAuthorId(), email, discourse.getType() + "_TITLE");
+                }
+                if (discourse.getCoverUrl() != null && !discourse.getCoverUrl().isBlank()) {
+                    moderationService.checkLocalRegexImage(discourse.getCoverUrl(), discourse.getAuthorId(), email);
+                }
+                discourse.setApproved(false);
+                log.info("Default Policy Active: Blog ID {} requires Curator manual approval.", discourse.getId());
+            } else {
+                // If autoModerateBlogs is true, run NLP and Vision APIs (real or fallback)
+                boolean contentApproved = moderationService.moderateText(discourse.getContent(), discourse.getAuthorId(), email, discourse.getType());
+                boolean titleApproved = true;
+                if (discourse.getTitle() != null) {
+                    titleApproved = moderationService.moderateText(discourse.getTitle(), discourse.getAuthorId(), email, discourse.getType() + "_TITLE");
+                }
+                boolean imageApproved = true;
+                if (discourse.getCoverUrl() != null && !discourse.getCoverUrl().isBlank()) {
+                    imageApproved = moderationService.moderateImage(discourse.getCoverUrl(), discourse.getAuthorId(), email);
+                }
+                discourse.setApproved(contentApproved && titleApproved && imageApproved);
+                log.info("Auto-Moderation Preference Active: Blog ID {} approved status set to {}.", discourse.getId(), discourse.getApproved());
+            }
+        } else {
+            // Non-chronicle (e.g., DEBATE, comment) follows standard immediate moderation logic
+            boolean contentApproved = moderationService.moderateText(discourse.getContent(), discourse.getAuthorId(), email, discourse.getType());
+            boolean titleApproved = true;
+            if (discourse.getTitle() != null) {
+                titleApproved = moderationService.moderateText(discourse.getTitle(), discourse.getAuthorId(), email, discourse.getType() + "_TITLE");
+            }
+            boolean imageApproved = true;
+            if (discourse.getCoverUrl() != null && !discourse.getCoverUrl().isBlank()) {
+                imageApproved = moderationService.moderateImage(discourse.getCoverUrl(), discourse.getAuthorId(), email);
+            }
+            discourse.setApproved(contentApproved && titleApproved && imageApproved);
         }
-        boolean imageApproved = true;
-        if (discourse.getCoverUrl() != null && !discourse.getCoverUrl().isBlank()) {
-            imageApproved = moderationService.moderateImage(discourse.getCoverUrl(), discourse.getAuthorId(), email);
-        }
-        discourse.setApproved(contentApproved && titleApproved && imageApproved);
 
         log.info("Saving discourse ID: {}, Type: {}, Approved: {}", discourse.getId(), discourse.getType(), discourse.getApproved());
         try {

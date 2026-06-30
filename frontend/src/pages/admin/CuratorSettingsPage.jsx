@@ -16,6 +16,7 @@ const CuratorSettingsPage = ({ user }) => {
     streetMandatory: false,
     cityMandatory: false,
     pinCodeMandatory: false,
+    autoModerateBlogs: false,
   });
 
   const isAdmin = user && user.role === 'ADMIN';
@@ -222,6 +223,31 @@ const CuratorSettingsPage = ({ user }) => {
                       onClick={() => handleToggle('pinCodeMandatory')}
                     >
                       {settings.pinCodeMandatory ? <ToggleRight size={38} className="gold-toggle" /> : <ToggleLeft size={38} className="muted-toggle" />}
+                    </button>
+                  </div>
+
+                  {/* Divider and Moderation Preferences */}
+                  <div className="settings-divider-custom"></div>
+                  
+                  <h3 className="section-title-settings">
+                    <Sparkles size={16} className="gold-glow-icon inline mr-2" style={{ verticalAlign: 'text-bottom', display: 'inline-block' }} />
+                    Automated Blog Content Moderation
+                  </h3>
+
+                  {/* Blog Moderation Toggle */}
+                  <div className="gating-toggle-row">
+                    <div className="toggle-text-info">
+                      <span className="toggle-label text-gold-glow">Bypass Default Admin Review (AI Auto-Moderation)</span>
+                      <span className="toggle-description">
+                        By default, all newly submitted blog posts (text & images) always route to the manual Curator approval queue. Enable this to delegate moderation checks to Google Cloud NLP & Vision APIs, publishing immediately if no violations are flagged.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className={`toggle-action-btn ${settings.autoModerateBlogs ? 'active' : ''}`}
+                      onClick={() => handleToggle('autoModerateBlogs')}
+                    >
+                      {settings.autoModerateBlogs ? <ToggleRight size={38} className="gold-toggle" /> : <ToggleLeft size={38} className="muted-toggle" />}
                     </button>
                   </div>
                 </div>

@@ -58,3 +58,9 @@ logging:
     com.royalbookclub: DEBUG
     com.google.cloud.firestore: WARN
     org.springframework.security: DEBUG
+
+# GCP Configuration
+gcp:
+  moderation:
+    use-real: ${USE_REAL_MODERATION:false}
+

@@ -8,7 +8,9 @@ variable "gcp_services" {
     "sts.googleapis.com",
     "run.googleapis.com",
     "artifactregistry.googleapis.com",
-    "firestore.googleapis.com"
+    "firestore.googleapis.com",
+    "language.googleapis.com",
+    "vision.googleapis.com"
   ]
 }
 

@@ -49,6 +49,7 @@ public class CheckoutSettingsService {
                         .streetMandatory(Boolean.TRUE.equals(document.getBoolean("streetMandatory")))
                         .cityMandatory(Boolean.TRUE.equals(document.getBoolean("cityMandatory")))
                         .pinCodeMandatory(Boolean.TRUE.equals(document.getBoolean("pinCodeMandatory")))
+                        .autoModerateBlogs(Boolean.TRUE.equals(document.getBoolean("autoModerateBlogs")))
                         .build();
             } else {
                 log.info("No checkout settings document found. Initializing with optional defaults.");
@@ -59,6 +60,7 @@ public class CheckoutSettingsService {
                         .streetMandatory(false)
                         .cityMandatory(false)
                         .pinCodeMandatory(false)
+                        .autoModerateBlogs(false)
                         .build();
             }
         } catch (InterruptedException e) {
@@ -85,6 +87,7 @@ public class CheckoutSettingsService {
             map.put("streetMandatory", settings.isStreetMandatory());
             map.put("cityMandatory", settings.isCityMandatory());
             map.put("pinCodeMandatory", settings.isPinCodeMandatory());
+            map.put("autoModerateBlogs", settings.isAutoModerateBlogs());
 
             ApiFuture<WriteResult> writeFuture = docRef.set(map);
             writeFuture.get();
