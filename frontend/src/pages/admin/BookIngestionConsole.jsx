@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw, X, Camera, Cpu, Smartphone, Check } from 'lucide-react';
-import { createBook, lookupBookByIsbn, fetchBookByIsbn } from '../../services/libraryApi';
+import { createBook, lookupBookByIsbn, fetchBookByIsbn, fetchBooks } from '../../services/libraryApi';
 import { fetchBookHouses } from '../../services/genreApi';
 import { uploadBookImage } from '../../services/storageApi';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import './BookIngestionConsole.css';
+
+const SafeHtml5Qrcode = Html5Qrcode;
+const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
 
 const BookIngestionConsole = ({ user }) => {
   const [isbn, setIsbn] = useState('');
@@ -49,6 +52,15 @@ const BookIngestionConsole = ({ user }) => {
   const videoRef = useRef(null);
   const barcodeIntervalRef = useRef(null);
   const html5QrCodeRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // NFC Write & iOS warning states
+  const [nfcWriteModalOpen, setNfcWriteModalOpen] = useState(false);
+  const [nfcWriteLoading, setNfcWriteLoading] = useState(false);
+  const [nfcWriteSuccess, setNfcWriteSuccess] = useState(false);
+  const [nfcWriteError, setNfcWriteError] = useState('');
+  const [pendingBookDto, setPendingBookDto] = useState(null);
+  const [iosWarningModalOpen, setIosWarningModalOpen] = useState(false);
 
   // Check if user is admin
   const isAdmin = user && user.role === 'ADMIN';
@@ -201,16 +213,16 @@ const BookIngestionConsole = ({ user }) => {
 
         try {
           const formats = [
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.UPC_A,
-            Html5QrcodeSupportedFormats.UPC_E,
-            Html5QrcodeSupportedFormats.CODE_128,
-            Html5QrcodeSupportedFormats.CODE_39,
-            Html5QrcodeSupportedFormats.CODE_93
+            SafeHtml5QrcodeSupportedFormats.EAN_13,
+            SafeHtml5QrcodeSupportedFormats.EAN_8,
+            SafeHtml5QrcodeSupportedFormats.UPC_A,
+            SafeHtml5QrcodeSupportedFormats.UPC_E,
+            SafeHtml5QrcodeSupportedFormats.CODE_128,
+            SafeHtml5QrcodeSupportedFormats.CODE_39,
+            SafeHtml5QrcodeSupportedFormats.CODE_93
           ];
 
-          const html5QrCode = new Html5Qrcode("qr-reader", {
+          const html5QrCode = new SafeHtml5Qrcode("qr-reader", {
             formatsToSupport: formats,
             verbose: false,
             experimentalFeatures: {
@@ -251,7 +263,12 @@ const BookIngestionConsole = ({ user }) => {
               (errorMessage) => {
                 // Ignore scan failures per frame
               }
-            ).catch(err => {
+            ).then(() => {
+              if (html5QrCodeRef.current !== html5QrCode || !cameraModalOpen) {
+                console.log('Ingestion scanner started but was cancelled during boot. Stopping now.');
+                html5QrCode.stop().catch(err => console.warn('Failed late stop inside start promise', err));
+              }
+            }).catch(err => {
               console.error('Html5Qrcode start error:', err);
               // Fallback to simpler facingMode config object if device ID string start failed
               if (typeof cameraIdOrConfig === 'string') {
@@ -264,7 +281,7 @@ const BookIngestionConsole = ({ user }) => {
           };
 
           // Actively probe for hardware back cameras first for robust mobile compatibility
-          Html5Qrcode.getCameras().then(devices => {
+          SafeHtml5Qrcode.getCameras().then(devices => {
             if (devices && devices.length > 0) {
               console.log("Ingestion barcode scanner detected video devices:", devices);
               
@@ -389,14 +406,66 @@ const BookIngestionConsole = ({ user }) => {
     handleIsbnFetch(chosenIsbn);
   };
 
+  const processScannedNtag = async (serialNumber, urlIsbn = null) => {
+    setErrorMessage('');
+    setInfoMessage('Analyzing tag contents...');
+    try {
+      const allBooks = await fetchBooks();
+      let matchedBook = null;
+      
+      const cleanScanned = (serialNumber || '').toLowerCase().replace(/:/g, '');
+      matchedBook = allBooks.find(b => {
+        const cleanBookTag = (b.ntagUid || '').toLowerCase().replace(/:/g, '');
+        return cleanBookTag && cleanBookTag === cleanScanned;
+      });
+
+      if (!matchedBook && urlIsbn) {
+        const cleanUrlIsbn = urlIsbn.trim().replace(/[-\s]/g, '');
+        matchedBook = allBooks.find(b => (b.isbn || '').trim().replace(/[-\s]/g, '') === cleanUrlIsbn);
+      }
+
+      if (matchedBook) {
+        setIsbn(matchedBook.isbn || '');
+        setManualTitle(matchedBook.title || '');
+        setManualAuthor(Array.isArray(matchedBook.authors) ? matchedBook.authors.join(', ') : matchedBook.author || '');
+        setPublisher(matchedBook.publisher || '');
+        setPublishDate(matchedBook.publishDate || matchedBook.publishYear || '');
+        setCoverUrl(matchedBook.coverUrl || '');
+        setDescription(matchedBook.description || '');
+        setPages(matchedBook.pages || 0);
+        setTotalCopies(matchedBook.totalCopies || 1);
+        setAvailableCopies(matchedBook.availableCopies || 1);
+        setTagsInput(Array.isArray(matchedBook.tags) ? matchedBook.tags.join(', ') : '');
+        setNtagUid(matchedBook.ntagUid || serialNumber);
+        if (matchedBook.genre) {
+          setSelectedHouse(matchedBook.genre);
+        }
+        setIsEditMode(true);
+        setNfcSuccess(true);
+        setIsNfcReading(false);
+        setInfoMessage(`Existing book "${matchedBook.title}" loaded from NFC tap.`);
+      } else {
+        setNtagUid(serialNumber);
+        setNfcSuccess(true);
+        setIsNfcReading(false);
+        setInfoMessage(`Unregistered NTAG213 Tag (${serialNumber}) detected.`);
+      }
+    } catch (err) {
+      console.error("Error matching NTAG tap:", err);
+      setNtagUid(serialNumber);
+      setNfcSuccess(true);
+      setIsNfcReading(false);
+      setInfoMessage(`Tag detected: ${serialNumber}`);
+    }
+  };
+
   // Web NFC NTAG213 Scanning Logic
   const startNfcRead = async () => {
     setNfcError('');
     setNfcSuccess(false);
     
     if (!('NDEFReader' in window)) {
-      setNfcError('Web NFC is not supported on this browser/device. Hold tag near phone or tap "Simulate NTAG213 Tag Tap".');
-      setIsNfcReading(true); // Still open the visual simulator so they can test
+      setNfcError('Web NFC is not supported on this browser/device. NFC registration requires an Android Chrome or Web NFC compatible device.');
       return;
     }
 
@@ -409,27 +478,28 @@ const BookIngestionConsole = ({ user }) => {
         setNfcError("NFC Reading Error: Cannot read data from the tag. Try again.");
       });
 
-      ndef.addEventListener("reading", ({ serialNumber }) => {
+      ndef.addEventListener("reading", async ({ serialNumber, message }) => {
         console.log(`NFC tag read. Serial Number: ${serialNumber}`);
-        setNtagUid(serialNumber || '04:7A:B2:C5:D1:29:80');
-        setNfcSuccess(true);
-        setIsNfcReading(false);
+        let extractedIsbn = null;
+        if (message && message.records) {
+          for (const record of message.records) {
+            if (record.recordType === "url") {
+              const decoder = new TextDecoder("utf-8");
+              const url = decoder.decode(record.data);
+              const match = url.match(/\/catalog\/([0-9Xx]+)/);
+              if (match && match[1]) {
+                extractedIsbn = match[1];
+              }
+            }
+          }
+        }
+        await processScannedNtag(serialNumber, extractedIsbn);
       });
     } catch (error) {
       console.error("NFC reading error: ", error);
       setNfcError(`NFC activation failed: ${error.message || error}`);
+      setIsNfcReading(false);
     }
-  };
-
-  const handleSimulateNfcTap = () => {
-    const bytes = Array.from({ length: 7 }, () => 
-      Math.floor(Math.random() * 256).toString(16).toUpperCase().padStart(2, '0')
-    );
-    const mockUid = bytes.join(':');
-    setNtagUid(mockUid);
-    setNfcSuccess(true);
-    setNfcError('');
-    setIsNfcReading(false);
   };
 
   useEffect(() => {
@@ -480,6 +550,11 @@ const BookIngestionConsole = ({ user }) => {
     setInfoMessage('');
     setTagsInput('');
     setNtagUid('');
+    setNfcSuccess(false);
+    setNfcError('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     if (houses.length > 0) {
       setSelectedHouse(houses[0]);
     }
@@ -554,24 +629,105 @@ const BookIngestionConsole = ({ user }) => {
       publishDate: publishDate.trim(),
       description: description.trim(),
       coverUrl: coverUrl.trim(),
-      pages: pages || 0,
-      totalCopies: totalCopies || 1,
-      availableCopies: availableCopies || 1,
+      pages: Number(pages) || 0,
+      totalCopies: Number(totalCopies) || 1,
+      availableCopies: Number(availableCopies) || 1,
       genre: selectedHouse,
       tags: deduplicatedTags,
       ntagUid: ntagUid ? ntagUid.trim() : null
     };
 
-    try {
-      await createBook(bookDto);
-      setIngestionSuccess(true);
-      resetForm();
-      setTimeout(() => setIngestionSuccess(false), 3000);
-    } catch (err) {
-      console.error(err);
-      setErrorMessage(isEditMode ? 'Unable to update book record at this time.' : 'Unable to create book record at this time.');
+    const isAppleDevice = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    if ('NDEFReader' in window) {
+      setPendingBookDto(bookDto);
+      setNfcWriteError('');
+      setNfcWriteSuccess(false);
+      setNfcWriteModalOpen(true);
+      triggerWriteNfcTag(bookDto.isbn, bookDto);
+    } else if (isAppleDevice) {
+      setPendingBookDto(bookDto);
+      setIosWarningModalOpen(true);
+      try {
+        await createBook(bookDto);
+        setIngestionSuccess(true);
+        resetForm();
+        setTimeout(() => setIngestionSuccess(false), 3000);
+      } catch (err) {
+        console.error(err);
+        setErrorMessage(isEditMode ? 'Unable to update book record inside direct iOS save.' : 'Unable to create book record inside direct iOS save.');
+      }
+    } else {
+      try {
+        await createBook(bookDto);
+        setIngestionSuccess(true);
+        resetForm();
+        setTimeout(() => setIngestionSuccess(false), 3000);
+      } catch (err) {
+        console.error(err);
+        setErrorMessage(isEditMode ? 'Unable to update book record.' : 'Unable to create book record.');
+      }
     }
   };
+
+  const triggerWriteNfcTag = async (bookIsbn, bookDtoToSave = null) => {
+    setNfcWriteLoading(true);
+    setNfcWriteError('');
+    const targetDto = bookDtoToSave || pendingBookDto;
+    try {
+      const ndef = new window.NDEFReader();
+      await ndef.write({
+        records: [
+          {
+            recordType: "url",
+            data: `${window.location.origin}/#/catalog/${bookIsbn}?action=checkout`
+          }
+        ]
+      });
+      setNfcWriteSuccess(true);
+      if (targetDto) {
+        await createBook(targetDto);
+        setIngestionSuccess(true);
+        resetForm();
+      }
+      setTimeout(() => {
+        setNfcWriteModalOpen(false);
+        setPendingBookDto(null);
+        setNfcWriteSuccess(false);
+        setIngestionSuccess(false);
+      }, 2500);
+    } catch (writeErr) {
+      console.error("Web NFC Write error:", writeErr);
+      setNfcWriteError(`Write failed: ${writeErr.message || writeErr}. Hold the tag firmly near the device's NFC chip or tap "Skip & Save Directly".`);
+    } finally {
+      setNfcWriteLoading(false);
+    }
+  };
+
+  const handleSkipWriteAndSave = async () => {
+    if (!pendingBookDto) return;
+    setNfcWriteLoading(true);
+    setNfcWriteError('');
+    try {
+      await createBook(pendingBookDto);
+      setIngestionSuccess(true);
+      resetForm();
+      setNfcWriteSuccess(true);
+      setTimeout(() => {
+        setNfcWriteModalOpen(false);
+        setPendingBookDto(null);
+        setNfcWriteSuccess(false);
+        setIngestionSuccess(false);
+      }, 2000);
+    } catch (err) {
+      console.error("Direct db save failed:", err);
+      setNfcWriteError(`Direct ledger registration failed: ${err.message}`);
+    } finally {
+      setNfcWriteLoading(false);
+    }
+  };
+
+
 
   const handleBulkUploadSimulate = (e) => {
     e.preventDefault();
@@ -796,6 +952,7 @@ const BookIngestionConsole = ({ user }) => {
                           onChange={handleImageSelect}
                           style={{ display: 'none' }}
                           id="image-file-input"
+                          ref={fileInputRef}
                         />
                         <label htmlFor="image-file-input" style={{ flex: 1 }}>
                           <button
@@ -967,11 +1124,11 @@ const BookIngestionConsole = ({ user }) => {
                       <p className="pulse-help-text">Tap NTAG213 Tag to register this book volume in the ledger.</p>
                       <button
                         type="button"
-                        onClick={handleSimulateNfcTap}
-                        className="royal-btn simulate-btn"
+                        onClick={() => setIsNfcReading(false)}
+                        className="royal-btn-secondary"
                         style={{ marginTop: '12px', fontSize: '0.8rem', padding: '6px 14px' }}
                       >
-                        Simulate NTAG213 Tag Tap
+                        Cancel Scan
                       </button>
                     </div>
                   )}
@@ -1118,6 +1275,160 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* NFC Tag Writing Modal Overlay */}
+      {nfcWriteModalOpen && pendingBookDto && (
+        <div className="camera-modal-overlay">
+          <div className="royal-card camera-modal-card nfc-write-card">
+            <div className="camera-modal-header">
+              <h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Cpu size={18} className="spin-icon" style={{ color: 'var(--accent)' }} />
+                  <span>Physical-to-Digital NFC Writer</span>
+                </div>
+              </h3>
+              <button 
+                onClick={() => {
+                  setNfcWriteModalOpen(false);
+                  setPendingBookDto(null);
+                }} 
+                className="close-camera-btn"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="nfc-write-content">
+              <div className="nfc-pulsing-area">
+                <div className="nfc-pulse-ring ring-1"></div>
+                <div className="nfc-pulse-ring ring-2"></div>
+                <div className="nfc-pulse-ring ring-3"></div>
+                <div className="nfc-glowing-circle">
+                  <Smartphone size={32} className="phone-bounce-icon" />
+                </div>
+              </div>
+
+              <div className="nfc-write-status">
+                {nfcWriteLoading && (
+                  <p className="status-message loading">
+                    <RefreshCw size={14} className="spin-icon" /> Broad-casting NDEF URL payload...
+                  </p>
+                )}
+                {nfcWriteSuccess && (
+                  <p className="status-message success">
+                    <CheckCircle size={14} style={{ color: '#d4a574' }} /> NFC Tag written & registered!
+                  </p>
+                )}
+                {nfcWriteError && (
+                  <div className="status-error-box">
+                    <p className="error-title">NDEF Writer Error</p>
+                    <p className="error-desc">{nfcWriteError}</p>
+                  </div>
+                )}
+                {!nfcWriteLoading && !nfcWriteSuccess && !nfcWriteError && (
+                  <p className="status-message info">Ready to write... Align tag near back of device.</p>
+                )}
+              </div>
+
+              <div className="nfc-write-book-details">
+                <div className="book-mini-meta">
+                  {pendingBookDto.coverUrl && (
+                    <img 
+                      src={pendingBookDto.coverUrl} 
+                      alt="Cover preview" 
+                      className="book-mini-cover" 
+                    />
+                  )}
+                  <div className="book-mini-texts">
+                    <span className="book-mini-title">{pendingBookDto.title}</span>
+                    <span className="book-mini-author">by {pendingBookDto.author}</span>
+                    <span className="book-mini-isbn">ISBN: {pendingBookDto.isbn}</span>
+                    {pendingBookDto.ntagUid && (
+                      <span className="book-mini-tag-uid">Tag NFC UID: {pendingBookDto.ntagUid}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="nfc-target-url-badge">
+                  <span>Writes Target NDEF URL:</span>
+                  <code>{`${window.location.origin}/#/catalog/${pendingBookDto.isbn}?action=checkout`}</code>
+                </div>
+              </div>
+
+              <div className="nfc-modal-actions">
+                <button 
+                  type="button" 
+                  onClick={() => triggerWriteNfcTag(pendingBookDto.isbn)} 
+                  disabled={nfcWriteLoading || nfcWriteSuccess}
+                  className="royal-btn secondary-btn"
+                >
+                  <RefreshCw size={14} className={nfcWriteLoading ? "spin-icon" : ""} /> Retry Write
+                </button>
+                
+
+
+                <button 
+                  type="button" 
+                  onClick={handleSkipWriteAndSave} 
+                  disabled={nfcWriteLoading || nfcWriteSuccess}
+                  className="royal-btn-secondary"
+                  style={{ width: '100%', marginTop: '8px' }}
+                >
+                  Skip Tag & Save Ledger Directly
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* iOS Safari Web NFC Restrictions Modal Overlay */}
+      {iosWarningModalOpen && pendingBookDto && (
+        <div className="camera-modal-overlay">
+          <div className="royal-card camera-modal-card ios-warning-card">
+            <div className="camera-modal-header">
+              <h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Shield size={18} style={{ color: 'var(--accent)' }} />
+                  <span>iOS Safari NFC Restriction Warning</span>
+                </div>
+              </h3>
+              <button onClick={() => setIosWarningModalOpen(false)} className="close-camera-btn">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="ios-warning-content">
+              <div className="apple-badge-header">
+                <div className="apple-logo-glow"></div>
+              </div>
+
+              <div className="warning-body">
+                <h4 style={{ color: 'var(--accent)', marginBottom: '8px', textAlign: 'center' }}>Secure Cloud Sync Successful</h4>
+                <p style={{ fontSize: '0.9rem', lineHeight: '1.45', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                  Apple iOS / Safari limits programmatic tag writing inside public web applications due to native security sandbox restrictions.
+                </p>
+                <div className="ios-badge-explanation">
+                  <p>
+                    <strong>Database Status:</strong> Digital registration is completely successful! The book catalog details and physical chip UID (<code>{pendingBookDto.ntagUid || "N/A"}</code>) are permanently registered in the royal ledger.
+                  </p>
+                  <p>
+                    <strong>NTAG Memory Action:</strong> Writing the direct checkout deep-link URL (<code>{`/#/catalog/${pendingBookDto.isbn}`}</code>) to the physical chip's physical NTAG sector will need to be completed later from an Android or NFC-compatible workstation.
+                  </p>
+                </div>
+              </div>
+
+              <button 
+                type="button" 
+                onClick={() => setIosWarningModalOpen(false)} 
+                className="royal-btn"
+                style={{ width: '100%', marginTop: '16px' }}
+              >
+                Acknowledge & Continue
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -528,7 +528,7 @@
 .debate-reply-node {
   margin-bottom: 16px;
   display: flex;
-  width: 100%;
+  width: 100% !important;
 }
 
 .debate-reply-node.reply-other {
@@ -540,8 +540,8 @@
 }
 
 .debate-reply-card {
-  max-width: 80%;
-  width: auto;
+  max-width: 100% !important;
+  width: 100% !important;
   padding: 16px 20px !important;
   position: relative;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -857,6 +857,22 @@
   background: rgba(212, 175, 55, 0.15);
 }
 
+.reply-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+  padding-top: 8px;
+  width: 100%;
+}
+
+.reply-footer-row .socratic-reactions-wrapper {
+  margin-top: 0 !important;
+}
+
 .reply-actions {
   display: flex;
   justify-content: flex-end;
@@ -864,6 +880,12 @@
   margin-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.03);
   padding-top: 8px;
+}
+
+.reply-footer-row .reply-actions {
+  border-top: none !important;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
 }
 
 [data-theme="academic"] .reply-actions {
@@ -1249,3 +1271,86 @@
   color: var(--text-secondary);
   line-height: 1.5;
 }
+
+/* ==========================================================================
+   Socratic Courtyard Debates Layout Redesign and Interaction Upgrades
+   ========================================================================== */
+
+/* Override global main container width for full viewport layout */
+main:has(.discourses-page-container) {
+  max-width: 100% !important;
+  padding: 40px 4% 80px !important;
+}
+
+/* Sticky top-level response form ("Voice My Stance") */
+.debate-stance-sticky-wrapper {
+  position: sticky;
+  top: 76px;
+  z-index: 99;
+  background: var(--surface-elevated, #16192d) !important;
+  border: 1px solid rgba(212, 175, 55, 0.3) !important;
+  border-radius: var(--border-radius-md);
+  padding: 16px 20px;
+  margin: 15px 0 25px 0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="academic"] .debate-stance-sticky-wrapper {
+  background: #fdfbf7 !important;
+  border-color: rgba(212, 175, 55, 0.4) !important;
+}
+
+.debate-stance-sticky-wrapper .debate-root-reply-form {
+  margin-top: 0;
+}
+
+/* Mobile responsive enhancements (screens <= 768px) */
+@media (max-width: 768px) {
+  /* Replace text labels with symbols on mobile buttons */
+  .btn-label-text, .trigger-lbl {
+    display: none !important;
+  }
+
+  /* Compact padding for buttons when text is hidden */
+  .reply-trigger-btn, .reply-edit-btn, .reply-delete-btn, .reaction-picker-trigger {
+    padding: 6px !important;
+    border-radius: 50% !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 30px !important;
+    height: 30px !important;
+  }
+  
+  .debate-expand-trigger {
+    padding: 6px 12px !important;
+    border-radius: 20px !important;
+  }
+
+  /* Hide the reactions/actions footer row on mobile by default */
+  .debate-reply-card .reply-footer-row {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  /* Show reactions/actions only when user long-presses (card active) */
+  .debate-reply-card.actions-active .reply-footer-row {
+    max-height: 100px;
+    opacity: 1;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.03);
+  }
+
+  /* Visual indicator for active long-press state */
+  .debate-reply-card.actions-active {
+    border-color: rgba(212, 175, 55, 0.45) !important;
+    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.15);
+  }
+}
+

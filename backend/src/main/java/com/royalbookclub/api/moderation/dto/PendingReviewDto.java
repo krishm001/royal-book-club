@@ -23,4 +23,5 @@ public class PendingReviewDto {
     private String authorId;
     private Instant createdAt;
     private String referenceId; // The ISBN (for book reviews) or discourseId (for comments/debate replies)
+    private String coverUrl; // The cover image URL uploaded by the author (for Chronicles/Blogs)
 }

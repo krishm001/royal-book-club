@@ -111,6 +111,7 @@ public class AdminModerationController {
                         .authorId(doc.getString("authorId"))
                         .createdAt(ts != null ? Instant.ofEpochSecond(ts.getSeconds(), ts.getNanos()) : Instant.now())
                         .referenceId(doc.getString("parentId"))
+                        .coverUrl(doc.getString("coverUrl"))
                         .build());
             }
 

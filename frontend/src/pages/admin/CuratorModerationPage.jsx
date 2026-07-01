@@ -247,6 +247,11 @@ const CuratorModerationPage = ({ user }) => {
                         {item.title && item.title !== item.type && (
                           <h4 className="review-title-text">{item.title}</h4>
                         )}
+                        {item.coverUrl && (
+                          <div className="review-cover-container">
+                            <img src={item.coverUrl} alt="Blog Cover" className="review-cover-image" />
+                          </div>
+                        )}
                         <p className="review-content-text">{displayContent}</p>
                         
                         {hasLongContent && (

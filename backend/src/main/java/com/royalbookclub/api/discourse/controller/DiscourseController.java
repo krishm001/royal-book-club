@@ -259,4 +259,63 @@ public class DiscourseController {
         DiscourseComment updated = discourseService.toggleCommentReaction(commentId, reactionType, user.getId());
         return ResponseEntity.ok(ApiResponse.success(updated, "Comment reaction toggled successfully"));
     }
+
+    /**
+     * Update an existing Chronicle comment.
+     */
+    @PutMapping("/comment/{commentId}")
+    @Operation(summary = "Update a comment", description = "Updates an existing chronicle comment. Can only be done by the author.")
+    public ResponseEntity<ApiResponse<DiscourseComment>> updateComment(
+            @PathVariable String commentId,
+            @RequestBody DiscourseComment updatePayload,
+            @AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Authentication required to update"));
+        }
+
+        return discourseService.getChronicleCommentById(commentId)
+                .map(existing -> {
+                    boolean isAuthor = user.getId().equals(existing.getAuthorId());
+                    if (!isAuthor) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.<DiscourseComment>error("Only the author can edit this comment"));
+                    }
+
+                    log.info("User {} is updating comment ID: {}", user.getId(), commentId);
+                    if (updatePayload.getContent() == null || updatePayload.getContent().isBlank()) {
+                        return ResponseEntity.badRequest().body(ApiResponse.<DiscourseComment>error("Comment content cannot be empty"));
+                    }
+
+                    existing.setContent(updatePayload.getContent());
+                    DiscourseComment saved = discourseService.saveChronicleComment(existing);
+                    return ResponseEntity.ok(ApiResponse.success(saved, "Comment updated successfully"));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Delete an existing Chronicle comment.
+     */
+    @DeleteMapping("/comment/{commentId}")
+    @Operation(summary = "Delete a comment", description = "Deletes an existing chronicle comment. Can only be done by the author or an ADMIN.")
+    public ResponseEntity<ApiResponse<Void>> deleteComment(
+            @PathVariable String commentId,
+            @AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Authentication required to delete"));
+        }
+
+        return discourseService.getChronicleCommentById(commentId)
+                .map(existing -> {
+                    boolean isAuthor = user.getId().equals(existing.getAuthorId());
+                    boolean isAdmin = user.getRole() == com.royalbookclub.api.user.model.Role.ADMIN;
+                    if (!isAuthor && !isAdmin) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.<Void>error("Only the author or a Curator can delete this comment"));
+                    }
+
+                    log.info("User {} is deleting comment ID: {}", user.getId(), commentId);
+                    discourseService.deleteChronicleComment(commentId);
+                    return ResponseEntity.ok(ApiResponse.<Void>success(null, "Comment deleted successfully"));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
 }

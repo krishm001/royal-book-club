@@ -68,4 +68,69 @@ public class BookReviewController {
         BookReview savedReview = bookReviewService.saveReview(review);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(savedReview, "Review published successfully"));
     }
+
+    /**
+     * Update an existing book review/comment.
+     */
+    @PutMapping("/{reviewId}")
+    @Operation(summary = "Update a book review", description = "Updates an existing book review or comment. Can only be done by the author.")
+    public ResponseEntity<ApiResponse<BookReview>> updateReview(
+            @PathVariable String isbn,
+            @PathVariable String reviewId,
+            @RequestBody BookReview updatePayload,
+            @AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Authentication required to update reviews"));
+        }
+
+        return bookReviewService.getReviewById(reviewId)
+                .map(existing -> {
+                    boolean isAuthor = user.getId().equals(existing.getUserId());
+                    if (!isAuthor) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.<BookReview>error("Only the author can edit this review"));
+                    }
+
+                    log.info("User {} is updating book review ID: {}", user.getId(), reviewId);
+                    if (updatePayload.getContent() == null || updatePayload.getContent().isBlank()) {
+                        return ResponseEntity.badRequest().body(ApiResponse.<BookReview>error("Review content cannot be empty"));
+                    }
+
+                    existing.setContent(updatePayload.getContent());
+                    if (updatePayload.getRating() != null) {
+                        existing.setRating(updatePayload.getRating());
+                    }
+                    
+                    BookReview saved = bookReviewService.saveReview(existing);
+                    return ResponseEntity.ok(ApiResponse.success(saved, "Review updated successfully"));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Delete an existing book review/comment.
+     */
+    @DeleteMapping("/{reviewId}")
+    @Operation(summary = "Delete a book review", description = "Deletes an existing book review or comment. Can only be done by the author or an ADMIN.")
+    public ResponseEntity<ApiResponse<Void>> deleteReview(
+            @PathVariable String isbn,
+            @PathVariable String reviewId,
+            @AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Authentication required to delete reviews"));
+        }
+
+        return bookReviewService.getReviewById(reviewId)
+                .map(existing -> {
+                    boolean isAuthor = user.getId().equals(existing.getUserId());
+                    boolean isAdmin = user.getRole() == com.royalbookclub.api.user.model.Role.ADMIN;
+                    if (!isAuthor && !isAdmin) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.<Void>error("Only the author or a Curator can delete this review"));
+                    }
+
+                    log.info("User {} is deleting book review ID: {}", user.getId(), reviewId);
+                    bookReviewService.deleteReview(reviewId);
+                    return ResponseEntity.ok(ApiResponse.<Void>success(null, "Review deleted successfully"));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
 }

@@ -39,7 +39,7 @@
 }
 
 .moderation-page-subtitle {
-  color: var(--text-muted, #a0aec0);
+  color: var(--text-secondary);
   font-size: 1rem;
   max-width: 850px;
 }
@@ -60,7 +60,7 @@
   padding: 12px 20px;
   font-size: 0.92rem;
   font-weight: 600;
-  color: var(--text-muted, #a0aec0);
+  color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -71,7 +71,7 @@
 }
 
 .moderation-tab-btn:hover {
-  color: var(--text-normal, #f7fafc);
+  color: var(--text-primary);
 }
 
 .moderation-tab-btn.active {
@@ -120,8 +120,8 @@
   justify-content: center;
   text-align: center;
   padding: 60px 40px;
-  background: rgba(255, 255, 255, 0.01);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 16px;
   backdrop-filter: blur(10px);
 }
@@ -135,11 +135,11 @@
   font-size: 1.3rem;
   font-family: var(--font-serif, serif);
   margin-bottom: 8px;
-  color: var(--text-normal, #f7fafc);
+  color: var(--text-primary);
 }
 
 .moderation-empty-card p {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   max-width: 500px;
   font-size: 0.9rem;
   line-height: 1.5;
@@ -152,15 +152,15 @@
   align-items: center;
   justify-content: center;
   padding: 100px 20px;
-  background: rgba(255, 255, 255, 0.01);
+  background: var(--glass-bg);
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
   backdrop-filter: blur(10px);
 }
 
 .loader-text {
   margin-top: 16px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 0.95rem;
 }
 
@@ -172,13 +172,13 @@
 }
 
 .pending-review-card {
-  background: rgba(255, 255, 255, 0.01);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--card-shadow);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -187,15 +187,15 @@
 
 .pending-review-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(var(--accent-rgb, 210, 165, 116), 0.2);
-  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.25);
+  border-color: var(--glass-border-hover) !important;
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.3), var(--glow-shadow);
 }
 
 .review-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--glass-border);
   padding-bottom: 12px;
 }
 
@@ -215,7 +215,7 @@
 
 .badge-item-date {
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .review-card-body {
@@ -228,12 +228,12 @@
   font-size: 1.15rem;
   font-family: var(--font-serif, serif);
   font-weight: 700;
-  color: var(--text-normal, #f7fafc);
+  color: var(--text-primary);
 }
 
 .review-content-text {
   font-size: 0.95rem;
-  color: var(--text-normal, #e2e8f0);
+  color: var(--text-primary);
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
@@ -263,26 +263,26 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.05);
   padding: 10px 14px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--glass-border);
   margin-top: 8px;
 }
 
 .meta-author, .meta-ref {
   font-size: 0.82rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .meta-author strong, .meta-ref strong {
-  color: var(--text-normal);
+  color: var(--text-primary);
 }
 
 .meta-id, .ref-hash {
   font-family: monospace;
   font-size: 0.78rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--accent-rgb, 210, 165, 116), 0.05);
   padding: 2px 6px;
   border-radius: 4px;
   color: var(--accent);
@@ -350,8 +350,8 @@
   justify-content: space-between;
   gap: 20px;
   margin-bottom: 16px;
-  background: rgba(255, 255, 255, 0.01);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   padding: 16px 20px;
   border-radius: 12px;
 }
@@ -365,7 +365,7 @@
 
 .ledger-desc {
   font-size: 0.88rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   line-height: 1.45;
   max-width: 800px;
 }
@@ -396,10 +396,10 @@
 /* Blocked logs table */
 .blocked-logs-table-wrapper {
   overflow-x: auto;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.01);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  background: var(--glass-bg);
+  box-shadow: var(--card-shadow);
 }
 
 .blocked-logs-table {
@@ -410,19 +410,19 @@
 }
 
 .blocked-logs-table th {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.1);
   color: var(--accent);
   font-weight: 700;
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 14px 18px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 2px solid var(--glass-border);
 }
 
 .blocked-logs-table td {
   padding: 14px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--glass-border);
   vertical-align: top;
   font-size: 0.88rem;
 }
@@ -432,11 +432,11 @@
 }
 
 .blocked-row:hover {
-  background: rgba(255, 255, 255, 0.01);
+  background: rgba(var(--accent-rgb, 210, 165, 116), 0.03);
 }
 
 .col-time {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   width: 15%;
   font-size: 0.82rem;
 }
@@ -450,13 +450,13 @@
 
 .user-email {
   font-weight: 600;
-  color: var(--text-normal, #e2e8f0);
+  color: var(--text-primary);
   word-break: break-all;
 }
 
 .user-id {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-family: monospace;
 }
 
@@ -466,9 +466,9 @@
 
 .blocked-type-badge {
   display: inline-block;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text-normal);
+  background: rgba(var(--accent-rgb, 210, 165, 116), 0.05);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 0.72rem;
@@ -498,7 +498,7 @@
 }
 
 .raw-content {
-  color: var(--text-normal);
+  color: var(--text-primary);
   font-size: 0.85rem;
   line-height: 1.45;
   word-break: break-all;
@@ -539,3 +539,30 @@
   transform: translateX(-4px);
   filter: brightness(1.1);
 }
+
+/* Premium Cover Image styling for Chronicles in review */
+.review-cover-container {
+  width: 100%;
+  max-height: 240px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.review-cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.review-cover-container:hover .review-cover-image {
+  transform: scale(1.02);
+}
+

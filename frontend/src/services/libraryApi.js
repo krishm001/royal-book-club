@@ -38,6 +38,16 @@ export const submitBookReview = async (isbn, review) => {
   return response.data;
 };
 
+export const updateBookReview = async (isbn, reviewId, payload) => {
+  const response = await api.put(`/api/v1/books/${encodeURIComponent(isbn)}/reviews/${reviewId}`, payload);
+  return response.data;
+};
+
+export const deleteBookReview = async (isbn, reviewId) => {
+  const response = await api.delete(`/api/v1/books/${encodeURIComponent(isbn)}/reviews/${reviewId}`);
+  return response.data;
+};
+
 /* Fallback request flows & Administrative Curation ledger */
 export const fetchCheckouts = async () => {
   const response = await api.get('/api/v1/checkout');

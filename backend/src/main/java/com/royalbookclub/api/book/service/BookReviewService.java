@@ -131,6 +131,43 @@ public class BookReviewService {
         }
     }
 
+    /**
+     * Fetch a specific book review by ID.
+     */
+    public java.util.Optional<BookReview> getReviewById(String id) {
+        if (id == null || id.isBlank()) {
+            return java.util.Optional.empty();
+        }
+        try {
+            DocumentSnapshot doc = firestore.collection(COLLECTION_NAME).document(id).get().get();
+            if (doc.exists()) {
+                return java.util.Optional.ofNullable(mapToBookReview(doc));
+            }
+        } catch (Exception e) {
+            log.error("Error reading book review by ID: {}", id, e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        return java.util.Optional.empty();
+    }
+
+    /**
+     * Delete a book review by ID.
+     */
+    public void deleteReview(String id) {
+        log.info("Deleting book review ID: {}", id);
+        try {
+            firestore.collection(COLLECTION_NAME).document(id).delete().get();
+        } catch (Exception e) {
+            log.error("Error deleting book review: {}", id, e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new RuntimeException("Failed to delete book review", e);
+        }
+    }
+
     private Map<String, Object> bookReviewToMap(BookReview review) {
         Map<String, Object> map = new HashMap<>();
         map.put("id", review.getId());

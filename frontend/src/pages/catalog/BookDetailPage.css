@@ -371,3 +371,147 @@
   transform: translateY(-2px) !important;
 }
 
+/* Preferences-Based Checkout Verification Styles */
+.verification-tabs-header {
+  display: flex;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: var(--border-radius-md);
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.verification-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 8px;
+  border-radius: calc(var(--border-radius-md) - 2px);
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.verification-tab-btn:hover:not(:disabled) {
+  color: var(--accent);
+  background: rgba(212, 175, 55, 0.05);
+}
+
+.verification-tab-btn.active {
+  color: #050402 !important;
+  background: linear-gradient(135deg, #f3e5ab 0%, var(--accent) 100%);
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+}
+
+.verification-tab-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tab-pane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Viewfinder stream laser guides */
+.barcode-scanner-viewfinder {
+  position: relative;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+}
+
+#detail-barcode-reader {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#detail-barcode-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.scanner-laser-line {
+  position: absolute;
+  top: 50%;
+  left: 5%;
+  width: 90%;
+  height: 2px;
+  background: #ff3b30;
+  box-shadow: 0 0 10px #ff3b30, 0 0 4px #ff3b30;
+  animation: laserPulse 1.8s infinite ease-in-out;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes laserPulse {
+  0% {
+    top: 15%;
+    opacity: 0.3;
+  }
+  50% {
+    top: 85%;
+    opacity: 1;
+  }
+  100% {
+    top: 15%;
+    opacity: 0.3;
+  }
+}
+
+.nfc-prompt-desc, .barcode-prompt-desc {
+  font-size: 0.85rem !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  line-height: 1.5 !important;
+  margin: 12px 0 16px 0 !important;
+}
+
+/* Success badging & animations */
+.verification-success-pane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.verification-success-pane h4 {
+  color: var(--text-primary);
+  margin: 12px 0 4px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.verification-success-pane p {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.gold-glow-icon {
+  filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.4));
+}
+
+@media (max-width: 600px) {
+  .verification-tabs-header {
+    flex-direction: column;
+    padding: 6px;
+  }
+  
+  .verification-tab-btn {
+    padding: 8px;
+    font-size: 0.8rem;
+    width: 100%;
+  }
+}
+

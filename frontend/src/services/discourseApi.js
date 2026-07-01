@@ -44,3 +44,13 @@ export const toggleCommentReaction = async (commentId, reactionType) => {
   const response = await api.post(`/api/v1/discourses/comment/${commentId}/react?reactionType=${encodeURIComponent(reactionType)}`);
   return response.data;
 };
+
+export const updateComment = async (commentId, payload) => {
+  const response = await api.put(`/api/v1/discourses/comment/${commentId}`, payload);
+  return response.data;
+};
+
+export const deleteComment = async (commentId) => {
+  const response = await api.delete(`/api/v1/discourses/comment/${commentId}`);
+  return response.data;
+};

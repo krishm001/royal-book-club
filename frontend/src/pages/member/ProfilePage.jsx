@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, Phone, MapPin, Search, CheckCircle, AlertTriangle, ArrowLeft, Loader2, Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCurrentUserProfile, updateUserProfile } from '../../services/userApi';
@@ -27,11 +27,12 @@ const ProfilePage = ({ user }) => {
     pinCodeMandatory: false,
   });
 
-  // Nominatim Autocomplete state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
-  const [searching, setSearching] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  // Google Places state and refs
+  const [mapsLoaded, setMapsLoaded] = useState(false);
+  const [mapError, setMapError] = useState(false);
+  const [detectingLocation, setDetectingLocation] = useState(false);
+
+  const autocompleteInputRef = useRef(null);
 
   // Message notifications
   const [message, setMessage] = useState(null); // { type: 'success' | 'error', text: '' }
@@ -78,64 +79,213 @@ const ProfilePage = ({ user }) => {
     }
   }, [user]);
 
-  // Handle Nominatim address autocomplete search
+  // Load Google Maps API Script
   useEffect(() => {
-    if (!searchQuery || searchQuery.trim().length < 4) {
-      setSuggestions([]);
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.VITE_FIREBASE_API_KEY || '';
+    if (!apiKey) {
+      console.warn("Google Maps API key is missing from environments.");
+      setMapError(true);
       return;
     }
 
-    const delayDebounce = setTimeout(async () => {
-      try {
-        setSearching(true);
-        const encodedQuery = encodeURIComponent(searchQuery);
-        // Nominatim OpenStreetMap keyless API with custom User-Agent to respect usage guidelines
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&format=json&addressdetails=1&limit=5`,
-          {
-            headers: {
-              'User-Agent': 'RoyalBookClubAddressCompletion/1.0 (patron@royalbook.club)',
-              'Accept-Language': 'en',
-            },
+    if (window.google && window.google.maps) {
+      setMapsLoaded(true);
+      return;
+    }
+
+    const existingScript = document.getElementById('google-maps-api-script');
+    if (existingScript) {
+      const handleScriptLoad = () => setMapsLoaded(true);
+      const handleScriptError = () => setMapError(true);
+
+      existingScript.addEventListener('load', handleScriptLoad);
+      existingScript.addEventListener('error', handleScriptError);
+
+      return () => {
+        existingScript.removeEventListener('load', handleScriptLoad);
+        existingScript.removeEventListener('error', handleScriptError);
+      };
+    }
+
+    const script = document.createElement('script');
+    script.id = 'google-maps-api-script';
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+
+    script.onload = () => {
+      setMapsLoaded(true);
+    };
+
+    script.onerror = () => {
+      console.error('Failed to load Google Maps script.');
+      setMapError(true);
+    };
+
+    document.head.appendChild(script);
+  }, []);
+
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      setMessage({
+        type: 'error',
+        text: 'HTML5 Geolocation is not supported by your browser.',
+      });
+      return;
+    }
+
+    setDetectingLocation(true);
+    setMessage(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        if (!window.google || !window.google.maps) {
+          setMessage({
+            type: 'error',
+            text: 'Google Maps Library is not loaded yet.',
+          });
+          setDetectingLocation(false);
+          return;
+        }
+
+        const geocoder = new window.google.maps.Geocoder();
+        const latlng = { lat: latitude, lng: longitude };
+
+        geocoder.geocode({ location: latlng }, (results, status) => {
+          setDetectingLocation(false);
+          if (status === 'OK' && results[0]) {
+            const place = results[0];
+            const addressComponents = place.address_components;
+
+            let streetNumber = '';
+            let route = '';
+            let neighborhood = '';
+            let cityVal = '';
+            let postcode = '';
+
+            for (const component of addressComponents) {
+              const types = component.types;
+              if (types.includes('street_number')) {
+                streetNumber = component.long_name;
+              } else if (types.includes('route')) {
+                route = component.long_name;
+              } else if (types.includes('neighborhood') || types.includes('sublocality') || types.includes('sublocality_level_1')) {
+                neighborhood = component.long_name;
+              } else if (types.includes('locality')) {
+                cityVal = component.long_name;
+              } else if (types.includes('administrative_area_level_2') && !cityVal) {
+                cityVal = component.long_name;
+              } else if (types.includes('postal_code')) {
+                postcode = component.long_name;
+              }
+            }
+
+            const streetVal = [route, neighborhood].filter(Boolean).join(', ');
+
+            setProfile((prev) => ({
+              ...prev,
+              houseNo: streetNumber || prev.houseNo || '',
+              street: streetVal || prev.street || '',
+              city: cityVal || prev.city || '',
+              pinCode: postcode || prev.pinCode || '',
+            }));
+
+            if (autocompleteInputRef.current) {
+              autocompleteInputRef.current.value = place.formatted_address;
+            }
+
+            setMessage({
+              type: 'success',
+              text: 'Sovereign coordinates successfully geocoded and filled.',
+            });
+            setTimeout(() => setMessage(null), 4000);
+          } else {
+            console.error('Geocoder failed due to: ' + status);
+            setMessage({
+              type: 'error',
+              text: `Reverse geocoding failed: ${status}. Please enter address manually.`,
+            });
           }
-        );
-        const data = await res.json();
-        setSuggestions(data || []);
-        setShowSuggestions(true);
-      } catch (err) {
-        console.error('Nominatim query error', err);
-      } finally {
-        setSearching(false);
-      }
-    }, 600); // 600ms debounce
-
-    return () => clearTimeout(delayDebounce);
-  }, [searchQuery]);
-
-  const handleSelectSuggestion = (place) => {
-    const address = place.address || {};
-    const cityVal = address.city || address.town || address.village || address.suburb || address.county || '';
-    const road = address.road || address.pedestrian || address.suburb || '';
-    const postcode = address.postcode || '';
-    const houseNumber = address.house_number || '';
-
-    setProfile((prev) => ({
-      ...prev,
-      houseNo: houseNumber || prev.houseNo,
-      street: road ? `${road} ${address.neighbourhood || ''}`.trim() : prev.street,
-      city: cityVal || prev.city,
-      pinCode: postcode || prev.pinCode,
-    }));
-
-    setSearchQuery('');
-    setSuggestions([]);
-    setShowSuggestions(false);
-    setMessage({
-      type: 'success',
-      text: 'Address details auto-populated from OpenStreetMap Ledger.',
-    });
-    setTimeout(() => setMessage(null), 4000);
+        });
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        setDetectingLocation(false);
+        let errorMsg = 'Failed to extract physical coordinates.';
+        if (error.code === error.PERMISSION_DENIED) {
+          errorMsg = 'Location permission denied by user.';
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          errorMsg = 'Position unavailable.';
+        } else if (error.code === error.TIMEOUT) {
+          errorMsg = 'Position extraction timed out.';
+        }
+        setMessage({
+          type: 'error',
+          text: errorMsg,
+        });
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
+
+  // Set up Google Places Autocomplete
+  useEffect(() => {
+    if (!mapsLoaded || !autocompleteInputRef.current) return;
+
+    const autocomplete = new window.google.maps.places.Autocomplete(autocompleteInputRef.current, {
+      types: ['address'],
+    });
+
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      if (!place || !place.address_components) {
+        console.warn("No autocomplete address components found.");
+        return;
+      }
+
+      // Parse address components
+      const addressComponents = place.address_components;
+      let streetNumber = '';
+      let route = '';
+      let neighborhood = '';
+      let cityVal = '';
+      let postcode = '';
+
+      for (const component of addressComponents) {
+        const types = component.types;
+        if (types.includes('street_number')) {
+          streetNumber = component.long_name;
+        } else if (types.includes('route')) {
+          route = component.long_name;
+        } else if (types.includes('neighborhood') || types.includes('sublocality')) {
+          neighborhood = component.long_name;
+        } else if (types.includes('locality')) {
+          cityVal = component.long_name;
+        } else if (types.includes('administrative_area_level_2') && !cityVal) {
+          cityVal = component.long_name;
+        } else if (types.includes('postal_code')) {
+          postcode = component.long_name;
+        }
+      }
+
+      const streetVal = [route, neighborhood].filter(Boolean).join(', ');
+
+      setProfile((prev) => ({
+        ...prev,
+        houseNo: streetNumber || prev.houseNo || '',
+        street: streetVal || prev.street || '',
+        city: cityVal || prev.city || '',
+        pinCode: postcode || prev.pinCode || '',
+      }));
+
+      setMessage({
+        type: 'success',
+        text: 'Address coordinates synchronized with Google Places Ledger.',
+      });
+      setTimeout(() => setMessage(null), 4000);
+    });
+  }, [mapsLoaded]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -320,45 +470,49 @@ const ProfilePage = ({ user }) => {
                     />
                   </div>
                 </div>
-
-                <hr className="royal-divider" />
+        <hr className="royal-divider" />
 
                 <div className="address-section-header">
                   <h3 className="section-title-royal">Address Registry</h3>
-                  <p className="address-section-sub">Use OpenStreetMap search to instantly fill address coordinates.</p>
+                  <p className="address-section-sub">Search and auto-complete address registry coordinates with Google Places ledger.</p>
                 </div>
 
-                {/* OpenStreetMap Address Search Field */}
-                <div className="form-group osm-autocomplete-group">
-                  <label htmlFor="osmSearch">Sovereign Address Lookup</label>
+                {/* Geolocation Address Extraction Button */}
+                <div className="form-group location-detection-group">
+                  <button
+                    type="button"
+                    onClick={detectLocation}
+                    disabled={detectingLocation || !mapsLoaded}
+                    className="royal-btn detect-location-btn"
+                  >
+                    {detectingLocation ? (
+                      <>
+                        <Loader2 className="animate-spin mr-2" size={16} /> Extricating Coordinates...
+                      </>
+                    ) : (
+                      <>
+                        <MapPin size={16} className="gold-glow-icon mr-2" /> Detect My Location (GPS)
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Google Places Address Search Field */}
+                <div className="form-group">
+                  <label htmlFor="googleAddressSearch">Sovereign Address Lookup</label>
                   <div className="input-with-icon-wrapper">
                     <Search className="input-field-icon" size={16} />
                     <input
+                      ref={autocompleteInputRef}
                       type="text"
-                      id="osmSearch"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onFocus={() => setShowSuggestions(true)}
-                      placeholder="Type address to search (e.g. 1600 Amphitheatre Pkwy Mountain View)..."
+                      id="googleAddressSearch"
+                      placeholder="Type address to autocomplete with Google Places..."
                       className="royal-input input-padded-left"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') e.preventDefault();
+                      }}
                     />
-                    {searching && <Loader2 className="animate-spin input-spinner-icon" size={16} />}
                   </div>
-
-                  {showSuggestions && suggestions.length > 0 && (
-                    <div className="osm-suggestions-dropdown">
-                      {suggestions.map((place) => (
-                        <div
-                          key={place.place_id}
-                          className="osm-suggestion-item"
-                          onClick={() => handleSelectSuggestion(place)}
-                        >
-                          <MapPin size={14} className="suggestion-marker" />
-                          <span className="suggestion-text">{place.display_name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
                 <div className="form-row">
@@ -447,80 +601,84 @@ const ProfilePage = ({ user }) => {
               </form>
             </div>
 
-            {/* Verification Status Card */}
-            <div className="royal-card checklist-card-glass">
-              <h3 className="section-title-royal">gating diagnostics</h3>
-              <p className="checklist-subtitle">
-                Current requirement checkpoints configured by library Curators. Satisfy all marked coordinates to unlock mobile self checkouts.
-              </p>
-
-              <div className="checklist-items">
-                <div className="checklist-item">
-                  <div className={`status-indicator ${profile.phone.trim() ? 'completed' : settings.phoneMandatory ? 'missing' : 'optional'}`}>
-                    {profile.phone.trim() ? <CheckCircle size={16} /> : settings.phoneMandatory ? <AlertTriangle size={16} /> : <CheckCircle size={16} style={{ opacity: 0.3 }} />}
-                  </div>
-                  <div className="checklist-text">
-                    <span className="checklist-label">Phone Number Coordinates</span>
-                    <span className="checklist-requirement">
-                      {settings.phoneMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="checklist-item">
-                  <div className={`status-indicator ${profile.houseNo.trim() ? 'completed' : settings.houseNoMandatory ? 'missing' : 'optional'}`}>
-                    {profile.houseNo.trim() ? <CheckCircle size={16} /> : settings.houseNoMandatory ? <AlertTriangle size={16} /> : <CheckCircle size={16} style={{ opacity: 0.3 }} />}
-                  </div>
-                  <div className="checklist-text">
-                    <span className="checklist-label">House / Apartment Number</span>
-                    <span className="checklist-requirement">
-                      {settings.houseNoMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="checklist-item">
-                  <div className={`status-indicator ${profile.street.trim() ? 'completed' : settings.streetMandatory ? 'missing' : 'optional'}`}>
-                    {profile.street.trim() ? <CheckCircle size={16} /> : settings.streetMandatory ? <AlertTriangle size={16} /> : <CheckCircle size={16} style={{ opacity: 0.3 }} />}
-                  </div>
-                  <div className="checklist-text">
-                    <span className="checklist-label">Street Address Alignment</span>
-                    <span className="checklist-requirement">
-                      {settings.streetMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="checklist-item">
-                  <div className={`status-indicator ${profile.city.trim() ? 'completed' : settings.cityMandatory ? 'missing' : 'optional'}`}>
-                    {profile.city.trim() ? <CheckCircle size={16} /> : settings.cityMandatory ? <AlertTriangle size={16} /> : <CheckCircle size={16} style={{ opacity: 0.3 }} />}
-                  </div>
-                  <div className="checklist-text">
-                    <span className="checklist-label">Registered City</span>
-                    <span className="checklist-requirement">
-                      {settings.cityMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="checklist-item">
-                  <div className={`status-indicator ${profile.pinCode.trim() ? 'completed' : settings.pinCodeMandatory ? 'missing' : 'optional'}`}>
-                    {profile.pinCode.trim() ? <CheckCircle size={16} /> : settings.pinCodeMandatory ? <AlertTriangle size={16} /> : <CheckCircle size={16} style={{ opacity: 0.3 }} />}
-                  </div>
-                  <div className="checklist-text">
-                    <span className="checklist-label">PIN / Postal Code</span>
-                    <span className="checklist-requirement">
-                      {settings.pinCodeMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="checklist-footer-note">
-                <p>
-                  Any update to mandatory settings by Curators is applied in real-time. Contact admin in the Pavilion if card RFID locks encounter alignment issues.
+            {/* Right column layout containing both checklist and map */}
+            <div className="right-column-container">
+              {/* Verification Status Card */}
+              <div className="royal-card checklist-card-glass">
+                <h3 className="section-title-royal">gating diagnostics</h3>
+                <p className="checklist-subtitle">
+                  Current requirement checkpoints configured by library Curators. Satisfy all marked coordinates to unlock mobile self checkouts.
                 </p>
+
+                <div className="checklist-items">
+                  <div className="checklist-item">
+                    <div className={`status-indicator ${profile.phone.trim() ? 'completed' : settings.phoneMandatory ? 'missing' : 'optional'}`}>
+                      {profile.phone.trim() ? <CheckCircle size={16} /> : settings.phoneMandatory ? <AlertTriangle size={16} /> : <CheckCircle size={16} style={{ opacity: 0.3 }} />}
+                    </div>
+                    <div className="checklist-text">
+                      <span className="checklist-label">Phone Number Coordinates</span>
+                      <span className="checklist-requirement">
+                        {settings.phoneMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="checklist-item">
+                    <div className={`status-indicator ${profile.houseNo.trim() ? 'completed' : settings.houseNoMandatory ? 'missing' : 'optional'}`}>
+                      {profile.houseNo.trim() ? <CheckCircle size={16} /> : settings.houseNoMandatory ? <AlertTriangle size={16} /> : <CheckCircle size={16} style={{ opacity: 0.3 }} />}
+                    </div>
+                    <div className="checklist-text">
+                      <span className="checklist-label">House / Apartment Number</span>
+                      <span className="checklist-requirement">
+                        {settings.houseNoMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="checklist-item">
+                    <div className={`status-indicator ${profile.street.trim() ? 'completed' : settings.streetMandatory ? 'missing' : 'optional'}`}>
+                      {profile.street.trim() ? <CheckCircle size={16} /> : settings.streetMandatory ? <AlertTriangle size={16} /> : <CheckCircle size={16} style={{ opacity: 0.3 }} />}
+                    </div>
+                    <div className="checklist-text">
+                      <span className="checklist-label">Street Address Alignment</span>
+                      <span className="checklist-requirement">
+                        {settings.streetMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="checklist-item">
+                    <div className={`status-indicator ${profile.city.trim() ? 'completed' : settings.cityMandatory ? 'missing' : 'optional'}`}>
+                      {profile.city.trim() ? <CheckCircle size={16} /> : settings.cityMandatory ? <AlertTriangle size={16} /> : <CheckCircle size={16} style={{ opacity: 0.3 }} />}
+                    </div>
+                    <div className="checklist-text">
+                      <span className="checklist-label">Registered City</span>
+                      <span className="checklist-requirement">
+                        {settings.cityMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="checklist-item">
+                    <div className={`status-indicator ${profile.pinCode.trim() ? 'completed' : settings.pinCodeMandatory ? 'missing' : 'optional'}`}>
+                      {profile.pinCode.trim() ? <CheckCircle size={16} /> : settings.pinCodeMandatory ? <AlertTriangle size={16} /> : <CheckCircle size={16} style={{ opacity: 0.3 }} />}
+                    </div>
+                    <div className="checklist-text">
+                      <span className="checklist-label">PIN / Postal Code</span>
+                      <span className="checklist-requirement">
+                        {settings.pinCodeMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="checklist-footer-note">
+                  <p>
+                    Any update to mandatory settings by Curators is applied in real-time. Contact admin in the Pavilion if card RFID locks encounter alignment issues.
+                  </p>
+                </div>
               </div>
+              {/* Google Map Card removed */}
             </div>
           </div>
         )}

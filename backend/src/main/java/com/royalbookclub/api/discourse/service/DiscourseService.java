@@ -348,6 +348,43 @@ public class DiscourseService {
     }
 
     /**
+     * Fetch a specific chronicle comment by ID.
+     */
+    public Optional<DiscourseComment> getChronicleCommentById(String id) {
+        if (id == null || id.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            DocumentSnapshot doc = firestore.collection(COMMENTS_COLLECTION).document(id).get().get();
+            if (doc.exists()) {
+                return Optional.ofNullable(mapToComment(doc));
+            }
+        } catch (Exception e) {
+            log.error("Error reading comment by ID: {}", id, e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Delete a chronicle comment by ID.
+     */
+    public void deleteChronicleComment(String id) {
+        log.info("Deleting chronicle comment ID: {}", id);
+        try {
+            firestore.collection(COMMENTS_COLLECTION).document(id).delete().get();
+        } catch (Exception e) {
+            log.error("Error deleting comment: {}", id, e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new RuntimeException("Failed to delete comment", e);
+        }
+    }
+
+    /**
      * Delete a discourse and its associated comments or replies recursively.
      */
     public void deleteDiscourse(String id) {

@@ -10,7 +10,10 @@ variable "gcp_services" {
     "artifactregistry.googleapis.com",
     "firestore.googleapis.com",
     "language.googleapis.com",
-    "vision.googleapis.com"
+    "vision.googleapis.com",
+    "maps-backend.googleapis.com",
+    "places-backend.googleapis.com",
+    "geocoding-backend.googleapis.com"
   ]
 }
 

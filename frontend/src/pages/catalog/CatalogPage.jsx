@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, BookOpen, Sparkles, X, Smartphone, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, SlidersHorizontal, BookOpen, Sparkles, X, Smartphone, RefreshCw, AlertTriangle, CheckCircle, Scan, Camera, Check, Clock, ShoppingBag, Loader2 } from 'lucide-react';
 import BookCard from '../../components/shared/BookCard';
 import { fetchBooks, fetchCheckoutsByMember, verifiedCheckout, verifiedReturn, requestCheckout, requestReturn } from '../../services/libraryApi';
 import { fetchBookHouses } from '../../services/genreApi';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import './CatalogPage.css';
+
+const SafeHtml5Qrcode = Html5Qrcode;
+const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
 
 const CatalogPage = ({ user }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -16,7 +20,20 @@ const CatalogPage = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Direct Transactions States
+  // Top-of-Study P2D Self-Checkout States
+  const [topScannerOpen, setTopScannerOpen] = useState(false);
+  const [topScannerError, setTopScannerError] = useState('');
+  const [topNfcActive, setTopNfcActive] = useState(false);
+  const [topNfcError, setTopNfcError] = useState('');
+  const [p2dModalOpen, setP2dModalOpen] = useState(false);
+  const [p2dBook, setP2dBook] = useState(null);
+  const [p2dActionType, setP2dActionType] = useState('checkout'); // 'checkout' or 'return'
+  const [p2dSuccess, setP2dSuccess] = useState(false);
+  const [p2dError, setP2dError] = useState('');
+  const [p2dLoading, setP2dLoading] = useState(false);
+  const [showTopSimulationMenu, setShowTopSimulationMenu] = useState(false);
+
+  // Direct Transactions States (for book cards NFC triggers)
   const [selectedBook, setSelectedBook] = useState(null);
   const [nfcModalOpen, setNfcModalOpen] = useState(false);
   const [nfcActionType, setNfcActionType] = useState('checkout'); // 'checkout' or 'return'
@@ -27,6 +44,268 @@ const CatalogPage = ({ user }) => {
   const [fallbackModalOpen, setFallbackModalOpen] = useState(false);
   const [fallbackLoading, setFallbackLoading] = useState(false);
   const [fallbackSuccess, setFallbackSuccess] = useState(false);
+
+  // Card-level preferences state
+  const [cardScannerOpen, setCardScannerOpen] = useState(false);
+  const [cardScannerError, setCardScannerError] = useState('');
+  const [activeTab, setActiveTab] = useState('NDEFReader' in window ? 'nfc' : 'barcode');
+
+  const topHtml5QrCodeRef = useRef(null);
+  const cardHtml5QrCodeRef = useRef(null);
+  const topScannerTimeoutRef = useRef(null);
+  const topScannerActiveRef = useRef(false);
+  const cardScannerTimeoutRef = useRef(null);
+  const cardScannerActiveRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      topScannerActiveRef.current = false;
+      cardScannerActiveRef.current = false;
+      if (topScannerTimeoutRef.current) clearTimeout(topScannerTimeoutRef.current);
+      if (cardScannerTimeoutRef.current) clearTimeout(cardScannerTimeoutRef.current);
+
+      if (topHtml5QrCodeRef.current) {
+        const currentScanner = topHtml5QrCodeRef.current;
+        topHtml5QrCodeRef.current = null;
+        if (currentScanner.isScanning) {
+          currentScanner.stop().catch(err => console.warn("Failed cleanup stop", err));
+        }
+      }
+      if (cardHtml5QrCodeRef.current) {
+        const currentScanner = cardHtml5QrCodeRef.current;
+        cardHtml5QrCodeRef.current = null;
+        if (currentScanner.isScanning) {
+          currentScanner.stop().catch(err => console.warn("Failed card cleanup stop", err));
+        }
+      }
+    };
+  }, []);
+
+  const startTopBarcodeScanner = () => {
+    setTopScannerOpen(true);
+    setTopScannerError('');
+
+    if (topScannerTimeoutRef.current) {
+      clearTimeout(topScannerTimeoutRef.current);
+    }
+
+    topScannerActiveRef.current = true;
+
+    topScannerTimeoutRef.current = setTimeout(() => {
+      if (!topScannerActiveRef.current) {
+        return;
+      }
+
+      try {
+        const html5QrCode = new SafeHtml5Qrcode("top-barcode-reader", {
+          verbose: false,
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+          }
+        });
+        topHtml5QrCodeRef.current = html5QrCode;
+        html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: (width, height) => {
+              return { width: Math.min(width * 0.8, 300), height: 120 };
+            },
+            formatsToSupport: [
+              SafeHtml5QrcodeSupportedFormats.EAN_13,
+              SafeHtml5QrcodeSupportedFormats.EAN_8,
+              SafeHtml5QrcodeSupportedFormats.ISBN_13
+            ]
+          },
+          (decodedText) => {
+            console.log("Top barcode scanned successfully:", decodedText);
+            handleTopBarcodeScanned(decodedText);
+          },
+          (errorMessage) => {
+            // non-critical error feedback during scanning
+          }
+        ).then(() => {
+          if (topHtml5QrCodeRef.current !== html5QrCode || !topScannerActiveRef.current) {
+            console.log("Top scanner cancelled or replaced during boot. Stopping now.");
+            html5QrCode.stop().catch(err => console.warn("Failed late stop inside start promise", err));
+          }
+        }).catch(err => {
+          console.error("Failed to start scanner:", err);
+          if (topScannerActiveRef.current) {
+            setTopScannerError("Camera initialization failed. Please ensure camera permissions are granted.");
+          }
+        });
+      } catch (err) {
+        console.error("Scanner exception:", err);
+        if (topScannerActiveRef.current) {
+          setTopScannerError("Could not initialize the barcode scanner: " + err.message);
+        }
+      }
+    }, 150);
+  };
+
+  const stopTopBarcodeScanner = async () => {
+    topScannerActiveRef.current = false;
+
+    if (topScannerTimeoutRef.current) {
+      clearTimeout(topScannerTimeoutRef.current);
+      topScannerTimeoutRef.current = null;
+    }
+
+    if (topHtml5QrCodeRef.current) {
+      const currentScanner = topHtml5QrCodeRef.current;
+      topHtml5QrCodeRef.current = null;
+      try {
+        if (currentScanner.isScanning) {
+          await currentScanner.stop();
+        }
+      } catch (err) {
+        console.error("Failed to stop scanner:", err);
+      }
+    }
+    setTopScannerOpen(false);
+  };
+
+  const handleTopBarcodeScanned = async (decodedText) => {
+    await stopTopBarcodeScanner();
+    if (!user) {
+      window.alert("Please sign in before checking out or returning books.");
+      return;
+    }
+    const scannedCode = (decodedText || '').trim().replace(/[-\s]/g, '');
+    const matchedBook = books.find(b => {
+      const bIsbn = (b.isbn || '').trim().replace(/[-\s]/g, '');
+      return bIsbn === scannedCode;
+    });
+
+    if (matchedBook) {
+      openP2dOverlay(matchedBook);
+    } else {
+      window.alert(`No catalog book matches barcode: ${decodedText}.`);
+    }
+  };
+
+  const startTopNfcRead = async () => {
+    if (!user) {
+      window.alert("Please sign in before performing self-checkout via NFC.");
+      return;
+    }
+    setTopNfcActive(true);
+    setTopNfcError('');
+
+    if (!('NDEFReader' in window)) {
+      setTopNfcError("Web NFC is not supported on this browser/device. Use Simulator Deck or Barcode scanning.");
+      setTopNfcActive(false);
+      return;
+    }
+
+    try {
+      const ndef = new window.NDEFReader();
+      await ndef.scan();
+
+      ndef.addEventListener("readingerror", () => {
+        setTopNfcError("NFC Reading Error: Place tag firmly against your device's NFC hot spot.");
+      });
+
+      ndef.addEventListener("reading", async ({ serialNumber, message }) => {
+        console.log(`Top NFC scanned: ${serialNumber}`);
+        let matchedBook = null;
+        
+        // Match by UID first
+        const cleanScanned = (serialNumber || '').toLowerCase().replace(/:/g, '');
+        matchedBook = books.find(b => {
+          const cleanBookTag = (b.ntagUid || '').toLowerCase().replace(/:/g, '');
+          return cleanBookTag && cleanBookTag === cleanScanned;
+        });
+
+        // Fallback match by URL NDEF record containing ISBN
+        if (!matchedBook && message && message.records) {
+          for (const record of message.records) {
+            if (record.recordType === "url") {
+              const textDecoder = new TextDecoder("utf-8");
+              const url = textDecoder.decode(record.data);
+              console.log("NDEF URL read:", url);
+              const isbnMatch = url.match(/\/catalog\/([0-9Xx]+)/);
+              if (isbnMatch && isbnMatch[1]) {
+                const urlIsbn = isbnMatch[1];
+                matchedBook = books.find(b => (b.isbn || '').trim().replace(/[-\s]/g, '') === urlIsbn.trim().replace(/[-\s]/g, ''));
+              }
+            }
+          }
+        }
+
+        if (matchedBook) {
+          setTopNfcActive(false);
+          openP2dOverlay(matchedBook);
+        } else {
+          setTopNfcError(`No book in catalog registered with NFC Serial ${serialNumber}`);
+        }
+      });
+    } catch (err) {
+      console.error("Top NFC error:", err);
+      setTopNfcError(`NFC Scan failed: ${err.message || err}`);
+      setTopNfcActive(false);
+    }
+  };
+
+  const stopTopNfcRead = () => {
+    setTopNfcActive(false);
+  };
+
+  const openP2dOverlay = (book) => {
+    setP2dBook(book);
+    setP2dError('');
+    setP2dSuccess(false);
+    
+    const resolvedStatus = getResolvedStatus(book);
+    if (resolvedStatus === 'checked-out') {
+      setP2dActionType('return');
+    } else {
+      setP2dActionType('checkout');
+    }
+    
+    setP2dModalOpen(true);
+  };
+
+  const handleP2dSubmit = async () => {
+    if (!p2dBook || !user) return;
+    setP2dLoading(true);
+    setP2dError('');
+    try {
+      const targetUid = p2dBook.ntagUid || '04:A3:B2:C1:D0:E9:80';
+      if (p2dActionType === 'checkout') {
+        await verifiedCheckout({ bookId: p2dBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
+      } else {
+        await verifiedReturn({ bookId: p2dBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
+      }
+      setP2dSuccess(true);
+      await refreshCatalogState();
+      setTimeout(() => {
+        setP2dModalOpen(false);
+        setP2dBook(null);
+      }, 2500);
+    } catch (txError) {
+      console.error('P2D direct transaction error:', txError);
+      setP2dError(`Ledger rejected transaction: ${txError.response?.data?.message || txError.message}`);
+    } finally {
+      setP2dLoading(false);
+    }
+  };
+
+  const handleSimulateTopP2d = (book, type) => {
+    setShowTopSimulationMenu(false);
+    if (!user) {
+      window.alert("Please sign in before checking out or returning books.");
+      return;
+    }
+    if (type === 'barcode') {
+      handleTopBarcodeScanned(book.isbn);
+    } else {
+      openP2dOverlay(book);
+    }
+  };
+
+
 
   const loadBooksAndData = async () => {
     setLoading(true);
@@ -98,8 +377,14 @@ const CatalogPage = ({ user }) => {
     setNfcError('');
     setNfcSuccess(false);
     setFallbackSuccess(false);
+    const defaultTab = 'NDEFReader' in window ? 'nfc' : 'barcode';
+    setActiveTab(defaultTab);
     setNfcModalOpen(true);
-    startNfcAction(book, 'checkout');
+    if (defaultTab === 'nfc') {
+      startNfcAction(book, 'checkout');
+    } else {
+      startCardBarcodeScanner(book);
+    }
   };
 
   const handleReturnClick = (book) => {
@@ -112,8 +397,14 @@ const CatalogPage = ({ user }) => {
     setNfcError('');
     setNfcSuccess(false);
     setFallbackSuccess(false);
+    const defaultTab = 'NDEFReader' in window ? 'nfc' : 'barcode';
+    setActiveTab(defaultTab);
     setNfcModalOpen(true);
-    startNfcAction(book, 'return');
+    if (defaultTab === 'nfc') {
+      startNfcAction(book, 'return');
+    } else {
+      startCardBarcodeScanner(book);
+    }
   };
 
   const startNfcAction = async (targetBook, actionType) => {
@@ -122,11 +413,7 @@ const CatalogPage = ({ user }) => {
     setNfcSuccess(false);
 
     if (!('NDEFReader' in window)) {
-      if (user && user.role === 'ADMIN') {
-        setNfcError("Web NFC is not supported on this browser/device. Tap 'Simulate NTAG213 Tag Tap (Curator Override)' or use manual request fallback.");
-      } else {
-        setNfcError("Web NFC is not supported on this browser/device. Please use the manual request fallback to submit a request for Curator approval.");
-      }
+      setNfcError("Web NFC is not supported on this browser/device. Please use the Barcode Scan tab or manual request fallback.");
       setNfcReading(false);
       return;
     }
@@ -155,7 +442,10 @@ const CatalogPage = ({ user }) => {
             setNfcSuccess(true);
             setNfcReading(false);
             await refreshCatalogState();
-            setTimeout(() => setNfcModalOpen(false), 2000);
+            setTimeout(() => {
+              setNfcModalOpen(false);
+              setSelectedBook(null);
+            }, 2000);
           } catch (txError) {
             console.error('NFC verified transaction database error:', txError);
             setNfcError(`Database rejected verification: ${txError.response?.data?.message || txError.message}`);
@@ -166,35 +456,148 @@ const CatalogPage = ({ user }) => {
       });
     } catch (err) {
       console.error('NFC scanning error:', err);
-      if (user && user.role === 'ADMIN') {
-        setNfcError(`NFC Scan failed: ${err.message || err}. Use simulated tap below or switch to fallback.`);
-      } else {
-        setNfcError(`NFC Scan failed: ${err.message || err}. Please use the manual request fallback.`);
-      }
+      setNfcError(`NFC Scan failed: ${err.message || err}. Please use the Barcode Scan tab or manual request fallback.`);
       setNfcReading(false);
     }
   };
 
-  const handleSimulateTapSuccess = async () => {
-    if (!selectedBook) return;
-    setNfcError('');
-    setNfcSuccess(false);
-    const targetUid = selectedBook.ntagUid || '04:A3:B2:C1:D0:E9:80';
+  const startCardBarcodeScanner = (targetBook) => {
+    setCardScannerError('');
+    setCardScannerOpen(true);
+    const bookToUse = targetBook || selectedBook;
+    if (!bookToUse) return;
 
-    try {
-      if (nfcActionType === 'checkout') {
-        await verifiedCheckout({ bookId: selectedBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
-      } else {
-        await verifiedReturn({ bookId: selectedBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
-      }
-      setNfcSuccess(true);
-      setNfcReading(false);
-      await refreshCatalogState();
-      setTimeout(() => setNfcModalOpen(false), 2000);
-    } catch (txError) {
-      console.error('Simulated verification failed:', txError);
-      setNfcError(`Ledger rejected simulated verification: ${txError.response?.data?.message || txError.message}`);
+    if (cardScannerTimeoutRef.current) {
+      clearTimeout(cardScannerTimeoutRef.current);
     }
+
+    cardScannerActiveRef.current = true;
+
+    cardScannerTimeoutRef.current = setTimeout(() => {
+      if (!cardScannerActiveRef.current) {
+        return;
+      }
+
+      try {
+        const html5QrCode = new SafeHtml5Qrcode("card-barcode-reader", {
+          verbose: false,
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+          }
+        });
+        cardHtml5QrCodeRef.current = html5QrCode;
+        html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: (width, height) => {
+              return { width: Math.min(width * 0.8, 280), height: 120 };
+            },
+            formatsToSupport: [
+              SafeHtml5QrcodeSupportedFormats.EAN_13,
+              SafeHtml5QrcodeSupportedFormats.EAN_8,
+              SafeHtml5QrcodeSupportedFormats.ISBN_13
+            ]
+          },
+          (decodedText) => {
+            console.log("Card barcode scanned successfully:", decodedText);
+            handleCardBarcodeScanned(decodedText, bookToUse);
+          },
+          (errorMessage) => {
+            // silent scan progression
+          }
+        ).then(() => {
+          if (cardHtml5QrCodeRef.current !== html5QrCode || !cardScannerActiveRef.current) {
+            console.log("Card scanner cancelled or replaced during boot. Stopping now.");
+            html5QrCode.stop().catch(err => console.warn("Failed late stop inside card start promise", err));
+          }
+        }).catch(err => {
+          console.error("Failed to start card scanner:", err);
+          if (cardScannerActiveRef.current) {
+            setCardScannerError("Camera initialization failed. Please ensure camera permissions are granted.");
+          }
+        });
+      } catch (err) {
+        console.error("Card scanner exception:", err);
+        if (cardScannerActiveRef.current) {
+          setCardScannerError("Could not initialize scanner: " + err.message);
+        }
+      }
+    }, 150);
+  };
+
+  const stopCardBarcodeScanner = async () => {
+    cardScannerActiveRef.current = false;
+
+    if (cardScannerTimeoutRef.current) {
+      clearTimeout(cardScannerTimeoutRef.current);
+      cardScannerTimeoutRef.current = null;
+    }
+
+    if (cardHtml5QrCodeRef.current) {
+      const currentScanner = cardHtml5QrCodeRef.current;
+      cardHtml5QrCodeRef.current = null;
+      try {
+        if (currentScanner.isScanning) {
+          await currentScanner.stop();
+        }
+      } catch (err) {
+        console.error("Failed to stop card scanner:", err);
+      }
+    }
+    setCardScannerOpen(false);
+  };
+
+  const handleCardBarcodeScanned = async (decodedText, bookToUse) => {
+    await stopCardBarcodeScanner();
+    const currentBook = bookToUse || selectedBook;
+    if (!currentBook) return;
+    if (!user) {
+      window.alert('Please sign in before completing transactions.');
+      return;
+    }
+    const scannedCode = (decodedText || '').trim().replace(/[-\s]/g, '');
+    const cleanBookIsbn = (currentBook.isbn || '').trim().replace(/[-\s]/g, '');
+
+    if (scannedCode === cleanBookIsbn) {
+      try {
+        const targetUid = currentBook.ntagUid || '04:A3:B2:C1:D0:E9:80';
+        if (nfcActionType === 'checkout') {
+          await verifiedCheckout({ bookId: currentBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid });
+        } else {
+          await verifiedReturn({ bookId: currentBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid });
+        }
+        setNfcSuccess(true);
+        await refreshCatalogState();
+        setTimeout(() => {
+          setNfcModalOpen(false);
+          setSelectedBook(null);
+        }, 2000);
+      } catch (txError) {
+        console.error('Verified card barcode database error:', txError);
+        setNfcError(`Database rejected verification: ${txError.response?.data?.message || txError.message}`);
+      }
+    } else {
+      setNfcError(`Security Mismatch: Scanned barcode (${decodedText}) does not match this book's ISBN (${currentBook.isbn}).`);
+    }
+  };
+
+  const handleCardTabChange = (tabName) => {
+    setActiveTab(tabName);
+    if (tabName !== 'barcode') {
+      stopCardBarcodeScanner();
+    }
+    if (tabName === 'nfc') {
+      startNfcAction(selectedBook, nfcActionType);
+    } else if (tabName === 'barcode') {
+      startCardBarcodeScanner(selectedBook);
+    }
+  };
+
+  const handleCloseCardModal = () => {
+    stopCardBarcodeScanner();
+    setNfcModalOpen(false);
+    setSelectedBook(null);
   };
 
   const handleSubmitFallbackRequest = async () => {
@@ -210,8 +613,9 @@ const CatalogPage = ({ user }) => {
       setFallbackLoading(false);
       await refreshCatalogState();
       setTimeout(() => {
-        setFallbackModalOpen(false);
+        setNfcModalOpen(false);
         setFallbackSuccess(false);
+        setSelectedBook(null);
       }, 2500);
     } catch (err) {
       console.error('Fallback request failed:', err);
@@ -277,6 +681,88 @@ const CatalogPage = ({ user }) => {
           The books that shape minds are rarely the ones that top charts. Find them here. Read them now.
         </p>
       </header>
+
+      <section className="self-checkout-portal royal-card glassmorphic-panel">
+        <div className="portal-left">
+          <div className="portal-icon-box">
+            <Scan className="gold-glow-icon scanner-animation-icon" size={24} />
+          </div>
+          <div className="portal-info">
+            <h2 className="portal-title gold-gradient-text">Physical-to-Digital Self-Checkout</h2>
+            <p className="portal-desc">
+              Physically holding a volume inside the Royal Salon? Unlock direct, verified checkout or instant returns.
+            </p>
+          </div>
+        </div>
+        <div className="portal-actions">
+          <button 
+            className="royal-btn portal-btn btn-barcode"
+            onClick={startTopBarcodeScanner}
+          >
+            <Camera size={16} /> Scan Barcode
+          </button>
+          
+          <button 
+            className={`royal-btn portal-btn btn-nfc ${topNfcActive ? 'active-pulse' : ''}`}
+            onClick={topNfcActive ? stopTopNfcRead : startTopNfcRead}
+          >
+            <Smartphone size={16} /> {topNfcActive ? 'Tapping Active...' : 'Tap NFC Book'}
+          </button>
+
+          <button 
+            className="royal-btn-secondary portal-btn btn-simulate"
+            onClick={() => setShowTopSimulationMenu(!showTopSimulationMenu)}
+          >
+            <Sparkles size={14} /> Simulation Deck
+          </button>
+        </div>
+
+        {topNfcActive && (
+          <div className="top-nfc-status-banner animate-fade-in">
+            <span className="pulse-dot"></span>
+            <span>NFC Reader is active. Hold your physical NTAG213 book tag against your device's NFC sweet spot...</span>
+            <button className="text-btn cancel-btn" onClick={stopTopNfcRead}>Cancel</button>
+          </div>
+        )}
+
+        {topNfcError && (
+          <div className="top-p2d-error-banner animate-fade-in">
+            <AlertTriangle size={14} />
+            <span>{topNfcError}</span>
+            <button className="text-btn close-error-btn" onClick={() => setTopNfcError('')}>Dismiss</button>
+          </div>
+        )}
+
+        {showTopSimulationMenu && (
+          <div className="top-simulation-drawer animate-slide-down">
+            <div className="drawer-header">
+              <span className="drawer-title gold-gradient-text">P2D Curator Simulation Deck</span>
+              <button className="close-drawer-btn" onClick={() => setShowTopSimulationMenu(false)}>
+                <X size={14} />
+              </button>
+            </div>
+            <p className="drawer-instruction">
+              Since Web NFC / Camera feeds may be restricted on some desktop environments, choose any catalog volume below to simulate a physical interaction:
+            </p>
+            <div className="simulation-book-grid">
+              {books.map(b => (
+                <div key={b.isbn} className="simulation-book-card">
+                  <div className="sim-book-meta">
+                    <span className="sim-book-title">{b.title}</span>
+                    <span className="sim-book-isbn">ISBN: {b.isbn}</span>
+                    {b.ntagUid && <span className="sim-book-uid">NFC: <code>{b.ntagUid}</code></span>}
+                  </div>
+                  <div className="sim-book-actions">
+                    <button className="sim-action-btn action-barcode" onClick={() => handleSimulateTopP2d(b, 'barcode')}>
+                      <Scan size={12} /> Scan
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
 
       <section className="catalog-controls royal-card">
         <div className="search-input-wrapper">
@@ -368,73 +854,148 @@ const CatalogPage = ({ user }) => {
         )}
       </main>
 
-      {/* NFC Reader Tap-to-Transaction Modal Overlay */}
+      {/* Sovereign Verification modal overlay */}
       {nfcModalOpen && selectedBook && (
         <div className="nfc-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-          <div className="royal-card nfc-modal-card animate-fade-in" style={{ width: '100%', maxWidth: '420px', padding: '30px', background: 'rgba(26, 21, 16, 0.95)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
-            <div className="nfc-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid rgba(212, 175, 55, 0.2)', paddingBottom: '12px' }}>
-              <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.25rem', fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '0.05em' }}>
-                {nfcActionType === 'checkout' ? 'Sovereign Tap-to-Checkout' : 'Sovereign Tap-to-Return'}
+          <div className="royal-card nfc-modal-card animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '24px', background: 'rgba(26, 21, 16, 0.95)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
+            <div className="nfc-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '10px' }}>
+              <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.15rem', fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '0.05em' }}>
+                {nfcActionType === 'checkout' ? 'Sovereign Checkout Verification' : 'Sovereign Return Verification'}
               </h3>
-              <button onClick={() => setNfcModalOpen(false)} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}>
+              <button onClick={handleCloseCardModal} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}>
                 <X size={18} />
               </button>
             </div>
 
-            <div className="nfc-modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <div className="verification-tabs-header">
+              <button
+                className={`verification-tab-btn ${activeTab === 'nfc' ? 'active' : ''}`}
+                onClick={() => handleCardTabChange('nfc')}
+                disabled={nfcSuccess || fallbackSuccess}
+              >
+                <Smartphone size={14} />
+                <span>NFC Tap</span>
+              </button>
+              <button
+                className={`verification-tab-btn ${activeTab === 'barcode' ? 'active' : ''}`}
+                onClick={() => handleCardTabChange('barcode')}
+                disabled={nfcSuccess || fallbackSuccess}
+              >
+                <ShoppingBag size={14} />
+                <span>Barcode Scan</span>
+              </button>
+              <button
+                className={`verification-tab-btn ${activeTab === 'manual' ? 'active' : ''}`}
+                onClick={() => handleCardTabChange('manual')}
+                disabled={nfcSuccess || fallbackSuccess}
+              >
+                <Clock size={14} />
+                <span>Manual Request</span>
+              </button>
+            </div>
+
+            <div className="nfc-modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginTop: '16px' }}>
               {nfcSuccess ? (
-                <div className="nfc-success-animation animate-fade-in">
-                  <CheckCircle size={56} className="text-success gold-glow-icon" style={{ marginBottom: '16px' }} />
-                  <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px', fontSize: '1.1rem' }}>Sovereign Verification Confirmed</h4>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>Transaction ledger updated automatically in Cloud Firestore.</p>
+                <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0' }}>
+                  <CheckCircle size={48} className="text-success gold-glow-icon" style={{ marginBottom: '12px' }} />
+                  <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>Sovereign Verification Confirmed</h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>Transaction ledger updated automatically in Cloud Firestore.</p>
+                </div>
+              ) : fallbackSuccess ? (
+                <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0' }}>
+                  <CheckCircle size={48} className="gold-glow-icon" style={{ color: 'var(--accent)', marginBottom: '12px' }} />
+                  <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>Scribe Request Saved</h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>Your circulation request has been submitted to the Curator's ledger.</p>
                 </div>
               ) : (
                 <>
-                  <div className="nfc-scanner-pulse" style={{ margin: '20px 0' }}>
-                    <Smartphone size={48} className="gold-glow-icon animate-pulse" />
-                    <div className="pulse-ring"></div>
-                  </div>
-                  
-                  <p className="nfc-prompt-desc" style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)', lineHeight: '1.6', marginBottom: '20px' }}>
-                    Hold this physical volume's NFC tag near the back of your Android phone...
-                  </p>
+                  {activeTab === 'nfc' && (
+                    <div className="tab-pane nfc-tab-pane animate-fade-in" style={{ width: '100%' }}>
+                      <div className="nfc-scanner-pulse" style={{ margin: '15px 0' }}>
+                        <Smartphone size={40} className="gold-glow-icon animate-pulse" />
+                        <div className="pulse-ring"></div>
+                      </div>
+                      
+                      <p className="nfc-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+                        Hold this physical volume's NFC tag near the back of your phone...
+                      </p>
 
-                  <div className="nfc-meta-box" style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', padding: '10px 14px', fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Target Volume ID:</span>
-                    <code style={{ color: 'var(--accent)', fontFamily: 'monospace', fontWeight: 'bold' }}>{selectedBook.ntagUid}</code>
-                  </div>
+                      <div className="nfc-meta-box" style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', padding: '8px 12px', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Target Volume ID:</span>
+                        <code style={{ color: 'var(--accent)', fontFamily: 'monospace', fontWeight: 'bold' }}>{selectedBook.ntagUid}</code>
+                      </div>
 
-                  {nfcError && (
-                    <div className="nfc-error-message royal-card" style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '12px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)', color: '#ff7b72', marginBottom: '20px', fontSize: '0.8rem', textAlign: 'left', width: '100%' }}>
-                      <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
-                      <span>{nfcError}</span>
+                      {nfcError && (
+                        <div className="nfc-error-message royal-card" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '12px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)', color: '#ff7b72', marginBottom: '16px', fontSize: '0.75rem', textAlign: 'left', width: '100%' }}>
+                          <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                          <span>{nfcError}</span>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  <div className="nfc-actions-row" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', marginTop: '10px' }}>
-                    {user && user.role === 'ADMIN' && (
-                      <button
-                        type="button"
-                        onClick={handleSimulateTapSuccess}
-                        className="royal-btn simulate-btn"
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}
-                      >
-                        <Sparkles size={14} /> Simulate NTAG213 Tag Tap (Curator Override)
-                      </button>
-                    )}
-                    
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setNfcModalOpen(false);
-                        setFallbackModalOpen(true);
-                      }}
-                      className="royal-btn-secondary fallback-switch-btn"
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}
-                    >
-                      Use Manual Request Fallback
-                    </button>
-                  </div>
+                  {activeTab === 'barcode' && (
+                    <div className="tab-pane barcode-tab-pane animate-fade-in" style={{ width: '100%' }}>
+                      <div className="barcode-scanner-viewfinder" style={{ margin: '15px auto', position: 'relative', width: '100%', maxWidth: '320px', height: '280px', overflow: 'hidden', background: '#000', borderRadius: '8px', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
+                        <div id="card-barcode-reader" style={{ width: '100%', height: '100%' }}></div>
+                        <div className="scanner-laser-line"></div>
+                      </div>
+
+                      <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+                        Align the book's barcode within the viewfinder scanning window...
+                      </p>
+
+                      {cardScannerError && (
+                        <div className="nfc-error-message royal-card" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '12px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)', color: '#ff7b72', marginBottom: '16px', fontSize: '0.75rem', textAlign: 'left', width: '100%' }}>
+                          <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                          <span>{cardScannerError}</span>
+                        </div>
+                      )}
+
+                      {nfcError && (
+                        <div className="nfc-error-message royal-card" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '12px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)', color: '#ff7b72', marginBottom: '16px', fontSize: '0.75rem', textAlign: 'left', width: '100%' }}>
+                          <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                          <span>{nfcError}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'manual' && (
+                    <div className="tab-pane manual-tab-pane animate-fade-in" style={{ width: '100%' }}>
+                      <p className="fallback-explanation" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: '0 0 16px 0', textAlign: 'left' }}>
+                        {nfcActionType === 'checkout'
+                          ? "As physical validation is unavailable, submit a digital checkout request. A Curator will verify copy availability and authorize your checkout."
+                          : "Submit a physical volume return record. A Curator will review your status and confirm receipt of this book inside the Salon."}
+                      </p>
+
+                      <div className="fallback-form-summary royal-card" style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '16px' }}>
+                        <h5 style={{ color: 'var(--accent)', fontWeight: '600', marginBottom: '4px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Volume Details</h5>
+                        <p style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>{selectedBook.title}</p>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>ISBN: {selectedBook.isbn}</p>
+                      </div>
+
+                      <div className="fallback-actions-row" style={{ display: 'flex', gap: '12px', width: '100%' }}>
+                        <button
+                          type="button"
+                          onClick={handleCloseCardModal}
+                          className="royal-btn-secondary"
+                          style={{ flex: 1, padding: '10px' }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSubmitFallbackRequest}
+                          disabled={fallbackLoading}
+                          className="royal-btn"
+                          style={{ flex: 2, padding: '10px' }}
+                        >
+                          {fallbackLoading ? <Loader2 className="animate-spin" size={16} /> : "Submit Request"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -494,6 +1055,137 @@ const CatalogPage = ({ user }) => {
                     >
                       {fallbackLoading ? <RefreshCw className="spin-icon" size={14} /> : <CheckCircle size={14} />}
                       {fallbackLoading ? 'Submitting...' : 'Submit Request'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Top Barcode Scanner Viewfinder Modal Overlay */}
+      {topScannerOpen && (
+        <div className="scanner-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '20px' }}>
+          <div className="royal-card scanner-modal-card animate-fade-in" style={{ width: '100%', maxWidth: '480px', padding: '24px', background: 'rgba(26, 21, 16, 0.95)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', borderRadius: '12px' }}>
+            <div className="scanner-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(212, 175, 55, 0.2)', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Scan size={18} className="gold-glow-icon" />
+                <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.2rem', fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '0.05em' }}>
+                  Scan Book Barcode
+                </h3>
+              </div>
+              <button onClick={stopTopBarcodeScanner} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="scanner-modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div id="top-barcode-reader" style={{ width: '100%', maxWidth: '400px', background: '#000', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}></div>
+              
+              {topScannerError ? (
+                <div className="top-p2d-error-banner" style={{ marginTop: '16px', padding: '12px', background: 'rgba(255, 123, 114, 0.1)', border: '1px solid #ff7b72', color: '#ff7b72', fontSize: '0.85rem', display: 'flex', gap: '8px', alignItems: 'center', borderRadius: '4px', width: '100%' }}>
+                  <AlertTriangle size={16} />
+                  <span>{topScannerError}</span>
+                </div>
+              ) : (
+                <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginTop: '16px', textAlign: 'center', marginHorizontal: '12px' }}>
+                  Align the book's barcode / ISBN inside the viewfinder box. Ensure sufficient lighting and steady holding.
+                </p>
+              )}
+
+              <button 
+                className="royal-btn-secondary" 
+                onClick={stopTopBarcodeScanner} 
+                style={{ marginTop: '20px', width: '100%' }}
+              >
+                Cancel Scanner
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* P2D Self-Checkout Modal Overlay */}
+      {p2dModalOpen && p2dBook && (
+        <div className="nfc-modal-overlay p2d-checkout-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '20px' }}>
+          <div className="royal-card nfc-modal-card p2d-checkout-modal animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '30px', background: 'rgba(26, 21, 16, 0.98)', border: '2px solid var(--accent)', boxShadow: '0 15px 50px rgba(0,0,0,0.6)', borderRadius: '12px' }}>
+            <div className="nfc-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid rgba(212, 175, 55, 0.2)', paddingBottom: '12px' }}>
+              <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.3rem', fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '0.05em' }}>
+                {p2dActionType === 'checkout' ? 'Physical Self-Checkout' : 'Physical Self-Return'}
+              </h3>
+              <button onClick={() => setP2dModalOpen(false)} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="nfc-modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+              {p2dSuccess ? (
+                <div className="p2d-success-view animate-fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div className="gold-check-animation-wrapper" style={{ margin: '10px 0 20px' }}>
+                    <div className="gold-circle-pulse">
+                      <Check className="gold-check-icon animate-scale-up" size={48} />
+                    </div>
+                  </div>
+                  <h4 style={{ color: 'var(--accent)', fontSize: '1.25rem', fontFamily: 'var(--font-display)', fontWeight: 'bold', marginBottom: '8px', letterSpacing: '0.02em' }}>
+                    Sovereign Transaction Cleared
+                  </h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.5', margin: '0 0 10px 0' }}>
+                    {p2dActionType === 'checkout' 
+                      ? `"${p2dBook.title}" is now checked out to your physical custody.` 
+                      : `"${p2dBook.title}" has been successfully returned to the salon archives.`}
+                  </p>
+                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', margin: 0 }}>
+                    Direct ledger verification code: <code>{p2dBook.ntagUid || 'P2D-VERIFIED'}</code>
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="p2d-book-showcase" style={{ display: 'flex', gap: '16px', alignItems: 'center', textAlign: 'left', width: '100%', padding: '16px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '24px' }}>
+                    {p2dBook.coverUrl && (
+                      <div className="p2d-cover-wrapper" style={{ width: '60px', height: '90px', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--accent)', flexShrink: 0 }}>
+                        <img src={p2dBook.coverUrl} alt={p2dBook.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                    )}
+                    <div className="p2d-book-details">
+                      <span className="p2d-book-title" style={{ display: 'block', fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '4px' }}>{p2dBook.title}</span>
+                      <span className="p2d-book-author" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>by {Array.isArray(p2dBook.authors) ? p2dBook.authors.join(', ') : p2dBook.author || 'Unknown Author'}</span>
+                      <span className="p2d-book-isbn" style={{ display: 'block', fontSize: '0.75rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)' }}>ISBN: {p2dBook.isbn}</span>
+                    </div>
+                  </div>
+
+                  <p className="p2d-action-desc" style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)', lineHeight: '1.6', marginBottom: '24px' }}>
+                    {p2dActionType === 'checkout'
+                      ? "A physical possession barcode or NFC match has been registered. Proceed with instant checkout? No curator approval required."
+                      : "A physical possession barcode or NFC match has been registered. Proceed with instant return?"}
+                  </p>
+
+                  {p2dError && (
+                    <div className="top-p2d-error-banner royal-card" style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '12px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)', color: '#ff7b72', marginBottom: '20px', fontSize: '0.8rem', textAlign: 'left', width: '100%' }}>
+                      <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+                      <span>{p2dError}</span>
+                    </div>
+                  )}
+
+                  <div className="fallback-actions-row" style={{ display: 'flex', gap: '14px', width: '100%' }}>
+                    <button
+                      type="button"
+                      onClick={() => setP2dModalOpen(false)}
+                      className="royal-btn-secondary"
+                      style={{ flex: 1, padding: '12px' }}
+                      disabled={p2dLoading}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleP2dSubmit}
+                      className="royal-btn"
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px' }}
+                      disabled={p2dLoading}
+                    >
+                      {p2dLoading ? <RefreshCw className="spin-icon" size={14} /> : <CheckCircle size={14} />}
+                      {p2dLoading ? 'Processing...' : (p2dActionType === 'checkout' ? 'Confirm Checkout' : 'Confirm Return')}
                     </button>
                   </div>
                 </>

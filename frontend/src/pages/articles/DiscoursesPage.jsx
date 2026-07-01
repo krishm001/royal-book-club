@@ -18,7 +18,8 @@ import {
   X, 
   ArrowLeft,
   BookOpen,
-  Trash2
+  Trash2,
+  Pencil
 } from 'lucide-react';
 import { 
   fetchDiscourses, 
@@ -29,7 +30,9 @@ import {
   updateDiscourse,
   deleteDiscourse,
   toggleDiscourseReaction,
-  toggleCommentReaction
+  toggleCommentReaction,
+  updateComment,
+  deleteComment
 } from '../../services/discourseApi';
 import { fetchBlogHouses } from '../../services/genreApi';
 import { uploadBookImage } from '../../services/storageApi';
@@ -48,6 +51,8 @@ const DiscoursesPage = ({ user }) => {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingCommentText, setEditingCommentText] = useState('');
 
   // Form states
   const [isCreating, setIsCreating] = useState(false);
@@ -74,6 +79,32 @@ const DiscoursesPage = ({ user }) => {
   const [editingReplyId, setEditingReplyId] = useState(null);
   const [editingReplyText, setEditingReplyText] = useState('');
   const [isSubmittingReplyEdit, setIsSubmittingReplyEdit] = useState(false);
+
+  // Mobile long-press gesture states
+  const [longPressedReplyId, setLongPressedReplyId] = useState(null);
+  const touchTimerRef = React.useRef(null);
+
+  const handleTouchStart = (replyId) => {
+    if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
+    touchTimerRef.current = setTimeout(() => {
+      setLongPressedReplyId(prevId => prevId === replyId ? null : replyId);
+    }, 600);
+  };
+
+  const handleTouchEnd = () => {
+    if (touchTimerRef.current) {
+      clearTimeout(touchTimerRef.current);
+      touchTimerRef.current = null;
+    }
+  };
+
+  const handleTouchMove = () => {
+    if (touchTimerRef.current) {
+      clearTimeout(touchTimerRef.current);
+      touchTimerRef.current = null;
+    }
+  };
+
 
   // Load basic data
   useEffect(() => {
@@ -149,6 +180,41 @@ const DiscoursesPage = ({ user }) => {
       console.error('Failed to post comment:', err);
     } finally {
       setIsSubmittingComment(false);
+    }
+  };
+
+  const handleStartEditComment = (commentId, text) => {
+    setEditingCommentId(commentId);
+    setEditingCommentText(text);
+  };
+
+  const handleCancelEditComment = () => {
+    setEditingCommentId(null);
+    setEditingCommentText('');
+  };
+
+  const handleUpdateCommentSubmit = async (commentId) => {
+    if (!editingCommentText.trim()) return;
+    try {
+      const res = await updateComment(commentId, { content: editingCommentText.trim() });
+      if (res && res.success) {
+        setChronicleComments(prev => prev.map(c => c.id === commentId ? { ...c, content: res.data.content } : c));
+        handleCancelEditComment();
+      }
+    } catch (err) {
+      console.error('Failed to update comment:', err);
+    }
+  };
+
+  const handleDeleteCommentClick = async (commentId) => {
+    if (!window.confirm("Are you sure you wish to delete this comment? This action is irreversible.")) return;
+    try {
+      const res = await deleteComment(commentId);
+      if (res && res.success) {
+        setChronicleComments(prev => prev.filter(c => c.id !== commentId));
+      }
+    } catch (err) {
+      console.error('Failed to delete comment:', err);
     }
   };
 
@@ -570,7 +636,12 @@ const DiscoursesPage = ({ user }) => {
           key={reply.id} 
           className={`debate-reply-node ${isMe ? 'reply-mine' : 'reply-other'} depth-${depth}`}
         >
-          <div className={`debate-reply-card royal-card glassmorphic ${isMe ? 'bubble-mine' : 'bubble-other'}`}>
+          <div 
+            className={`debate-reply-card royal-card glassmorphic ${isMe ? 'bubble-mine' : 'bubble-other'} ${longPressedReplyId === reply.id ? 'actions-active' : ''}`}
+            onTouchStart={() => handleTouchStart(reply.id)}
+            onTouchEnd={handleTouchEnd}
+            onTouchMove={handleTouchMove}
+          >
             
             {/* Citation Quote Card for flattened sub-replies */}
             {isFlattened && parentReply && (
@@ -616,39 +687,41 @@ const DiscoursesPage = ({ user }) => {
               <p className="reply-text-content">{reply.content}</p>
             )}
 
-            {/* Quick Socratic Reactions Bar inside the reply card */}
-            {renderReactions(reply, 'reply')}
+            {/* Unified compact single-row footer containing both reactions and actions */}
+            <div className="reply-footer-row">
+              {renderReactions(reply, 'reply')}
 
-            {user && (
-              <div className="reply-actions">
-                <button 
-                  onClick={() => {
-                    setReplyInputId(replyInputId === reply.id ? null : reply.id);
-                    setReplyText('');
-                  }} 
-                  className="reply-trigger-btn"
-                >
-                  <MessageCircle size={12} /> Reply
-                </button>
+              {user && (
+                <div className="reply-actions">
+                  <button 
+                    onClick={() => {
+                      setReplyInputId(replyInputId === reply.id ? null : reply.id);
+                      setReplyText('');
+                    }} 
+                    className="reply-trigger-btn"
+                  >
+                    <MessageCircle size={12} /> <span className="btn-label-text">Reply</span>
+                  </button>
 
-                {(user.uid === reply.authorId || user.id === reply.authorId || user.role === 'ADMIN') && (
-                  <>
-                    <button 
-                      onClick={() => handleStartEditReply(reply)}
-                      className="reply-edit-btn"
-                    >
-                      <PenTool size={12} /> Edit
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteReply(reply.id)}
-                      className="reply-delete-btn"
-                    >
-                      <Trash2 size={12} /> Delete
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
+                  {(user.uid === reply.authorId || user.id === reply.authorId || user.role === 'ADMIN') && (
+                    <>
+                      <button 
+                        onClick={() => handleStartEditReply(reply)}
+                        className="reply-edit-btn"
+                      >
+                        <PenTool size={12} /> <span className="btn-label-text">Edit</span>
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteReply(reply.id)}
+                        className="reply-delete-btn"
+                      >
+                        <Trash2 size={12} /> <span className="btn-label-text">Delete</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
 
             {replyInputId === reply.id && (
               <form onSubmit={(e) => handlePostReply(e, reply.id)} className="reply-submit-form animate-fade-in">
@@ -805,25 +878,75 @@ const DiscoursesPage = ({ user }) => {
                     )}
 
                     <div className="comments-thread-list">
-                      {chronicleComments.map(c => (
-                        <div key={c.id} className="comment-card royal-card">
-                          <div className="comment-card-header">
-                            <div className="comment-user">
-                              {c.authorPhotoUrl ? (
-                                <img src={c.authorPhotoUrl} alt={c.authorName} className="comment-avatar" />
-                              ) : (
-                                <div className="comment-avatar-fallback"><User size={12} /></div>
-                              )}
-                              <span className="comment-user-name gold-gradient-text">{c.authorName}</span>
+                      {chronicleComments.map(c => {
+                        const isAuthor = user && (user.uid === c.authorId || user.id === c.authorId);
+                        const isAdmin = user && user.role === 'ADMIN';
+                        const isEditing = editingCommentId === c.id;
+
+                        return (
+                          <div key={c.id} className="comment-card royal-card">
+                            <div className="comment-card-header">
+                              <div className="comment-user">
+                                {c.authorPhotoUrl ? (
+                                  <img src={c.authorPhotoUrl} alt={c.authorName} className="comment-avatar" />
+                                ) : (
+                                  <div className="comment-avatar-fallback"><User size={12} /></div>
+                                )}
+                                <span className="comment-user-name gold-gradient-text">{c.authorName}</span>
+                              </div>
+                              <div className="comment-header-right" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <span className="comment-time">
+                                  {new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                                {!isEditing && (isAuthor || isAdmin) && (
+                                  <div className="comment-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    {isAuthor && (
+                                      <button 
+                                        onClick={() => handleStartEditComment(c.id, c.content)} 
+                                        className="comment-action-btn edit-btn" 
+                                        title="Edit Insight"
+                                        style={{ background: 'none', border: 'none', color: 'var(--gold-color)', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
+                                      >
+                                        <Pencil size={12} />
+                                      </button>
+                                    )}
+                                    <button 
+                                      onClick={() => handleDeleteCommentClick(c.id)} 
+                                      className="comment-action-btn delete-btn" 
+                                      title="Purge Insight"
+                                      style={{ background: 'none', border: 'none', color: '#ff4d4d', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <span className="comment-time">
-                              {new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </span>
+                            {isEditing ? (
+                              <div className="comment-edit-form" style={{ marginTop: '0.5rem' }}>
+                                <textarea
+                                  className="royal-input comment-textarea edit-mode"
+                                  value={editingCommentText}
+                                  onChange={(e) => setEditingCommentText(e.target.value)}
+                                  rows={2}
+                                  style={{ width: '100%', marginBottom: '0.5rem' }}
+                                />
+                                <div className="comment-edit-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+                                  <button onClick={() => handleUpdateCommentSubmit(c.id)} className="royal-btn small-btn save-btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}>
+                                    Update
+                                  </button>
+                                  <button onClick={handleCancelEditComment} className="royal-btn small-btn cancel-btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)', color: '#ccc' }}>
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="comment-text-content">"{c.content}"</p>
+                            )}
+                            {renderReactions(c, 'comment')}
                           </div>
-                          <p className="comment-text-content">"{c.content}"</p>
-                          {renderReactions(c, 'comment')}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -1068,8 +1191,16 @@ const DiscoursesPage = ({ user }) => {
                         </div>
                       </div>
                     </div>
-                    <button className="debate-expand-trigger">
-                      {isExpanded ? 'Fold Dialogue' : 'Join Dialogue'}
+                    <button className="debate-expand-trigger" onClick={(e) => { e.stopPropagation(); handleOpenDebate(disc); }}>
+                      {isExpanded ? (
+                        <>
+                          <X size={14} /> <span className="btn-label-text">Fold Dialogue</span>
+                        </>
+                      ) : (
+                        <>
+                          <MessageSquare size={14} /> <span className="btn-label-text">Join Dialogue</span>
+                        </>
+                      )}
                     </button>
                   </div>
 
@@ -1096,6 +1227,25 @@ const DiscoursesPage = ({ user }) => {
                           </button>
                         </div>
                       )}
+
+                      {/* Top level Reply Box for root debate (Sticky Voice My Stance) */}
+                      {user && replyInputId === null && (
+                        <div className="debate-stance-sticky-wrapper royal-card glassmorphic">
+                          <form onSubmit={(e) => handlePostReply(e, disc.id)} className="debate-root-reply-form">
+                            <textarea
+                              placeholder="Submit your dialectic response to this topic..."
+                              className="royal-input root-reply-textarea"
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              required
+                              rows={2}
+                            />
+                            <button type="submit" disabled={isSubmittingReply} className="royal-btn root-reply-submit">
+                              Voice Stance <Send size={12} />
+                            </button>
+                          </form>
+                        </div>
+                      )}
                       
                       <div className="debate-dialectic-portico">
                         <h5>
@@ -1104,23 +1254,6 @@ const DiscoursesPage = ({ user }) => {
                         
                         {/* Debate replies tree render */}
                         {buildThreadedReplies()}
-
-                        {/* Top level Reply Box for root debate */}
-                        {user && replyInputId === null && (
-                          <form onSubmit={(e) => handlePostReply(e, disc.id)} className="debate-root-reply-form">
-                            <textarea
-                              placeholder="Submit your dialectic response to this topic..."
-                              className="royal-input root-reply-textarea"
-                              value={replyText}
-                              onChange={(e) => setReplyText(e.target.value)}
-                              required
-                              rows={3}
-                            />
-                            <button type="submit" disabled={isSubmittingReply} className="royal-btn root-reply-submit">
-                              Voice Stance <Send size={12} />
-                            </button>
-                          </form>
-                        )}
                       </div>
                     </div>
                   )}

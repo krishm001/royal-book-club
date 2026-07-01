@@ -286,55 +286,82 @@
   margin-top: 2px;
 }
 
-/* OSM Autocomplete Suggestions dropdown */
-.osm-autocomplete-group {
-  position: relative;
+/* Google Places Autocomplete Dropdown Custom Style */
+.pac-container {
+  background-color: var(--surface-elevated, #1e1e3f) !important;
+  border: 1px solid var(--glass-border, rgba(212, 165, 116, 0.15)) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+  font-family: var(--font-body) !important;
+  margin-top: 4px !important;
+  z-index: 9999 !important;
 }
 
-.osm-suggestions-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: #121214;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  margin-top: 6px;
-  max-height: 250px;
-  overflow-y: auto;
-  z-index: 100;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
+.pac-item {
+  border-top: 1px solid rgba(255, 255, 255, 0.03) !important;
+  padding: 10px 12px !important;
+  color: var(--text-secondary, #8b8ba3) !important;
+  cursor: pointer !important;
+  font-size: 0.88rem !important;
 }
 
-.osm-suggestion-item {
+.pac-item:hover {
+  background-color: rgba(var(--accent-rgb, 210, 165, 116), 0.08) !important;
+}
+
+.pac-item-query {
+  font-size: 0.92rem !important;
+  color: var(--text-primary, #f0e6d3) !important;
+}
+
+.pac-matched {
+  color: var(--accent) !important;
+}
+
+.pac-icon {
+  display: none !important; /* Hide default generic search icons to keep design pure */
+}
+
+/* Right column layout containing both checklist and map */
+.right-column-container {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* Geolocation and Detect My Location styles */
+.location-detection-group {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+.detect-location-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(var(--accent-rgb, 210, 165, 116), 0.08) !important;
+  border: 1px solid rgba(var(--accent-rgb, 210, 165, 116), 0.3) !important;
+  color: var(--accent) !important;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  padding: 10px 16px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  font-size: 0.88rem;
+  width: fit-content;
 }
 
-.osm-suggestion-item:last-child {
-  border-bottom: none;
+.detect-location-btn:hover:not(:disabled) {
+  background: rgba(var(--accent-rgb, 210, 165, 116), 0.15) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 15px rgba(var(--accent-rgb, 210, 165, 116), 0.25);
+  transform: translateY(-1px);
 }
 
-.osm-suggestion-item:hover {
-  background: rgba(var(--accent-rgb, 210, 165, 116), 0.1);
-}
-
-.suggestion-marker {
-  color: var(--accent);
-  margin-top: 2px;
-  flex-shrink: 0;
-}
-
-.suggestion-text {
-  font-size: 0.85rem;
-  color: var(--text-normal, #e2e8f0);
-  line-height: 1.35;
+.detect-location-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .form-actions-profile {

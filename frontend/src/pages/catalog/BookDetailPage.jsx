@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle } from 'lucide-react';
-import { fetchBookByIsbn, checkoutBook, fetchBookReviews, submitBookReview, requestCheckout, requestReturn, verifiedCheckout, verifiedReturn, fetchCheckoutsByMember } from '../../services/libraryApi';
+import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
+import { fetchBookByIsbn, checkoutBook, fetchBookReviews, submitBookReview, requestCheckout, requestReturn, verifiedCheckout, verifiedReturn, fetchCheckoutsByMember, updateBookReview, deleteBookReview } from '../../services/libraryApi';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import './BookDetailPage.css';
+
+const SafeHtml5Qrcode = Html5Qrcode;
+const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
 
 const BookDetailPage = ({ user }) => {
   const { id } = useParams();
@@ -13,6 +17,9 @@ const BookDetailPage = ({ user }) => {
   const [reviewText, setReviewText] = useState('');
   const [reviews, setReviews] = useState([]);
   const [userRating, setUserRating] = useState(5);
+  const [editingReviewId, setEditingReviewId] = useState(null);
+  const [editingReviewText, setEditingReviewText] = useState('');
+  const [editingReviewRating, setEditingReviewRating] = useState(5);
 
   // NFC & Fallback request states
   const [nfcModalOpen, setNfcModalOpen] = useState(false);
@@ -24,6 +31,15 @@ const BookDetailPage = ({ user }) => {
   const [fallbackModalOpen, setFallbackModalOpen] = useState(false);
   const [fallbackLoading, setFallbackLoading] = useState(false);
   const [fallbackSuccess, setFallbackSuccess] = useState(false);
+
+  // Preference-hierarchy tab & scanner states
+  const [activeTab, setActiveTab] = useState('NDEFReader' in window ? 'nfc' : 'barcode');
+  const [detailScannerOpen, setDetailScannerOpen] = useState(false);
+  const [detailScannerError, setDetailScannerError] = useState('');
+  const detailHtml5QrCodeRef = React.useRef(null);
+  const detailScannerTimeoutRef = React.useRef(null);
+  const detailScannerActiveRef = React.useRef(false);
+
 
   const loadMemberCheckouts = async () => {
     const memberId = user?.uid || user?.id;
@@ -104,19 +120,44 @@ const BookDetailPage = ({ user }) => {
     loadMemberCheckouts();
   }, [user]);
 
-  // Deep Link Auto-Return Flow Trigger
+  // Deep Link Auto-Checkout or Return Flow Trigger
   useEffect(() => {
-    if (book && memberCheckouts.length > 0) {
+    if (book) {
       const query = new URLSearchParams(window.location.search);
-      if (query.get('action') === 'return' && getResolvedStatus() === 'checked-out') {
+      const action = query.get('action');
+      const status = getResolvedStatus();
+      
+      if (action === 'checkout' && status === 'available') {
+        setNfcActionType('checkout');
+        setNfcError('');
+        setNfcSuccess(false);
+        setFallbackSuccess(false);
+        
+        const defaultTab = 'NDEFReader' in window ? 'nfc' : 'barcode';
+        setActiveTab(defaultTab);
+        setNfcModalOpen(true);
+
+        if (defaultTab === 'nfc') {
+          startNfcAction('checkout');
+        } else {
+          startDetailBarcodeScanner();
+        }
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else if (action === 'return' && status === 'checked-out') {
         setNfcActionType('return');
         setNfcError('');
         setNfcSuccess(false);
         setFallbackSuccess(false);
+        
+        const defaultTab = 'NDEFReader' in window ? 'nfc' : 'barcode';
+        setActiveTab(defaultTab);
         setNfcModalOpen(true);
-        // CRITICAL FIX: Trigger scan engine to verify device capability and show fallback options
-        startNfcAction('return');
-        // Strip parameters from URL without page reload
+
+        if (defaultTab === 'nfc') {
+          startNfcAction('return');
+        } else {
+          startDetailBarcodeScanner();
+        }
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
@@ -132,9 +173,15 @@ const BookDetailPage = ({ user }) => {
     setNfcSuccess(false);
     setFallbackSuccess(false);
 
-    // ALWAYS open NFC modal to allow scanning or simulation on macOS
+    const defaultTab = 'NDEFReader' in window ? 'nfc' : 'barcode';
+    setActiveTab(defaultTab);
     setNfcModalOpen(true);
-    startNfcAction('checkout');
+
+    if (defaultTab === 'nfc') {
+      startNfcAction('checkout');
+    } else {
+      startDetailBarcodeScanner();
+    }
   };
 
   const handleReturnClick = () => {
@@ -147,9 +194,161 @@ const BookDetailPage = ({ user }) => {
     setNfcSuccess(false);
     setFallbackSuccess(false);
 
-    // ALWAYS open NFC modal to allow scanning or simulation on macOS
+    const defaultTab = 'NDEFReader' in window ? 'nfc' : 'barcode';
+    setActiveTab(defaultTab);
     setNfcModalOpen(true);
-    startNfcAction('return');
+
+    if (defaultTab === 'nfc') {
+      startNfcAction('return');
+    } else {
+      startDetailBarcodeScanner();
+    }
+  };
+  useEffect(() => {
+    return () => {
+      detailScannerActiveRef.current = false;
+      if (detailScannerTimeoutRef.current) {
+        clearTimeout(detailScannerTimeoutRef.current);
+      }
+      if (detailHtml5QrCodeRef.current) {
+        const currentScanner = detailHtml5QrCodeRef.current;
+        detailHtml5QrCodeRef.current = null;
+        if (currentScanner.isScanning) {
+          currentScanner.stop().catch(err => console.warn("Failed cleanup stop", err));
+        }
+      }
+    };
+  }, []);
+
+  const startDetailBarcodeScanner = () => {
+    setDetailScannerError('');
+    setDetailScannerOpen(true);
+    
+    if (detailScannerTimeoutRef.current) {
+      clearTimeout(detailScannerTimeoutRef.current);
+    }
+    
+    detailScannerActiveRef.current = true;
+
+    detailScannerTimeoutRef.current = setTimeout(() => {
+      if (!detailScannerActiveRef.current) {
+        return;
+      }
+
+      try {
+        const html5QrCode = new SafeHtml5Qrcode("detail-barcode-reader", {
+          verbose: false,
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+          }
+        });
+        detailHtml5QrCodeRef.current = html5QrCode;
+        html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: (width, height) => {
+              return { width: Math.min(width * 0.8, 280), height: 120 };
+            },
+            formatsToSupport: [
+              SafeHtml5QrcodeSupportedFormats.EAN_13,
+              SafeHtml5QrcodeSupportedFormats.EAN_8,
+              SafeHtml5QrcodeSupportedFormats.ISBN_13
+            ]
+          },
+          (decodedText) => {
+            console.log("Detail barcode scanned successfully:", decodedText);
+            handleDetailBarcodeScanned(decodedText);
+          },
+          (errorMessage) => {
+            // silent scan progression
+          }
+        ).then(() => {
+          if (detailHtml5QrCodeRef.current !== html5QrCode || !detailScannerActiveRef.current) {
+            console.log("Detail scanner cancelled or replaced during boot. Stopping now.");
+            html5QrCode.stop().catch(err => console.warn("Failed late stop inside start promise", err));
+          }
+        }).catch(err => {
+          console.error("Failed to start detail scanner:", err);
+          if (detailScannerActiveRef.current) {
+            setDetailScannerError("Camera initialization failed. Please ensure camera permissions are granted.");
+          }
+        });
+      } catch (err) {
+        console.error("Detail scanner exception:", err);
+        if (detailScannerActiveRef.current) {
+          setDetailScannerError("Could not initialize scanner: " + err.message);
+        }
+      }
+    }, 150);
+  };
+
+  const stopDetailBarcodeScanner = async () => {
+    detailScannerActiveRef.current = false;
+    
+    if (detailScannerTimeoutRef.current) {
+      clearTimeout(detailScannerTimeoutRef.current);
+      detailScannerTimeoutRef.current = null;
+    }
+
+    if (detailHtml5QrCodeRef.current) {
+      const currentScanner = detailHtml5QrCodeRef.current;
+      detailHtml5QrCodeRef.current = null;
+      try {
+        if (currentScanner.isScanning) {
+          await currentScanner.stop();
+        }
+      } catch (err) {
+        console.error("Failed to stop detail scanner:", err);
+      }
+    }
+    setDetailScannerOpen(false);
+  };
+
+  const handleDetailBarcodeScanned = async (decodedText) => {
+    await stopDetailBarcodeScanner();
+    if (!user) {
+      window.alert('Please sign in before completing transactions.');
+      return;
+    }
+    const scannedCode = (decodedText || '').trim().replace(/[-\s]/g, '');
+    const cleanBookIsbn = (book.isbn || '').trim().replace(/[-\s]/g, '');
+
+    if (scannedCode === cleanBookIsbn) {
+      try {
+        const targetUid = book.ntagUid || '04:A3:B2:C1:D0:E9:80';
+        if (nfcActionType === 'checkout') {
+          await verifiedCheckout({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
+        } else {
+          await verifiedReturn({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
+        }
+        setNfcSuccess(true);
+        await refreshState();
+        setTimeout(() => setNfcModalOpen(false), 2000);
+      } catch (txError) {
+        console.error('Verified barcode database error:', txError);
+        setNfcError(`Database rejected verification: ${txError.response?.data?.message || txError.message}`);
+      }
+    } else {
+      setNfcError(`Security Mismatch: Scanned barcode (${decodedText}) does not match this book's ISBN (${book.isbn}).`);
+    }
+  };
+
+  const handleTabChange = (tabName) => {
+    setActiveTab(tabName);
+    if (tabName !== 'barcode') {
+      stopDetailBarcodeScanner();
+    }
+    if (tabName === 'nfc') {
+      startNfcAction(nfcActionType);
+    } else if (tabName === 'barcode') {
+      startDetailBarcodeScanner();
+    }
+  };
+
+  const handleCloseNfcModal = () => {
+    stopDetailBarcodeScanner();
+    setNfcModalOpen(false);
   };
 
   const startNfcAction = async (actionType) => {
@@ -158,11 +357,7 @@ const BookDetailPage = ({ user }) => {
     setNfcSuccess(false);
 
     if (!('NDEFReader' in window)) {
-      if (user && user.role === 'ADMIN') {
-        setNfcError("Web NFC is not supported on this browser/device. Tap 'Simulate NTAG213 Tag Tap (Curator Override)' or use manual request fallback.");
-      } else {
-        setNfcError("Web NFC is not supported on this browser/device. Please use the manual request fallback to submit a request for Curator approval.");
-      }
+      setNfcError("Web NFC is not supported on this browser/device. Please use the manual request fallback to submit a request for Curator approval.");
       setNfcReading(false);
       return;
     }
@@ -203,33 +398,8 @@ const BookDetailPage = ({ user }) => {
       });
     } catch (err) {
       console.error('NFC scanning error:', err);
-      if (user && user.role === 'ADMIN') {
-        setNfcError(`NFC Scan failed: ${err.message || err}. Use simulated tap below or switch to fallback.`);
-      } else {
-        setNfcError(`NFC Scan failed: ${err.message || err}. Please use the manual request fallback.`);
-      }
+      setNfcError(`NFC Scan failed: ${err.message || err}. Please use the manual request fallback.`);
       setNfcReading(false);
-    }
-  };
-
-  const handleSimulateTapSuccess = async () => {
-    setNfcError('');
-    setNfcSuccess(false);
-    const targetUid = book.ntagUid || '04:A3:B2:C1:D0:E9:80';
-
-    try {
-      if (nfcActionType === 'checkout') {
-        await verifiedCheckout({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
-      } else {
-        await verifiedReturn({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
-      }
-      setNfcSuccess(true);
-      setNfcReading(false);
-      await refreshState();
-      setTimeout(() => setNfcModalOpen(false), 2000);
-    } catch (txError) {
-      console.error('Simulated verification failed:', txError);
-      setNfcError(`Ledger rejected simulated verification: ${txError.response?.data?.message || txError.message}`);
     }
   };
 
@@ -245,7 +415,7 @@ const BookDetailPage = ({ user }) => {
       setFallbackLoading(false);
       await refreshState();
       setTimeout(() => {
-        setFallbackModalOpen(false);
+        setNfcModalOpen(false);
         setFallbackSuccess(false);
       }, 2500);
     } catch (err) {
@@ -278,6 +448,46 @@ const BookDetailPage = ({ user }) => {
     } catch (err) {
       console.error('Failed to publish dissertation', err);
       window.alert('Unable to publish review at this time.');
+    }
+  };
+
+  const handleStartEditReview = (reviewId, text, rating) => {
+    setEditingReviewId(reviewId);
+    setEditingReviewText(text);
+    setEditingReviewRating(rating || 5);
+  };
+
+  const handleCancelEditReview = () => {
+    setEditingReviewId(null);
+    setEditingReviewText('');
+    setEditingReviewRating(5);
+  };
+
+  const handleUpdateReviewSubmit = async (reviewId) => {
+    if (!editingReviewText.trim()) return;
+    try {
+      const res = await updateBookReview(id, reviewId, {
+        rating: editingReviewRating,
+        content: editingReviewText.trim()
+      });
+      if (res && res.success) {
+        setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, content: res.data.content, rating: res.data.rating } : r));
+        handleCancelEditReview();
+      }
+    } catch (err) {
+      console.error('Failed to update book review:', err);
+    }
+  };
+
+  const handleDeleteReviewClick = async (reviewId) => {
+    if (!window.confirm("Are you sure you wish to delete this review? This action is irreversible.")) return;
+    try {
+      const res = await deleteBookReview(id, reviewId);
+      if (res && res.success) {
+        setReviews(prev => prev.filter(r => r.id !== reviewId));
+      }
+    } catch (err) {
+      console.error('Failed to delete book review:', err);
     }
   };
 
@@ -433,126 +643,145 @@ const BookDetailPage = ({ user }) => {
               <div className="inline-action-panel royal-card border-gold animate-fade-in" style={{ marginTop: '16px', padding: '20px', background: 'rgba(20, 16, 12, 0.6)', backdropFilter: 'blur(12px)' }}>
                 <div className="panel-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '10px' }}>
                   <h4 style={{ color: 'var(--accent)', fontSize: '1rem', fontWeight: '600', margin: 0, letterSpacing: '0.05em' }}>
-                    {nfcActionType === 'checkout' ? 'Sovereign Tap-to-Checkout' : 'Sovereign Tap-to-Return'}
+                    {nfcActionType === 'checkout' ? 'Sovereign Checkout Verification' : 'Sovereign Return Verification'}
                   </h4>
-                  <button onClick={() => setNfcModalOpen(false)} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: '4px' }}>
+                  <button onClick={handleCloseNfcModal} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: '4px' }}>
                     <X size={16} />
                   </button>
                 </div>
 
-                <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                <div className="verification-tabs-header">
+                  <button
+                    className={`verification-tab-btn ${activeTab === 'nfc' ? 'active' : ''}`}
+                    onClick={() => handleTabChange('nfc')}
+                    disabled={nfcSuccess || fallbackSuccess}
+                  >
+                    <Smartphone size={14} />
+                    <span>NFC Tap</span>
+                  </button>
+                  <button
+                    className={`verification-tab-btn ${activeTab === 'barcode' ? 'active' : ''}`}
+                    onClick={() => handleTabChange('barcode')}
+                    disabled={nfcSuccess || fallbackSuccess}
+                  >
+                    <ShoppingBag size={14} />
+                    <span>Barcode Scan</span>
+                  </button>
+                  <button
+                    className={`verification-tab-btn ${activeTab === 'manual' ? 'active' : ''}`}
+                    onClick={() => handleTabChange('manual')}
+                    disabled={nfcSuccess || fallbackSuccess}
+                  >
+                    <Clock size={14} />
+                    <span>Manual Request</span>
+                  </button>
+                </div>
+
+                <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginTop: '16px' }}>
                   {nfcSuccess ? (
                     <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0' }}>
                       <CheckCircle size={48} className="text-success gold-glow-icon" style={{ marginBottom: '12px' }} />
                       <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>Sovereign Verification Confirmed</h4>
                       <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>Transaction ledger updated automatically in Cloud Firestore.</p>
                     </div>
-                  ) : (
-                    <>
-                      <div className="nfc-scanner-pulse" style={{ margin: '15px 0' }}>
-                        <Smartphone size={40} className="gold-glow-icon animate-pulse" />
-                        <div className="pulse-ring"></div>
-                      </div>
-                      
-                      <p className="nfc-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
-                        Hold this physical volume's NFC tag near the back of your Android phone...
-                      </p>
-
-                      <div className="nfc-meta-box" style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', padding: '8px 12px', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>Target Volume ID:</span>
-                        <code style={{ color: 'var(--accent)', fontFamily: 'monospace', fontWeight: 'bold' }}>{book.ntagUid}</code>
-                      </div>
-
-                      {nfcError && (
-                        <div className="nfc-error-message royal-card" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '12px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)', color: '#ff7b72', marginBottom: '16px', fontSize: '0.75rem', textAlign: 'left', width: '100%' }}>
-                          <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
-                          <span>{nfcError}</span>
-                        </div>
-                      )}
-
-                      <div className="nfc-actions-row" style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-                        {user && user.role === 'ADMIN' && (
-                          <button
-                            type="button"
-                            onClick={handleSimulateTapSuccess}
-                            className="royal-btn simulate-btn"
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}
-                          >
-                            <Sparkles size={14} /> Simulate NTAG213 Tag Tap (Curator Override)
-                          </button>
-                        )}
-                        
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setNfcModalOpen(false);
-                            setFallbackModalOpen(true);
-                          }}
-                          className="royal-btn-secondary fallback-switch-btn"
-                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}
-                        >
-                          Use Manual Request Fallback
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Inline Fallback Request Ledger Submission Panel */}
-            {fallbackModalOpen && (
-              <div className="inline-action-panel royal-card border-gold animate-fade-in" style={{ marginTop: '16px', padding: '20px', background: 'rgba(20, 16, 12, 0.6)', backdropFilter: 'blur(12px)' }}>
-                <div className="panel-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '10px' }}>
-                  <h4 style={{ color: 'var(--accent)', fontSize: '1rem', fontWeight: '600', margin: 0, letterSpacing: '0.05em' }}>
-                    {nfcActionType === 'checkout' ? 'Manual Checkout Request' : 'Manual Return Request'}
-                  </h4>
-                  <button onClick={() => setFallbackModalOpen(false)} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: '4px' }}>
-                    <X size={16} />
-                  </button>
-                </div>
-
-                <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                  {fallbackSuccess ? (
+                  ) : fallbackSuccess ? (
                     <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0' }}>
-                      <CheckCircle size={48} className="gold-glow-icon" style={{ color: 'var(--success)', marginBottom: '12px' }} />
+                      <CheckCircle size={48} className="gold-glow-icon" style={{ color: 'var(--accent)', marginBottom: '12px' }} />
                       <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>Scribe Request Saved</h4>
                       <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>Your circulation request has been submitted to the Curator's ledger.</p>
                     </div>
                   ) : (
                     <>
-                      <p className="fallback-explanation" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: '0 0 16px 0', textAlign: 'left' }}>
-                        {nfcActionType === 'checkout'
-                          ? "As physical NFC validation is unavailable, submit a digital checkout request. A Curator will verify copy availability and authorize your checkout manual sweep."
-                          : "Submit a physical volume return record. A Curator will review your checkout status and confirm receipt of this masterwork inside the Salon."}
-                      </p>
+                      {activeTab === 'nfc' && (
+                        <div className="tab-pane nfc-tab-pane animate-fade-in" style={{ width: '100%' }}>
+                          <div className="nfc-scanner-pulse" style={{ margin: '15px 0' }}>
+                            <Smartphone size={40} className="gold-glow-icon animate-pulse" />
+                            <div className="pulse-ring"></div>
+                          </div>
+                          
+                          <p className="nfc-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+                            Hold this physical volume's NFC tag near the back of your phone...
+                          </p>
 
-                      <div className="fallback-form-summary royal-card" style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '16px' }}>
-                        <h5 style={{ color: 'var(--accent)', fontWeight: '600', marginBottom: '4px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Volume Details</h5>
-                        <p style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>{book.title}</p>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>ISBN: {book.isbn}</p>
-                      </div>
+                          <div className="nfc-meta-box" style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', padding: '8px 12px', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <span style={{ color: 'var(--text-secondary)' }}>Target Volume ID:</span>
+                            <code style={{ color: 'var(--accent)', fontFamily: 'monospace', fontWeight: 'bold' }}>{book.ntagUid}</code>
+                          </div>
 
-                      <div className="fallback-actions-row" style={{ display: 'flex', gap: '12px', width: '100%' }}>
-                        <button
-                          type="button"
-                          onClick={() => setFallbackModalOpen(false)}
-                          className="royal-btn-secondary"
-                          style={{ flex: 1, padding: '10px' }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleSubmitFallbackRequest}
-                          className="royal-btn"
-                          style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px' }}
-                          disabled={fallbackLoading}
-                        >
-                          {fallbackLoading ? <RefreshCw className="spin-icon" size={12} /> : <CheckCircle size={12} />}
-                          {fallbackLoading ? 'Submitting...' : 'Submit Request'}
-                        </button>
-                      </div>
+                          {nfcError && (
+                            <div className="nfc-error-message royal-card" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '12px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)', color: '#ff7b72', marginBottom: '16px', fontSize: '0.75rem', textAlign: 'left', width: '100%' }}>
+                              <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                              <span>{nfcError}</span>
+                            </div>
+                          )}
+
+
+                        </div>
+                      )}
+
+                      {activeTab === 'barcode' && (
+                        <div className="tab-pane barcode-tab-pane animate-fade-in" style={{ width: '100%' }}>
+                          <div className="barcode-scanner-viewfinder" style={{ margin: '15px auto', position: 'relative', width: '100%', maxWidth: '320px', height: '280px', overflow: 'hidden', background: '#000', borderRadius: '8px', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
+                            <div id="detail-barcode-reader" style={{ width: '100%', height: '100%' }}></div>
+                            <div className="scanner-laser-line"></div>
+                          </div>
+
+                          <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+                            Align the book's barcode within the viewfinder scanning window...
+                          </p>
+
+                          {detailScannerError && (
+                            <div className="nfc-error-message royal-card" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '12px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)', color: '#ff7b72', marginBottom: '16px', fontSize: '0.75rem', textAlign: 'left', width: '100%' }}>
+                              <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                              <span>{detailScannerError}</span>
+                            </div>
+                          )}
+
+                          {nfcError && (
+                            <div className="nfc-error-message royal-card" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '12px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)', color: '#ff7b72', marginBottom: '16px', fontSize: '0.75rem', textAlign: 'left', width: '100%' }}>
+                              <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                              <span>{nfcError}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {activeTab === 'manual' && (
+                        <div className="tab-pane manual-tab-pane animate-fade-in" style={{ width: '100%' }}>
+                          <p className="fallback-explanation" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: '0 0 16px 0', textAlign: 'left' }}>
+                            {nfcActionType === 'checkout'
+                              ? "As physical validation is unavailable, submit a digital checkout request. A Curator will verify copy availability and authorize your checkout."
+                              : "Submit a physical volume return record. A Curator will review your status and confirm receipt of this book inside the Salon."}
+                          </p>
+
+                          <div className="fallback-form-summary royal-card" style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '16px' }}>
+                            <h5 style={{ color: 'var(--accent)', fontWeight: '600', marginBottom: '4px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Volume Details</h5>
+                            <p style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>{book.title}</p>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>ISBN: {book.isbn}</p>
+                          </div>
+
+                          <div className="fallback-actions-row" style={{ display: 'flex', gap: '12px', width: '100%' }}>
+                            <button
+                              type="button"
+                              onClick={handleCloseNfcModal}
+                              className="royal-btn-secondary"
+                              style={{ flex: 1, padding: '10px' }}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleSubmitFallbackRequest}
+                              className="royal-btn"
+                              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px' }}
+                              disabled={fallbackLoading}
+                            >
+                              {fallbackLoading ? <RefreshCw className="spin-icon" size={12} /> : <CheckCircle size={12} />}
+                              {fallbackLoading ? 'Submitting...' : 'Submit Request'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
@@ -601,24 +830,92 @@ const BookDetailPage = ({ user }) => {
 
         <div className="reviews-feed">
           {reviews.length > 0 ? (
-            reviews.map((rev) => (
-              <div key={rev.id} className="review-item">
-                <div className="review-item-header">
-                  <span className="review-author">{rev.author}</span>
-                  <span className="review-date">
-                    {rev.createdAt
-                      ? new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                      : 'Recently'}
-                  </span>
+            reviews.map((rev) => {
+              const isAuthor = user && (user.uid === rev.userId || user.id === rev.userId);
+              const isAdmin = user && user.role === 'ADMIN';
+              const isEditing = editingReviewId === rev.id;
+
+              return (
+                <div key={rev.id} className="review-item">
+                  <div className="review-item-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span className="review-author">{rev.author}</span>
+                      <span className="review-date">
+                        {rev.createdAt
+                          ? new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                          : 'Recently'}
+                      </span>
+                    </div>
+                    {!isEditing && (isAuthor || isAdmin) && (
+                      <div className="review-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {isAuthor && (
+                          <button 
+                            onClick={() => handleStartEditReview(rev.id, rev.content, rev.rating)} 
+                            className="review-action-btn edit-btn" 
+                            title="Edit Dissertation"
+                            style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
+                          >
+                            <Pencil size={14} />
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => handleDeleteReviewClick(rev.id)} 
+                          className="review-action-btn delete-btn" 
+                          title="Purge Dissertation"
+                          style={{ background: 'none', border: 'none', color: '#ff4d4d', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {isEditing ? (
+                    <div className="review-edit-form" style={{ marginTop: '0.5rem' }}>
+                      <div className="review-rating-select" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.85rem' }}>Rating:</span>
+                        <div className="star-rating-inputs" style={{ display: 'flex', gap: '2px' }}>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              type="button"
+                              key={star}
+                              onClick={() => setEditingReviewRating(star)}
+                              className="star-input-btn"
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                            >
+                              <Star size={16} fill={star <= editingReviewRating ? 'var(--accent)' : 'none'} stroke="var(--accent)" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <textarea
+                        className="royal-textarea review-textarea edit-mode"
+                        value={editingReviewText}
+                        onChange={(e) => setEditingReviewText(e.target.value)}
+                        rows={3}
+                        style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: '#fff' }}
+                      />
+                      <div className="review-edit-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button onClick={() => handleUpdateReviewSubmit(rev.id)} className="royal-btn small-btn save-btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}>
+                          Update
+                        </button>
+                        <button onClick={handleCancelEditReview} className="royal-btn small-btn cancel-btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)', color: '#ccc' }}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="review-stars-row">
+                        {Array.from({ length: rev.rating || 5 }).map((_, i) => (
+                          <Star key={i} size={14} fill="var(--accent)" stroke="var(--accent)" />
+                        ))}
+                      </div>
+                      <p className="review-content">"{rev.content}"</p>
+                    </>
+                  )}
                 </div>
-                <div className="review-stars-row">
-                  {Array.from({ length: rev.rating || 5 }).map((_, i) => (
-                    <Star key={i} size={14} fill="var(--accent)" stroke="var(--accent)" />
-                  ))}
-                </div>
-                <p className="review-content">"{rev.content}"</p>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>
               No critiques have been published on this volume yet. Scribe the very first dissertation!
