@@ -100,7 +100,7 @@ const ProfilePage = ({ user }) => {
     setDetectingLocation(true);
     setMessage({
       type: 'info',
-      text: 'Extricating physical coordinates...',
+      text: 'Extricating physical coordinates (Attempting high-precision GPS)...',
     });
 
     if (!navigator.geolocation) {
@@ -111,34 +111,67 @@ const ProfilePage = ({ user }) => {
 
     let resolved = false;
 
-    // Start a 4-second timeout to fall back to IP if GPS hangs
-    const timeoutId = setTimeout(() => {
+    // Attempt high-accuracy GPS first with a 3.5 second timeout
+    const highAccuracyTimeout = setTimeout(() => {
       if (!resolved) {
-        resolved = true;
-        console.warn('Browser GPS location extraction timed out. Falling back to IP-based coordinates.');
-        detectLocationViaIp();
+        console.warn('High-precision GPS timed out. Retrying with low-precision/cached Wi-Fi Geolocation...');
+        tryLowAccuracyGeolocation();
       }
-    }, 4000);
+    }, 3500);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
         if (resolved) return;
         resolved = true;
-        clearTimeout(timeoutId);
-
+        clearTimeout(highAccuracyTimeout);
         const { latitude, longitude } = position.coords;
         reverseGeocode(latitude, longitude);
       },
       (error) => {
         if (resolved) return;
-        resolved = true;
-        clearTimeout(timeoutId);
-
-        console.warn('Browser GPS location failed. Falling back to IP-based coordinates. Error:', error);
-        detectLocationViaIp();
+        clearTimeout(highAccuracyTimeout);
+        console.warn('High-precision GPS failed:', error.message, '. Retrying with low-precision/cached Wi-Fi Geolocation...');
+        tryLowAccuracyGeolocation();
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 3000, maximumAge: 0 }
     );
+
+    const tryLowAccuracyGeolocation = () => {
+      // Setup backup timeout of 3.5 seconds for low accuracy before falling back to IP
+      const lowAccuracyTimeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          console.warn('Low-precision Geolocation timed out. Falling back to IP-based location lookup.');
+          setMessage({
+            type: 'warning',
+            text: 'GPS/Wi-Fi signal timed out. Please verify that Location Services are enabled in macOS System Settings and Browser permissions. Falling back to approximate IP location...',
+          });
+          detectLocationViaIp();
+        }
+      }, 3500);
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          if (resolved) return;
+          resolved = true;
+          clearTimeout(lowAccuracyTimeout);
+          const { latitude, longitude } = position.coords;
+          reverseGeocode(latitude, longitude);
+        },
+        (error) => {
+          if (resolved) return;
+          resolved = true;
+          clearTimeout(lowAccuracyTimeout);
+          console.warn('Low-precision Geolocation failed:', error.message, '. Falling back to IP location.');
+          setMessage({
+            type: 'warning',
+            text: `Location lookup failed (${error.message}). Please verify macOS and Browser location permissions. Falling back to approximate IP location...`,
+          });
+          detectLocationViaIp();
+        },
+        { enableHighAccuracy: false, timeout: 3000, maximumAge: 300000 }
+      );
+    };
   };
 
   const reverseGeocode = async (latitude, longitude, ipDataFallback = null) => {
