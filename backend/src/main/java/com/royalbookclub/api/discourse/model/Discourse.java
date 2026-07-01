@@ -38,6 +38,7 @@ public class Discourse {
     private Map<String, List<String>> reactions = new HashMap<>(); // Reaction -> User UIDs list
     
     private String parentId; // For debate thread replies (null if root thread)
+    private Integer repliesCount; // Total count of replies in this thread
     private Boolean approved;
     private Instant createdAt;
     private Instant updatedAt;

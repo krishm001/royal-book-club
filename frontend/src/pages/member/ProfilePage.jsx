@@ -126,107 +126,166 @@ const ProfilePage = ({ user }) => {
   }, []);
 
   const detectLocation = () => {
+    setDetectingLocation(true);
+    setMessage({
+      type: 'info',
+      text: 'Extricating physical coordinates...',
+    });
+
     if (!navigator.geolocation) {
-      setMessage({
-        type: 'error',
-        text: 'HTML5 Geolocation is not supported by your browser.',
-      });
+      console.warn('HTML5 Geolocation not supported. Falling back to IP Geolocation.');
+      detectLocationViaIp();
       return;
     }
 
-    setDetectingLocation(true);
-    setMessage(null);
+    let resolved = false;
+
+    // Start a 4-second timeout to fall back to IP if GPS hangs
+    const timeoutId = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        console.warn('Browser GPS location extraction timed out. Falling back to IP-based coordinates.');
+        detectLocationViaIp();
+      }
+    }, 4000);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timeoutId);
+
         const { latitude, longitude } = position.coords;
-        if (!window.google || !window.google.maps) {
-          setMessage({
-            type: 'error',
-            text: 'Google Maps Library is not loaded yet.',
-          });
-          setDetectingLocation(false);
-          return;
-        }
-
-        const geocoder = new window.google.maps.Geocoder();
-        const latlng = { lat: latitude, lng: longitude };
-
-        geocoder.geocode({ location: latlng }, (results, status) => {
-          setDetectingLocation(false);
-          if (status === 'OK' && results[0]) {
-            const place = results[0];
-            const addressComponents = place.address_components;
-
-            let streetNumber = '';
-            let route = '';
-            let neighborhood = '';
-            let cityVal = '';
-            let postcode = '';
-
-            for (const component of addressComponents) {
-              const types = component.types;
-              if (types.includes('street_number')) {
-                streetNumber = component.long_name;
-              } else if (types.includes('route')) {
-                route = component.long_name;
-              } else if (types.includes('neighborhood') || types.includes('sublocality') || types.includes('sublocality_level_1')) {
-                neighborhood = component.long_name;
-              } else if (types.includes('locality')) {
-                cityVal = component.long_name;
-              } else if (types.includes('administrative_area_level_2') && !cityVal) {
-                cityVal = component.long_name;
-              } else if (types.includes('postal_code')) {
-                postcode = component.long_name;
-              }
-            }
-
-            const streetVal = [route, neighborhood].filter(Boolean).join(', ');
-
-            setProfile((prev) => ({
-              ...prev,
-              houseNo: streetNumber || prev.houseNo || '',
-              street: streetVal || prev.street || '',
-              city: cityVal || prev.city || '',
-              pinCode: postcode || prev.pinCode || '',
-            }));
-
-            if (autocompleteInputRef.current) {
-              autocompleteInputRef.current.value = place.formatted_address;
-            }
-
-            setMessage({
-              type: 'success',
-              text: 'Sovereign coordinates successfully geocoded and filled.',
-            });
-            setTimeout(() => setMessage(null), 4000);
-          } else {
-            console.error('Geocoder failed due to: ' + status);
-            setMessage({
-              type: 'error',
-              text: `Reverse geocoding failed: ${status}. Please enter address manually.`,
-            });
-          }
-        });
+        reverseGeocode(latitude, longitude);
       },
       (error) => {
-        console.error('Geolocation error:', error);
-        setDetectingLocation(false);
-        let errorMsg = 'Failed to extract physical coordinates.';
-        if (error.code === error.PERMISSION_DENIED) {
-          errorMsg = 'Location permission denied by user.';
-        } else if (error.code === error.POSITION_UNAVAILABLE) {
-          errorMsg = 'Position unavailable.';
-        } else if (error.code === error.TIMEOUT) {
-          errorMsg = 'Position extraction timed out.';
-        }
-        setMessage({
-          type: 'error',
-          text: errorMsg,
-        });
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timeoutId);
+
+        console.warn('Browser GPS location failed. Falling back to IP-based coordinates. Error:', error);
+        detectLocationViaIp();
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+  };
+
+  const reverseGeocode = (latitude, longitude, ipDataFallback = null) => {
+    if (!window.google || !window.google.maps) {
+      if (ipDataFallback) {
+        populateAddressFromIp(ipDataFallback);
+      } else {
+        setMessage({
+          type: 'error',
+          text: 'Google Maps Library is not loaded yet.',
+        });
+        setDetectingLocation(false);
+      }
+      return;
+    }
+
+    const geocoder = new window.google.maps.Geocoder();
+    const latlng = { lat: latitude, lng: longitude };
+
+    geocoder.geocode({ location: latlng }, (results, status) => {
+      setDetectingLocation(false);
+      if (status === 'OK' && results[0]) {
+        const place = results[0];
+        const addressComponents = place.address_components;
+
+        let streetNumber = '';
+        let route = '';
+        let neighborhood = '';
+        let cityVal = '';
+        let postcode = '';
+
+        for (const component of addressComponents) {
+          const types = component.types;
+          if (types.includes('street_number')) {
+            streetNumber = component.long_name;
+          } else if (types.includes('route')) {
+            route = component.long_name;
+          } else if (types.includes('neighborhood') || types.includes('sublocality') || types.includes('sublocality_level_1')) {
+            neighborhood = component.long_name;
+          } else if (types.includes('locality')) {
+            cityVal = component.long_name;
+          } else if (types.includes('administrative_area_level_2') && !cityVal) {
+            cityVal = component.long_name;
+          } else if (types.includes('postal_code')) {
+            postcode = component.long_name;
+          }
+        }
+
+        const streetVal = [route, neighborhood].filter(Boolean).join(', ');
+
+        setProfile((prev) => ({
+          ...prev,
+          houseNo: streetNumber || prev.houseNo || '',
+          street: streetVal || prev.street || '',
+          city: cityVal || prev.city || '',
+          pinCode: postcode || prev.pinCode || '',
+        }));
+
+        if (autocompleteInputRef.current) {
+          autocompleteInputRef.current.value = place.formatted_address;
+        }
+
+        setMessage({
+          type: 'success',
+          text: 'Sovereign coordinates successfully geocoded and filled.',
+        });
+        setTimeout(() => setMessage(null), 4000);
+      } else {
+        console.error('Geocoder failed due to: ' + status);
+        if (ipDataFallback) {
+          populateAddressFromIp(ipDataFallback);
+        } else {
+          setMessage({
+            type: 'error',
+            text: `Reverse geocoding failed: ${status}. Please enter address manually.`,
+          });
+        }
+      }
+    });
+  };
+
+  const detectLocationViaIp = async () => {
+    try {
+      const response = await fetch('https://ipapi.co/json/');
+      if (!response.ok) throw new Error('IP coordinates fetch failed');
+      const data = await response.json();
+      if (data && data.latitude && data.longitude) {
+        console.log('IP coordinates extracted successfully:', data.latitude, data.longitude);
+        reverseGeocode(data.latitude, data.longitude, data);
+      } else {
+        throw new Error('Invalid IP data format');
+      }
+    } catch (err) {
+      console.error('IP location extraction failed:', err);
+      setMessage({
+        type: 'error',
+        text: 'Failed to extract physical coordinates via GPS or IP. Please enter address manually.',
+      });
+      setDetectingLocation(false);
+    }
+  };
+
+  const populateAddressFromIp = (data) => {
+    setProfile((prev) => ({
+      ...prev,
+      city: data.city || prev.city || '',
+      pinCode: data.postal || prev.pinCode || '',
+      street: data.region || prev.street || '',
+    }));
+    if (autocompleteInputRef.current) {
+      autocompleteInputRef.current.value = `${data.city || ''}, ${data.region || ''} ${data.postal || ''}, ${data.country_name || ''}`.trim().replace(/^,\s*/, '');
+    }
+    setMessage({
+      type: 'success',
+      text: 'Coordinates successfully filled using secure IP Geolocation Ledger.',
+    });
+    setDetectingLocation(false);
+    setTimeout(() => setMessage(null), 4000);
   };
 
   // Set up Google Places Autocomplete
@@ -482,7 +541,7 @@ const ProfilePage = ({ user }) => {
                   <button
                     type="button"
                     onClick={detectLocation}
-                    disabled={detectingLocation || !mapsLoaded}
+                    disabled={detectingLocation}
                     className="royal-btn detect-location-btn"
                   >
                     {detectingLocation ? (

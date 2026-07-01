@@ -1188,6 +1188,8 @@ const DiscoursesPage = ({ user }) => {
                           <span>Sparked by <strong className="gold-gradient-text">{disc.authorName}</strong></span>
                           <span>•</span>
                           <span>{new Date(disc.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          <span>•</span>
+                          <span>{disc.repliesCount || 0} {disc.repliesCount === 1 ? 'instance' : 'instances'}</span>
                         </div>
                       </div>
                     </div>

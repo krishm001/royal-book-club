@@ -1352,5 +1352,109 @@ main:has(.discourses-page-container) {
     border-color: rgba(212, 175, 55, 0.45) !important;
     box-shadow: 0 4px 20px rgba(212, 175, 55, 0.15);
   }
+
+  /* Full-width viewport optimizations */
+  main:has(.discourses-page-container) {
+    padding: 15px 0 60px !important;
+  }
+
+  .discourses-page-container {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  /* Flatten expanded debate card layout to use full screen edge-to-edge */
+  .debate-thread-card.expanded {
+    border-left: none !important;
+    border-right: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    margin-left: -8px !important;
+    margin-right: -8px !important;
+    width: calc(100% + 16px) !important;
+  }
+
+  /* Header of debate thread card compacting */
+  .debate-main-header {
+    padding: 16px 12px !important;
+  }
+
+  /* Body text concept block full width */
+  .debate-expanded-body {
+    padding: 0 12px 16px 12px !important;
+  }
+
+  .debate-lead-concept {
+    margin-top: 12px !important;
+    margin-bottom: 16px !important;
+    padding: 12px 14px !important;
+    font-size: 0.95rem !important;
+  }
+
+  /* Flatten stance wrappers completely */
+  .debate-root-reply-group {
+    margin-bottom: 10px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Flat full-width styling for replies, minimizing box separations */
+  .debate-reply-card {
+    padding: 12px 6px !important;
+    background: transparent !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin-bottom: 0 !important;
+  }
+
+  .bubble-mine, .bubble-other {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  }
+
+  [data-theme="academic"] .debate-reply-card,
+  [data-theme="academic"] .bubble-mine,
+  [data-theme="academic"] .bubble-other {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  }
+
+  /* Completely remove any indentation to reclaim 100% width */
+  .nested-replies-container {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  /* Hide the connector line completely */
+  .nested-connector-line {
+    display: none !important;
+  }
+
+  /* Flatten reply node margin */
+  .debate-reply-node {
+    margin-bottom: 0 !important;
+  }
+
+  /* Elegant quote citation blocks since layout is flat */
+  .socratic-citation-card {
+    margin-top: 4px !important;
+    margin-bottom: 10px !important;
+    border-left-width: 2px !important;
+    padding: 6px 10px !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-radius: 4px !important;
+  }
+
+  [data-theme="academic"] .socratic-citation-card {
+    background: rgba(0, 0, 0, 0.02) !important;
+  }
 }
 

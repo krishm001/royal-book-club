@@ -81,21 +81,35 @@ public class DiscourseService {
             }
 
             QuerySnapshot querySnapshot = query.get();
-            List<Discourse> list = new ArrayList<>();
+            List<Discourse> allItems = new ArrayList<>();
             for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
                 Discourse d = mapToDiscourse(doc);
-                if (d != null && d.getApproved() != null && !d.getApproved()) {
-                    continue;
+                if (d != null && (d.getApproved() == null || d.getApproved())) {
+                    allItems.add(d);
                 }
-                // For debates, filter root threads in memory to avoid index requirement for null matches
-                if ("DEBATE".equalsIgnoreCase(type)) {
-                    if (d != null && (d.getParentId() == null || d.getParentId().isBlank())) {
+            }
+
+            List<Discourse> list = new ArrayList<>();
+            if ("DEBATE".equalsIgnoreCase(type)) {
+                // Build mapping of parentId -> children for debates to count replies
+                Map<String, List<Discourse>> childrenMap = new HashMap<>();
+                for (Discourse d : allItems) {
+                    if (d.getParentId() != null && !d.getParentId().isBlank()) {
+                        childrenMap.computeIfAbsent(d.getParentId(), k -> new ArrayList<>()).add(d);
+                    }
+                    if (d.getParentId() == null || d.getParentId().isBlank()) {
                         list.add(d);
                     }
-                } else {
-                    if (d != null) {
-                        list.add(d);
-                    }
+                }
+
+                // Compute recursive replies count for each root debate
+                for (Discourse root : list) {
+                    int totalCount = countDescendants(root.getId(), childrenMap);
+                    root.setRepliesCount(totalCount);
+                }
+            } else {
+                for (Discourse d : allItems) {
+                    list.add(d);
                 }
             }
 
@@ -114,6 +128,18 @@ public class DiscourseService {
             log.error("Error reading root discourses", e);
             throw new RuntimeException("Failed to read discourses", e);
         }
+    }
+
+    private int countDescendants(String id, Map<String, List<Discourse>> childrenMap) {
+        List<Discourse> children = childrenMap.get(id);
+        if (children == null || children.isEmpty()) {
+            return 0;
+        }
+        int count = children.size();
+        for (Discourse child : children) {
+            count += countDescendants(child.getId(), childrenMap);
+        }
+        return count;
     }
 
     /**
