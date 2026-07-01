@@ -4,6 +4,7 @@ import { createBook, lookupBookByIsbn, fetchBookByIsbn, fetchBooks } from '../..
 import { fetchBookHouses } from '../../services/genreApi';
 import { uploadBookImage } from '../../services/storageApi';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { useLanguage } from '../../i18n/LanguageContext';
 import './BookIngestionConsole.css';
 
 const SafeHtml5Qrcode = Html5Qrcode;
@@ -29,6 +30,9 @@ const BookIngestionConsole = ({ user }) => {
   const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [bookLanguage, setBookLanguage] = useState('en');
+
+  const { t } = useLanguage();
 
   // New fields
   const [selectedHouse, setSelectedHouse] = useState('');
@@ -117,6 +121,7 @@ const BookIngestionConsole = ({ user }) => {
         setSelectedHouse(existingBook.genre || (houses.length > 0 ? houses[0] : ''));
         setTagsInput(Array.isArray(existingBook.tags) ? existingBook.tags.join(', ') : '');
         setNtagUid(existingBook.ntagUid || '');
+        setBookLanguage(existingBook.language || 'en');
         
         setIsEditMode(true);
         setInfoMessage('Existing book found in catalog. Edit the fields and save the updated details.');
@@ -477,6 +482,7 @@ const BookIngestionConsole = ({ user }) => {
         setAvailableCopies(matchedBook.availableCopies || 1);
         setTagsInput(Array.isArray(matchedBook.tags) ? matchedBook.tags.join(', ') : '');
         setNtagUid(matchedBook.ntagUid || serialNumber);
+        setBookLanguage(matchedBook.language || 'en');
         if (matchedBook.genre) {
           setSelectedHouse(matchedBook.genre);
         }
@@ -590,6 +596,7 @@ const BookIngestionConsole = ({ user }) => {
     setInfoMessage('');
     setTagsInput('');
     setNtagUid('');
+    setBookLanguage('en');
     setNfcSuccess(false);
     setNfcError('');
     if (fileInputRef.current) {
@@ -674,7 +681,8 @@ const BookIngestionConsole = ({ user }) => {
       availableCopies: Number(availableCopies) || 1,
       genre: selectedHouse,
       tags: deduplicatedTags,
-      ntagUid: ntagUid ? ntagUid.trim() : null
+      ntagUid: ntagUid ? ntagUid.trim() : null,
+      language: bookLanguage
     };
 
     const isAppleDevice = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -909,6 +917,20 @@ const BookIngestionConsole = ({ user }) => {
                         {house}
                       </option>
                     ))}
+                  </select>
+                </div>
+
+                <div className="input-group">
+                  <label className="royal-input-label">Volume Language</label>
+                  <select
+                    className="royal-select"
+                    value={bookLanguage}
+                    onChange={(e) => setBookLanguage(e.target.value)}
+                    required
+                  >
+                    <option value="en">English (Sovereign Dialect)</option>
+                    <option value="hi">Hindi (Rajasthani Royal Style)</option>
+                    <option value="kn">Kannada (Classical Royal Style)</option>
                   </select>
                 </div>
 

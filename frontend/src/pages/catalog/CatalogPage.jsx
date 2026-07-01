@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, SlidersHorizontal, BookOpen, Sparkles, X, Smartphone, RefreshCw, AlertTriangle, CheckCircle, Scan, Camera, Check, Clock, ShoppingBag, Loader2 } from 'lucide-react';
 import BookCard from '../../components/shared/BookCard';
+import { useLanguage } from '../../i18n/LanguageContext';
 import { fetchBooks, fetchCheckoutsByMember, verifiedCheckout, verifiedReturn, requestCheckout, requestReturn } from '../../services/libraryApi';
 import { fetchBookHouses } from '../../services/genreApi';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
@@ -10,6 +11,7 @@ const SafeHtml5Qrcode = Html5Qrcode;
 const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
 
 const CatalogPage = ({ user }) => {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedHouse, setSelectedHouse] = useState('All');
   const [sortBy, setSortBy] = useState('featured');
@@ -210,7 +212,7 @@ const CatalogPage = ({ user }) => {
   const handleTopBarcodeScanned = async (decodedText) => {
     await stopTopBarcodeScanner();
     if (!user) {
-      window.alert("Please sign in before checking out or returning books.");
+      window.alert(t('catalog.signInToCheckoutOrReturn'));
       return;
     }
     const scannedCode = (decodedText || '').trim().replace(/[-\s]/g, '');
@@ -222,13 +224,13 @@ const CatalogPage = ({ user }) => {
     if (matchedBook) {
       openP2dOverlay(matchedBook);
     } else {
-      window.alert(`No catalog book matches barcode: ${decodedText}.`);
+      window.alert(t('catalog.noBarcodeMatch') + decodedText + ".");
     }
   };
 
   const startTopNfcRead = async () => {
     if (!user) {
-      window.alert("Please sign in before performing self-checkout via NFC.");
+      window.alert(t('catalog.signInToNfcCheckout'));
       return;
     }
     setTopNfcActive(true);
@@ -397,7 +399,7 @@ const CatalogPage = ({ user }) => {
 
   const handleCheckoutClick = (book) => {
     if (!user) {
-      window.alert('Please sign in before checking out books.');
+      window.alert(t('catalog.signInToCheckout'));
       return;
     }
     setSelectedBook(book);
@@ -417,7 +419,7 @@ const CatalogPage = ({ user }) => {
 
   const handleReturnClick = (book) => {
     if (!user) {
-      window.alert('Please sign in before returning books.');
+      window.alert(t('catalog.signInToReturn'));
       return;
     }
     setSelectedBook(book);
@@ -623,7 +625,7 @@ const CatalogPage = ({ user }) => {
     const currentBook = bookToUse || selectedBook;
     if (!currentBook) return;
     if (!user) {
-      window.alert('Please sign in before completing transactions.');
+      window.alert(t('catalog.signInToCompleteTx'));
       return;
     }
     const scannedCode = (decodedText || '').trim().replace(/[-\s]/g, '');
@@ -689,7 +691,7 @@ const CatalogPage = ({ user }) => {
       }, 2500);
     } catch (err) {
       console.error('Fallback request failed:', err);
-      window.alert(`Unable to submit request: ${err.response?.data?.message || err.message}`);
+      window.alert(t('catalog.unableToSubmitRequest') + (err.response?.data?.message || err.message));
       setFallbackLoading(false);
     }
   };
@@ -744,11 +746,11 @@ const CatalogPage = ({ user }) => {
       <header className="catalog-header">
         <div className="header-badge">
           <Sparkles size={14} className="gold-glow-icon" />
-          <span className="gold-gradient-text">THE STUDY ARCHIVES</span>
+          <span className="gold-gradient-text">{t('common.study').toUpperCase()}</span>
         </div>
-        <h1 className="catalog-title glow-text">Works That Changed Minds. Chosen to Change Yours.</h1>
+        <h1 className="catalog-title glow-text">{t('catalog.studyTitle')}</h1>
         <p className="catalog-subtitle">
-          The books that shape minds are rarely the ones that top charts. Find them here. Read them now.
+          {t('catalog.studySubtitle')}
         </p>
       </header>
 
@@ -758,9 +760,9 @@ const CatalogPage = ({ user }) => {
             <Scan className="gold-glow-icon scanner-animation-icon" size={24} />
           </div>
           <div className="portal-info">
-            <h2 className="portal-title gold-gradient-text">Self-Checkout</h2>
+            <h2 className="portal-title gold-gradient-text">{t('catalog.selfCheckout')}</h2>
             <p className="portal-desc">
-              Physically holding a volume inside the Royal Salon? Unlock direct, verified checkout or instant returns.
+              {t('catalog.selfCheckoutDesc')}
             </p>
           </div>
         </div>
@@ -769,22 +771,22 @@ const CatalogPage = ({ user }) => {
             className="royal-btn portal-btn btn-barcode"
             onClick={startTopBarcodeScanner}
           >
-            <Camera size={16} /> Scan Barcode
+            <Camera size={16} /> {t('catalog.scanBarcode')}
           </button>
           
           <button 
             className={`royal-btn portal-btn btn-nfc ${topNfcActive ? 'active-pulse' : ''}`}
             onClick={topNfcActive ? stopTopNfcRead : startTopNfcRead}
           >
-            <Smartphone size={16} /> {topNfcActive ? 'Tapping Active...' : 'Tap NFC Book'}
+            <Smartphone size={16} /> {topNfcActive ? t('catalog.tappingActive') : t('catalog.tapNfcBook')}
           </button>
         </div>
 
         {topNfcActive && (
           <div className="top-nfc-status-banner animate-fade-in">
             <span className="pulse-dot"></span>
-            <span>NFC Reader is active. Hold your physical NTAG213 book tag against your device's NFC sweet spot...</span>
-            <button className="text-btn cancel-btn" onClick={stopTopNfcRead}>Cancel</button>
+            <span>{t('catalog.nfcActiveBanner')}</span>
+            <button className="text-btn cancel-btn" onClick={stopTopNfcRead}>{t('common.cancel')}</button>
           </div>
         )}
 
@@ -792,7 +794,7 @@ const CatalogPage = ({ user }) => {
           <div className="top-p2d-error-banner animate-fade-in">
             <AlertTriangle size={14} />
             <span>{topNfcError}</span>
-            <button className="text-btn close-error-btn" onClick={() => setTopNfcError('')}>Dismiss</button>
+            <button className="text-btn close-error-btn" onClick={() => setTopNfcError('')}>{t('catalog.dismiss')}</button>
           </div>
         )}
       </section>
@@ -802,7 +804,7 @@ const CatalogPage = ({ user }) => {
           <Search className="search-icon" size={18} />
           <input
             type="text"
-            placeholder="Search by Title, Author, ISBN, or Tags..."
+            placeholder={t('common.searchPlaceholder')}
             className="royal-input search-input"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -814,20 +816,20 @@ const CatalogPage = ({ user }) => {
             className={`royal-btn-secondary filter-toggle-btn ${showFilters ? 'active' : ''}`}
             onClick={() => setShowFilters(!showFilters)}
           >
-            <SlidersHorizontal size={16} /> Filter Houses
+            <SlidersHorizontal size={16} /> {t('catalog.filterHouses')}
           </button>
 
           <div className="sort-wrapper">
-            <span className="sort-label">Sort by:</span>
+            <span className="sort-label">{t('catalog.sortBy')}</span>
             <select
               className="royal-select sort-select"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
             >
-              <option value="featured">Featured Curations</option>
-              <option value="rating">Sovereign Rating</option>
-              <option value="year-desc">Chronology (Newest First)</option>
-              <option value="year-asc">Chronology (Oldest First)</option>
+              <option value="featured">{t('catalog.featuredCurations')}</option>
+              <option value="rating">{t('catalog.sovereignRating')}</option>
+              <option value="year-desc">{t('catalog.chronologyNewest')}</option>
+              <option value="year-asc">{t('catalog.chronologyOldest')}</option>
             </select>
           </div>
         </div>
@@ -850,7 +852,7 @@ const CatalogPage = ({ user }) => {
       <main className="catalog-grid-main">
         {loading ? (
           <div className="royal-card no-results-card">
-            <p>Loading the Royal Study archives...</p>
+            <p>{t('common.loading')}</p>
           </div>
         ) : error ? (
           <div className="royal-card no-results-card">
@@ -872,8 +874,8 @@ const CatalogPage = ({ user }) => {
         ) : (
           <div className="royal-card no-results-card">
             <BookOpen size={48} className="no-results-icon" />
-            <h3>No Volumes Found</h3>
-            <p>We could not find any masterworks matching your specific criteria in the Study archives.</p>
+            <h3>{t('catalog.noVolumesFound')}</h3>
+            <p>{t('catalog.noVolumesDesc')}</p>
             <button
               className="royal-btn"
               onClick={() => {
@@ -881,7 +883,7 @@ const CatalogPage = ({ user }) => {
                 setSelectedHouse('All');
               }}
             >
-              Reset Archives
+              {t('catalog.resetArchives')}
             </button>
           </div>
         )}
@@ -893,7 +895,7 @@ const CatalogPage = ({ user }) => {
           <div className="royal-card nfc-modal-card animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '24px', background: 'rgba(26, 21, 16, 0.95)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
             <div className="nfc-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '10px' }}>
               <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.15rem', fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '0.05em' }}>
-                {nfcActionType === 'checkout' ? 'Sovereign Checkout Verification' : 'Sovereign Return Verification'}
+                {nfcActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
               </h3>
               <button onClick={handleCloseCardModal} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}>
                 <X size={18} />
@@ -907,7 +909,7 @@ const CatalogPage = ({ user }) => {
                 disabled={nfcSuccess || fallbackSuccess}
               >
                 <Smartphone size={14} />
-                <span>NFC Tap</span>
+                <span>{t('catalog.nfcTap')}</span>
               </button>
               <button
                 className={`verification-tab-btn ${activeTab === 'barcode' ? 'active' : ''}`}
@@ -915,7 +917,7 @@ const CatalogPage = ({ user }) => {
                 disabled={nfcSuccess || fallbackSuccess}
               >
                 <ShoppingBag size={14} />
-                <span>Barcode Scan</span>
+                <span>{t('catalog.barcodeScan')}</span>
               </button>
               <button
                 className={`verification-tab-btn ${activeTab === 'manual' ? 'active' : ''}`}
@@ -923,7 +925,7 @@ const CatalogPage = ({ user }) => {
                 disabled={nfcSuccess || fallbackSuccess}
               >
                 <Clock size={14} />
-                <span>Manual Request</span>
+                <span>{t('catalog.manualRequest')}</span>
               </button>
             </div>
 
@@ -931,14 +933,14 @@ const CatalogPage = ({ user }) => {
               {nfcSuccess ? (
                 <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0' }}>
                   <CheckCircle size={48} className="text-success gold-glow-icon" style={{ marginBottom: '12px' }} />
-                  <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>Sovereign Verification Confirmed</h4>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>Transaction ledger updated automatically in Cloud Firestore.</p>
+                  <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.verifConfirmed')}</h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.ledgerUpdated')}</p>
                 </div>
               ) : fallbackSuccess ? (
                 <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0' }}>
                   <CheckCircle size={48} className="gold-glow-icon" style={{ color: 'var(--accent)', marginBottom: '12px' }} />
-                  <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>Scribe Request Saved</h4>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>Your circulation request has been submitted to the Curator's ledger.</p>
+                  <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.scribeRequestSaved')}</h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.requestSubmittedDesc')}</p>
                 </div>
               ) : (
                 <>
@@ -950,11 +952,11 @@ const CatalogPage = ({ user }) => {
                       </div>
                       
                       <p className="nfc-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
-                        Hold this physical volume's NFC tag near the back of your phone...
+                        {t('catalog.holdNfcTagDesc')}
                       </p>
 
                       <div className="nfc-meta-box" style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', padding: '8px 12px', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>Target Volume ID:</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{t('catalog.targetVolumeId')}</span>
                         <code style={{ color: 'var(--accent)', fontFamily: 'monospace', fontWeight: 'bold' }}>{selectedBook.ntagUid}</code>
                       </div>
 
@@ -975,11 +977,11 @@ const CatalogPage = ({ user }) => {
                       </div>
 
                       <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 10px 0' }}>
-                        Align the book's barcode within the viewfinder scanning window...
+                        {t('catalog.alignBarcodePrompt')}
                       </p>
 
                       <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0', marginBottom: '16px' }}>
-                        Can't scan the barcode? <button type="button" onClick={() => handleCardTabChange('manual')} style={{ background: 'none', border: 'none', color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', padding: 0, font: 'inherit' }}>Submit a Manual Request</button>
+                        {t('catalog.cantScanBarcode')} <button type="button" onClick={() => handleCardTabChange('manual')} style={{ background: 'none', border: 'none', color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', padding: 0, font: 'inherit' }}>{t('catalog.submitManualRequest')}</button>
                       </p>
 
                       {cardScannerError && (
@@ -1002,14 +1004,14 @@ const CatalogPage = ({ user }) => {
                     <div className="tab-pane manual-tab-pane animate-fade-in" style={{ width: '100%' }}>
                       <p className="fallback-explanation" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: '0 0 16px 0', textAlign: 'left' }}>
                         {nfcActionType === 'checkout'
-                          ? "As physical validation is unavailable, submit a digital checkout request. A Curator will verify copy availability and authorize your checkout."
-                          : "Submit a physical volume return record. A Curator will review your status and confirm receipt of this book inside the Salon."}
+                          ? t('catalog.fallbackExplanationCheckout')
+                          : t('catalog.fallbackExplanationReturn')}
                       </p>
 
                       <div className="fallback-form-summary royal-card" style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '16px' }}>
-                        <h5 style={{ color: 'var(--accent)', fontWeight: '600', marginBottom: '4px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Volume Details</h5>
+                        <h5 style={{ color: 'var(--accent)', fontWeight: '600', marginBottom: '4px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('catalog.volumeDetails')}</h5>
                         <p style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>{selectedBook.title}</p>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>ISBN: {selectedBook.isbn}</p>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>{t('catalog.isbn')}: {selectedBook.isbn}</p>
                       </div>
 
                       <div className="fallback-actions-row" style={{ display: 'flex', gap: '12px', width: '100%' }}>
@@ -1019,7 +1021,7 @@ const CatalogPage = ({ user }) => {
                           className="royal-btn-secondary"
                           style={{ flex: 1, padding: '10px' }}
                         >
-                          Cancel
+                          {t('common.cancel')}
                         </button>
                         <button
                           type="button"
@@ -1028,7 +1030,7 @@ const CatalogPage = ({ user }) => {
                           className="royal-btn"
                           style={{ flex: 2, padding: '10px' }}
                         >
-                          {fallbackLoading ? <Loader2 className="animate-spin" size={16} /> : "Submit Request"}
+                          {fallbackLoading ? <Loader2 className="animate-spin" size={16} /> : t('catalog.submitManualRequest')}
                         </button>
                       </div>
                     </div>
@@ -1046,7 +1048,7 @@ const CatalogPage = ({ user }) => {
           <div className="royal-card nfc-modal-card fallback-modal-card animate-fade-in" style={{ width: '100%', maxWidth: '420px', padding: '30px', background: 'rgba(26, 21, 16, 0.95)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
             <div className="nfc-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid rgba(212, 175, 55, 0.2)', paddingBottom: '12px' }}>
               <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.25rem', fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '0.05em' }}>
-                {nfcActionType === 'checkout' ? 'Manual Checkout Request' : 'Manual Return Request'}
+                {nfcActionType === 'checkout' ? t('catalog.manualRequest') : t('catalog.manualRequest')}
               </h3>
               <button onClick={() => setFallbackModalOpen(false)} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}>
                 <X size={18} />
@@ -1057,21 +1059,21 @@ const CatalogPage = ({ user }) => {
               {fallbackSuccess ? (
                 <div className="nfc-success-animation animate-fade-in">
                   <CheckCircle size={56} className="gold-glow-icon" style={{ color: 'var(--success)', marginBottom: '16px' }} />
-                  <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px', fontSize: '1.1rem' }}>Scribe Request Saved</h4>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>Your circulation request has been submitted to the Curator's ledger.</p>
+                  <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px', fontSize: '1.1rem' }}>{t('catalog.scribeRequestSaved')}</h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>{t('catalog.requestSubmittedDesc')}</p>
                 </div>
               ) : (
                 <>
                   <p className="fallback-explanation" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.6', margin: '0 0 20px 0', textAlign: 'left' }}>
                     {nfcActionType === 'checkout'
-                      ? "As physical NFC validation is unavailable, submit a digital checkout request. A Curator will verify copy availability and authorize your checkout manual sweep."
-                      : "Submit a physical volume return record. A Curator will review your checkout status and confirm receipt of this masterwork inside the Salon."}
+                      ? t('catalog.fallbackExplanationCheckout')
+                      : t('catalog.fallbackExplanationReturn')}
                   </p>
 
                   <div className="fallback-form-summary royal-card" style={{ padding: '16px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '24px' }}>
-                    <h5 style={{ color: 'var(--accent)', fontWeight: '600', marginBottom: '6px', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Volume Details</h5>
+                    <h5 style={{ color: 'var(--accent)', fontWeight: '600', marginBottom: '6px', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('catalog.volumeDetails')}</h5>
                     <p style={{ fontSize: '0.95rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>{selectedBook.title}</p>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>ISBN: {selectedBook.isbn}</p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>{t('catalog.isbn')}: {selectedBook.isbn}</p>
                   </div>
 
                   <div className="fallback-actions-row" style={{ display: 'flex', gap: '14px', width: '100%' }}>
@@ -1081,7 +1083,7 @@ const CatalogPage = ({ user }) => {
                       className="royal-btn-secondary"
                       style={{ flex: 1, padding: '10px' }}
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                     <button
                       type="button"
@@ -1091,7 +1093,7 @@ const CatalogPage = ({ user }) => {
                       disabled={fallbackLoading}
                     >
                       {fallbackLoading ? <RefreshCw className="spin-icon" size={14} /> : <CheckCircle size={14} />}
-                      {fallbackLoading ? 'Submitting...' : 'Submit Request'}
+                      {fallbackLoading ? t('profile.submitting') : t('catalog.submitManualRequest')}
                     </button>
                   </div>
                 </>
@@ -1109,7 +1111,7 @@ const CatalogPage = ({ user }) => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Scan size={18} className="gold-glow-icon" />
                 <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.2rem', fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '0.05em' }}>
-                  Scan Book Barcode
+                  {t('catalog.scanBarcode')}
                 </h3>
               </div>
               <button onClick={stopTopBarcodeScanner} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}>
@@ -1127,7 +1129,7 @@ const CatalogPage = ({ user }) => {
                 </div>
               ) : (
                 <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginTop: '16px', textAlign: 'center', marginHorizontal: '12px' }}>
-                  Align the book's barcode / ISBN inside the viewfinder box. Ensure sufficient lighting and steady holding.
+                  {t('catalog.alignBarcodePrompt')}
                 </p>
               )}
 
@@ -1136,7 +1138,7 @@ const CatalogPage = ({ user }) => {
                 onClick={stopTopBarcodeScanner} 
                 style={{ marginTop: '20px', width: '100%' }}
               >
-                Cancel Scanner
+                {t('common.cancel')}
               </button>
             </div>
           </div>
@@ -1149,7 +1151,7 @@ const CatalogPage = ({ user }) => {
           <div className="royal-card nfc-modal-card p2d-checkout-modal animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '30px', background: 'rgba(26, 21, 16, 0.98)', border: '2px solid var(--accent)', boxShadow: '0 15px 50px rgba(0,0,0,0.6)', borderRadius: '12px' }}>
             <div className="nfc-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid rgba(212, 175, 55, 0.2)', paddingBottom: '12px' }}>
               <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.3rem', fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '0.05em' }}>
-                {p2dActionType === 'checkout' ? 'Physical Self-Checkout' : 'Physical Self-Return'}
+                {p2dActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
               </h3>
               <button onClick={() => setP2dModalOpen(false)} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}>
                 <X size={18} />
@@ -1165,15 +1167,15 @@ const CatalogPage = ({ user }) => {
                     </div>
                   </div>
                   <h4 style={{ color: 'var(--accent)', fontSize: '1.25rem', fontFamily: 'var(--font-display)', fontWeight: 'bold', marginBottom: '8px', letterSpacing: '0.02em' }}>
-                    Sovereign Transaction Cleared
+                    {t('catalog.verifConfirmed')}
                   </h4>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.5', margin: '0 0 10px 0' }}>
                     {p2dActionType === 'checkout' 
-                      ? `"${p2dBook.title}" is now checked out to your physical custody.` 
-                      : `"${p2dBook.title}" has been successfully returned to the salon archives.`}
+                      ? `"${p2dBook.title}" ${t('catalog.borrowedByMe').toLowerCase()}`
+                      : `"${p2dBook.title}" ${t('catalog.returned').toLowerCase()}`}
                   </p>
                   <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', margin: 0 }}>
-                    Direct ledger verification code: <code>{p2dBook.ntagUid || 'P2D-VERIFIED'}</code>
+                    {t('catalog.nfcUid')}: <code>{p2dBook.ntagUid || 'P2D-VERIFIED'}</code>
                   </p>
                 </div>
               ) : (
@@ -1186,15 +1188,13 @@ const CatalogPage = ({ user }) => {
                     )}
                     <div className="p2d-book-details">
                       <span className="p2d-book-title" style={{ display: 'block', fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '4px' }}>{p2dBook.title}</span>
-                      <span className="p2d-book-author" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>by {Array.isArray(p2dBook.authors) ? p2dBook.authors.join(', ') : p2dBook.author || 'Unknown Author'}</span>
-                      <span className="p2d-book-isbn" style={{ display: 'block', fontSize: '0.75rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)' }}>ISBN: {p2dBook.isbn}</span>
+                      <span className="p2d-book-author" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>{t('common.genre')}: {Array.isArray(p2dBook.authors) ? p2dBook.authors.join(', ') : p2dBook.author || 'Unknown Author'}</span>
+                      <span className="p2d-book-isbn" style={{ display: 'block', fontSize: '0.75rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)' }}>{t('catalog.isbn')}: {p2dBook.isbn}</span>
                     </div>
                   </div>
 
                   <p className="p2d-action-desc" style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)', lineHeight: '1.6', marginBottom: '24px' }}>
-                    {p2dActionType === 'checkout'
-                      ? "A physical possession barcode or NFC match has been registered. Proceed with instant checkout? No curator approval required."
-                      : "A physical possession barcode or NFC match has been registered. Proceed with instant return?"}
+                    {p2dActionType === 'checkout' ? t('catalog.physicalCheckoutPrompt') : t('catalog.physicalReturnPrompt')}
                   </p>
 
                   {p2dError && (
@@ -1212,7 +1212,7 @@ const CatalogPage = ({ user }) => {
                       style={{ flex: 1, padding: '12px' }}
                       disabled={p2dLoading}
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                     <button
                       type="button"
@@ -1222,7 +1222,7 @@ const CatalogPage = ({ user }) => {
                       disabled={p2dLoading}
                     >
                       {p2dLoading ? <RefreshCw className="spin-icon" size={14} /> : <CheckCircle size={14} />}
-                      {p2dLoading ? 'Processing...' : (p2dActionType === 'checkout' ? 'Confirm Checkout' : 'Confirm Return')}
+                      {p2dLoading ? t('common.loading') : (p2dActionType === 'checkout' ? t('catalog.confirmCheckout') : t('catalog.confirmReturn'))}
                     </button>
                   </div>
                 </>

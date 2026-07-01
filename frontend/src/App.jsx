@@ -28,8 +28,10 @@ import ResetPassword from './pages/auth/ResetPassword';
 import ProfilePage from './pages/member/ProfilePage';
 import './App.css';
 import { fetchHeroConfig } from './services/heroApi';
+import { useLanguage } from './i18n/LanguageContext';
 
 function App() {
+  const { language, setLanguage, t } = useLanguage();
   const [user, setUser] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -87,6 +89,9 @@ function App() {
           try {
             const res = await api.get('/api/v1/auth/me');
             const backendUser = res?.data?.data;
+            if (backendUser?.language) {
+              setLanguage(backendUser.language);
+            }
             const cleanName = (() => {
               if (firebaseUser.displayName && firebaseUser.displayName !== 'null' && firebaseUser.displayName !== 'null null') {
                 return firebaseUser.displayName;
@@ -182,23 +187,38 @@ function App() {
             {/* Desktop Navigation */}
             <nav className="desktop-nav">
               <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} end>
-                <Home size={16} /> Pavilion
+                <Home size={16} /> {t('common.pavilion')}
               </NavLink>
               <NavLink to="/catalog" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <BookOpen size={16} /> Study
+                <BookOpen size={16} /> {t('common.study')}
               </NavLink>
               <NavLink to="/events" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <Calendar size={16} /> Assembly
+                <Calendar size={16} /> {t('common.assembly')}
               </NavLink>
               <NavLink to="/discourses" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <BookText size={16} /> Discourses
+                <BookText size={16} /> {t('common.discourses')}
               </NavLink>
               {user?.role === 'ADMIN' && (
                 <NavLink to="/admin" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                  <Shield size={16} /> Curator Console
+                  <Shield size={16} /> {t('common.curatorConsole')}
                 </NavLink>
               )}
             </nav>
+
+            {/* Language Switcher Dropdown */}
+            <div className="language-selector-container desktop-nav" style={{ marginRight: '10px' }}>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value, user)}
+                className="royal-language-select"
+                title="Select Language Preference"
+                id="language-selector-dropdown"
+              >
+                <option value="en">EN</option>
+                <option value="hi">HI</option>
+                <option value="kn">KN</option>
+              </select>
+            </div>
 
             {/* Theme Toggle & Profile / Auth Section */}
             <div className="theme-toggle-btn-container desktop-nav">
@@ -222,21 +242,21 @@ function App() {
                     <div className="user-name">{user.displayName}</div>
                     <div className="user-tier">{user.tier}</div>
                     <Link to="/profile" className="admin-portal-link" style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '4px' }}>
-                      <User size={12} /> Profile Ledger
+                      <User size={12} /> {t('common.profileLedger')}
                     </Link>
                     {user?.role === 'ADMIN' && (
                       <Link to="/admin" className="admin-portal-link" style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '4px' }}>
-                        <Shield size={12} /> Curator Console
+                        <Shield size={12} /> {t('common.curatorConsole')}
                       </Link>
                     )}
                     <button onClick={handleSignOut} className="sign-out-btn" id="logout-btn">
-                      <LogOut size={14} /> Leave the Realm
+                      <LogOut size={14} /> {t('common.leaveRealm')}
                     </button>
                   </div>
                 </div>
               ) : (
                 <Link to="/auth/signin" className="royal-btn header-btn" id="login-btn">
-                  <User size={14} /> Enter The Archway
+                  <User size={14} /> {t('common.enterArchway')}
                 </Link>
               )}
             </div>
@@ -254,17 +274,34 @@ function App() {
             <div className="mobile-nav-overlay animate-fade-in" role="dialog" aria-modal="true" onClick={closeMobileMenu}>
               <nav className="mobile-nav" onClick={(e) => e.stopPropagation()}>
                 <NavLink to="/" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu} end>
-                  <Home size={20} /> Pavilion
+                  <Home size={20} /> {t('common.pavilion')}
                 </NavLink>
                 <NavLink to="/catalog" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu}>
-                  <BookOpen size={20} /> Study
+                  <BookOpen size={20} /> {t('common.study')}
                 </NavLink>
                 <NavLink to="/events" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu}>
-                  <Calendar size={20} /> Assembly
+                  <Calendar size={20} /> {t('common.assembly')}
                 </NavLink>
                 <NavLink to="/discourses" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu}>
-                  <BookText size={20} /> Discourses
+                  <BookText size={20} /> {t('common.discourses')}
                 </NavLink>
+
+                <div className="mobile-language-section" style={{ padding: '10px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)' }}>Language:</span>
+                    <select
+                      value={language}
+                      onChange={(e) => { setLanguage(e.target.value, user); closeMobileMenu(); }}
+                      className="royal-language-select"
+                      style={{ width: '120px' }}
+                      id="mobile-language-selector"
+                    >
+                      <option value="en">English</option>
+                      <option value="hi">हिन्दी</option>
+                      <option value="kn">ಕನ್ನಡ</option>
+                    </select>
+                  </div>
+                </div>
 
                 <div className="mobile-theme-section">
                   <button 
@@ -291,22 +328,22 @@ function App() {
                       <div style={{ display: 'flex', gap: '10px', flexDirection: 'column', width: '100%' }}>
                         <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
                           <Link to="/profile" onClick={closeMobileMenu} className="royal-btn-secondary" style={{ flex: 1, justifyContent: 'center', fontSize: '0.75rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            Profile Ledger
+                            {t('common.profileLedger')}
                           </Link>
                           {user?.role === 'ADMIN' && (
                             <Link to="/admin" onClick={closeMobileMenu} className="royal-btn-secondary" style={{ flex: 1, justifyContent: 'center', fontSize: '0.75rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              Curator Console
+                              {t('common.curatorConsole')}
                             </Link>
                           )}
                         </div>
                         <button onClick={() => { handleSignOut(); closeMobileMenu(); }} className="sign-out-btn" style={{ width: '100%', padding: '6px 12px' }}>
-                          Sign Out
+                          {t('common.leaveRealm')}
                         </button>
                       </div>
                     </div>
                   ) : (
                     <Link to="/auth/signin" onClick={closeMobileMenu} className="royal-btn mobile-login-btn" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                      Enter The Archway
+                      {t('common.enterArchway')}
                     </Link>
                   )}
                 </div>
@@ -355,15 +392,15 @@ function App() {
             </div>
             <div className="footer-links">
               <h4>The Library</h4>
-              <Link to="/catalog">Study</Link>
-              <Link to="/events">Upcoming Litfests</Link>
-              <Link to="/discourses">Discourses</Link>
+              <Link to="/catalog">{t('common.study')}</Link>
+              <Link to="/events">{t('common.assembly')}</Link>
+              <Link to="/discourses">{t('common.discourses')}</Link>
               <Link to="/terms">Terms & Conditions</Link>
               <Link to="/privacy">Privacy Notice</Link>
             </div>
             <div className="footer-motto">
               <blockquote>
-                "{footerQuote}"
+                "{footerQuote === "A word, deeply read, becomes conviction. A conviction becomes a life. You do not read a great book. You are slowly, quietly, being rewritten by it." ? t('home.bottomQuote') : footerQuote}"
                 <cite>— {footerAuthor}</cite>
               </blockquote>
             </div>

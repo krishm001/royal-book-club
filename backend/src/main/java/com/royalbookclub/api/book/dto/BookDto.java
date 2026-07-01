@@ -49,4 +49,7 @@ public class BookDto {
     private Integer availableCopies;
 
     private String ntagUid;
+    
+    @Builder.Default
+    private String language = "en";
 }

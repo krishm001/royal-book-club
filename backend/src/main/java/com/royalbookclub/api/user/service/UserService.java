@@ -214,6 +214,9 @@ public class UserService {
             existing.setStreet(updatedUser.getStreet());
             existing.setCity(updatedUser.getCity());
             existing.setPinCode(updatedUser.getPinCode());
+            if (updatedUser.getLanguage() != null) {
+                existing.setLanguage(updatedUser.getLanguage());
+            }
             existing.setUpdatedAt(new Date());
 
             // Protect role changes from general updates

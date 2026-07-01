@@ -40,5 +40,8 @@ public class Book {
     private String ntagUid;
     private Instant createdAt;
     private Instant updatedAt;
+    
+    @Builder.Default
+    private String language = "en";
 }
 

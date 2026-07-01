@@ -3,6 +3,7 @@ import { User, Phone, MapPin, Search, CheckCircle, AlertTriangle, ArrowLeft, Loa
 import { Link, useNavigate } from 'react-router-dom';
 import { getCurrentUserProfile, updateUserProfile } from '../../services/userApi';
 import { getCheckoutSettings } from '../../services/checkoutSettingsApi';
+import { useLanguage } from '../../i18n/LanguageContext';
 import './ProfilePage.css';
 
 // Helper to parse location details from OpenStreetMap Nominatim address & display_name with advanced fallback split-parsing
@@ -57,6 +58,7 @@ const parseOsmAddress = (data) => {
 };
 
 const ProfilePage = ({ user }) => {
+  const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -68,6 +70,7 @@ const ProfilePage = ({ user }) => {
     street: '',
     city: '',
     pinCode: '',
+    language: 'en',
   });
 
   const [settings, setSettings] = useState({
@@ -114,6 +117,7 @@ const ProfilePage = ({ user }) => {
             street: d.street || '',
             city: d.city || '',
             pinCode: d.pinCode || '',
+            language: d.language || 'en',
           });
         }
       } catch (err) {
@@ -151,7 +155,7 @@ const ProfilePage = ({ user }) => {
     setDetectingLocation(true);
     setMessage({
       type: 'info',
-      text: 'Extricating physical coordinates (Attempting high-precision GPS)...',
+      text: t('profile.gpsDetecting'),
     });
 
     if (!navigator.geolocation) {
@@ -436,18 +440,18 @@ const ProfilePage = ({ user }) => {
       <div className="profile-inner-container">
         {/* Back Link */}
         <Link to="/" className="back-link-academy">
-          <ArrowLeft size={16} /> Return to Pavilion
+          <ArrowLeft size={16} /> {t('common.returnPavilion')}
         </Link>
 
         {/* Header */}
         <header className="profile-header">
           <div className="header-badge-profile">
             <Sparkles size={14} className="gold-glow-icon" />
-            <span className="gold-gradient-text">PATRON IDENTITY PORTAL</span>
+            <span className="gold-gradient-text">{t('profile.portalHeader')}</span>
           </div>
-          <h1 className="profile-title glow-text">Scholar Profile Ledger</h1>
+          <h1 className="profile-title glow-text">{t('profile.title')}</h1>
           <p className="profile-subtitle">
-            Update your credentials and address registration to ensure uninterrupted self-checkout privileges in the study.
+            {t('profile.subtitle')}
           </p>
         </header>
 
@@ -459,9 +463,9 @@ const ProfilePage = ({ user }) => {
                 <AlertTriangle size={24} />
               </div>
               <div className="status-text-content">
-                <h3 className="gated-title">Self-Checkout Restricted (Gated)</h3>
+                <h3 className="gated-title">{t('profile.statusRestricted')}</h3>
                 <p className="gated-desc">
-                  To utilize smart tap-to-checkout and manual requests, you must supplement your profile with the following mandatory fields: <strong style={{ color: 'var(--accent)' }}>{missingFields.join(', ')}</strong>.
+                  {t('profile.missingGatingFields')} <strong style={{ color: 'var(--accent)' }}>{missingFields.join(', ')}</strong>.
                 </p>
               </div>
             </div>
@@ -471,7 +475,7 @@ const ProfilePage = ({ user }) => {
                 <CheckCircle size={24} />
               </div>
               <div className="status-text-content">
-                <h3 className="unlocked-title">Self-Checkout Unlocked</h3>
+                <h3 className="unlocked-title">{t('profile.statusUnlocked')}</h3>
                 <p className="unlocked-desc">
                   All active administrative gating rules are fully satisfied. Your tap-to-checkout and manual request features are fully active in the Study catalog.
                 </p>
@@ -497,10 +501,10 @@ const ProfilePage = ({ user }) => {
               )}
 
               <form onSubmit={handleSubmit} className="profile-form">
-                <h3 className="section-title-royal">Personal Coordinates</h3>
+                <h3 className="section-title-royal">{t('profile.personalCoordinates')}</h3>
                 <div className="form-row">
                   <div className="form-group flex-1">
-                    <label htmlFor="firstName">First Name</label>
+                    <label htmlFor="firstName">{t('profile.firstName')}</label>
                     <input
                       type="text"
                       id="firstName"
@@ -512,7 +516,7 @@ const ProfilePage = ({ user }) => {
                     />
                   </div>
                   <div className="form-group flex-1">
-                    <label htmlFor="lastName">Last Name</label>
+                    <label htmlFor="lastName">{t('profile.lastName')}</label>
                     <input
                       type="text"
                       id="lastName"
@@ -527,7 +531,7 @@ const ProfilePage = ({ user }) => {
 
                 <div className="form-group">
                   <label htmlFor="phone" className="required-marker-label">
-                    Phone Number {settings.phoneMandatory && <span className="gold-text-req">*</span>}
+                    {t('profile.phoneNumber')} {settings.phoneMandatory && <span className="gold-text-req">*</span>}
                   </label>
                   <div className="input-with-icon-wrapper">
                     <Phone className="input-field-icon" size={16} />
@@ -543,11 +547,31 @@ const ProfilePage = ({ user }) => {
                     />
                   </div>
                 </div>
+
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label htmlFor="language">{t('profile.languagePref')}</label>
+                  <select
+                    id="language"
+                    name="language"
+                    value={profile.language}
+                    onChange={(e) => {
+                      const newLang = e.target.value;
+                      setProfile(prev => ({ ...prev, language: newLang }));
+                      setLanguage(newLang, user);
+                    }}
+                    className="royal-input"
+                    style={{ background: 'var(--input-bg, rgba(255, 255, 255, 0.02))', border: '1px solid var(--border-color, rgba(255,255,255,0.08))', color: 'var(--text-color, #ffffff)', padding: '10px 14px' }}
+                  >
+                    <option value="en">{t('common.english')}</option>
+                    <option value="hi">{t('common.hindi')}</option>
+                    <option value="kn">{t('common.kannada')}</option>
+                  </select>
+                </div>
         <hr className="royal-divider" />
 
                 <div className="address-section-header">
-                  <h3 className="section-title-royal">Address Registry</h3>
-                  <p className="address-section-sub">Search and auto-complete address registry coordinates with Google Places ledger.</p>
+                  <h3 className="section-title-royal">{t('profile.addressRegistry')}</h3>
+                  <p className="address-section-sub">{t('profile.addressSub')}</p>
                 </div>
 
                 {/* Geolocation Address Extraction Button */}
@@ -560,11 +584,11 @@ const ProfilePage = ({ user }) => {
                   >
                     {detectingLocation ? (
                       <>
-                        <Loader2 className="animate-spin mr-2" size={16} /> Extricating Coordinates...
+                        <Loader2 className="animate-spin mr-2" size={16} /> {t('profile.gpsDetecting')}
                       </>
                     ) : (
                       <>
-                        <MapPin size={16} className="gold-glow-icon mr-2" /> Detect My Location (GPS)
+                        <MapPin size={16} className="gold-glow-icon mr-2" /> {t('profile.gpsButton')}
                       </>
                     )}
                   </button>
@@ -572,7 +596,7 @@ const ProfilePage = ({ user }) => {
 
                 {/* Sovereign Address Autocomplete Search Field */}
                 <div className="form-group" ref={suggestionsContainerRef}>
-                  <label htmlFor="googleAddressSearch">Sovereign Address Lookup</label>
+                  <label htmlFor="googleAddressSearch">{t('profile.addressLookup')}</label>
                   <div className="input-with-icon-wrapper">
                     <Search className="input-field-icon" size={16} />
                     <input
@@ -581,7 +605,7 @@ const ProfilePage = ({ user }) => {
                       id="googleAddressSearch"
                       value={searchQuery}
                       onChange={handleSearchQueryChange}
-                      placeholder="Type address to autocomplete with OpenStreetMap..."
+                      placeholder={t('profile.addressPlaceholder')}
                       className="royal-input input-padded-left"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') e.preventDefault();
@@ -611,7 +635,7 @@ const ProfilePage = ({ user }) => {
                 <div className="form-row">
                   <div className="form-group flex-1">
                     <label htmlFor="houseNo">
-                      House / Apt No {settings.houseNoMandatory && <span className="gold-text-req">*</span>}
+                      {t('profile.houseNo')} {settings.houseNoMandatory && <span className="gold-text-req">*</span>}
                     </label>
                     <input
                       type="text"
@@ -626,7 +650,7 @@ const ProfilePage = ({ user }) => {
                   </div>
                   <div className="form-group flex-2">
                     <label htmlFor="street">
-                      Street Name {settings.streetMandatory && <span className="gold-text-req">*</span>}
+                      {t('profile.streetName')} {settings.streetMandatory && <span className="gold-text-req">*</span>}
                     </label>
                     <input
                       type="text"
@@ -644,7 +668,7 @@ const ProfilePage = ({ user }) => {
                 <div className="form-row">
                   <div className="form-group flex-1">
                     <label htmlFor="city">
-                      City {settings.cityMandatory && <span className="gold-text-req">*</span>}
+                      {t('profile.city')} {settings.cityMandatory && <span className="gold-text-req">*</span>}
                     </label>
                     <input
                       type="text"
@@ -659,7 +683,7 @@ const ProfilePage = ({ user }) => {
                   </div>
                   <div className="form-group flex-1">
                     <label htmlFor="pinCode">
-                      Postal / PIN Code {settings.pinCodeMandatory && <span className="gold-text-req">*</span>}
+                      {t('profile.postalCode')} {settings.pinCodeMandatory && <span className="gold-text-req">*</span>}
                     </label>
                     <input
                       type="text"
@@ -682,11 +706,11 @@ const ProfilePage = ({ user }) => {
                   >
                     {saving ? (
                       <>
-                        <Loader2 className="animate-spin mr-2" size={16} /> Preserving Scroll...
+                        <Loader2 className="animate-spin mr-2" size={16} /> {t('profile.submitting')}
                       </>
                     ) : (
                       <>
-                        <Sparkles size={16} /> Update Ledger coordinates
+                        <Sparkles size={16} /> {t('common.save')}
                       </>
                     )}
                   </button>
@@ -698,9 +722,9 @@ const ProfilePage = ({ user }) => {
             <div className="right-column-container">
               {/* Verification Status Card */}
               <div className="royal-card checklist-card-glass">
-                <h3 className="section-title-royal">gating diagnostics</h3>
+                <h3 className="section-title-royal">{t('profile.gatingDiagnostics')}</h3>
                 <p className="checklist-subtitle">
-                  Current requirement checkpoints configured by library Curators. Satisfy all marked coordinates to unlock mobile self checkouts.
+                  {t('profile.gatingInstructions')}
                 </p>
 
                 <div className="checklist-items">
@@ -709,7 +733,7 @@ const ProfilePage = ({ user }) => {
                       {profile.phone.trim() ? <CheckCircle size={16} /> : settings.phoneMandatory ? <AlertTriangle size={16} /> : <CheckCircle size={16} style={{ opacity: 0.3 }} />}
                     </div>
                     <div className="checklist-text">
-                      <span className="checklist-label">Phone Number Coordinates</span>
+                      <span className="checklist-label">{t('profile.phoneNumber')}</span>
                       <span className="checklist-requirement">
                         {settings.phoneMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
                       </span>
@@ -721,7 +745,7 @@ const ProfilePage = ({ user }) => {
                       {profile.houseNo.trim() ? <CheckCircle size={16} /> : settings.houseNoMandatory ? <AlertTriangle size={16} /> : <CheckCircle size={16} style={{ opacity: 0.3 }} />}
                     </div>
                     <div className="checklist-text">
-                      <span className="checklist-label">House / Apartment Number</span>
+                      <span className="checklist-label">{t('profile.houseNo')}</span>
                       <span className="checklist-requirement">
                         {settings.houseNoMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
                       </span>
@@ -733,7 +757,7 @@ const ProfilePage = ({ user }) => {
                       {profile.street.trim() ? <CheckCircle size={16} /> : settings.streetMandatory ? <AlertTriangle size={16} /> : <CheckCircle size={16} style={{ opacity: 0.3 }} />}
                     </div>
                     <div className="checklist-text">
-                      <span className="checklist-label">Street Address Alignment</span>
+                      <span className="checklist-label">{t('profile.streetName')}</span>
                       <span className="checklist-requirement">
                         {settings.streetMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
                       </span>
@@ -745,7 +769,7 @@ const ProfilePage = ({ user }) => {
                       {profile.city.trim() ? <CheckCircle size={16} /> : settings.cityMandatory ? <AlertTriangle size={16} /> : <CheckCircle size={16} style={{ opacity: 0.3 }} />}
                     </div>
                     <div className="checklist-text">
-                      <span className="checklist-label">Registered City</span>
+                      <span className="checklist-label">{t('profile.city')}</span>
                       <span className="checklist-requirement">
                         {settings.cityMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
                       </span>
@@ -757,7 +781,7 @@ const ProfilePage = ({ user }) => {
                       {profile.pinCode.trim() ? <CheckCircle size={16} /> : settings.pinCodeMandatory ? <AlertTriangle size={16} /> : <CheckCircle size={16} style={{ opacity: 0.3 }} />}
                     </div>
                     <div className="checklist-text">
-                      <span className="checklist-label">PIN / Postal Code</span>
+                      <span className="checklist-label">{t('profile.postalCode')}</span>
                       <span className="checklist-requirement">
                         {settings.pinCodeMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
                       </span>
@@ -767,7 +791,7 @@ const ProfilePage = ({ user }) => {
 
                 <div className="checklist-footer-note">
                   <p>
-                    Any update to mandatory settings by Curators is applied in real-time. Contact admin in the Pavilion if card RFID locks encounter alignment issues.
+                    {t('profile.gatingFooter')}
                   </p>
                 </div>
               </div>

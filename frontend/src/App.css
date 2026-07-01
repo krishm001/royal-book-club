@@ -647,4 +647,34 @@
   box-shadow: var(--glow-shadow-intense);
 }
 
+/* Premium Language Selector CSS */
+.royal-language-select {
+  background: var(--glass-bg, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+  color: var(--accent, #c5a880);
+  border-radius: var(--border-radius-sm, 4px);
+  padding: 6px 12px;
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+  transition: var(--transition-smooth, all 0.3s ease);
+  box-shadow: var(--glow-shadow);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
 
+.royal-language-select:hover {
+  background: rgba(212, 165, 116, 0.05);
+  border-color: var(--accent);
+  color: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--glow-shadow-intense);
+}
+
+.royal-language-select option {
+  background: #181416;
+  color: #f5f2f0;
+}

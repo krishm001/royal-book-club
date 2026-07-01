@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
 import { fetchBookByIsbn, checkoutBook, fetchBookReviews, submitBookReview, requestCheckout, requestReturn, verifiedCheckout, verifiedReturn, fetchCheckoutsByMember, updateBookReview, deleteBookReview } from '../../services/libraryApi';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { useLanguage } from '../../i18n/LanguageContext';
 import './BookDetailPage.css';
 
 const SafeHtml5Qrcode = Html5Qrcode;
@@ -10,6 +11,7 @@ const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
 
 const BookDetailPage = ({ user }) => {
   const { id } = useParams();
+  const { t } = useLanguage();
   const [book, setBook] = useState(null);
   const [memberCheckouts, setMemberCheckouts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -105,7 +107,7 @@ const BookDetailPage = ({ user }) => {
           setReviews(reviewsRes);
         }
       } catch (err) {
-        setError('Unable to load book details from the Royal catalog.');
+        setError(t('catalog.errorLoadingDetails'));
       } finally {
         setLoading(false);
       }
@@ -165,7 +167,7 @@ const BookDetailPage = ({ user }) => {
 
   const handleCheckoutClick = () => {
     if (!user) {
-      window.alert('Please sign in before checking out books.');
+      window.alert(t('catalog.signInToCheckout'));
       return;
     }
     setNfcActionType('checkout');
@@ -186,7 +188,7 @@ const BookDetailPage = ({ user }) => {
 
   const handleReturnClick = () => {
     if (!user) {
-      window.alert('Please sign in before returning books.');
+      window.alert(t('catalog.signInToReturn'));
       return;
     }
     setNfcActionType('return');
@@ -350,7 +352,7 @@ const BookDetailPage = ({ user }) => {
   const handleDetailBarcodeScanned = async (decodedText) => {
     await stopDetailBarcodeScanner();
     if (!user) {
-      window.alert('Please sign in before completing transactions.');
+      window.alert(t('catalog.signInToCompleteTx'));
       return;
     }
     const scannedCode = (decodedText || '').trim().replace(/[-\s]/g, '');
@@ -369,10 +371,10 @@ const BookDetailPage = ({ user }) => {
         setTimeout(() => setNfcModalOpen(false), 2000);
       } catch (txError) {
         console.error('Verified barcode database error:', txError);
-        setNfcError(`Database rejected verification: ${txError.response?.data?.message || txError.message}`);
+        setNfcError(t('catalog.unableToSubmitRequest') + (txError.response?.data?.message || txError.message));
       }
     } else {
-      setNfcError(`Security Mismatch: Scanned barcode (${decodedText}) does not match this book's ISBN (${book.isbn}).`);
+      setNfcError(t('catalog.securityMismatch') + decodedText + ".");
     }
   };
 
@@ -399,7 +401,7 @@ const BookDetailPage = ({ user }) => {
     setNfcSuccess(false);
 
     if (!('NDEFReader' in window)) {
-      setNfcError("Web NFC is not supported on this browser/device. Please use the manual request fallback to submit a request for Curator approval.");
+      setNfcError(t('catalog.nfcNotSupported'));
       setNfcReading(false);
       return;
     }
@@ -409,7 +411,7 @@ const BookDetailPage = ({ user }) => {
       await ndef.scan();
 
       ndef.addEventListener("readingerror", () => {
-        setNfcError("NFC Reading Error: Unable to read tag. Place tag firmly against your device's NFC sweet spot.");
+        setNfcError(t('catalog.nfcReadingError'));
       });
 
       ndef.addEventListener("reading", async ({ serialNumber }) => {
@@ -432,15 +434,15 @@ const BookDetailPage = ({ user }) => {
             setTimeout(() => setNfcModalOpen(false), 2000);
           } catch (txError) {
             console.error('NFC verified transaction database error:', txError);
-            setNfcError(`Database rejected verification: ${txError.response?.data?.message || txError.message}`);
+            setNfcError(t('catalog.unableToSubmitRequest') + (txError.response?.data?.message || txError.message));
           }
         } else {
-          setNfcError(`Security Mismatch: This NFC tag (${serialNumber || 'Unknown'}) does not match this book volume's registered ID (${book.ntagUid}).`);
+          setNfcError(t('catalog.nfcSecurityMismatch') + serialNumber + ".");
         }
       });
     } catch (err) {
       console.error('NFC scanning error:', err);
-      setNfcError(`NFC Scan failed: ${err.message || err}. Please use the manual request fallback.`);
+      setNfcError(t('catalog.nfcScanFailed') + (err.message || err));
       setNfcReading(false);
     }
   };
@@ -462,7 +464,7 @@ const BookDetailPage = ({ user }) => {
       }, 2500);
     } catch (err) {
       console.error('Fallback request failed:', err);
-      window.alert(`Unable to submit request: ${err.response?.data?.message || err.message}`);
+      window.alert(t('catalog.unableToSubmitRequest') + (err.response?.data?.message || err.message));
       setFallbackLoading(false);
     }
   };
@@ -489,7 +491,7 @@ const BookDetailPage = ({ user }) => {
       setReviewText('');
     } catch (err) {
       console.error('Failed to publish dissertation', err);
-      window.alert('Unable to publish review at this time.');
+      window.alert(t('catalog.unableToSubmitRequest') + (err.message || ''));
     }
   };
 
@@ -522,7 +524,7 @@ const BookDetailPage = ({ user }) => {
   };
 
   const handleDeleteReviewClick = async (reviewId) => {
-    if (!window.confirm("Are you sure you wish to delete this review? This action is irreversible.")) return;
+    if (!window.confirm(t('catalog.deleteReviewConfirm'))) return;
     try {
       const res = await deleteBookReview(id, reviewId);
       if (res && res.success) {
@@ -537,7 +539,7 @@ const BookDetailPage = ({ user }) => {
     return (
       <div className="book-detail-container animate-fade-in">
         <div className="royal-card no-results-card">
-          <p>Loading book details...</p>
+          <p>{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -547,9 +549,9 @@ const BookDetailPage = ({ user }) => {
     return (
       <div className="book-detail-container animate-fade-in">
         <div className="royal-card no-results-card">
-          <p>{error || 'Book not found in the Royal catalog.'}</p>
+          <p>{error || t('catalog.bookNotFound')}</p>
           <Link to="/catalog" className="royal-btn">
-            Return to Catalog
+            {t('catalog.returnArchives')}
           </Link>
         </div>
       </div>
@@ -562,7 +564,7 @@ const BookDetailPage = ({ user }) => {
   return (
     <div className="book-detail-container animate-fade-in">
       <Link to="/catalog" className="back-link">
-        <ArrowLeft size={16} /> Return to Archives
+        <ArrowLeft size={16} /> {t('catalog.returnArchives')}
       </Link>
 
       <div className="book-detail-grid">
@@ -592,38 +594,44 @@ const BookDetailPage = ({ user }) => {
 
           <div className="metadata-spec-grid">
             <div className="spec-item">
-              <span className="spec-label">ISBN</span>
+              <span className="spec-label">{t('catalog.isbn')}</span>
               <span className="spec-value">{book.isbn}</span>
             </div>
             <div className="spec-item">
-              <span className="spec-label">Publisher</span>
+              <span className="spec-label">{t('catalog.publisher')}</span>
               <span className="spec-value">{book.publisher || 'N/A'}</span>
             </div>
             <div className="spec-item">
-              <span className="spec-label">Published</span>
+              <span className="spec-label">{t('catalog.publishDate')}</span>
               <span className="spec-value">{book.publishDate || 'N/A'}</span>
             </div>
             <div className="spec-item">
-              <span className="spec-label">Availability</span>
+              <span className="spec-label">{t('catalog.availability')}</span>
               <span className="spec-value">
                 {checkoutStatus === 'available' ? (
-                  <span className="text-success"><BadgeCheck size={14} className="inline-icon" /> In Salon</span>
+                  <span className="text-success"><BadgeCheck size={14} className="inline-icon" /> {t('catalog.inSalon')}</span>
                 ) : (
-                  <span className="text-warning"><Clock size={14} className="inline-icon" /> In Circulation</span>
+                  <span className="text-warning"><Clock size={14} className="inline-icon" /> {t('catalog.inCirculation')}</span>
                 )}
+              </span>
+            </div>
+            <div className="spec-item">
+              <span className="spec-label">{t('catalog.languageField')}</span>
+              <span className="spec-value">
+                {t('common.' + (book.language === 'kn' ? 'kannada' : book.language === 'hi' ? 'hindi' : 'english'))}
               </span>
             </div>
           </div>
 
           <div className="detail-description-section">
-            <h3>Literary Overview</h3>
+            <h3>{t('catalog.literaryOverview')}</h3>
             <p>{book.description || 'A refined volume from the Royal archives.'}</p>
             {book.details && <p className="extended-desc">{book.details}</p>}
           </div>
 
           {book.tags && Array.isArray(book.tags) && book.tags.length > 0 && (
             <div style={{ marginTop: '1.5rem' }}>
-              <h4 style={{ fontSize: '0.9rem', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>Acquisition Labels</h4>
+              <h4 style={{ fontSize: '0.9rem', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>{t('catalog.acquisitionLabels')}</h4>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {book.tags.map((tag, idx) => (
                   <span key={idx} style={{ background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.15)', color: 'var(--accent)', borderRadius: '4px', padding: '3px 8px', fontSize: '0.75rem', fontWeight: '500' }}>
@@ -638,7 +646,7 @@ const BookDetailPage = ({ user }) => {
             {checkoutStatus === 'available' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <button onClick={handleCheckoutClick} className="royal-btn checkout-cta-btn" id="book-detail-checkout-btn">
-                  <ShoppingBag size={16} /> Secure Sovereign Checkout
+                  <ShoppingBag size={16} /> {t('catalog.secureSovereignCheckout')}
                 </button>
               </div>
             ) : checkoutStatus === 'checked-out' ? (
@@ -646,36 +654,36 @@ const BookDetailPage = ({ user }) => {
                 <div className="success-checkout-badge">
                   <CheckCircle size={20} className="success-icon" />
                   <div>
-                    <h4>Digital Checkout Authorized</h4>
-                    <p>This volume is currently in your physical possession.</p>
+                    <h4>{t('catalog.digitalCheckoutAuthorized')}</h4>
+                    <p>{t('catalog.currentlyInPossession')}</p>
                   </div>
                 </div>
                 <button onClick={handleReturnClick} className="royal-btn checkout-cta-btn return-btn-action" id="book-detail-return-btn">
-                  <RefreshCw size={16} /> Tap-to-Return / Return Volume
+                  <RefreshCw size={16} /> {t('catalog.returnVolume')}
                 </button>
               </div>
             ) : checkoutStatus === 'requested-checkout' ? (
               <div className="pending-checkout-badge royal-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: '1px solid rgba(212, 165, 116, 0.3)', background: 'rgba(212, 165, 116, 0.05)' }}>
                 <Clock size={20} style={{ color: 'var(--accent)' }} className="spin-icon" />
                 <div>
-                  <h4 style={{ color: 'var(--accent)', fontSize: '0.95rem', fontWeight: '600' }}>Checkout Request Pending</h4>
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>Awaiting administrative approval in the Curator's ledger.</p>
+                  <h4 style={{ color: 'var(--accent)', fontSize: '0.95rem', fontWeight: '600' }}>{t('catalog.checkoutRequestPending')}</h4>
+                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>{t('catalog.awaitingCuratorApproval')}</p>
                 </div>
               </div>
             ) : checkoutStatus === 'requested-return' ? (
               <div className="pending-checkout-badge royal-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: '1px solid rgba(212, 165, 116, 0.3)', background: 'rgba(212, 165, 116, 0.05)' }}>
                 <Clock size={20} style={{ color: 'var(--accent)' }} className="spin-icon" />
                 <div>
-                  <h4 style={{ color: 'var(--accent)', fontSize: '0.95rem', fontWeight: '600' }}>Return Request Pending</h4>
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>Awaiting administrative review to mark as returned inside Salon.</p>
+                  <h4 style={{ color: 'var(--accent)', fontSize: '0.95rem', fontWeight: '600' }}>{t('catalog.returnRequestPending')}</h4>
+                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>{t('catalog.awaitingReturnReview')}</p>
                 </div>
               </div>
             ) : (
               <div className="in-circulation-badge royal-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)' }}>
                 <Clock size={20} style={{ color: '#ff7b72' }} />
                 <div>
-                  <h4 style={{ color: '#ff7b72', fontSize: '0.95rem', fontWeight: '600' }}>In Circulation</h4>
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>This volume is currently checked out by another scholar.</p>
+                  <h4 style={{ color: '#ff7b72', fontSize: '0.95rem', fontWeight: '600' }}>{t('catalog.inCirculation')}</h4>
+                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>{t('catalog.checkedOutByOtherScholar')}</p>
                 </div>
               </div>
             )}
@@ -685,7 +693,7 @@ const BookDetailPage = ({ user }) => {
               <div className="inline-action-panel royal-card border-gold animate-fade-in" style={{ marginTop: '16px', padding: '20px', background: 'rgba(20, 16, 12, 0.6)', backdropFilter: 'blur(12px)' }}>
                 <div className="panel-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '10px' }}>
                   <h4 style={{ color: 'var(--accent)', fontSize: '1rem', fontWeight: '600', margin: 0, letterSpacing: '0.05em' }}>
-                    {nfcActionType === 'checkout' ? 'Sovereign Checkout Verification' : 'Sovereign Return Verification'}
+                    {nfcActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
                   </h4>
                   <button onClick={handleCloseNfcModal} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: '4px' }}>
                     <X size={16} />
@@ -699,7 +707,7 @@ const BookDetailPage = ({ user }) => {
                     disabled={nfcSuccess || fallbackSuccess}
                   >
                     <Smartphone size={14} />
-                    <span>NFC Tap</span>
+                    <span>{t('catalog.nfcTap')}</span>
                   </button>
                   <button
                     className={`verification-tab-btn ${activeTab === 'barcode' ? 'active' : ''}`}
@@ -707,7 +715,7 @@ const BookDetailPage = ({ user }) => {
                     disabled={nfcSuccess || fallbackSuccess}
                   >
                     <ShoppingBag size={14} />
-                    <span>Barcode Scan</span>
+                    <span>{t('catalog.barcodeScan')}</span>
                   </button>
                   <button
                     className={`verification-tab-btn ${activeTab === 'manual' ? 'active' : ''}`}
@@ -715,7 +723,7 @@ const BookDetailPage = ({ user }) => {
                     disabled={nfcSuccess || fallbackSuccess}
                   >
                     <Clock size={14} />
-                    <span>Manual Request</span>
+                    <span>{t('catalog.manualRequest')}</span>
                   </button>
                 </div>
 
@@ -723,14 +731,14 @@ const BookDetailPage = ({ user }) => {
                   {nfcSuccess ? (
                     <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0' }}>
                       <CheckCircle size={48} className="text-success gold-glow-icon" style={{ marginBottom: '12px' }} />
-                      <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>Sovereign Verification Confirmed</h4>
-                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>Transaction ledger updated automatically in Cloud Firestore.</p>
+                      <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.verifConfirmed')}</h4>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.ledgerUpdated')}</p>
                     </div>
                   ) : fallbackSuccess ? (
                     <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0' }}>
                       <CheckCircle size={48} className="gold-glow-icon" style={{ color: 'var(--accent)', marginBottom: '12px' }} />
-                      <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>Scribe Request Saved</h4>
-                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>Your circulation request has been submitted to the Curator's ledger.</p>
+                      <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.scribeRequestSaved')}</h4>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.requestSubmittedDesc')}</p>
                     </div>
                   ) : (
                     <>
@@ -742,11 +750,11 @@ const BookDetailPage = ({ user }) => {
                           </div>
                           
                           <p className="nfc-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
-                            Hold this physical volume's NFC tag near the back of your phone...
+                            {t('catalog.holdNfcTagDesc')}
                           </p>
 
                           <div className="nfc-meta-box" style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', padding: '8px 12px', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                            <span style={{ color: 'var(--text-secondary)' }}>Target Volume ID:</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>{t('catalog.targetVolumeId')}</span>
                             <code style={{ color: 'var(--accent)', fontFamily: 'monospace', fontWeight: 'bold' }}>{book.ntagUid}</code>
                           </div>
 
@@ -769,11 +777,14 @@ const BookDetailPage = ({ user }) => {
                           </div>
 
                           <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 10px 0' }}>
-                            Align the book's barcode within the viewfinder scanning window...
+                            {t('catalog.alignBarcodePrompt')}
                           </p>
 
                           <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0', marginBottom: '16px' }}>
-                            Can't scan the barcode? <button type="button" onClick={() => handleTabChange('manual')} style={{ background: 'none', border: 'none', color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', padding: 0, font: 'inherit' }}>Submit a Manual Request</button>
+                            {t('catalog.cantScanBarcode')}{' '}
+                            <button type="button" onClick={() => handleTabChange('manual')} style={{ background: 'none', border: 'none', color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', padding: 0, font: 'inherit' }}>
+                              {t('catalog.submitManualRequest')}
+                            </button>
                           </p>
 
                           {detailScannerError && (
@@ -796,12 +807,12 @@ const BookDetailPage = ({ user }) => {
                         <div className="tab-pane manual-tab-pane animate-fade-in" style={{ width: '100%' }}>
                           <p className="fallback-explanation" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: '0 0 16px 0', textAlign: 'left' }}>
                             {nfcActionType === 'checkout'
-                              ? "As physical validation is unavailable, submit a digital checkout request. A Curator will verify copy availability and authorize your checkout."
-                              : "Submit a physical volume return record. A Curator will review your status and confirm receipt of this book inside the Salon."}
+                              ? t('catalog.fallbackExplanationCheckout')
+                              : t('catalog.fallbackExplanationReturn')}
                           </p>
 
                           <div className="fallback-form-summary royal-card" style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '16px' }}>
-                            <h5 style={{ color: 'var(--accent)', fontWeight: '600', marginBottom: '4px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Volume Details</h5>
+                            <h5 style={{ color: 'var(--accent)', fontWeight: '600', marginBottom: '4px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('catalog.volumeDetails')}</h5>
                             <p style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>{book.title}</p>
                             <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>ISBN: {book.isbn}</p>
                           </div>
@@ -813,7 +824,7 @@ const BookDetailPage = ({ user }) => {
                               className="royal-btn-secondary"
                               style={{ flex: 1, padding: '10px' }}
                             >
-                              Cancel
+                              {t('common.cancel')}
                             </button>
                             <button
                               type="button"
@@ -823,7 +834,7 @@ const BookDetailPage = ({ user }) => {
                               disabled={fallbackLoading}
                             >
                               {fallbackLoading ? <RefreshCw className="spin-icon" size={12} /> : <CheckCircle size={12} />}
-                              {fallbackLoading ? 'Submitting...' : 'Submit Request'}
+                              {fallbackLoading ? t('profile.submitting') : t('catalog.submitManualRequest')}
                             </button>
                           </div>
                         </div>
@@ -838,11 +849,11 @@ const BookDetailPage = ({ user }) => {
       </div>
 
       <section className="detail-reviews-section royal-card">
-        <h3 className="section-title">Patron Dissertations & Reviews</h3>
+        <h3 className="section-title">{t('catalog.reviewsTitle')}</h3>
         {user ? (
           <form onSubmit={handleSubmitReview} className="write-review-form">
             <div className="review-rating-select">
-              <span>Your Sovereign Rating:</span>
+              <span>{t('catalog.ratingLabel')}</span>
               <div className="star-rating-inputs">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
@@ -858,19 +869,19 @@ const BookDetailPage = ({ user }) => {
             </div>
             <textarea
               className="royal-textarea review-textarea"
-              placeholder="Contribute your intellectual critique to the salon..."
+              placeholder={t('catalog.critiquePlaceholder')}
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
               rows={4}
               required
             />
             <button type="submit" className="royal-btn submit-review-btn">
-              Publish Dissertation
+              {t('catalog.publishDissertation')}
             </button>
           </form>
         ) : (
           <div className="review-prompt-card">
-            <p>Please enter the Royal Salon to contribute your literary critiques and reviews.</p>
+            <p>{t('catalog.loginToReview')}</p>
           </div>
         )}
 
@@ -942,10 +953,10 @@ const BookDetailPage = ({ user }) => {
                       />
                       <div className="review-edit-actions" style={{ display: 'flex', gap: '0.5rem' }}>
                         <button onClick={() => handleUpdateReviewSubmit(rev.id)} className="royal-btn small-btn save-btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}>
-                          Update
+                          {t('common.update')}
                         </button>
                         <button onClick={handleCancelEditReview} className="royal-btn small-btn cancel-btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)', color: '#ccc' }}>
-                          Cancel
+                          {t('common.cancel')}
                         </button>
                       </div>
                     </div>
@@ -964,7 +975,7 @@ const BookDetailPage = ({ user }) => {
             })
           ) : (
             <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>
-              No critiques have been published on this volume yet. Scribe the very first dissertation!
+              {t('catalog.noReviewsDetail')}
             </div>
           )}
         </div>

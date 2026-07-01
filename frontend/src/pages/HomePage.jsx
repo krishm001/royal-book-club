@@ -7,6 +7,7 @@ import { fetchHeroConfig } from '../services/heroApi';
 import { fetchEvents, rsvpToEvent } from '../services/eventApi';
 import { fetchDiscourses } from '../services/discourseApi';
 import { fetchStatsSummary } from '../services/statsApi';
+import { useLanguage } from '../i18n/LanguageContext';
 import './HomePage.css';
 
 const defaultFeaturedBook = {
@@ -21,6 +22,7 @@ const defaultFeaturedBook = {
 };
 
 const HomePage = ({ user, onSignIn, theme }) => {
+  const { t } = useLanguage();
   const [currentShowcaseItem, setCurrentShowcaseItem] = useState(defaultFeaturedBook);
   const [currentShowcaseType, setCurrentShowcaseType] = useState('book'); // 'book' or 'assembly'
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -280,10 +282,10 @@ const HomePage = ({ user, onSignIn, theme }) => {
   };
 
   const stats = [
-    { label: 'Eminent Scholars', count: liveStats.membersCount.toLocaleString(), icon: <Users className="stat-icon" /> },
-    { label: 'Literary Tomes', count: liveStats.booksCount.toLocaleString(), icon: <BookOpen className="stat-icon" /> },
-    { label: 'Active Checkouts', count: liveStats.activeCheckoutsCount.toLocaleString(), icon: <Sparkles className="stat-icon" /> },
-    { label: 'Upcoming Salons', count: liveStats.upcomingSalonsCount.toLocaleString(), icon: <Calendar className="stat-icon" /> },
+    { label: t('home.memberRegistry'), count: liveStats.membersCount.toLocaleString(), icon: <Users className="stat-icon" /> },
+    { label: t('home.royalVolumes'), count: liveStats.booksCount.toLocaleString(), icon: <BookOpen className="stat-icon" /> },
+    { label: t('home.activeCheckouts'), count: liveStats.activeCheckoutsCount.toLocaleString(), icon: <Sparkles className="stat-icon" /> },
+    { label: t('home.upcomingSalons'), count: liveStats.upcomingSalonsCount.toLocaleString(), icon: <Calendar className="stat-icon" /> },
   ];
 
   return (
@@ -296,14 +298,14 @@ const HomePage = ({ user, onSignIn, theme }) => {
             <span className="gold-gradient-text">ESTABLISHED MMXXVI</span>
           </div>
           <h1 className="hero-title glow-text" style={{ whiteSpace: 'pre-line' }}>
-            {heroConfig.title}
+            {heroConfig.title === 'Words, Wisdom, Will.' ? t('home.heroTitle') : heroConfig.title}
           </h1>
           <p className="hero-subtitle">
-            {heroConfig.subtitle}
+            {heroConfig.subtitle?.startsWith('The wisest humans') ? t('home.heroSubtitle') : heroConfig.subtitle}
           </p>
           <div className="hero-cta-group">
             <Link to="/catalog" className="royal-btn">
-              Enter the Study <BookOpen size={16} />
+              {t('home.studyCta')} <BookOpen size={16} />
             </Link>
           </div>
         </div>
@@ -312,7 +314,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
         <div className={`hero-visual ${isTransitioning ? 'showcase-fade-out' : 'showcase-fade-in'}`}>
           {currentShowcaseType === 'book' ? (
             <div className="royal-card featured-highlight-card">
-              <div className="highlight-tag gold-gradient-text">★ FEATURED SELECTION ★</div>
+              <div className="highlight-tag gold-gradient-text">★ {t('home.featuredSelection')} ★</div>
               <div className="highlight-body">
                 <img src={currentShowcaseItem.coverUrl} alt={currentShowcaseItem.title} className="highlight-img" />
                 <div className="highlight-details">
@@ -324,7 +326,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
                     <blockquote className="highlight-quote">{currentShowcaseItem.citation}</blockquote>
                   )}
                   <Link to={`/catalog/${currentShowcaseItem.id}`} className="highlight-action-btn">
-                    Reserve This Volume <ChevronRight size={14} />
+                    {t('catalog.checkout')} <ChevronRight size={14} />
                   </Link>
                 </div>
               </div>
@@ -337,7 +339,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
 
             return (
               <div className="royal-card featured-highlight-card assembly-highlight-card animate-fade-in">
-                <div className="highlight-tag gold-gradient-text">⚜ UPCOMING SOVEREIGN ASSEMBLY ⚜</div>
+                <div className="highlight-tag gold-gradient-text">⚜ {t('home.upcomingAssembly')} ⚜</div>
                 <div className="highlight-body assembly-body">
                   <div className="assembly-img-container">
                     <img
@@ -351,7 +353,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
                     <span className="assembly-type-tag">{currentShowcaseItem.type}</span>
                     <h3 className="highlight-title">{currentShowcaseItem.title}</h3>
                     <p className="highlight-desc">{currentShowcaseItem.description}</p>
-
+ 
                     <div className="assembly-specs">
                       <span className="assembly-spec-item">
                         <Calendar size={12} className="gold-glow-icon" /> {currentShowcaseItem.date}
@@ -363,26 +365,26 @@ const HomePage = ({ user, onSignIn, theme }) => {
                         <MapPin size={12} className="gold-glow-icon" /> {currentShowcaseItem.location}
                       </span>
                     </div>
-
+ 
                     <div className="showcase-actions" style={{ display: 'flex', gap: '12px', marginTop: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
                       <Link to={`/events/${currentShowcaseItem.id}`} className="royal-btn-secondary" style={{ padding: '8px 16px', fontSize: '0.75rem', textDecoration: 'none' }}>
                         Details <ChevronRight size={12} />
                       </Link>
                       {isUserRsvped(currentShowcaseItem) ? (
                         <button className="royal-btn-disabled" disabled style={{ padding: '8px 16px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <CheckCircle2 size={12} style={{ color: 'var(--success)' }} /> Invitation Authorized
+                          <CheckCircle2 size={12} style={{ color: 'var(--success)' }} /> {t('home.invitationAuthorized')}
                         </button>
                       ) : isRsvpingShowcase ? (
                         <button className="royal-btn-disabled" disabled style={{ padding: '8px 16px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <div className="loader-mini" style={{ width: '12px', height: '12px' }}></div> Authorizing...
+                          <div className="loader-mini" style={{ width: '12px', height: '12px' }}></div> {t('home.authorizing')}
                         </button>
                       ) : (currentShowcaseItem.rsvps?.length >= (currentShowcaseItem.capacity || 60)) ? (
                         <button className="royal-btn-disabled" disabled style={{ padding: '8px 16px', fontSize: '0.75rem' }}>
-                          Assembly Full
+                          {t('home.assemblyFull')}
                         </button>
                       ) : (
                         <button onClick={handleShowcaseRsvp} className="royal-btn" style={{ padding: '8px 16px', fontSize: '0.75rem' }}>
-                          Request Invitation
+                          {t('home.requestInvitation')}
                         </button>
                       )}
                     </div>
@@ -423,7 +425,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
           <div className="royal-card feed-card">
             <div className="feed-header">
               <h3 className="feed-title">
-                <Calendar size={18} className="gold-glow-icon" /> Upcoming Literary Salons
+                <Calendar size={18} className="gold-glow-icon" /> {t('home.upcomingSalons')}
               </h3>
               <Link to="/events" className="feed-link">See All <ChevronRight size={14} /></Link>
             </div>
@@ -441,7 +443,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
                 ))
               ) : (
                 <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: '0.85rem' }}>
-                  No upcoming assemblies are currently registered.
+                  {t('common.noEvents')}
                 </div>
               )}
             </div>
@@ -450,7 +452,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
           <div className="royal-card feed-card essay-card">
             <div className="feed-header">
               <h3 className="feed-title">
-                <BookText size={18} className="gold-glow-icon" /> Exquisite Dissertations
+                <BookText size={18} className="gold-glow-icon" /> {t('home.recentDiscourses')}
               </h3>
               <Link to="/discourses" className="feed-link">Browse Essays <ChevronRight size={14} /></Link>
             </div>
@@ -478,7 +480,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
                 ))
               ) : (
                 <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: '0.85rem' }}>
-                  The Scribes are crafting the first scholarly expositions.
+                  {t('common.noDiscourses')}
                 </div>
               )}
             </div>

@@ -256,6 +256,23 @@ public class BulkUploadService {
         }
         Integer totalCopies = (totalCopiesStr != null && !totalCopiesStr.isBlank()) ? Integer.parseInt(totalCopiesStr.replaceAll("[^0-9]", "")) : 1;
 
+        String language = getCsvVal(row, headerMap, "language", false, rowIndex);
+        if (language == null || language.isBlank()) {
+            language = getCsvVal(row, headerMap, "lang", false, rowIndex);
+        }
+        if (language == null || language.isBlank()) {
+            language = "en";
+        } else {
+            language = language.trim().toLowerCase();
+            if (language.startsWith("hi")) {
+                language = "hi";
+            } else if (language.startsWith("kn") || language.startsWith("kan")) {
+                language = "kn";
+            } else {
+                language = "en";
+            }
+        }
+
         return BookDto.builder()
                 .isbn(isbn)
                 .title(title)
@@ -267,6 +284,7 @@ public class BulkUploadService {
                 .coverUrl(coverUrl)
                 .pages(pages)
                 .totalCopies(totalCopies)
+                .language(language)
                 .build();
     }
 
@@ -308,6 +326,23 @@ public class BulkUploadService {
         }
         Integer totalCopies = (totalCopiesStr != null && !totalCopiesStr.isBlank()) ? (int) Double.parseDouble(totalCopiesStr) : 1;
 
+        String language = getExcelVal(row, headerMap, "language", false, rowIndex);
+        if (language == null || language.isBlank()) {
+            language = getExcelVal(row, headerMap, "lang", false, rowIndex);
+        }
+        if (language == null || language.isBlank()) {
+            language = "en";
+        } else {
+            language = language.trim().toLowerCase();
+            if (language.startsWith("hi")) {
+                language = "hi";
+            } else if (language.startsWith("kn") || language.startsWith("kan")) {
+                language = "kn";
+            } else {
+                language = "en";
+            }
+        }
+
         return BookDto.builder()
                 .isbn(isbn)
                 .title(title)
@@ -319,6 +354,7 @@ public class BulkUploadService {
                 .coverUrl(coverUrl)
                 .pages(pages)
                 .totalCopies(totalCopies)
+                .language(language)
                 .build();
     }
 

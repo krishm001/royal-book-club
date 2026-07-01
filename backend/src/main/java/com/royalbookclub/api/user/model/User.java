@@ -28,6 +28,8 @@ public class User {
     private String pinCode;
     private Date createdAt;
     private Date updatedAt;
+    @Builder.Default
+    private String language = "en";
 
     public String getFullName() {
         String first = firstName != null ? firstName.trim() : "";
