@@ -420,3 +420,18 @@
   font-size: 0.8rem;
   color: var(--text-secondary);
 }
+
+@keyframes assemblyImageFadeIn {
+  from {
+    opacity: 0.5;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.assembly-img-fade-in {
+  animation: assemblyImageFadeIn 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}

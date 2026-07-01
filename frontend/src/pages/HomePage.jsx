@@ -10,13 +10,13 @@ import { fetchStatsSummary } from '../services/statsApi';
 import './HomePage.css';
 
 const defaultFeaturedBook = {
-  id: '9789394201071',
-  title: 'A History of Indian Philosophy Vol III',
-  author: 'Surendranath Dasgupta',
-  genre: 'Indian Philosophy',
+  id: '9781786330895',
+  title: 'Ikigai: The Japanese Secret to a Long and Happy Life',
+  author: 'Héctor García; Francesc Miralles',
+  genre: 'Self-Help',
   rating: 4.9,
-  coverUrl: 'https://firebasestorage.googleapis.com/v0/b/royal-book-club.firebasestorage.app/o/books%2F1782581290512_cover_snapshot_1782581257008.png?alt=media&token=9ccc517c-a239-450a-8934-7c54e9c2e7f3',
-  description: 'Dr Surendranath Dasgupta’s in-depth work is mainly intended to provide a holistic exposition of Indian thought, based on original texts and commentaries. Occasionally, however, the author has discussed the views of other writers in the assessment of the chronology of facts.Years of dedicated study and painstaking collation of data yielded this phenomenal collection of all the strains of philosophic thought propagated by various schools and philosophers in India down the ages. Originally published in five volumes, the last being posthumous, A History of Indian Philosophy remains a seminal work for scholars and students alike.This edition presents the original work in three volumes for the first time, making it more accessible and easier to handle. Nothing of the original has been abridged or sacrificed to the book.',
+  coverUrl: 'https://firebasestorage.googleapis.com/v0/b/royal-book-club.firebasestorage.app/o/books%2F1780737939254_Screenshot_2026-06-06_at_2.49.57_PM.png?alt=media&token=b14ac641-494a-4b9e-aa7f-3b98b42e69e7',
+  description: "The Japanese secret to a long and happy life. We all have an ikigai. It's the Japanese word for 'a reason to live' or 'a reason to jump out of bed in the morning'.It's the place where your needs, desires, ambitions, and satisfaction meet. A place of balance. Small wonder that finding your ikigai is closely linked to living longer. Finding your ikigai is easier than you might think. This book will help you work out what your own ikigai really is, and equip you to change your life. You have a purpose in this world: your skills, your interests, your desires and your history have made you the perfect candidate for something. All you have to do is find it. Do that, and you can make every single day of your life joyful and meaningful.",
   citation: '"To define is to limit." — Lord Henry Wotton'
 };
 
@@ -45,6 +45,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
     activeCheckoutsCount: 0,
     upcomingSalonsCount: 0
   });
+  const [currentAssemblyImageIndex, setCurrentAssemblyImageIndex] = useState(0);
 
   useEffect(() => {
     const loadAllData = async () => {
@@ -111,7 +112,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
         const index = Math.floor(Math.random() * pool.length);
         const chosen = pool[index];
         const quotesPool = currentHeroConfig.featuredQuotes || [];
-        const randomQuote = quotesPool.length > 0 
+        const randomQuote = quotesPool.length > 0
           ? quotesPool[Math.floor(Math.random() * quotesPool.length)]
           : (chosen.citation || defaultFeaturedBook.citation);
 
@@ -147,7 +148,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
       setTimeout(() => {
         setCurrentShowcaseType(prevType => {
           const nextType = (prevType === 'book' && allEvents.length > 0) ? 'assembly' : 'book';
-          
+
           if (nextType === 'assembly') {
             const randomIndex = Math.floor(Math.random() * allEvents.length);
             setCurrentShowcaseItem(allEvents[randomIndex]);
@@ -160,7 +161,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
               const randomIndex = Math.floor(Math.random() * pool.length);
               const chosen = pool[randomIndex];
               const quotesPool = heroConfig.featuredQuotes || [];
-              const randomQuote = quotesPool.length > 0 
+              const randomQuote = quotesPool.length > 0
                 ? quotesPool[Math.floor(Math.random() * quotesPool.length)]
                 : (chosen.citation || defaultFeaturedBook.citation);
 
@@ -187,6 +188,29 @@ const HomePage = ({ user, onSignIn, theme }) => {
     return () => clearInterval(interval);
   }, [allBooksList, allEvents, heroConfig.featuredBookIsbns, heroConfig.featuredQuotes]);
 
+  // Reset assembly image index when showcase item or type changes
+  useEffect(() => {
+    setCurrentAssemblyImageIndex(0);
+  }, [currentShowcaseItem, currentShowcaseType]);
+
+  // Keep changing images from assemblies under "Upcoming Sovereign Assembly" (every 2.5 seconds)
+  useEffect(() => {
+    if (currentShowcaseType !== 'assembly' || !currentShowcaseItem) return;
+
+    const assemblyImages = [
+      currentShowcaseItem.imageUrl,
+      ...(currentShowcaseItem.imageUrls || [])
+    ].filter(Boolean);
+
+    if (assemblyImages.length <= 1) return;
+
+    const imageTimer = setInterval(() => {
+      setCurrentAssemblyImageIndex(prev => (prev + 1) % assemblyImages.length);
+    }, 2500);
+
+    return () => clearInterval(imageTimer);
+  }, [currentShowcaseType, currentShowcaseItem]);
+
   const isUserRsvped = (item) => {
     if (!user || !item?.rsvps || !Array.isArray(item.rsvps)) return false;
     return item.rsvps.includes(user.uid || user.id);
@@ -212,7 +236,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
           ...prev,
           rsvps: updatedRsvps
         }));
-        
+
         setAllEvents(prevEvents => prevEvents.map(evt => {
           if (evt.id === currentShowcaseItem.id) {
             return { ...evt, rsvps: updatedRsvps };
@@ -281,11 +305,6 @@ const HomePage = ({ user, onSignIn, theme }) => {
             <Link to="/catalog" className="royal-btn">
               Enter the Study <BookOpen size={16} />
             </Link>
-            {!user && (
-              <button onClick={onSignIn} className="royal-btn-secondary">
-                Request Invitation <ChevronRight size={16} />
-              </button>
-            )}
           </div>
         </div>
 
@@ -310,60 +329,68 @@ const HomePage = ({ user, onSignIn, theme }) => {
                 </div>
               </div>
             </div>
-          ) : (
-            <div className="royal-card featured-highlight-card assembly-highlight-card animate-fade-in">
-              <div className="highlight-tag gold-gradient-text">⚜ UPCOMING SOVEREIGN ASSEMBLY ⚜</div>
-              <div className="highlight-body assembly-body">
-                <div className="assembly-img-container">
-                  <img 
-                    src={currentShowcaseItem.imageUrl || 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80'} 
-                    alt={currentShowcaseItem.title} 
-                    className="highlight-img assembly-img" 
-                  />
-                </div>
-                <div className="highlight-details">
-                  <span className="assembly-type-tag">{currentShowcaseItem.type}</span>
-                  <h3 className="highlight-title">{currentShowcaseItem.title}</h3>
-                  <p className="highlight-desc">{currentShowcaseItem.description}</p>
-                  
-                  <div className="assembly-specs">
-                    <span className="assembly-spec-item">
-                      <Calendar size={12} className="gold-glow-icon" /> {currentShowcaseItem.date}
-                    </span>
-                    <span className="assembly-spec-item">
-                      <Clock size={12} className="gold-glow-icon" /> {currentShowcaseItem.time}
-                    </span>
-                    <span className="assembly-spec-item">
-                      <MapPin size={12} className="gold-glow-icon" /> {currentShowcaseItem.location}
-                    </span>
+          ) : (() => {
+            const assemblyImages = currentShowcaseItem
+              ? [currentShowcaseItem.imageUrl, ...(currentShowcaseItem.imageUrls || [])].filter(Boolean)
+              : [];
+            const currentAssemblyImage = assemblyImages[currentAssemblyImageIndex] || currentShowcaseItem?.imageUrl || 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80';
+
+            return (
+              <div className="royal-card featured-highlight-card assembly-highlight-card animate-fade-in">
+                <div className="highlight-tag gold-gradient-text">⚜ UPCOMING SOVEREIGN ASSEMBLY ⚜</div>
+                <div className="highlight-body assembly-body">
+                  <div className="assembly-img-container">
+                    <img
+                      key={currentAssemblyImage}
+                      src={currentAssemblyImage}
+                      alt={currentShowcaseItem.title}
+                      className="highlight-img assembly-img assembly-img-fade-in"
+                    />
                   </div>
-                  
-                  <div className="showcase-actions" style={{ display: 'flex', gap: '12px', marginTop: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <Link to={`/events/${currentShowcaseItem.id}`} className="royal-btn-secondary" style={{ padding: '8px 16px', fontSize: '0.75rem', textDecoration: 'none' }}>
-                      Details <ChevronRight size={12} />
-                    </Link>
-                    {isUserRsvped(currentShowcaseItem) ? (
-                      <button className="royal-btn-disabled" disabled style={{ padding: '8px 16px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <CheckCircle2 size={12} style={{ color: 'var(--success)' }} /> Invitation Authorized
-                      </button>
-                    ) : isRsvpingShowcase ? (
-                      <button className="royal-btn-disabled" disabled style={{ padding: '8px 16px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <div className="loader-mini" style={{ width: '12px', height: '12px' }}></div> Authorizing...
-                      </button>
-                    ) : (currentShowcaseItem.rsvps?.length >= (currentShowcaseItem.capacity || 60)) ? (
-                      <button className="royal-btn-disabled" disabled style={{ padding: '8px 16px', fontSize: '0.75rem' }}>
-                        Assembly Full
-                      </button>
-                    ) : (
-                      <button onClick={handleShowcaseRsvp} className="royal-btn" style={{ padding: '8px 16px', fontSize: '0.75rem' }}>
-                        Request Invitation
-                      </button>
-                    )}
+                  <div className="highlight-details">
+                    <span className="assembly-type-tag">{currentShowcaseItem.type}</span>
+                    <h3 className="highlight-title">{currentShowcaseItem.title}</h3>
+                    <p className="highlight-desc">{currentShowcaseItem.description}</p>
+
+                    <div className="assembly-specs">
+                      <span className="assembly-spec-item">
+                        <Calendar size={12} className="gold-glow-icon" /> {currentShowcaseItem.date}
+                      </span>
+                      <span className="assembly-spec-item">
+                        <Clock size={12} className="gold-glow-icon" /> {currentShowcaseItem.time}
+                      </span>
+                      <span className="assembly-spec-item">
+                        <MapPin size={12} className="gold-glow-icon" /> {currentShowcaseItem.location}
+                      </span>
+                    </div>
+
+                    <div className="showcase-actions" style={{ display: 'flex', gap: '12px', marginTop: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <Link to={`/events/${currentShowcaseItem.id}`} className="royal-btn-secondary" style={{ padding: '8px 16px', fontSize: '0.75rem', textDecoration: 'none' }}>
+                        Details <ChevronRight size={12} />
+                      </Link>
+                      {isUserRsvped(currentShowcaseItem) ? (
+                        <button className="royal-btn-disabled" disabled style={{ padding: '8px 16px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <CheckCircle2 size={12} style={{ color: 'var(--success)' }} /> Invitation Authorized
+                        </button>
+                      ) : isRsvpingShowcase ? (
+                        <button className="royal-btn-disabled" disabled style={{ padding: '8px 16px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <div className="loader-mini" style={{ width: '12px', height: '12px' }}></div> Authorizing...
+                        </button>
+                      ) : (currentShowcaseItem.rsvps?.length >= (currentShowcaseItem.capacity || 60)) ? (
+                        <button className="royal-btn-disabled" disabled style={{ padding: '8px 16px', fontSize: '0.75rem' }}>
+                          Assembly Full
+                        </button>
+                      ) : (
+                        <button onClick={handleShowcaseRsvp} className="royal-btn" style={{ padding: '8px 16px', fontSize: '0.75rem' }}>
+                          Request Invitation
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       </section>
 
