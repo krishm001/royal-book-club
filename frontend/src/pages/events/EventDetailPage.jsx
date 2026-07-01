@@ -7,6 +7,9 @@ import './EventDetailPage.css';
 const EventDetailPage = ({ user }) => {
   const { id } = useParams();
   const [event, setEvent] = useState(null);
+  const [activeImageUrl, setActiveImageUrl] = useState('');
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [rsvpState, setRsvpState] = useState('none'); // none, rsvping, rsvped
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,6 +32,7 @@ const EventDetailPage = ({ user }) => {
         const res = await fetchEventById(id);
         if (res?.success && res?.data) {
           setEvent(res.data);
+          setActiveImageUrl(res.data.imageUrl || '');
           setRsvpState(isUserRsvped(res.data) ? 'rsvped' : 'none');
         } else {
           setError('We could not retrieve details for this specific literary gathering.');
@@ -94,6 +98,23 @@ const EventDetailPage = ({ user }) => {
     return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   };
 
+  const allImages = event ? [event.imageUrl, ...(event.imageUrls || [])].filter(Boolean) : [];
+
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowRight') {
+        setLightboxIndex(prev => (prev + 1) % allImages.length);
+      } else if (e.key === 'ArrowLeft') {
+        setLightboxIndex(prev => (prev - 1 + allImages.length) % allImages.length);
+      } else if (e.key === 'Escape') {
+        setIsLightboxOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isLightboxOpen, allImages.length]);
+
   if (loading) {
     return (
       <div className="event-detail-container animate-fade-in">
@@ -134,10 +155,43 @@ const EventDetailPage = ({ user }) => {
         {/* Left Side: Cover and Basic metadata card */}
         <div className="event-detail-visual">
           <div className="royal-card event-visual-card">
-            <div className="event-detail-img-container">
-              <img src={event.imageUrl} alt={event.title} className="detail-event-img" />
+            <div className="event-detail-img-container" onClick={() => {
+              const currentIndex = allImages.indexOf(activeImageUrl);
+              setLightboxIndex(currentIndex >= 0 ? currentIndex : 0);
+              setIsLightboxOpen(true);
+            }} style={{ cursor: 'pointer' }}>
+              <img src={activeImageUrl || event.imageUrl} alt={event.title} className="detail-event-img" />
               <div className="detail-event-badge">{event.type}</div>
             </div>
+
+            {allImages.length > 1 && (
+              <div className="gallery-thumbnail-strip">
+                {allImages.map((imgUrl, index) => (
+                  <div 
+                    key={index} 
+                    className={`gallery-thumbnail-item ${activeImageUrl === imgUrl ? 'active' : ''}`}
+                    onClick={() => setActiveImageUrl(imgUrl)}
+                    onMouseEnter={() => setActiveImageUrl(imgUrl)}
+                  >
+                    <img src={imgUrl} alt={`Thumbnail ${index + 1}`} />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {allImages.length > 0 && (
+              <button 
+                type="button" 
+                className="royal-btn display-all-images-btn" 
+                onClick={() => {
+                  const currentIndex = allImages.indexOf(activeImageUrl);
+                  setLightboxIndex(currentIndex >= 0 ? currentIndex : 0);
+                  setIsLightboxOpen(true);
+                }}
+              >
+                <Sparkles size={14} /> Display All Images
+              </button>
+            )}
             
             <div className="event-quick-specs">
               <div className="quick-spec-item">
@@ -226,6 +280,49 @@ const EventDetailPage = ({ user }) => {
           </footer>
         </div>
       </div>
+
+      {/* Immersive Fullscreen Lightbox Modal */}
+      {isLightboxOpen && (
+        <div className="fullscreen-lightbox-overlay" onClick={() => setIsLightboxOpen(false)}>
+          <button 
+            className="lightbox-close-btn" 
+            onClick={(e) => { e.stopPropagation(); setIsLightboxOpen(false); }}
+          >
+            ✕
+          </button>
+          
+          <button 
+            className="lightbox-nav-btn prev-btn" 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              setLightboxIndex(prev => (prev - 1 + allImages.length) % allImages.length); 
+            }}
+          >
+            ‹
+          </button>
+          
+          <div className="lightbox-content-wrapper" onClick={(e) => e.stopPropagation()}>
+            <img 
+              src={allImages[lightboxIndex]} 
+              alt={`Gallery Image ${lightboxIndex + 1}`} 
+              className="lightbox-main-img animate-fade-in" 
+            />
+            <div className="lightbox-caption">
+              Image {lightboxIndex + 1} of {allImages.length}
+            </div>
+          </div>
+          
+          <button 
+            className="lightbox-nav-btn next-btn" 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              setLightboxIndex(prev => (prev + 1) % allImages.length); 
+            }}
+          >
+            ›
+          </button>
+        </div>
+      )}
     </div>
   );
 };

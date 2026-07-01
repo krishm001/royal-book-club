@@ -27,12 +27,15 @@ import SignUp from './pages/auth/SignUp';
 import ResetPassword from './pages/auth/ResetPassword';
 import ProfilePage from './pages/member/ProfilePage';
 import './App.css';
+import { fetchHeroConfig } from './services/heroApi';
 
 function App() {
   const [user, setUser] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useState(() => localStorage.getItem('royal-theme') || 'academic');
+  const [footerQuote, setFooterQuote] = useState("A word, deeply read, becomes conviction. A conviction becomes a life. You do not read a great book. You are slowly, quietly, being rewritten by it.");
+  const [footerAuthor, setFooterAuthor] = useState("Sovereign Reader Guild");
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -42,6 +45,39 @@ function App() {
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'academic' : 'dark'));
   };
+
+  useEffect(() => {
+    const loadFooterQuote = async () => {
+      try {
+        const res = await fetchHeroConfig();
+        if (res?.success && Array.isArray(res.data?.featuredQuotes) && res.data.featuredQuotes.length > 0) {
+          const quotes = res.data.featuredQuotes;
+          const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+          
+          let text = randomQuote;
+          let author = "Sovereign Reader Guild";
+          const separators = [" — ", " - ", " – "];
+          for (const sep of separators) {
+            if (randomQuote.includes(sep)) {
+              const parts = randomQuote.split(sep);
+              text = parts[0].trim();
+              author = parts.slice(1).join(sep).trim();
+              break;
+            }
+          }
+          
+          if (text.startsWith('"') && text.endsWith('"')) {
+            text = text.slice(1, -1);
+          }
+          setFooterQuote(text);
+          setFooterAuthor(author);
+        }
+      } catch (err) {
+        console.warn('Unable to load custom footer quote, using default.', err);
+      }
+    };
+    loadFooterQuote();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -327,8 +363,8 @@ function App() {
             </div>
             <div className="footer-motto">
               <blockquote>
-                "A word, deeply read, becomes conviction. A conviction becomes a life. You do not read a great book. You are slowly, quietly, being rewritten by it."
-                <cite>— Sovereign Reader Guild</cite>
+                "{footerQuote}"
+                <cite>— {footerAuthor}</cite>
               </blockquote>
             </div>
           </div>

@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Configuration model for the Home page hero section.
@@ -20,4 +22,10 @@ public class HeroConfig {
     private String backgroundImageUrl;
     private String backgroundImageUrlSalon;
     private String backgroundImageUrlAcademic;
+    
+    @Builder.Default
+    private List<String> featuredBookIsbns = new ArrayList<>();
+
+    @Builder.Default
+    private List<String> featuredQuotes = new ArrayList<>();
 }

@@ -242,11 +242,13 @@ const BookIngestionConsole = ({ user }) => {
             SafeHtml5QrcodeSupportedFormats.CODE_93
           ];
 
+          const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
           const html5QrCode = new SafeHtml5Qrcode("qr-reader", {
             formatsToSupport: formats,
             verbose: false,
             experimentalFeatures: {
-              useBarCodeDetectorIfSupported: false
+              useBarCodeDetectorIfSupported: !isIOS
             }
           });
           html5QrCodeRef.current = html5QrCode;
@@ -284,6 +286,24 @@ const BookIngestionConsole = ({ user }) => {
                 // Ignore scan failures per frame
               }
             ).then(() => {
+              try {
+                const videoElem = document.querySelector("#qr-reader video");
+                if (videoElem && videoElem.srcObject) {
+                  const stream = videoElem.srcObject;
+                  const track = stream.getVideoTracks()[0];
+                  if (track) {
+                    const capabilities = typeof track.getCapabilities === 'function' ? track.getCapabilities() : {};
+                    if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+                      track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] })
+                        .then(() => console.log('[qr-reader] Continuous autofocus applied successfully'))
+                        .catch(err => console.warn('[qr-reader] Failed to apply focusMode constraint', err));
+                    }
+                  }
+                }
+              } catch (e) {
+                console.warn('[qr-reader] Unable to configure autofocus:', e);
+              }
+
               if (html5QrCodeRef.current !== html5QrCode || !cameraModalOpen) {
                 console.log('Ingestion scanner started but was cancelled during boot. Stopping now.');
                 html5QrCode.stop().catch(err => console.warn('Failed late stop inside start promise', err));

@@ -33,6 +33,9 @@ public class Event {
     @Builder.Default
     private List<String> rsvps = new ArrayList<>(); // User IDs of registered patrons
     
+    @Builder.Default
+    private List<String> imageUrls = new ArrayList<>(); // Additional event/gallery images
+    
     private Instant createdAt;
     private Instant updatedAt;
 }

@@ -236,10 +236,11 @@ const BookDetailPage = ({ user }) => {
       }
 
       try {
+        const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         const html5QrCode = new SafeHtml5Qrcode("detail-barcode-reader", {
           verbose: false,
           experimentalFeatures: {
-            useBarCodeDetectorIfSupported: false
+            useBarCodeDetectorIfSupported: !isIOS
           }
         });
         detailHtml5QrCodeRef.current = html5QrCode;
@@ -268,6 +269,24 @@ const BookDetailPage = ({ user }) => {
             // silent scan progression
           }
         ).then(() => {
+          try {
+            const videoElem = document.querySelector("#detail-barcode-reader video");
+            if (videoElem && videoElem.srcObject) {
+              const stream = videoElem.srcObject;
+              const track = stream.getVideoTracks()[0];
+              if (track) {
+                const capabilities = typeof track.getCapabilities === 'function' ? track.getCapabilities() : {};
+                if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+                  track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] })
+                    .then(() => console.log('[detail-barcode-reader] Continuous autofocus applied successfully'))
+                    .catch(err => console.warn('[detail-barcode-reader] Failed to apply focusMode constraint', err));
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('[detail-barcode-reader] Unable to configure autofocus:', e);
+          }
+
           if (detailHtml5QrCodeRef.current !== html5QrCode || !detailScannerActiveRef.current) {
             console.log("Detail scanner cancelled or replaced during boot. Stopping now.");
             html5QrCode.stop().catch(err => console.warn("Failed late stop inside start promise", err));

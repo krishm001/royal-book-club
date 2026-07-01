@@ -10,7 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -34,6 +36,7 @@ public class HeroConfigService {
      * Fetch current Home Hero settings.
      * Returns default values if not configured yet in the database.
      */
+    @SuppressWarnings("unchecked")
     public HeroConfig getHeroConfig() {
         log.debug("Fetching Home Hero configurations");
         try {
@@ -42,6 +45,8 @@ public class HeroConfigService {
             DocumentSnapshot document = future.get();
 
             if (document.exists()) {
+                List<String> featuredBookIsbns = (List<String>) document.get("featuredBookIsbns");
+                List<String> featuredQuotes = (List<String>) document.get("featuredQuotes");
                 return HeroConfig.builder()
                         .id(DOCUMENT_ID)
                         .title(document.getString("title"))
@@ -49,6 +54,8 @@ public class HeroConfigService {
                         .backgroundImageUrl(document.getString("backgroundImageUrl"))
                         .backgroundImageUrlSalon(document.getString("backgroundImageUrlSalon"))
                         .backgroundImageUrlAcademic(document.getString("backgroundImageUrlAcademic"))
+                        .featuredBookIsbns(featuredBookIsbns != null ? featuredBookIsbns : new ArrayList<>())
+                        .featuredQuotes(featuredQuotes != null ? featuredQuotes : new ArrayList<>())
                         .build();
             } else {
                 log.info("No Home Hero settings found. Returning default aesthetic values.");
@@ -59,6 +66,8 @@ public class HeroConfigService {
                         .backgroundImageUrl("")
                         .backgroundImageUrlSalon("")
                         .backgroundImageUrlAcademic("")
+                        .featuredBookIsbns(new ArrayList<>())
+                        .featuredQuotes(new ArrayList<>())
                         .build();
             }
         } catch (InterruptedException e) {
@@ -85,6 +94,8 @@ public class HeroConfigService {
             map.put("backgroundImageUrl", config.getBackgroundImageUrl() != null ? config.getBackgroundImageUrl().trim() : "");
             map.put("backgroundImageUrlSalon", config.getBackgroundImageUrlSalon() != null ? config.getBackgroundImageUrlSalon().trim() : "");
             map.put("backgroundImageUrlAcademic", config.getBackgroundImageUrlAcademic() != null ? config.getBackgroundImageUrlAcademic().trim() : "");
+            map.put("featuredBookIsbns", config.getFeaturedBookIsbns() != null ? config.getFeaturedBookIsbns() : new ArrayList<String>());
+            map.put("featuredQuotes", config.getFeaturedQuotes() != null ? config.getFeaturedQuotes() : new ArrayList<String>());
 
             ApiFuture<WriteResult> writeFuture = docRef.set(map);
             writeFuture.get();

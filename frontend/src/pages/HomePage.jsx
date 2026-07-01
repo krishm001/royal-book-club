@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Calendar, BookText, Sparkles, ChevronRight, Award, Trophy, Users, ShieldAlert } from 'lucide-react';
+import { BookOpen, Calendar, BookText, Sparkles, ChevronRight, Award, Trophy, Users, ShieldAlert, Clock, MapPin, CheckCircle2 } from 'lucide-react';
 import PollWidget from '../components/shared/PollWidget';
 import { fetchBooks } from '../services/libraryApi';
 import { fetchHeroConfig } from '../services/heroApi';
-import { fetchEvents } from '../services/eventApi';
+import { fetchEvents, rsvpToEvent } from '../services/eventApi';
 import { fetchDiscourses } from '../services/discourseApi';
 import { fetchStatsSummary } from '../services/statsApi';
 import './HomePage.css';
@@ -21,16 +21,23 @@ const defaultFeaturedBook = {
 };
 
 const HomePage = ({ user, onSignIn, theme }) => {
-  const [featuredBook, setFeaturedBook] = useState(defaultFeaturedBook);
+  const [currentShowcaseItem, setCurrentShowcaseItem] = useState(defaultFeaturedBook);
+  const [currentShowcaseType, setCurrentShowcaseType] = useState('book'); // 'book' or 'assembly'
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [allBooksList, setAllBooksList] = useState([]);
   const [featuredError, setFeaturedError] = useState(null);
   const [activeEvents, setActiveEvents] = useState([]);
+  const [allEvents, setAllEvents] = useState([]);
   const [dissertations, setDissertations] = useState([]);
+  const [isRsvpingShowcase, setIsRsvpingShowcase] = useState(false);
   const [heroConfig, setHeroConfig] = useState({
     title: 'Words, Wisdom, Will.',
     subtitle: 'The wisest humans were not the most connected. They were the most read. They had no feed, no followers, no notifications. They had books. And they shaped the world.',
     backgroundImageUrl: '',
     backgroundImageUrlSalon: '',
-    backgroundImageUrlAcademic: ''
+    backgroundImageUrlAcademic: '',
+    featuredBookIsbns: [],
+    featuredQuotes: []
   });
   const [liveStats, setLiveStats] = useState({
     membersCount: 0,
@@ -40,18 +47,21 @@ const HomePage = ({ user, onSignIn, theme }) => {
   });
 
   useEffect(() => {
-    const loadHero = async () => {
+    const loadAllData = async () => {
+      let books = [];
+      let events = [];
+      let currentHeroConfig = heroConfig;
+
       try {
         const res = await fetchHeroConfig();
         if (res?.success && res?.data) {
           setHeroConfig(res.data);
+          currentHeroConfig = res.data;
         }
       } catch (err) {
         console.warn('Unable to load hero config', err);
       }
-    };
 
-    const loadLiveStats = async () => {
       try {
         const res = await fetchStatsSummary();
         if (res?.success && res?.data) {
@@ -60,11 +70,167 @@ const HomePage = ({ user, onSignIn, theme }) => {
       } catch (err) {
         console.warn('Unable to load stats summary', err);
       }
+
+      try {
+        const booksRes = await fetchBooks();
+        if (Array.isArray(booksRes) && booksRes.length > 0) {
+          setAllBooksList(booksRes);
+          books = booksRes;
+        }
+      } catch (err) {
+        console.warn('Unable to load books', err);
+      }
+
+      try {
+        const eventsRes = await fetchEvents();
+        if (eventsRes?.success && Array.isArray(eventsRes.data)) {
+          const eventsData = eventsRes.data;
+          setAllEvents(eventsData);
+          setActiveEvents(eventsData.slice(0, 3));
+          events = eventsData;
+        }
+      } catch (err) {
+        console.warn('Unable to load events for home feed', err);
+      }
+
+      try {
+        const chroniclesRes = await fetchDiscourses('CHRONICLE');
+        if (chroniclesRes?.success && Array.isArray(chroniclesRes.data)) {
+          setDissertations(chroniclesRes.data.slice(0, 3));
+        }
+      } catch (err) {
+        console.warn('Unable to load chronicles for home feed', err);
+      }
+
+      // Initialize the showcase item
+      if (books.length > 0) {
+        let pool = books.filter(b => currentHeroConfig.featuredBookIsbns?.includes(b.isbn || b.id));
+        if (pool.length === 0) {
+          pool = books;
+        }
+        const index = Math.floor(Math.random() * pool.length);
+        const chosen = pool[index];
+        const quotesPool = currentHeroConfig.featuredQuotes || [];
+        const randomQuote = quotesPool.length > 0 
+          ? quotesPool[Math.floor(Math.random() * quotesPool.length)]
+          : (chosen.citation || defaultFeaturedBook.citation);
+
+        setCurrentShowcaseItem({
+          id: chosen.isbn || chosen.bookId || chosen.id || 'book-1',
+          title: chosen.title || chosen.name || defaultFeaturedBook.title,
+          author: Array.isArray(chosen.authors) ? chosen.authors.join(', ') : chosen.author || defaultFeaturedBook.author,
+          genre: chosen.genre || chosen.subtitle || 'Selected Curation',
+          rating: chosen.rating || 4.8,
+          coverUrl: chosen.coverUrl || chosen.cover || defaultFeaturedBook.coverUrl,
+          description: chosen.description || chosen.subtitle || defaultFeaturedBook.description,
+          citation: randomQuote,
+        });
+        setCurrentShowcaseType('book');
+      } else if (events.length > 0) {
+        const index = Math.floor(Math.random() * events.length);
+        setCurrentShowcaseItem(events[index]);
+        setCurrentShowcaseType('assembly');
+      }
     };
 
-    loadHero();
-    loadLiveStats();
+    loadAllData();
   }, []);
+
+  // Interval timer for rotating showcase (every 10 seconds)
+  useEffect(() => {
+    if (allBooksList.length === 0 && allEvents.length === 0) return;
+
+    const interval = setInterval(() => {
+      // Start transition fade-out
+      setIsTransitioning(true);
+
+      setTimeout(() => {
+        setCurrentShowcaseType(prevType => {
+          const nextType = (prevType === 'book' && allEvents.length > 0) ? 'assembly' : 'book';
+          
+          if (nextType === 'assembly') {
+            const randomIndex = Math.floor(Math.random() * allEvents.length);
+            setCurrentShowcaseItem(allEvents[randomIndex]);
+          } else {
+            let pool = allBooksList.filter(b => heroConfig.featuredBookIsbns?.includes(b.isbn || b.id));
+            if (pool.length === 0) {
+              pool = allBooksList;
+            }
+            if (pool.length > 0) {
+              const randomIndex = Math.floor(Math.random() * pool.length);
+              const chosen = pool[randomIndex];
+              const quotesPool = heroConfig.featuredQuotes || [];
+              const randomQuote = quotesPool.length > 0 
+                ? quotesPool[Math.floor(Math.random() * quotesPool.length)]
+                : (chosen.citation || defaultFeaturedBook.citation);
+
+              setCurrentShowcaseItem({
+                id: chosen.isbn || chosen.bookId || chosen.id || 'book-1',
+                title: chosen.title || chosen.name || defaultFeaturedBook.title,
+                author: Array.isArray(chosen.authors) ? chosen.authors.join(', ') : chosen.author || defaultFeaturedBook.author,
+                genre: chosen.genre || chosen.subtitle || 'Selected Curation',
+                rating: chosen.rating || 4.8,
+                coverUrl: chosen.coverUrl || chosen.cover || defaultFeaturedBook.coverUrl,
+                description: chosen.description || chosen.subtitle || defaultFeaturedBook.description,
+                citation: randomQuote,
+              });
+            }
+          }
+          return nextType;
+        });
+
+        // End transition fade-in
+        setIsTransitioning(false);
+      }, 500); // Wait for transition fadeout (0.5s)
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [allBooksList, allEvents, heroConfig.featuredBookIsbns, heroConfig.featuredQuotes]);
+
+  const isUserRsvped = (item) => {
+    if (!user || !item?.rsvps || !Array.isArray(item.rsvps)) return false;
+    return item.rsvps.includes(user.uid || user.id);
+  };
+
+  const handleShowcaseRsvp = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      onSignIn();
+      return;
+    }
+
+    if (isRsvpingShowcase) return;
+
+    setIsRsvpingShowcase(true);
+    try {
+      const res = await rsvpToEvent(currentShowcaseItem.id);
+      if (res?.success) {
+        const updatedRsvps = [...(currentShowcaseItem.rsvps || []), user.uid || user.id];
+        setCurrentShowcaseItem(prev => ({
+          ...prev,
+          rsvps: updatedRsvps
+        }));
+        
+        setAllEvents(prevEvents => prevEvents.map(evt => {
+          if (evt.id === currentShowcaseItem.id) {
+            return { ...evt, rsvps: updatedRsvps };
+          }
+          return evt;
+        }));
+
+        alert("✓ Invitation Authorized! You have successfully RSVPed to this Assembly.");
+      } else {
+        alert(res?.message || 'Failed to request invitation.');
+      }
+    } catch (err) {
+      console.error('Failed to RSVP from showcase card:', err);
+      alert(err.response?.data?.message || 'An error occurred while requesting invitation.');
+    } finally {
+      setIsRsvpingShowcase(false);
+    }
+  };
 
   const getHeroBackgroundStyle = () => {
     const activeImage = (theme === 'dark' || theme === 'salon')
@@ -88,56 +254,6 @@ const HomePage = ({ user, onSignIn, theme }) => {
     }
     return {};
   };
-
-  useEffect(() => {
-    const loadFeatured = async () => {
-      try {
-        const books = await fetchBooks();
-        if (Array.isArray(books) && books.length > 0) {
-          const index = Math.floor(Math.random() * books.length);
-          const chosen = books[index];
-          setFeaturedBook({
-            id: chosen.isbn || chosen.bookId || chosen.id || 'book-1',
-            title: chosen.title || chosen.name || defaultFeaturedBook.title,
-            author: Array.isArray(chosen.authors) ? chosen.authors.join(', ') : chosen.author || defaultFeaturedBook.author,
-            genre: chosen.genre || chosen.subtitle || 'Selected Curation',
-            rating: chosen.rating || 4.8,
-            coverUrl: chosen.coverUrl || chosen.cover || defaultFeaturedBook.coverUrl,
-            description: chosen.description || chosen.subtitle || defaultFeaturedBook.description,
-            citation: chosen.citation || defaultFeaturedBook.citation,
-          });
-        }
-      } catch (err) {
-        console.warn('Unable to load featured book from catalog', err);
-        setFeaturedError('Featuring the most exquisite selection soon.');
-      }
-    };
-
-    const loadFeeds = async () => {
-      try {
-        const eventsRes = await fetchEvents();
-        if (eventsRes?.success && Array.isArray(eventsRes.data)) {
-          // Display top 3 upcoming gatherings
-          setActiveEvents(eventsRes.data.slice(0, 3));
-        }
-      } catch (err) {
-        console.warn('Unable to load events for home feed', err);
-      }
-
-      try {
-        const chroniclesRes = await fetchDiscourses('CHRONICLE');
-        if (chroniclesRes?.success && Array.isArray(chroniclesRes.data)) {
-          // Display top 3 published academic essays
-          setDissertations(chroniclesRes.data.slice(0, 3));
-        }
-      } catch (err) {
-        console.warn('Unable to load chronicles for home feed', err);
-      }
-    };
-
-    loadFeatured();
-    loadFeeds();
-  }, []);
 
   const stats = [
     { label: 'Eminent Scholars', count: liveStats.membersCount.toLocaleString(), icon: <Users className="stat-icon" /> },
@@ -174,23 +290,80 @@ const HomePage = ({ user, onSignIn, theme }) => {
         </div>
 
         {/* Hero Card/Visual representation */}
-        <div className="hero-visual">
-          <div className="royal-card featured-highlight-card">
-            <div className="highlight-tag">FEATURED SELECTION</div>
-            <div className="highlight-body">
-              <img src={featuredBook.coverUrl} alt={featuredBook.title} className="highlight-img" />
-              <div className="highlight-details">
-                <h3 className="highlight-title">{featuredBook.title}</h3>
-                <span className="highlight-author">by {featuredBook.author}</span>
-                <p className="highlight-desc">{featuredBook.description}</p>
-                {featuredError && <div className="highlight-note">{featuredError}</div>}
-                <blockquote className="highlight-quote">{featuredBook.citation}</blockquote>
-                <Link to={`/catalog/${featuredBook.id}`} className="highlight-action-btn">
-                  Reserve This Volume <ChevronRight size={14} />
-                </Link>
+        <div className={`hero-visual ${isTransitioning ? 'showcase-fade-out' : 'showcase-fade-in'}`}>
+          {currentShowcaseType === 'book' ? (
+            <div className="royal-card featured-highlight-card">
+              <div className="highlight-tag gold-gradient-text">★ FEATURED SELECTION ★</div>
+              <div className="highlight-body">
+                <img src={currentShowcaseItem.coverUrl} alt={currentShowcaseItem.title} className="highlight-img" />
+                <div className="highlight-details">
+                  <h3 className="highlight-title">{currentShowcaseItem.title}</h3>
+                  <span className="highlight-author">by {currentShowcaseItem.author}</span>
+                  <p className="highlight-desc">{currentShowcaseItem.description}</p>
+                  {featuredError && <div className="highlight-note">{featuredError}</div>}
+                  {currentShowcaseItem.citation && (
+                    <blockquote className="highlight-quote">{currentShowcaseItem.citation}</blockquote>
+                  )}
+                  <Link to={`/catalog/${currentShowcaseItem.id}`} className="highlight-action-btn">
+                    Reserve This Volume <ChevronRight size={14} />
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="royal-card featured-highlight-card assembly-highlight-card animate-fade-in">
+              <div className="highlight-tag gold-gradient-text">⚜ UPCOMING SOVEREIGN ASSEMBLY ⚜</div>
+              <div className="highlight-body assembly-body">
+                <div className="assembly-img-container">
+                  <img 
+                    src={currentShowcaseItem.imageUrl || 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80'} 
+                    alt={currentShowcaseItem.title} 
+                    className="highlight-img assembly-img" 
+                  />
+                </div>
+                <div className="highlight-details">
+                  <span className="assembly-type-tag">{currentShowcaseItem.type}</span>
+                  <h3 className="highlight-title">{currentShowcaseItem.title}</h3>
+                  <p className="highlight-desc">{currentShowcaseItem.description}</p>
+                  
+                  <div className="assembly-specs">
+                    <span className="assembly-spec-item">
+                      <Calendar size={12} className="gold-glow-icon" /> {currentShowcaseItem.date}
+                    </span>
+                    <span className="assembly-spec-item">
+                      <Clock size={12} className="gold-glow-icon" /> {currentShowcaseItem.time}
+                    </span>
+                    <span className="assembly-spec-item">
+                      <MapPin size={12} className="gold-glow-icon" /> {currentShowcaseItem.location}
+                    </span>
+                  </div>
+                  
+                  <div className="showcase-actions" style={{ display: 'flex', gap: '12px', marginTop: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <Link to={`/events/${currentShowcaseItem.id}`} className="royal-btn-secondary" style={{ padding: '8px 16px', fontSize: '0.75rem', textDecoration: 'none' }}>
+                      Details <ChevronRight size={12} />
+                    </Link>
+                    {isUserRsvped(currentShowcaseItem) ? (
+                      <button className="royal-btn-disabled" disabled style={{ padding: '8px 16px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <CheckCircle2 size={12} style={{ color: 'var(--success)' }} /> Invitation Authorized
+                      </button>
+                    ) : isRsvpingShowcase ? (
+                      <button className="royal-btn-disabled" disabled style={{ padding: '8px 16px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <div className="loader-mini" style={{ width: '12px', height: '12px' }}></div> Authorizing...
+                      </button>
+                    ) : (currentShowcaseItem.rsvps?.length >= (currentShowcaseItem.capacity || 60)) ? (
+                      <button className="royal-btn-disabled" disabled style={{ padding: '8px 16px', fontSize: '0.75rem' }}>
+                        Assembly Full
+                      </button>
+                    ) : (
+                      <button onClick={handleShowcaseRsvp} className="royal-btn" style={{ padding: '8px 16px', fontSize: '0.75rem' }}>
+                        Request Invitation
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

@@ -43,6 +43,8 @@ const CuratorGatheringsPage = ({ user }) => {
   const [coverPreview, setCoverPreview] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [imageUrls, setImageUrls] = useState([]);
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
 
   const isAdmin = user && user.role === 'ADMIN';
 
@@ -80,6 +82,7 @@ const CuratorGatheringsPage = ({ user }) => {
     setImageUrl('');
     setCoverFile(null);
     setCoverPreview('');
+    setImageUrls([]);
     setIsEditing(true);
   };
 
@@ -98,6 +101,7 @@ const CuratorGatheringsPage = ({ user }) => {
     setImageUrl(event.imageUrl || '');
     setCoverFile(null);
     setCoverPreview(event.imageUrl || '');
+    setImageUrls(event.imageUrls || []);
     setIsEditing(true);
   };
 
@@ -126,6 +130,29 @@ const CuratorGatheringsPage = ({ user }) => {
       setCoverPreview(reader.result);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleGalleryFilesChange = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setIsUploadingGallery(true);
+    const uploadedUrls = [];
+    for (const file of files) {
+      try {
+        const url = await uploadBookImage(file);
+        uploadedUrls.push(url);
+      } catch (err) {
+        console.error('Error uploading gallery image:', err);
+        alert(`Failed to upload gallery image: ${err.message}`);
+      }
+    }
+    setImageUrls(prev => [...prev, ...uploadedUrls]);
+    setIsUploadingGallery(false);
+  };
+
+  const handleRemoveGalleryImage = (indexToRemove) => {
+    setImageUrls(prev => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
   const handleSave = async (e) => {
@@ -162,6 +189,7 @@ const CuratorGatheringsPage = ({ user }) => {
         curator: curator.trim(),
         capacity: parseInt(capacity) || 50,
         imageUrl: uploadedUrl || 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80',
+        imageUrls: imageUrls,
         rsvps: currentEvent?.rsvps || []
       };
 
@@ -368,6 +396,40 @@ const CuratorGatheringsPage = ({ user }) => {
                 {coverPreview && (
                   <div className="flyer-upload-preview-gatherings">
                     <img src={coverPreview} alt="Flyer Preview" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="royal-label">Assembly Gallery Images</label>
+              <div className="gallery-upload-wrapper">
+                <input
+                  type="file"
+                  id="event-gallery-files"
+                  accept="image/*"
+                  multiple
+                  onChange={handleGalleryFilesChange}
+                  style={{ display: 'none' }}
+                />
+                <label htmlFor="event-gallery-files" className="flyer-upload-trigger" style={{ marginBottom: '15px' }}>
+                  <Upload size={16} /> {isUploadingGallery ? 'Uploading to Archives...' : 'Choose Gallery Images (Multiple)'}
+                </label>
+                
+                {imageUrls && imageUrls.length > 0 && (
+                  <div className="gallery-previews-grid">
+                    {imageUrls.map((url, idx) => (
+                      <div className="gallery-preview-item" key={idx}>
+                        <img src={url} alt={`Gallery Preview ${idx + 1}`} />
+                        <button
+                          type="button"
+                          className="remove-gallery-img-btn"
+                          onClick={() => handleRemoveGalleryImage(idx)}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

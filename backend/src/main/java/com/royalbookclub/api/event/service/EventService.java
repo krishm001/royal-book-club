@@ -203,6 +203,7 @@ public class EventService {
         map.put("capacity", event.getCapacity());
         map.put("imageUrl", event.getImageUrl());
         map.put("rsvps", event.getRsvps() != null ? event.getRsvps() : new ArrayList<String>());
+        map.put("imageUrls", event.getImageUrls() != null ? event.getImageUrls() : new ArrayList<String>());
         map.put("createdAt", event.getCreatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(event.getCreatedAt().getEpochSecond(), event.getCreatedAt().getNano()) : null);
         map.put("updatedAt", event.getUpdatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(event.getUpdatedAt().getEpochSecond(), event.getUpdatedAt().getNano()) : null);
         return map;
@@ -215,6 +216,7 @@ public class EventService {
         com.google.cloud.Timestamp createdTimestamp = doc.getTimestamp("createdAt");
         com.google.cloud.Timestamp updatedTimestamp = doc.getTimestamp("updatedAt");
         List<String> rsvps = (List<String>) doc.get("rsvps");
+        List<String> imageUrls = (List<String>) doc.get("imageUrls");
 
         return Event.builder()
                 .id(doc.getString("id"))
@@ -230,6 +232,7 @@ public class EventService {
                 .capacity(doc.getLong("capacity") != null ? doc.getLong("capacity").intValue() : null)
                 .imageUrl(doc.getString("imageUrl"))
                 .rsvps(rsvps != null ? rsvps : new ArrayList<>())
+                .imageUrls(imageUrls != null ? imageUrls : new ArrayList<>())
                 .createdAt(createdTimestamp != null ? Instant.ofEpochSecond(createdTimestamp.getSeconds(), createdTimestamp.getNanos()) : null)
                 .updatedAt(updatedTimestamp != null ? Instant.ofEpochSecond(updatedTimestamp.getSeconds(), updatedTimestamp.getNanos()) : null)
                 .build();

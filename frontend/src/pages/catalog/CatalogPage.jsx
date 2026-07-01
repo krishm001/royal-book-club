@@ -96,10 +96,11 @@ const CatalogPage = ({ user }) => {
       }
 
       try {
+        const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         const html5QrCode = new SafeHtml5Qrcode("top-barcode-reader", {
           verbose: false,
           experimentalFeatures: {
-            useBarCodeDetectorIfSupported: false
+            useBarCodeDetectorIfSupported: !isIOS
           }
         });
         topHtml5QrCodeRef.current = html5QrCode;
@@ -128,6 +129,24 @@ const CatalogPage = ({ user }) => {
             // non-critical error feedback during scanning
           }
         ).then(() => {
+          try {
+            const videoElem = document.querySelector("#top-barcode-reader video");
+            if (videoElem && videoElem.srcObject) {
+              const stream = videoElem.srcObject;
+              const track = stream.getVideoTracks()[0];
+              if (track) {
+                const capabilities = typeof track.getCapabilities === 'function' ? track.getCapabilities() : {};
+                if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+                  track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] })
+                    .then(() => console.log('[top-barcode-reader] Continuous autofocus applied successfully'))
+                    .catch(err => console.warn('[top-barcode-reader] Failed to apply focusMode constraint', err));
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('[top-barcode-reader] Unable to configure autofocus:', e);
+          }
+
           if (topHtml5QrCodeRef.current !== html5QrCode || !topScannerActiveRef.current) {
             console.log("Top scanner cancelled or replaced during boot. Stopping now.");
             html5QrCode.stop().catch(err => console.warn("Failed late stop inside start promise", err));
@@ -488,10 +507,11 @@ const CatalogPage = ({ user }) => {
       }
 
       try {
+        const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         const html5QrCode = new SafeHtml5Qrcode("card-barcode-reader", {
           verbose: false,
           experimentalFeatures: {
-            useBarCodeDetectorIfSupported: false
+            useBarCodeDetectorIfSupported: !isIOS
           }
         });
         cardHtml5QrCodeRef.current = html5QrCode;
@@ -520,6 +540,24 @@ const CatalogPage = ({ user }) => {
             // silent scan progression
           }
         ).then(() => {
+          try {
+            const videoElem = document.querySelector("#card-barcode-reader video");
+            if (videoElem && videoElem.srcObject) {
+              const stream = videoElem.srcObject;
+              const track = stream.getVideoTracks()[0];
+              if (track) {
+                const capabilities = typeof track.getCapabilities === 'function' ? track.getCapabilities() : {};
+                if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+                  track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] })
+                    .then(() => console.log('[card-barcode-reader] Continuous autofocus applied successfully'))
+                    .catch(err => console.warn('[card-barcode-reader] Failed to apply focusMode constraint', err));
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('[card-barcode-reader] Unable to configure autofocus:', e);
+          }
+
           if (cardHtml5QrCodeRef.current !== html5QrCode || !cardScannerActiveRef.current) {
             console.log("Card scanner cancelled or replaced during boot. Stopping now.");
             html5QrCode.stop().catch(err => console.warn("Failed late stop inside card start promise", err));

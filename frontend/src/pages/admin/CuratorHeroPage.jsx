@@ -16,12 +16,15 @@ import {
   PlusCircle,
   Clock,
   Check,
-  Users
+  Users,
+  Trash2,
+  Plus
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { fetchHeroConfig, updateHeroConfig, deleteHeroConfig } from '../../services/heroApi';
 import { uploadBookImage } from '../../services/storageApi';
 import { createPoll, fetchPollHistory, activatePoll } from '../../services/pollApi';
+import { fetchBooks } from '../../services/libraryApi';
 import './CuratorHeroPage.css';
 
 const ROMAN_NUMERALS = ['I', 'II', 'III', 'IV'];
@@ -42,6 +45,14 @@ const CuratorHeroPage = ({ user }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activePreviewTheme, setActivePreviewTheme] = useState('academic');
+
+  // Featured Selections Curation state
+  const [allBooks, setAllBooks] = useState([]);
+  const [featuredBookIsbns, setFeaturedBookIsbns] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSavingFeatured, setIsSavingFeatured] = useState(false);
+  const [featuredQuotes, setFeaturedQuotes] = useState([]);
+  const [newQuote, setNewQuote] = useState('');
 
   // Poll customizer state
   const [pollQuestion, setPollQuestion] = useState('');
@@ -74,9 +85,16 @@ const CuratorHeroPage = ({ user }) => {
         setCoverPreviewSalon(salonImg);
         setBackgroundImageUrlAcademic(acadImg);
         setCoverPreviewAcademic(acadImg);
+        setFeaturedBookIsbns(res.data.featuredBookIsbns || []);
+        setFeaturedQuotes(res.data.featuredQuotes || []);
+      }
+      
+      const booksData = await fetchBooks();
+      if (Array.isArray(booksData)) {
+        setAllBooks(booksData);
       }
     } catch (err) {
-      console.error('Error fetching hero config:', err);
+      console.error('Error fetching hero config or books:', err);
     } finally {
       setLoading(false);
     }
@@ -169,7 +187,9 @@ const CuratorHeroPage = ({ user }) => {
         subtitle: subtitle.trim(),
         backgroundImageUrl: uploadedUrlAcademic || uploadedUrlSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
         backgroundImageUrlSalon: uploadedUrlSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
-        backgroundImageUrlAcademic: uploadedUrlAcademic || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1600&q=80'
+        backgroundImageUrlAcademic: uploadedUrlAcademic || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1600&q=80',
+        featuredBookIsbns: featuredBookIsbns,
+        featuredQuotes: featuredQuotes
       };
 
       const res = await updateHeroConfig(payload);
@@ -185,6 +205,37 @@ const CuratorHeroPage = ({ user }) => {
     } finally {
       setIsSaving(false);
       setIsUploading(false);
+    }
+  };
+
+  // Submit Handler for Featured Curation
+  const handleSaveFeatured = async (e) => {
+    e.preventDefault();
+    if (isSavingFeatured) return;
+
+    try {
+      setIsSavingFeatured(true);
+      const payload = {
+        id: 'homeHero',
+        title: title.trim(),
+        subtitle: subtitle.trim(),
+        backgroundImageUrl: backgroundImageUrlAcademic || backgroundImageUrlSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
+        backgroundImageUrlSalon: backgroundImageUrlSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
+        backgroundImageUrlAcademic: backgroundImageUrlAcademic || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1600&q=80',
+        featuredBookIsbns: featuredBookIsbns,
+        featuredQuotes: featuredQuotes
+      };
+
+      const res = await updateHeroConfig(payload);
+      if (res && res.success) {
+        alert('Featured Selections updated successfully!');
+        loadHeroConfigData();
+      }
+    } catch (err) {
+      console.error('Failed to update featured selections:', err);
+      alert('Failed to save Featured Selections.');
+    } finally {
+      setIsSavingFeatured(false);
     }
   };
 
@@ -206,6 +257,7 @@ const CuratorHeroPage = ({ user }) => {
         setCoverPreviewAcademic('');
         setCoverFileSalon(null);
         setCoverFileAcademic(null);
+        setFeaturedBookIsbns([]);
       }
     } catch (err) {
       console.error('Failed to reset hero config:', err);
@@ -330,6 +382,12 @@ const CuratorHeroPage = ({ user }) => {
           }}
         >
           <BarChart3 size={16} /> Guild Plebiscites (Polls)
+        </button>
+        <button 
+          className={`curator-tab-btn ${activeTab === 'featured' ? 'active' : ''}`}
+          onClick={() => setActiveTab('featured')}
+        >
+          <Sparkles size={16} /> Featured Selections
         </button>
       </div>
 
@@ -664,6 +722,229 @@ const CuratorHeroPage = ({ user }) => {
                       );
                     })
                   )}
+                </div>
+              </section>
+            </div>
+          )}
+          {/* TAB 3: FEATURED SELECTIONS */}
+          {activeTab === 'featured' && (
+            <div className="featured-selections-layout animate-fade-in">
+              <section className="royal-card featured-editor-card">
+                <div className="form-card-header">
+                  <h3><Sparkles size={18} className="gold-glow-icon" /> Select Featured Masterpieces (Up to 5)</h3>
+                </div>
+                
+                <p className="curator-hero-subtitle-hint">
+                  Search through the library archives and highlight up to five volumes to showcase on the homepage. They will rotate automatically to inspire our patrons.
+                </p>
+
+                {/* Selected List */}
+                <div className="selected-books-shelf">
+                  <h4 className="shelf-title">Current Curated Selection ({featuredBookIsbns.length} / 5)</h4>
+                  {featuredBookIsbns.length === 0 ? (
+                    <div className="empty-shelf-banner">
+                      <p>The showcase is empty. Select books below to feature them.</p>
+                    </div>
+                  ) : (
+                    <div className="selected-books-grid">
+                      {featuredBookIsbns.map((isbn, idx) => {
+                        const book = allBooks.find(b => b.isbn === isbn);
+                        return (
+                          <div className="selected-book-card" key={isbn}>
+                            <div className="selected-book-badge">{idx + 1}</div>
+                            <div className="selected-book-cover-wrapper">
+                              <img src={book?.coverUrl || book?.cover || 'https://via.placeholder.com/150'} alt={book?.title || 'Unknown Cover'} />
+                            </div>
+                            <div className="selected-book-details">
+                              <h5 className="book-title-short">{book?.title || 'Unknown Volume'}</h5>
+                              <p className="book-author-short">{Array.isArray(book?.authors) ? book.authors.join(', ') : book?.author || 'Unknown Scribe'}</p>
+                            </div>
+                            <button 
+                              type="button" 
+                              className="remove-featured-btn"
+                              onClick={() => {
+                                setFeaturedBookIsbns(featuredBookIsbns.filter(id => id !== isbn));
+                              }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="featured-search-group">
+                  <label className="royal-label">Search Library Archives</label>
+                  <input
+                    type="text"
+                    className="royal-input"
+                    placeholder="Search by title, author, or ISBN..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+
+                {/* Filtered Search Results */}
+                <div className="search-results-list">
+                  {allBooks
+                    .filter(book => {
+                      const query = searchQuery.toLowerCase();
+                      const titleMatch = (book.title || book.name || '').toLowerCase().includes(query);
+                      const authorMatch = (Array.isArray(book.authors) ? book.authors.join(' ') : book.author || '').toLowerCase().includes(query);
+                      const isbnMatch = (book.isbn || '').toLowerCase().includes(query);
+                      return titleMatch || authorMatch || isbnMatch;
+                    })
+                    .slice(0, 5) // limit results to keep it neat
+                    .map(book => {
+                      const isFeatured = featuredBookIsbns.includes(book.isbn);
+                      return (
+                        <div className={`search-result-book-row ${isFeatured ? 'is-featured' : ''}`} key={book.isbn || book.id}>
+                          <img className="row-cover" src={book.coverUrl || book.cover || 'https://via.placeholder.com/60'} alt={book.title} />
+                          <div className="row-info">
+                            <span className="row-title">{book.title}</span>
+                            <span className="row-author">{Array.isArray(book.authors) ? book.authors.join(', ') : book.author}</span>
+                            <span className="row-isbn">ISBN: {book.isbn}</span>
+                          </div>
+                          {isFeatured ? (
+                            <button 
+                              type="button" 
+                              className="result-action-btn remove"
+                              onClick={() => setFeaturedBookIsbns(featuredBookIsbns.filter(id => id !== book.isbn))}
+                            >
+                              Remove Selection
+                            </button>
+                          ) : (
+                            <button 
+                              type="button" 
+                              className="result-action-btn add"
+                              disabled={featuredBookIsbns.length >= 5}
+                              onClick={() => {
+                                if (featuredBookIsbns.length >= 5) {
+                                  alert('The Scribes forbid selecting more than 5 masterpieces.');
+                                  return;
+                                }
+                                setFeaturedBookIsbns([...featuredBookIsbns, book.isbn]);
+                              }}
+                            >
+                              Feature Book
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+
+                <div className="form-actions featured-action-buttons">
+                  <button 
+                    type="button" 
+                    onClick={handleSaveFeatured}
+                    disabled={isSavingFeatured}
+                    className="royal-btn save-hero-btn"
+                    style={{ width: '100%', justifyContent: 'center' }}
+                  >
+                    <Save size={16} /> {isSavingFeatured ? 'Applying Featured Selection...' : 'Apply Featured Curation'}
+                  </button>
+                </div>
+              </section>
+
+              {/* Quotes Curation Card */}
+              <section className="royal-card featured-editor-card" style={{ marginTop: '30px' }}>
+                <div className="form-card-header">
+                  <h3><FileText size={18} className="gold-glow-icon" /> Curate Quote Portfolio</h3>
+                </div>
+                
+                <p className="curator-hero-subtitle-hint">
+                  Build a portfolio of inspiring literary quotes. These quotes are randomly selected and displayed dynamically on the homepage (featured cards & footer block).
+                </p>
+
+                {/* Add new quote form */}
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="royal-label">Add a Sacred Motto / Quote</label>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
+                    <textarea
+                      className="royal-input"
+                      placeholder="e.g. 'A room without books is like a body without a soul.' - Marcus Tullius Cicero"
+                      value={newQuote}
+                      onChange={(e) => setNewQuote(e.target.value)}
+                      rows={2}
+                      style={{ resize: 'vertical', flexGrow: 1 }}
+                    />
+                    <button
+                      type="button"
+                      className="royal-btn"
+                      style={{ height: 'auto', padding: '0 24px', display: 'flex', gap: '6px', alignItems: 'center' }}
+                      onClick={() => {
+                        const trimmed = newQuote.trim();
+                        if (!trimmed) {
+                          alert('Quote cannot be empty.');
+                          return;
+                        }
+                        if (featuredQuotes.includes(trimmed)) {
+                          alert('This quote is already present in your portfolio.');
+                          return;
+                        }
+                        setFeaturedQuotes([...featuredQuotes, trimmed]);
+                        setNewQuote('');
+                      }}
+                    >
+                      <Plus size={16} /> Add
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quotes list */}
+                <div className="selected-books-shelf" style={{ background: 'rgba(0, 0, 0, 0.15)' }}>
+                  <h4 className="shelf-title">Quote Portfolio ({featuredQuotes.length} active quotes)</h4>
+                  {featuredQuotes.length === 0 ? (
+                    <div className="empty-shelf-banner">
+                      <p>No custom quotes added. Using default fallback: "A word, deeply read, becomes conviction..."</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {featuredQuotes.map((quote, idx) => (
+                        <div 
+                          key={idx} 
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            background: 'rgba(255, 255, 255, 0.02)',
+                            border: '1px solid var(--glass-border)',
+                            borderRadius: 'var(--border-radius-sm)',
+                            padding: '12px 16px',
+                            gap: '15px'
+                          }}
+                        >
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', margin: 0, lineHeight: '1.4', flexGrow: 1, fontStyle: 'italic' }}>
+                            "{quote}"
+                          </p>
+                          <button
+                            type="button"
+                            style={{ background: 'transparent', border: 'none', color: 'rgba(255, 255, 255, 0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                            onClick={() => {
+                              setFeaturedQuotes(featuredQuotes.filter((_, i) => i !== idx));
+                            }}
+                          >
+                            <Trash2 size={16} style={{ color: '#ff6b6b' }} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="form-actions featured-action-buttons">
+                  <button 
+                    type="button" 
+                    onClick={handleSaveFeatured}
+                    disabled={isSavingFeatured}
+                    className="royal-btn save-hero-btn"
+                    style={{ width: '100%', justifyContent: 'center' }}
+                  >
+                    <Save size={16} /> {isSavingFeatured ? 'Applying Portfolio Selections & Quotes...' : 'Apply Quotes & Selections Curation'}
+                  </button>
                 </div>
               </section>
             </div>
