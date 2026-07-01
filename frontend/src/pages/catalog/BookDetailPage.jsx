@@ -239,7 +239,7 @@ const BookDetailPage = ({ user }) => {
         const html5QrCode = new SafeHtml5Qrcode("detail-barcode-reader", {
           verbose: false,
           experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
+            useBarCodeDetectorIfSupported: false
           }
         });
         detailHtml5QrCodeRef.current = html5QrCode;
@@ -253,7 +253,11 @@ const BookDetailPage = ({ user }) => {
             formatsToSupport: [
               SafeHtml5QrcodeSupportedFormats.EAN_13,
               SafeHtml5QrcodeSupportedFormats.EAN_8,
-              SafeHtml5QrcodeSupportedFormats.ISBN_13
+              SafeHtml5QrcodeSupportedFormats.ISBN_13,
+              SafeHtml5QrcodeSupportedFormats.UPC_A,
+              SafeHtml5QrcodeSupportedFormats.UPC_E,
+              SafeHtml5QrcodeSupportedFormats.CODE_128,
+              SafeHtml5QrcodeSupportedFormats.CODE_39
             ]
           },
           (decodedText) => {
@@ -302,6 +306,25 @@ const BookDetailPage = ({ user }) => {
         console.error("Failed to stop detail scanner:", err);
       }
     }
+
+    try {
+      const videos = document.querySelectorAll('#detail-barcode-reader video');
+      videos.forEach(video => {
+        if (video.srcObject) {
+          const stream = video.srcObject;
+          if (typeof stream.getTracks === 'function') {
+            stream.getTracks().forEach(track => {
+              track.stop();
+              console.log("Detail video track stopped manually:", track.label);
+            });
+          }
+          video.srcObject = null;
+        }
+      });
+    } catch (err) {
+      console.warn("Failed to manually stop detail track fallback", err);
+    }
+
     setDetailScannerOpen(false);
   };
 
@@ -726,8 +749,12 @@ const BookDetailPage = ({ user }) => {
                             <div className="scanner-laser-line"></div>
                           </div>
 
-                          <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+                          <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 10px 0' }}>
                             Align the book's barcode within the viewfinder scanning window...
+                          </p>
+
+                          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0', marginBottom: '16px' }}>
+                            Can't scan the barcode? <button type="button" onClick={() => handleTabChange('manual')} style={{ background: 'none', border: 'none', color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', padding: 0, font: 'inherit' }}>Submit a Manual Request</button>
                           </p>
 
                           {detailScannerError && (

@@ -192,9 +192,29 @@ const BookIngestionConsole = ({ user }) => {
     }
 
     if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
+      try {
+        cameraStream.getTracks().forEach(track => track.stop());
+      } catch (err) {
+        console.warn('Error stopping cameraStream tracks:', err);
+      }
       setCameraStream(null);
     }
+
+    try {
+      const videos = document.querySelectorAll('#qr-reader video');
+      videos.forEach(video => {
+        if (video.srcObject) {
+          const stream = video.srcObject;
+          if (typeof stream.getTracks === 'function') {
+            stream.getTracks().forEach(track => track.stop());
+          }
+          video.srcObject = null;
+        }
+      });
+    } catch (err) {
+      console.warn('Failed to manually stop track fallback', err);
+    }
+
     if (barcodeIntervalRef.current) {
       clearInterval(barcodeIntervalRef.current);
       barcodeIntervalRef.current = null;
@@ -226,7 +246,7 @@ const BookIngestionConsole = ({ user }) => {
             formatsToSupport: formats,
             verbose: false,
             experimentalFeatures: {
-              useBarCodeDetectorIfSupported: true
+              useBarCodeDetectorIfSupported: false
             }
           });
           html5QrCodeRef.current = html5QrCode;

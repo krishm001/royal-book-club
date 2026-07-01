@@ -678,4 +678,67 @@
   }
 }
 
+/* Preferences-Based Checkout Verification Styles */
+.verification-tabs-header {
+  display: flex;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 20px;
+  width: 100%;
+}
 
+.verification-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 8px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.verification-tab-btn:hover:not(:disabled) {
+  color: var(--accent);
+  background: rgba(212, 175, 55, 0.05);
+}
+
+.verification-tab-btn.active {
+  color: #050402 !important;
+  background: linear-gradient(135deg, #f3e5ab 0%, var(--accent) 100%);
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+}
+
+.verification-tab-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tab-pane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .verification-tabs-header {
+    flex-direction: column;
+    padding: 6px;
+  }
+  
+  .verification-tab-btn {
+    padding: 8px;
+    font-size: 0.8rem;
+    width: 100%;
+  }
+}

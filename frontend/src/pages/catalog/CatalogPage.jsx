@@ -31,7 +31,6 @@ const CatalogPage = ({ user }) => {
   const [p2dSuccess, setP2dSuccess] = useState(false);
   const [p2dError, setP2dError] = useState('');
   const [p2dLoading, setP2dLoading] = useState(false);
-  const [showTopSimulationMenu, setShowTopSimulationMenu] = useState(false);
 
   // Direct Transactions States (for book cards NFC triggers)
   const [selectedBook, setSelectedBook] = useState(null);
@@ -100,7 +99,7 @@ const CatalogPage = ({ user }) => {
         const html5QrCode = new SafeHtml5Qrcode("top-barcode-reader", {
           verbose: false,
           experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
+            useBarCodeDetectorIfSupported: false
           }
         });
         topHtml5QrCodeRef.current = html5QrCode;
@@ -114,7 +113,11 @@ const CatalogPage = ({ user }) => {
             formatsToSupport: [
               SafeHtml5QrcodeSupportedFormats.EAN_13,
               SafeHtml5QrcodeSupportedFormats.EAN_8,
-              SafeHtml5QrcodeSupportedFormats.ISBN_13
+              SafeHtml5QrcodeSupportedFormats.ISBN_13,
+              SafeHtml5QrcodeSupportedFormats.UPC_A,
+              SafeHtml5QrcodeSupportedFormats.UPC_E,
+              SafeHtml5QrcodeSupportedFormats.CODE_128,
+              SafeHtml5QrcodeSupportedFormats.CODE_39
             ]
           },
           (decodedText) => {
@@ -163,6 +166,25 @@ const CatalogPage = ({ user }) => {
         console.error("Failed to stop scanner:", err);
       }
     }
+
+    try {
+      const videos = document.querySelectorAll('#top-barcode-reader video');
+      videos.forEach(video => {
+        if (video.srcObject) {
+          const stream = video.srcObject;
+          if (typeof stream.getTracks === 'function') {
+            stream.getTracks().forEach(track => {
+              track.stop();
+              console.log("Top video track stopped manually:", track.label);
+            });
+          }
+          video.srcObject = null;
+        }
+      });
+    } catch (err) {
+      console.warn("Failed to manually stop top track fallback", err);
+    }
+
     setTopScannerOpen(false);
   };
 
@@ -289,19 +311,6 @@ const CatalogPage = ({ user }) => {
       setP2dError(`Ledger rejected transaction: ${txError.response?.data?.message || txError.message}`);
     } finally {
       setP2dLoading(false);
-    }
-  };
-
-  const handleSimulateTopP2d = (book, type) => {
-    setShowTopSimulationMenu(false);
-    if (!user) {
-      window.alert("Please sign in before checking out or returning books.");
-      return;
-    }
-    if (type === 'barcode') {
-      handleTopBarcodeScanned(book.isbn);
-    } else {
-      openP2dOverlay(book);
     }
   };
 
@@ -482,7 +491,7 @@ const CatalogPage = ({ user }) => {
         const html5QrCode = new SafeHtml5Qrcode("card-barcode-reader", {
           verbose: false,
           experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
+            useBarCodeDetectorIfSupported: false
           }
         });
         cardHtml5QrCodeRef.current = html5QrCode;
@@ -496,7 +505,11 @@ const CatalogPage = ({ user }) => {
             formatsToSupport: [
               SafeHtml5QrcodeSupportedFormats.EAN_13,
               SafeHtml5QrcodeSupportedFormats.EAN_8,
-              SafeHtml5QrcodeSupportedFormats.ISBN_13
+              SafeHtml5QrcodeSupportedFormats.ISBN_13,
+              SafeHtml5QrcodeSupportedFormats.UPC_A,
+              SafeHtml5QrcodeSupportedFormats.UPC_E,
+              SafeHtml5QrcodeSupportedFormats.CODE_128,
+              SafeHtml5QrcodeSupportedFormats.CODE_39
             ]
           },
           (decodedText) => {
@@ -545,6 +558,25 @@ const CatalogPage = ({ user }) => {
         console.error("Failed to stop card scanner:", err);
       }
     }
+
+    try {
+      const videos = document.querySelectorAll('#card-barcode-reader video');
+      videos.forEach(video => {
+        if (video.srcObject) {
+          const stream = video.srcObject;
+          if (typeof stream.getTracks === 'function') {
+            stream.getTracks().forEach(track => {
+              track.stop();
+              console.log("Card video track stopped manually:", track.label);
+            });
+          }
+          video.srcObject = null;
+        }
+      });
+    } catch (err) {
+      console.warn("Failed to manually stop card video track fallback", err);
+    }
+
     setCardScannerOpen(false);
   };
 
@@ -688,7 +720,7 @@ const CatalogPage = ({ user }) => {
             <Scan className="gold-glow-icon scanner-animation-icon" size={24} />
           </div>
           <div className="portal-info">
-            <h2 className="portal-title gold-gradient-text">Physical-to-Digital Self-Checkout</h2>
+            <h2 className="portal-title gold-gradient-text">Self-Checkout</h2>
             <p className="portal-desc">
               Physically holding a volume inside the Royal Salon? Unlock direct, verified checkout or instant returns.
             </p>
@@ -708,13 +740,6 @@ const CatalogPage = ({ user }) => {
           >
             <Smartphone size={16} /> {topNfcActive ? 'Tapping Active...' : 'Tap NFC Book'}
           </button>
-
-          <button 
-            className="royal-btn-secondary portal-btn btn-simulate"
-            onClick={() => setShowTopSimulationMenu(!showTopSimulationMenu)}
-          >
-            <Sparkles size={14} /> Simulation Deck
-          </button>
         </div>
 
         {topNfcActive && (
@@ -730,36 +755,6 @@ const CatalogPage = ({ user }) => {
             <AlertTriangle size={14} />
             <span>{topNfcError}</span>
             <button className="text-btn close-error-btn" onClick={() => setTopNfcError('')}>Dismiss</button>
-          </div>
-        )}
-
-        {showTopSimulationMenu && (
-          <div className="top-simulation-drawer animate-slide-down">
-            <div className="drawer-header">
-              <span className="drawer-title gold-gradient-text">P2D Curator Simulation Deck</span>
-              <button className="close-drawer-btn" onClick={() => setShowTopSimulationMenu(false)}>
-                <X size={14} />
-              </button>
-            </div>
-            <p className="drawer-instruction">
-              Since Web NFC / Camera feeds may be restricted on some desktop environments, choose any catalog volume below to simulate a physical interaction:
-            </p>
-            <div className="simulation-book-grid">
-              {books.map(b => (
-                <div key={b.isbn} className="simulation-book-card">
-                  <div className="sim-book-meta">
-                    <span className="sim-book-title">{b.title}</span>
-                    <span className="sim-book-isbn">ISBN: {b.isbn}</span>
-                    {b.ntagUid && <span className="sim-book-uid">NFC: <code>{b.ntagUid}</code></span>}
-                  </div>
-                  <div className="sim-book-actions">
-                    <button className="sim-action-btn action-barcode" onClick={() => handleSimulateTopP2d(b, 'barcode')}>
-                      <Scan size={12} /> Scan
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         )}
       </section>
@@ -941,8 +936,12 @@ const CatalogPage = ({ user }) => {
                         <div className="scanner-laser-line"></div>
                       </div>
 
-                      <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+                      <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 10px 0' }}>
                         Align the book's barcode within the viewfinder scanning window...
+                      </p>
+
+                      <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0', marginBottom: '16px' }}>
+                        Can't scan the barcode? <button type="button" onClick={() => handleCardTabChange('manual')} style={{ background: 'none', border: 'none', color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', padding: 0, font: 'inherit' }}>Submit a Manual Request</button>
                       </p>
 
                       {cardScannerError && (
