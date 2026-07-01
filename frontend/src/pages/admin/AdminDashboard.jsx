@@ -4,9 +4,11 @@ import { Link } from 'react-router-dom';
 import { listAdminRequests } from '../../services/adminRequestApi';
 import { fetchCheckouts } from '../../services/libraryApi';
 import { fetchStatsSummary } from '../../services/statsApi';
+import { useLanguage } from '../../i18n/LanguageContext';
 import './AdminDashboard.css';
 
 const AdminDashboard = ({ user }) => {
+  const { t } = useLanguage();
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [pendingCirculationCount, setPendingCirculationCount] = useState(0);
 
@@ -61,10 +63,10 @@ const AdminDashboard = ({ user }) => {
 
   // Premium quick metrics
   const adminStats = [
-    { label: 'Registered Patrons', count: liveStats.membersCount.toLocaleString(), change: 'Live from Ledger', icon: <Users className="stat-icon-gold" /> },
-    { label: 'Archived Volumes', count: liveStats.booksCount.toLocaleString(), change: 'Cataloged Items', icon: <BookOpen className="stat-icon-gold" /> },
-    { label: 'Active Checkouts', count: liveStats.activeCheckoutsCount.toLocaleString(), change: 'In Circulation', icon: <Layers className="stat-icon-gold" /> },
-    { label: 'Scheduled Meetups', count: liveStats.upcomingSalonsCount.toLocaleString(), change: 'Upcoming Salons', icon: <Calendar className="stat-icon-gold" /> }
+    { label: t('admin.registeredPatrons'), count: liveStats.membersCount.toLocaleString(), change: t('admin.liveFromLedger'), icon: <Users className="stat-icon-gold" /> },
+    { label: t('admin.archivedVolumes'), count: liveStats.booksCount.toLocaleString(), change: t('admin.catalogedItems'), icon: <BookOpen className="stat-icon-gold" /> },
+    { label: t('admin.activeCheckouts'), count: liveStats.activeCheckoutsCount.toLocaleString(), change: t('admin.inCirculation'), icon: <Layers className="stat-icon-gold" /> },
+    { label: t('admin.scheduledMeetups'), count: liveStats.upcomingSalonsCount.toLocaleString(), change: t('admin.upcomingSalons'), icon: <Calendar className="stat-icon-gold" /> }
   ];
 
   if (!isAdmin) {
@@ -74,13 +76,13 @@ const AdminDashboard = ({ user }) => {
           <div className="denied-icon-wrapper">
             <Shield size={48} className="denied-shield-icon" />
           </div>
-          <h2 className="denied-title gold-gradient-text">Privileged Sanctuary</h2>
+          <h2 className="denied-title gold-gradient-text">{t('admin.privilegedSanctuary')}</h2>
           <p className="denied-message">
-            Your current credentials do not grant access to the Curator Central Console. Curation of the Royal Library is reserved for assigned Curators.
+            {t('admin.accessDeniedDesc')}
           </p>
           <div className="denied-actions">
             <Link to="/" className="royal-btn return-home-btn">
-              Return to Entrance Hall
+              {t('admin.returnEntrance')}
             </Link>
           </div>
         </div>
@@ -94,11 +96,11 @@ const AdminDashboard = ({ user }) => {
       <header className="admin-header">
         <div className="header-badge-admin">
           <Shield size={14} className="gold-glow-icon" />
-          <span className="gold-gradient-text">SOVEREIGN ADMINISTRATION</span>
+          <span className="gold-gradient-text">{t('admin.sovereignAdministration')}</span>
         </div>
-        <h1 className="admin-title glow-text">Curator Central Console</h1>
+        <h1 className="admin-title glow-text">{t('admin.curatorCentralConsole')}</h1>
         <p className="admin-subtitle">
-          Manage member registries, ingest new literary acquisitions, track digital checkouts, and approve scholarly publications.
+          {t('admin.tagline')}
         </p>
       </header>
 
@@ -125,10 +127,10 @@ const AdminDashboard = ({ user }) => {
           <div className="panel-icon-wrapper">
             <PlusCircle size={28} className="gold-glow-icon" />
           </div>
-          <h3>Book Ingestion Console</h3>
-          <p>Scan ISBN barcodes, fetch live metadata from Open Library, or upload bulk catalog spreadsheets asynchronously.</p>
+          <h3>{t('admin.bookIngestionConsole')}</h3>
+          <p>{t('admin.ingestionDesc')}</p>
           <Link to="/admin/books" className="royal-btn action-panel-btn">
-            Launch Ingestion
+            {t('admin.launchIngestion')}
           </Link>
         </div>
 
@@ -137,10 +139,10 @@ const AdminDashboard = ({ user }) => {
           <div className="panel-icon-wrapper">
             <Settings size={28} className="gold-glow-icon" />
           </div>
-          <h3>User & RFID Registries</h3>
-          <p>Toggle administrator roles, manage member access, and assign specialized RFID tags for smart-lock entries.</p>
+          <h3>{t('admin.userRfidRegistries')}</h3>
+          <p>{t('admin.userRfidDesc')}</p>
           <Link to="/admin/users" className="royal-btn action-panel-btn">
-            Manage Members
+            {t('admin.manageMembers')}
           </Link>
         </div>
 
@@ -149,10 +151,10 @@ const AdminDashboard = ({ user }) => {
           <div className="panel-icon-wrapper">
             <Calendar size={28} className="gold-glow-icon" />
           </div>
-          <h3>Sovereign Gatherings</h3>
-          <p>Schedule upcoming meetups, literary festivals, and symposiums. Manage flyer assets and seat reservations.</p>
+          <h3>{t('admin.sovereignGatherings')}</h3>
+          <p>{t('admin.gatheringsDesc')}</p>
           <Link to="/admin/gatherings" className="royal-btn action-panel-btn">
-            Manage Gatherings
+            {t('admin.manageGatherings')}
           </Link>
         </div>
 
@@ -161,10 +163,10 @@ const AdminDashboard = ({ user }) => {
           <div className="panel-icon-wrapper">
             <Layers size={28} className="gold-glow-icon" />
           </div>
-          <h3>Sovereign Houses</h3>
-          <p>Establish or dissolve categories/Houses for Books and Blog Chronicles to maintain catalog hierarchy.</p>
+          <h3>{t('admin.sovereignHouses')}</h3>
+          <p>{t('admin.housesDesc')}</p>
           <Link to="/admin/houses" className="royal-btn action-panel-btn">
-            Manage Houses
+            {t('admin.manageHouses')}
           </Link>
         </div>
 
@@ -173,10 +175,10 @@ const AdminDashboard = ({ user }) => {
           <div className="panel-icon-wrapper">
             <Award size={28} className="gold-glow-icon" />
           </div>
-          <h3>Landing Hero Editor</h3>
-          <p>Update high-impact header messages, subtitles, and upload cover painting backgrounds for the entrance hall.</p>
+          <h3>{t('admin.landingHeroEditor')}</h3>
+          <p>{t('admin.heroDesc')}</p>
           <Link to="/admin/hero" className="royal-btn action-panel-btn">
-            Configure Hero
+            {t('admin.configureHero')}
           </Link>
         </div>
 
@@ -204,10 +206,10 @@ const AdminDashboard = ({ user }) => {
           <div className="panel-icon-wrapper">
             <Layers size={28} className="gold-glow-icon" />
           </div>
-          <h3>Patron Circulation Desk</h3>
-          <p>Process checkout bookings, verify smart card return requests, and audit the active Royal library ledger.</p>
+          <h3>{t('admin.patronCirculationDesk')}</h3>
+          <p>{t('admin.circulationDesc')}</p>
           <Link to="/admin/book-requests" className="royal-btn action-panel-btn">
-            Manage Circulation
+            {t('admin.manageCirculation')}
           </Link>
         </div>
 
@@ -216,10 +218,10 @@ const AdminDashboard = ({ user }) => {
           <div className="panel-icon-wrapper">
             <Settings size={28} className="gold-glow-icon" />
           </div>
-          <h3>Self-Checkout Gating</h3>
-          <p>Configure and toggle which registration fields (phone, address coordinates) are mandatory for members to self-checkout books.</p>
+          <h3>{t('admin.selfCheckoutGating')}</h3>
+          <p>{t('admin.gatingDesc')}</p>
           <Link to="/admin/settings" className="royal-btn action-panel-btn">
-            Configure Gating
+            {t('admin.configureGating')}
           </Link>
         </div>
 
@@ -228,10 +230,10 @@ const AdminDashboard = ({ user }) => {
           <div className="panel-icon-wrapper">
             <Shield size={28} className="gold-glow-icon" />
           </div>
-          <h3>Content Moderation</h3>
-          <p>Review flagged spam, profanity, and toxic submissions. Approve pending articles, book reviews, or comments flagged by the AI.</p>
+          <h3>{t('admin.contentModeration')}</h3>
+          <p>{t('admin.moderationDesc')}</p>
           <Link to="/admin/moderation" className="royal-btn action-panel-btn">
-            Manage Moderation
+            {t('admin.manageModeration')}
           </Link>
         </div>
 
@@ -259,10 +261,10 @@ const AdminDashboard = ({ user }) => {
             <div className="panel-icon-wrapper">
               <Award size={28} className="gold-glow-icon" />
             </div>
-            <h3>Pending Admin Requests</h3>
-            <p>{pendingRequestsCount} {pendingRequestsCount === 1 ? 'member has' : 'members have'} requested admin access.</p>
+            <h3>{t('admin.pendingAdminRequests')}</h3>
+            <p>{pendingRequestsCount} {t('admin.adminRequestsDesc')}</p>
             <Link to="/admin/requests" className="royal-btn action-panel-btn">
-              Review Requests
+              {t('admin.reviewRequests')}
             </Link>
           </div>
         )}

@@ -25,17 +25,24 @@ import { fetchHeroConfig, updateHeroConfig, deleteHeroConfig } from '../../servi
 import { uploadBookImage } from '../../services/storageApi';
 import { createPoll, fetchPollHistory, activatePoll } from '../../services/pollApi';
 import { fetchBooks } from '../../services/libraryApi';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { translateFields } from '../../services/translationApi';
 import './CuratorHeroPage.css';
 
 const ROMAN_NUMERALS = ['I', 'II', 'III', 'IV'];
 
 const CuratorHeroPage = ({ user }) => {
+  const { t, getLocalized } = useLanguage();
   const [activeTab, setActiveTab] = useState('hero');
   const [loading, setLoading] = useState(true);
   
   // Hero customizer state
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
+  const [titleHi, setTitleHi] = useState('');
+  const [subtitleHi, setSubtitleHi] = useState('');
+  const [titleKn, setTitleKn] = useState('');
+  const [subtitleKn, setSubtitleKn] = useState('');
   const [backgroundImageUrlSalon, setBackgroundImageUrlSalon] = useState('');
   const [backgroundImageUrlAcademic, setBackgroundImageUrlAcademic] = useState('');
   const [coverFileSalon, setCoverFileSalon] = useState(null);
@@ -46,17 +53,30 @@ const CuratorHeroPage = ({ user }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [activePreviewTheme, setActivePreviewTheme] = useState('academic');
 
+  // Translating states
+  const [isTranslatingHero, setIsTranslatingHero] = useState(false);
+  const [isTranslatingPoll, setIsTranslatingPoll] = useState(false);
+  const [isTranslatingNewQuote, setIsTranslatingNewQuote] = useState(false);
+
   // Featured Selections Curation state
   const [allBooks, setAllBooks] = useState([]);
   const [featuredBookIsbns, setFeaturedBookIsbns] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSavingFeatured, setIsSavingFeatured] = useState(false);
   const [featuredQuotes, setFeaturedQuotes] = useState([]);
+  const [featuredQuotesHi, setFeaturedQuotesHi] = useState([]);
+  const [featuredQuotesKn, setFeaturedQuotesKn] = useState([]);
   const [newQuote, setNewQuote] = useState('');
+  const [newQuoteHi, setNewQuoteHi] = useState('');
+  const [newQuoteKn, setNewQuoteKn] = useState('');
 
   // Poll customizer state
   const [pollQuestion, setPollQuestion] = useState('');
   const [pollOptions, setPollOptions] = useState(['', '', '', '']);
+  const [pollQuestionHi, setPollQuestionHi] = useState('');
+  const [pollOptionsHi, setPollOptionsHi] = useState(['', '', '', '']);
+  const [pollQuestionKn, setPollQuestionKn] = useState('');
+  const [pollOptionsKn, setPollOptionsKn] = useState(['', '', '', '']);
   const [pollMembersOnly, setPollMembersOnly] = useState(false);
   const [isSavingPoll, setIsSavingPoll] = useState(false);
   const [pollHistory, setPollHistory] = useState([]);
@@ -79,6 +99,11 @@ const CuratorHeroPage = ({ user }) => {
       if (res && res.success && res.data) {
         setTitle(res.data.title || '');
         setSubtitle(res.data.subtitle || '');
+        const translations = res.data.translations || {};
+        setTitleHi(translations.hi?.title || '');
+        setSubtitleHi(translations.hi?.subtitle || '');
+        setTitleKn(translations.kn?.title || '');
+        setSubtitleKn(translations.kn?.subtitle || '');
         const salonImg = res.data.backgroundImageUrlSalon || res.data.backgroundImageUrl || '';
         const acadImg = res.data.backgroundImageUrlAcademic || res.data.backgroundImageUrl || '';
         setBackgroundImageUrlSalon(salonImg);
@@ -87,6 +112,8 @@ const CuratorHeroPage = ({ user }) => {
         setCoverPreviewAcademic(acadImg);
         setFeaturedBookIsbns(res.data.featuredBookIsbns || []);
         setFeaturedQuotes(res.data.featuredQuotes || []);
+        setFeaturedQuotesHi(translations.hi?.featuredQuotes || []);
+        setFeaturedQuotesKn(translations.kn?.featuredQuotes || []);
       }
       
       const booksData = await fetchBooks();
@@ -189,7 +216,19 @@ const CuratorHeroPage = ({ user }) => {
         backgroundImageUrlSalon: uploadedUrlSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
         backgroundImageUrlAcademic: uploadedUrlAcademic || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1600&q=80',
         featuredBookIsbns: featuredBookIsbns,
-        featuredQuotes: featuredQuotes
+        featuredQuotes: featuredQuotes,
+        translations: {
+          hi: {
+            title: titleHi.trim(),
+            subtitle: subtitleHi.trim(),
+            featuredQuotes: featuredQuotesHi
+          },
+          kn: {
+            title: titleKn.trim(),
+            subtitle: subtitleKn.trim(),
+            featuredQuotes: featuredQuotesKn
+          }
+        }
       };
 
       const res = await updateHeroConfig(payload);
@@ -223,7 +262,19 @@ const CuratorHeroPage = ({ user }) => {
         backgroundImageUrlSalon: backgroundImageUrlSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
         backgroundImageUrlAcademic: backgroundImageUrlAcademic || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1600&q=80',
         featuredBookIsbns: featuredBookIsbns,
-        featuredQuotes: featuredQuotes
+        featuredQuotes: featuredQuotes,
+        translations: {
+          hi: {
+            title: titleHi.trim(),
+            subtitle: subtitleHi.trim(),
+            featuredQuotes: featuredQuotesHi
+          },
+          kn: {
+            title: titleKn.trim(),
+            subtitle: subtitleKn.trim(),
+            featuredQuotes: featuredQuotesKn
+          }
+        }
       };
 
       const res = await updateHeroConfig(payload);
@@ -239,6 +290,116 @@ const CuratorHeroPage = ({ user }) => {
     }
   };
 
+  const handleTranslateHero = async () => {
+    if (!title && !subtitle) {
+      alert("Please enter a title or subtitle first to translate.");
+      return;
+    }
+    try {
+      setIsTranslatingHero(true);
+      const fields = {};
+      if (title) fields.title = title;
+      if (subtitle) fields.subtitle = subtitle;
+      const res = await translateFields(fields, ['hi', 'kn']);
+      if (res && res.success && res.data) {
+        if (res.data.hi) {
+          if (res.data.hi.title) setTitleHi(res.data.hi.title);
+          if (res.data.hi.subtitle) setSubtitleHi(res.data.hi.subtitle);
+        }
+        if (res.data.kn) {
+          if (res.data.kn.title) setTitleKn(res.data.kn.title);
+          if (res.data.kn.subtitle) setSubtitleKn(res.data.kn.subtitle);
+        }
+      }
+    } catch (err) {
+      console.error("Hero translation failed:", err);
+    } finally {
+      setIsTranslatingHero(false);
+    }
+  };
+
+  const handleTranslatePoll = async () => {
+    if (!pollQuestion && pollOptions.every(opt => !opt)) {
+      alert("Please enter a question or options first to translate.");
+      return;
+    }
+    try {
+      setIsTranslatingPoll(true);
+      const fields = {};
+      if (pollQuestion) fields.question = pollQuestion;
+      pollOptions.forEach((opt, idx) => {
+        if (opt) fields[`option_${idx}`] = opt;
+      });
+
+      const res = await translateFields(fields, ['hi', 'kn']);
+      if (res && res.success && res.data) {
+        if (res.data.hi) {
+          if (res.data.hi.question) setPollQuestionHi(res.data.hi.question);
+          const updatedOptionsHi = [...pollOptionsHi];
+          [0, 1, 2, 3].forEach(idx => {
+            if (res.data.hi[`option_${idx}`]) {
+              updatedOptionsHi[idx] = res.data.hi[`option_${idx}`];
+            }
+          });
+          setPollOptionsHi(updatedOptionsHi);
+        }
+        if (res.data.kn) {
+          if (res.data.kn.question) setPollQuestionKn(res.data.kn.question);
+          const updatedOptionsKn = [...pollOptionsKn];
+          [0, 1, 2, 3].forEach(idx => {
+            if (res.data.kn[`option_${idx}`]) {
+              updatedOptionsKn[idx] = res.data.kn[`option_${idx}`];
+            }
+          });
+          setPollOptionsKn(updatedOptionsKn);
+        }
+      }
+    } catch (err) {
+      console.error("Poll translation failed:", err);
+    } finally {
+      setIsTranslatingPoll(false);
+    }
+  };
+
+  const handleTranslateNewQuote = async () => {
+    if (!newQuote.trim()) {
+      alert("Please enter a quote first to translate.");
+      return;
+    }
+    try {
+      setIsTranslatingNewQuote(true);
+      const res = await translateFields({ quote: newQuote.trim() }, ['hi', 'kn']);
+      if (res && res.success && res.data) {
+        if (res.data.hi?.quote) setNewQuoteHi(res.data.hi.quote);
+        if (res.data.kn?.quote) setNewQuoteKn(res.data.kn.quote);
+      }
+    } catch (err) {
+      console.error("Quote translation failed:", err);
+    } finally {
+      setIsTranslatingNewQuote(false);
+    }
+  };
+
+  const handleTranslateQuoteInline = async (idx) => {
+    const targetQuote = featuredQuotes[idx];
+    if (!targetQuote) return;
+    try {
+      const res = await translateFields({ quote: targetQuote }, ['hi', 'kn']);
+      if (res && res.success && res.data) {
+        const updatedHi = [...featuredQuotesHi];
+        const updatedKn = [...featuredQuotesKn];
+        updatedHi[idx] = res.data.hi?.quote || '';
+        updatedKn[idx] = res.data.kn?.quote || '';
+        setFeaturedQuotesHi(updatedHi);
+        setFeaturedQuotesKn(updatedKn);
+        alert("Quote translated inline successfully! Click 'Apply Quotes & Selections Curation' to preserve in archives.");
+      }
+    } catch (err) {
+      console.error("Inline quote translation failed:", err);
+      alert("Failed to translate quote inline.");
+    }
+  };
+
   const handleReset = async () => {
     if (!window.confirm('Are you sure you want to reset/delete the home hero custom configuration? This will restore the default homepage details.')) {
       return;
@@ -251,6 +412,10 @@ const CuratorHeroPage = ({ user }) => {
         alert('Home Hero configurations deleted. Fallback defaults will be loaded.');
         setTitle('');
         setSubtitle('');
+        setTitleHi('');
+        setSubtitleHi('');
+        setTitleKn('');
+        setSubtitleKn('');
         setBackgroundImageUrlSalon('');
         setBackgroundImageUrlAcademic('');
         setCoverPreviewSalon('');
@@ -258,6 +423,9 @@ const CuratorHeroPage = ({ user }) => {
         setCoverFileSalon(null);
         setCoverFileAcademic(null);
         setFeaturedBookIsbns([]);
+        setFeaturedQuotes([]);
+        setFeaturedQuotesHi([]);
+        setFeaturedQuotesKn([]);
       }
     } catch (err) {
       console.error('Failed to reset hero config:', err);
@@ -272,6 +440,18 @@ const CuratorHeroPage = ({ user }) => {
     const updated = [...pollOptions];
     updated[idx] = value;
     setPollOptions(updated);
+  };
+
+  const handleOptionHiChange = (idx, value) => {
+    const updated = [...pollOptionsHi];
+    updated[idx] = value;
+    setPollOptionsHi(updated);
+  };
+
+  const handleOptionKnChange = (idx, value) => {
+    const updated = [...pollOptionsKn];
+    updated[idx] = value;
+    setPollOptionsKn(updated);
   };
 
   const handleCreatePollSubmit = async (e) => {
@@ -293,7 +473,17 @@ const CuratorHeroPage = ({ user }) => {
       const payload = {
         question: pollQuestion.trim(),
         options: trimmedOptions,
-        membersOnly: pollMembersOnly
+        membersOnly: pollMembersOnly,
+        translations: {
+          hi: {
+            question: pollQuestionHi.trim(),
+            options: pollOptionsHi.map(opt => opt.trim())
+          },
+          kn: {
+            question: pollQuestionKn.trim(),
+            options: pollOptionsKn.map(opt => opt.trim())
+          }
+        }
       };
 
       const res = await createPoll(payload);
@@ -301,6 +491,10 @@ const CuratorHeroPage = ({ user }) => {
         alert('Plebiscite deployed and activated in the Entrance Hall!');
         setPollQuestion('');
         setPollOptions(['', '', '', '']);
+        setPollQuestionHi('');
+        setPollOptionsHi(['', '', '', '']);
+        setPollQuestionKn('');
+        setPollOptionsKn(['', '', '', '']);
         setPollMembersOnly(false);
         loadPollHistoryData();
       }
@@ -477,6 +671,95 @@ const CuratorHeroPage = ({ user }) => {
                     </div>
                   </div>
 
+                  <div className="translation-section-header-block" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '25px 0 15px' }}>
+                    <div className="translation-section-divider" style={{ margin: 0 }}>
+                      <h4 className="translation-header gold-gradient-text" style={{ margin: '0 0 4px', fontSize: '1.1rem', letterSpacing: '1px', display: 'flex', alignItems: 'center' }}>
+                        <Sparkles size={14} style={{ marginRight: '6px' }} /> HI / KN LOCALIZATION OVERRIDES
+                      </h4>
+                      <p style={{ fontSize: '0.85rem', opacity: 0.7, margin: 0 }}>
+                        Optional: Supply dynamic Rajasthani Hindi and Classical Kannada overrides for the Hero Title and Subtitle.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="royal-btn premium-btn"
+                      onClick={handleTranslateHero}
+                      disabled={isTranslatingHero}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        background: 'linear-gradient(135deg, var(--gold), var(--accent))',
+                        color: '#000',
+                        fontWeight: '600',
+                        padding: '10px 18px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        opacity: isTranslatingHero ? 0.7 : 1,
+                        boxShadow: '0 4px 12px rgba(212,175,55,0.2)',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      <Sparkles size={16} className={isTranslatingHero ? "animate-spin" : ""} />
+                      {isTranslatingHero ? 'Translating...' : 'Translate with Google'}
+                    </button>
+                  </div>
+
+                  <div className="translation-panel-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '15px', marginBottom: '25px' }}>
+                    {/* Hindi Column */}
+                    <div className="translation-column-hi">
+                      <h5 style={{ color: 'var(--accent)', marginBottom: '12px', fontSize: '0.95rem' }}>Hindi (राजस्थानी शाही शैली)</h5>
+                      <div className="form-group">
+                        <label className="royal-label">Sovereign Headline (Hindi)</label>
+                        <input
+                           type="text"
+                           className="royal-input"
+                           value={titleHi}
+                           onChange={(e) => setTitleHi(e.target.value)}
+                           placeholder="e.g. जहाँ साहित्य सर्वोच्च राज करता है"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="royal-label">Sovereign Sub-headline (Hindi)</label>
+                        <textarea
+                          className="royal-input subtitle-textarea"
+                          style={{ minHeight: '80px' }}
+                          value={subtitleHi}
+                          onChange={(e) => setSubtitleHi(e.target.value)}
+                          placeholder="e.g. उत्कृष्ट अकादमिक शोधपत्रों, चमड़े के सुरुचिपूर्ण ग्रंथों..."
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Kannada Column */}
+                    <div className="translation-column-kn">
+                      <h5 style={{ color: 'var(--accent)', marginBottom: '12px', fontSize: '0.95rem' }}>Kannada (ಶಾಸ್ತ್ರೀಯ ಶೈಲಿ)</h5>
+                      <div className="form-group">
+                        <label className="royal-label">Sovereign Headline (Kannada)</label>
+                        <input
+                           type="text"
+                           className="royal-input"
+                           value={titleKn}
+                           onChange={(e) => setTitleKn(e.target.value)}
+                           placeholder="e.g. ಸಾಹಿತ್ಯವು ಸರ್ವೋಚ್ಚವಾಗಿ ಆಳುವ ಸ್ಥಳ"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="royal-label">Sovereign Sub-headline (Kannada)</label>
+                        <textarea
+                          className="royal-input subtitle-textarea"
+                          style={{ minHeight: '80px' }}
+                          value={subtitleKn}
+                          onChange={(e) => setSubtitleKn(e.target.value)}
+                          placeholder="e.g. ಕ್ಯುರೇಟೆಡ್ ಶೈಕ್ಷಣಿಕ ಪ್ರಬಂಧಗಳು..."
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="form-actions hero-action-buttons">
                     <button 
                       type="submit" 
@@ -608,6 +891,107 @@ const CuratorHeroPage = ({ user }) => {
                     <label htmlFor="members-only-toggle" className="royal-label" style={{ margin: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Lock size={14} style={{ color: 'var(--accent)' }} /> Restrict to authenticated Guild Members only
                     </label>
+                  </div>
+
+                  <div className="translation-section-header-block" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '25px 0 15px' }}>
+                    <div className="translation-section-divider" style={{ margin: 0 }}>
+                      <h4 className="translation-header gold-gradient-text" style={{ margin: '0 0 4px', fontSize: '1.1rem', letterSpacing: '1px', display: 'flex', alignItems: 'center' }}>
+                        <Sparkles size={14} style={{ marginRight: '6px' }} /> HI / KN LOCALIZATION OVERRIDES
+                      </h4>
+                      <p style={{ fontSize: '0.85rem', opacity: 0.7, margin: 0 }}>
+                        Optional: Supply dynamic Rajasthani Hindi and Classical Kannada overrides for the plebiscite question and options.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="royal-btn premium-btn"
+                      onClick={handleTranslatePoll}
+                      disabled={isTranslatingPoll}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        background: 'linear-gradient(135deg, var(--gold), var(--accent))',
+                        color: '#000',
+                        fontWeight: '600',
+                        padding: '10px 18px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        opacity: isTranslatingPoll ? 0.7 : 1,
+                        boxShadow: '0 4px 12px rgba(212,175,55,0.2)',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      <Sparkles size={16} className={isTranslatingPoll ? "animate-spin" : ""} />
+                      {isTranslatingPoll ? 'Translating...' : 'Translate with Google'}
+                    </button>
+                  </div>
+
+                  <div className="translation-panel-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '15px', marginBottom: '25px' }}>
+                    {/* Hindi Column */}
+                    <div className="translation-column-hi">
+                      <h5 style={{ color: 'var(--accent)', marginBottom: '12px', fontSize: '0.95rem' }}>Hindi (राजस्थानी शाही शैली)</h5>
+                      <div className="form-group">
+                        <label className="royal-label">Sovereign Question (Hindi)</label>
+                        <input
+                          type="text"
+                          className="royal-input"
+                          value={pollQuestionHi}
+                          onChange={(e) => setPollQuestionHi(e.target.value)}
+                          placeholder="e.g. ग्रीष्मकालीन पठन के लिए किस उत्कृष्ट कृति का चयन किया जाना चाहिए?"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="royal-label">Choice Options (Hindi)</label>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {[0, 1, 2, 3].map((idx) => (
+                            <div className="poll-option-input-wrapper" key={idx} style={{ marginBottom: 0 }}>
+                              <span className="poll-option-number">{ROMAN_NUMERALS[idx]}</span>
+                              <input
+                                type="text"
+                                className="royal-input"
+                                placeholder={`Hindi option ${idx + 1}`}
+                                value={pollOptionsHi[idx] || ''}
+                                onChange={(e) => handleOptionHiChange(idx, e.target.value)}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Kannada Column */}
+                    <div className="translation-column-kn">
+                      <h5 style={{ color: 'var(--accent)', marginBottom: '12px', fontSize: '0.95rem' }}>Kannada (ಶಾಸ್ತ್ರೀಯ ಶೈಲಿ)</h5>
+                      <div className="form-group">
+                        <label className="royal-label">Sovereign Question (Kannada)</label>
+                        <input
+                          type="text"
+                          className="royal-input"
+                          value={pollQuestionKn}
+                          onChange={(e) => setPollQuestionKn(e.target.value)}
+                          placeholder="e.g. ಬೇಸಿಗೆಯ ಓದಿಗಾಗಿ ಯಾವ ಮಾಸ್ಟರ್‌ವರ್ಕ್ ಅನ್ನು ಆಯ್ಕೆ ಮಾಡಬೇಕು?"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="royal-label">Choice Options (Kannada)</label>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {[0, 1, 2, 3].map((idx) => (
+                            <div className="poll-option-input-wrapper" key={idx} style={{ marginBottom: 0 }}>
+                              <span className="poll-option-number">{ROMAN_NUMERALS[idx]}</span>
+                              <input
+                                type="text"
+                                className="royal-input"
+                                placeholder={`Kannada option ${idx + 1}`}
+                                value={pollOptionsKn[idx] || ''}
+                                onChange={(e) => handleOptionKnChange(idx, e.target.value)}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="form-actions" style={{ marginTop: '10px' }}>
@@ -860,9 +1244,9 @@ const CuratorHeroPage = ({ user }) => {
                 </p>
 
                 {/* Add new quote form */}
-                <div className="form-group" style={{ marginBottom: '20px' }}>
-                  <label className="royal-label">Add a Sacred Motto / Quote</label>
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
+                <div className="form-group" style={{ marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '20px' }}>
+                  <label className="royal-label" style={{ fontWeight: '600' }}>Add a Sacred Motto / Quote (English)</label>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch', marginBottom: '15px' }}>
                     <textarea
                       className="royal-input"
                       placeholder="e.g. 'A room without books is like a body without a soul.' - Marcus Tullius Cicero"
@@ -873,25 +1257,78 @@ const CuratorHeroPage = ({ user }) => {
                     />
                     <button
                       type="button"
-                      className="royal-btn"
-                      style={{ height: 'auto', padding: '0 24px', display: 'flex', gap: '6px', alignItems: 'center' }}
-                      onClick={() => {
-                        const trimmed = newQuote.trim();
-                        if (!trimmed) {
-                          alert('Quote cannot be empty.');
-                          return;
-                        }
-                        if (featuredQuotes.includes(trimmed)) {
-                          alert('This quote is already present in your portfolio.');
-                          return;
-                        }
-                        setFeaturedQuotes([...featuredQuotes, trimmed]);
-                        setNewQuote('');
+                      className="royal-btn premium-btn"
+                      style={{
+                        height: 'auto',
+                        padding: '0 20px',
+                        display: 'flex',
+                        gap: '6px',
+                        alignItems: 'center',
+                        background: 'linear-gradient(135deg, var(--gold), var(--accent))',
+                        color: '#000',
+                        fontWeight: '600',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer'
                       }}
+                      onClick={handleTranslateNewQuote}
+                      disabled={isTranslatingNewQuote}
                     >
-                      <Plus size={16} /> Add
+                      <Sparkles size={14} className={isTranslatingNewQuote ? "animate-spin" : ""} />
+                      Translate
                     </button>
                   </div>
+
+                  {/* Translations for new quote */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '10px' }}>
+                    <div>
+                      <label className="royal-label" style={{ fontSize: '0.8rem', opacity: 0.8 }}>Hindi (राजस्थानी शाही शैली)</label>
+                      <textarea
+                        className="royal-input"
+                        placeholder="Hindi translation override..."
+                        value={newQuoteHi}
+                        onChange={(e) => setNewQuoteHi(e.target.value)}
+                        rows={2}
+                        style={{ fontSize: '0.85rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label className="royal-label" style={{ fontSize: '0.8rem', opacity: 0.8 }}>Kannada (ಶಾಸ್ತ್ರೀಯ ಶೈಲಿ)</label>
+                      <textarea
+                        className="royal-input"
+                        placeholder="Kannada translation override..."
+                        value={newQuoteKn}
+                        onChange={(e) => setNewQuoteKn(e.target.value)}
+                        rows={2}
+                        style={{ fontSize: '0.85rem' }}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="royal-btn"
+                    style={{ marginTop: '15px', width: '100%', justifyContent: 'center', display: 'flex', gap: '8px' }}
+                    onClick={() => {
+                      const trimmed = newQuote.trim();
+                      if (!trimmed) {
+                        alert('Quote cannot be empty.');
+                        return;
+                      }
+                      if (featuredQuotes.includes(trimmed)) {
+                        alert('This quote is already present in your portfolio.');
+                        return;
+                      }
+                      setFeaturedQuotes([...featuredQuotes, trimmed]);
+                      setFeaturedQuotesHi([...featuredQuotesHi, newQuoteHi.trim() || trimmed]);
+                      setFeaturedQuotesKn([...featuredQuotesKn, newQuoteKn.trim() || trimmed]);
+                      setNewQuote('');
+                      setNewQuoteHi('');
+                      setNewQuoteKn('');
+                    }}
+                  >
+                    <Plus size={16} /> Add to Curation Portfolio
+                  </button>
                 </div>
 
                 {/* Quotes list */}
@@ -902,33 +1339,91 @@ const CuratorHeroPage = ({ user }) => {
                       <p>No custom quotes added. Using default fallback: "A word, deeply read, becomes conviction..."</p>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                       {featuredQuotes.map((quote, idx) => (
                         <div 
                           key={idx} 
                           style={{
                             display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
+                            flexDirection: 'column',
                             background: 'rgba(255, 255, 255, 0.02)',
                             border: '1px solid var(--glass-border)',
                             borderRadius: 'var(--border-radius-sm)',
-                            padding: '12px 16px',
-                            gap: '15px'
+                            padding: '16px',
+                            gap: '12px'
                           }}
                         >
-                          <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', margin: 0, lineHeight: '1.4', flexGrow: 1, fontStyle: 'italic' }}>
-                            "{quote}"
-                          </p>
-                          <button
-                            type="button"
-                            style={{ background: 'transparent', border: 'none', color: 'rgba(255, 255, 255, 0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                            onClick={() => {
-                              setFeaturedQuotes(featuredQuotes.filter((_, i) => i !== idx));
-                            }}
-                          >
-                            <Trash2 size={16} style={{ color: '#ff6b6b' }} />
-                          </button>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '15px' }}>
+                            <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', margin: 0, lineHeight: '1.4', fontStyle: 'italic', fontWeight: '500' }}>
+                              "{quote}"
+                            </p>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                              <button
+                                type="button"
+                                className="royal-btn premium-btn"
+                                style={{
+                                  padding: '4px 10px',
+                                  fontSize: '0.75rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  background: 'rgba(212,175,55,0.15)',
+                                  color: 'var(--accent)',
+                                  border: '1px solid rgba(212,175,55,0.3)',
+                                  borderRadius: '4px'
+                                }}
+                                onClick={() => handleTranslateQuoteInline(idx)}
+                                title="Translate this quote to Hindi & Kannada"
+                              >
+                                <Sparkles size={12} /> Translate Inline
+                              </button>
+                              <button
+                                type="button"
+                                style={{ background: 'transparent', border: 'none', color: 'rgba(255, 255, 255, 0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                onClick={() => {
+                                  setFeaturedQuotes(featuredQuotes.filter((_, i) => i !== idx));
+                                  setFeaturedQuotesHi(featuredQuotesHi.filter((_, i) => i !== idx));
+                                  setFeaturedQuotesKn(featuredQuotesKn.filter((_, i) => i !== idx));
+                                }}
+                              >
+                                <Trash2 size={16} style={{ color: '#ff6b6b' }} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Editable translations inline */}
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px' }}>
+                            <div>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--accent)', display: 'block', marginBottom: '4px' }}>Hindi Translation</span>
+                              <input
+                                type="text"
+                                className="royal-input"
+                                style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                                value={featuredQuotesHi[idx] || ''}
+                                onChange={(e) => {
+                                  const updated = [...featuredQuotesHi];
+                                  updated[idx] = e.target.value;
+                                  setFeaturedQuotesHi(updated);
+                                }}
+                                placeholder="Hindi translation override"
+                              />
+                            </div>
+                            <div>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--accent)', display: 'block', marginBottom: '4px' }}>Kannada Translation</span>
+                              <input
+                                type="text"
+                                className="royal-input"
+                                style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                                value={featuredQuotesKn[idx] || ''}
+                                onChange={(e) => {
+                                  const updated = [...featuredQuotesKn];
+                                  updated[idx] = e.target.value;
+                                  setFeaturedQuotesKn(updated);
+                                }}
+                                placeholder="Kannada translation override"
+                              />
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>

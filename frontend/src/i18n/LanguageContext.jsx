@@ -14,7 +14,7 @@ export const LanguageProvider = ({ children }) => {
   });
 
   // Dynamic nested key lookup with automatic fallbacks
-  const t = (keyPath) => {
+  const t = (keyPath, defaultVal) => {
     if (!keyPath) return '';
     const keys = keyPath.split('.');
     
@@ -50,8 +50,8 @@ export const LanguageProvider = ({ children }) => {
       return fallbackResult;
     }
 
-    // 3. Last fallback: return the raw key path
-    return keyPath;
+    // 3. Last fallback: return defaultVal if provided, otherwise the raw key path
+    return defaultVal !== undefined ? defaultVal : keyPath;
   };
 
   const changeLanguage = async (newLang, currentUser = null) => {
@@ -70,8 +70,16 @@ export const LanguageProvider = ({ children }) => {
     }
   };
 
+  const getLocalized = (object, field) => {
+    if (!object) return (field === 'options' || field === 'featuredQuotes') ? [] : '';
+    if (field === 'options' || field === 'featuredQuotes') {
+      return object.translations?.[language]?.[field] || object[field] || [];
+    }
+    return object.translations?.[language]?.[field] || object[field] || '';
+  };
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage: changeLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage: changeLanguage, t, getLocalized }}>
       {children}
     </LanguageContext.Provider>
   );

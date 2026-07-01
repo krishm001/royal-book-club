@@ -79,6 +79,13 @@
             <version>3.42.0</version>
         </dependency>
 
+        <!-- Google Cloud Translation API -->
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-translate</artifactId>
+            <version>2.42.0</version>
+        </dependency>
+
         <!-- OpenAPI / Swagger -->
         <dependency>
             <groupId>org.springdoc</groupId>

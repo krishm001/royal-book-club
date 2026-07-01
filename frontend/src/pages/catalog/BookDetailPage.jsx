@@ -590,7 +590,7 @@ const BookDetailPage = ({ user }) => {
           </div>
 
           <h1 className="detail-book-title glow-text">{book.title}</h1>
-          <h2 className="detail-book-author">by <span className="gold-gradient-text">{authors}</span></h2>
+          <h2 className="detail-book-author">{t('common.by')} <span className="gold-gradient-text">{authors}</span></h2>
 
           <div className="metadata-spec-grid">
             <div className="spec-item">

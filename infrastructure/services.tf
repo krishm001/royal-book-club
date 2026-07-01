@@ -13,7 +13,8 @@ variable "gcp_services" {
     "vision.googleapis.com",
     "maps-backend.googleapis.com",
     "places-backend.googleapis.com",
-    "geocoding-backend.googleapis.com"
+    "geocoding-backend.googleapis.com",
+    "translate.googleapis.com"
   ]
 }
 

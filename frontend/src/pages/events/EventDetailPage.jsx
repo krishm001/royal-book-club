@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Sparkles, MapPin, Clock, Users, Calendar, HelpCircle, CheckCircle, Info } from 'lucide-react';
 import { fetchEventById, rsvpToEvent, cancelRsvpToEvent } from '../../services/eventApi';
+import { useLanguage } from '../../i18n/LanguageContext';
 import './EventDetailPage.css';
 
 const EventDetailPage = ({ user }) => {
+  const { language, t, getLocalized } = useLanguage();
   const { id } = useParams();
   const [event, setEvent] = useState(null);
   const [activeImageUrl, setActiveImageUrl] = useState('');
@@ -35,11 +37,11 @@ const EventDetailPage = ({ user }) => {
           setActiveImageUrl(res.data.imageUrl || '');
           setRsvpState(isUserRsvped(res.data) ? 'rsvped' : 'none');
         } else {
-          setError('We could not retrieve details for this specific literary gathering.');
+          setError(t('assembly.errorRetrieve', 'We could not retrieve details for this specific literary gathering.'));
         }
       } catch (err) {
         console.error('Failed to load event details', err);
-        setError('Unable to load gathering details. This salon might have been adjourned.');
+        setError(t('assembly.errorLoad', 'Unable to load gathering details. This salon might have been adjourned.'));
       } finally {
         setLoading(false);
       }
@@ -52,7 +54,7 @@ const EventDetailPage = ({ user }) => {
 
   const handleRsvp = async () => {
     if (!user) {
-      window.alert('Please enter the Royal Salon (sign in) before requesting an invitation.');
+      window.alert(t('assembly.signinRequired', 'Please enter the Royal Salon (sign in) before requesting an invitation.'));
       return;
     }
     if (rsvpState !== 'none') return;
@@ -64,12 +66,12 @@ const EventDetailPage = ({ user }) => {
         setRsvpState('rsvped');
       } else {
         setRsvpState('none');
-        window.alert(res?.message || 'Failed to register reservation.');
+        window.alert(res?.message || t('assembly.errorRegisterReservation', 'Failed to register reservation.'));
       }
     } catch (err) {
       console.error(err);
       setRsvpState('none');
-      window.alert(err.response?.data?.message || 'Unable to register reservation.');
+      window.alert(err.response?.data?.message || t('assembly.errorUnableRegister', 'Unable to register reservation.'));
     }
   };
 
@@ -83,12 +85,12 @@ const EventDetailPage = ({ user }) => {
         setRsvpState('none');
       } else {
         setRsvpState('rsvped');
-        window.alert(res?.message || 'Failed to cancel reservation.');
+        window.alert(res?.message || t('assembly.errorCancelReservation', 'Failed to cancel reservation.'));
       }
     } catch (err) {
       console.error(err);
       setRsvpState('rsvped');
-      window.alert(err.response?.data?.message || 'Unable to cancel reservation.');
+      window.alert(err.response?.data?.message || t('assembly.errorUnableCancel', 'Unable to cancel reservation.'));
     }
   };
 
@@ -119,11 +121,11 @@ const EventDetailPage = ({ user }) => {
     return (
       <div className="event-detail-container animate-fade-in">
         <Link to="/events" className="back-link">
-          <ArrowLeft size={16} /> Return to Gatherings
+          <ArrowLeft size={16} /> {t('assembly.checkOthers', 'Return to Gatherings')}
         </Link>
         <div className="royal-card no-results-card" style={{ padding: '5rem 2rem' }}>
           <div className="loader-mini" style={{ marginBottom: '1rem' }}></div>
-          <p>Consulting the Royal ledger for gathering details...</p>
+          <p>{t('assembly.consultingLedger', 'Consulting the Royal ledger for gathering details...')}</p>
         </div>
       </div>
     );
@@ -133,12 +135,12 @@ const EventDetailPage = ({ user }) => {
     return (
       <div className="event-detail-container animate-fade-in">
         <Link to="/events" className="back-link">
-          <ArrowLeft size={16} /> Return to Gatherings
+          <ArrowLeft size={16} /> {t('assembly.checkOthers', 'Return to Gatherings')}
         </Link>
         <div className="royal-card no-results-card" style={{ padding: '5rem 2rem' }}>
           <HelpCircle size={48} className="no-events-icon" />
-          <h3>Assembly Adjourned</h3>
-          <p>{error || 'This assembly could not be localized within our registers.'}</p>
+          <h3>{t('assembly.assemblyAdjourned', 'Assembly Adjourned')}</h3>
+          <p>{error || t('assembly.notLocalized', 'This assembly could not be localized within our registers.')}</p>
         </div>
       </div>
     );
@@ -148,7 +150,7 @@ const EventDetailPage = ({ user }) => {
     <div className="event-detail-container animate-fade-in">
       {/* Back button */}
       <Link to="/events" className="back-link">
-        <ArrowLeft size={16} /> Return to Gatherings
+        <ArrowLeft size={16} /> {t('assembly.checkOthers', 'Return to Gatherings')}
       </Link>
 
       <div className="event-detail-grid">
@@ -160,8 +162,8 @@ const EventDetailPage = ({ user }) => {
               setLightboxIndex(currentIndex >= 0 ? currentIndex : 0);
               setIsLightboxOpen(true);
             }} style={{ cursor: 'pointer' }}>
-              <img src={activeImageUrl || event.imageUrl} alt={event.title} className="detail-event-img" />
-              <div className="detail-event-badge">{event.type}</div>
+              <img src={activeImageUrl || event.imageUrl} alt={getLocalized(event, 'title')} className="detail-event-img" />
+              <div className="detail-event-badge">{getLocalized(event, 'type')}</div>
             </div>
 
             {allImages.length > 1 && (
@@ -173,7 +175,7 @@ const EventDetailPage = ({ user }) => {
                     onClick={() => setActiveImageUrl(imgUrl)}
                     onMouseEnter={() => setActiveImageUrl(imgUrl)}
                   >
-                    <img src={imgUrl} alt={`Thumbnail ${index + 1}`} />
+                    <img src={imgUrl} alt={`${t('assembly.thumbnail', 'Thumbnail')} ${index + 1}`} />
                   </div>
                 ))}
               </div>
@@ -189,7 +191,7 @@ const EventDetailPage = ({ user }) => {
                   setIsLightboxOpen(true);
                 }}
               >
-                <Sparkles size={14} /> Display All Images
+                <Sparkles size={14} /> {t('assembly.displayAllImages')}
               </button>
             )}
             
@@ -197,22 +199,22 @@ const EventDetailPage = ({ user }) => {
               <div className="quick-spec-item">
                 <Calendar size={18} className="spec-icon" />
                 <div>
-                  <span className="spec-title">Date</span>
+                  <span className="spec-title">{t('assembly.date')}</span>
                   <span className="spec-detail">{formatDate(event.date)}</span>
                 </div>
               </div>
               <div className="quick-spec-item">
                 <Clock size={18} className="spec-icon" />
                 <div>
-                  <span className="spec-title">Timing</span>
+                  <span className="spec-title">{t('assembly.time', 'Timing')}</span>
                   <span className="spec-detail">{event.time}</span>
                 </div>
               </div>
               <div className="quick-spec-item">
                 <MapPin size={18} className="spec-icon" />
                 <div>
-                  <span className="spec-title">Location</span>
-                  <span className="spec-detail">{event.location}</span>
+                  <span className="spec-title">{t('assembly.location')}</span>
+                  <span className="spec-detail">{getLocalized(event, 'location')}</span>
                 </div>
               </div>
             </div>
@@ -222,21 +224,21 @@ const EventDetailPage = ({ user }) => {
         {/* Right Side: Informative Body */}
         <div className="event-detail-info-panel royal-card">
           <header className="event-info-header">
-            <span className="curator-info">Curated by <strong className="gold-gradient-text">{event.curator || 'The Royal Curators'}</strong></span>
-            <h1 className="event-detail-title glow-text">{event.title}</h1>
+            <span className="curator-info">{t('assembly.curatedBy')} <strong className="gold-gradient-text">{event.curator || t('assembly.royalCurators', 'The Royal Curators')}</strong></span>
+            <h1 className="event-detail-title glow-text">{getLocalized(event, 'title')}</h1>
           </header>
 
           <section className="event-description-body">
-            <h3>Gathering Prospectus</h3>
-            <p className="brief-lead">{event.description}</p>
-            <p className="extended-desc">{event.extendedDescription || 'No further description is available for this gathering.'}</p>
+            <h3>{t('assembly.gatheringProspectus')}</h3>
+            <p className="brief-lead">{getLocalized(event, 'description')}</p>
+            <p className="extended-desc">{getLocalized(event, 'extendedDescription') || t('assembly.noDescription', 'No further description is available for this gathering.')}</p>
           </section>
 
           <section className="venue-details-section">
-            <h4 className="detail-subheading">Venue & Directions</h4>
-            <p className="address-details">{event.address || 'In the Private Library Chambers'}</p>
+            <h4 className="detail-subheading">{t('assembly.venueDirections')}</h4>
+            <p className="address-details">{getLocalized(event, 'address') || t('assembly.privateChambers', 'In the Private Library Chambers')}</p>
             <div className="venue-simulation-map">
-              <Info size={14} /> Localized within the exclusive, gated private halls of the Royal Book Club estate.
+              <Info size={14} /> {t('assembly.simulationMapDesc', 'Localized within the exclusive, gated private halls of the Royal Book Club estate.')}
             </div>
           </section>
 
@@ -244,35 +246,35 @@ const EventDetailPage = ({ user }) => {
           <footer className="event-rsvp-cta-block">
             <div className="rsvp-capacity-tracker">
               <Users size={16} className="gold-glow-icon" />
-              <span>Current Registrations: <strong>{getRsvpCount(event)}</strong> / <strong>{event.capacity || 50}</strong> Patrons</span>
+              <span>{t('assembly.currentRegistrations')}: <strong>{getRsvpCount(event)}</strong> / <strong>{event.capacity || 50}</strong> {t('assembly.patronsCountLabel', 'Patrons')}</span>
             </div>
 
             <div className="rsvp-action-trigger">
               {rsvpState === 'none' ? (
                 (getRsvpCount(event) >= (event.capacity || 50)) ? (
                   <button className="royal-btn-disabled rsvp-submit-btn" disabled>
-                    Fully Booked
+                    {t('assembly.fullyBooked', 'Fully Booked')}
                   </button>
                 ) : (
                   <button onClick={handleRsvp} className="royal-btn rsvp-submit-btn" id="event-detail-rsvp-btn">
-                    Claim Seat Invitation
+                    {t('assembly.claimSeat', 'Claim Seat Invitation')}
                   </button>
                 )
               ) : rsvpState === 'rsvping' ? (
                 <button className="royal-btn-disabled rsvp-submit-btn" disabled>
-                  <div className="loader-mini"></div> Authorizing Attendance...
+                  <div className="loader-mini"></div> {t('assembly.reserving', 'Authorizing Attendance...')}
                 </button>
               ) : (
                 <div className="rsvp-success-banner">
                   <div className="success-header">
                     <CheckCircle size={20} className="success-icon" />
                     <div>
-                      <h4>Invitation Authorized</h4>
-                      <p>Your name is registered on the salon ledger. Please present your digital token at the foyer.</p>
+                      <h4>{t('assembly.invitationAuthorized')}</h4>
+                      <p>{t('assembly.registeredFoyerDesc', 'Your name is registered on the salon ledger. Please present your digital token at the foyer.')}</p>
                     </div>
                   </div>
                   <button onClick={handleCancelRsvp} className="cancel-rsvp-trigger-btn" id="event-detail-cancel-rsvp-btn">
-                    Relinquish Invitation
+                    {t('assembly.relinquishInvitations')}
                   </button>
                 </div>
               )}
@@ -304,11 +306,11 @@ const EventDetailPage = ({ user }) => {
           <div className="lightbox-content-wrapper" onClick={(e) => e.stopPropagation()}>
             <img 
               src={allImages[lightboxIndex]} 
-              alt={`Gallery Image ${lightboxIndex + 1}`} 
+              alt={`${t('assembly.galleryImage', 'Gallery Image')} ${lightboxIndex + 1}`} 
               className="lightbox-main-img animate-fade-in" 
             />
             <div className="lightbox-caption">
-              Image {lightboxIndex + 1} of {allImages.length}
+              {t('assembly.imageCountPrefix', 'Image')} {lightboxIndex + 1} {t('assembly.imageCountSeparator', 'of')} {allImages.length}
             </div>
           </div>
           

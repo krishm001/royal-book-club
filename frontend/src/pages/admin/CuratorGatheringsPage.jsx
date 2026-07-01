@@ -19,9 +19,12 @@ import {
 import { Link } from 'react-router-dom';
 import { fetchEvents, createOrUpdateEvent, deleteEvent } from '../../services/eventApi';
 import { uploadBookImage } from '../../services/storageApi';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { translateFields } from '../../services/translationApi';
 import './CuratorGatheringsPage.css';
 
 const CuratorGatheringsPage = ({ user }) => {
+  const { t } = useLanguage();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -45,6 +48,20 @@ const CuratorGatheringsPage = ({ user }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [imageUrls, setImageUrls] = useState([]);
   const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  // Dynamic dynamic translations
+  const [titleHi, setTitleHi] = useState('');
+  const [descriptionHi, setDescriptionHi] = useState('');
+  const [extendedDescriptionHi, setExtendedDescriptionHi] = useState('');
+  const [locationHi, setLocationHi] = useState('');
+  const [typeHi, setTypeHi] = useState('');
+
+  const [titleKn, setTitleKn] = useState('');
+  const [descriptionKn, setDescriptionKn] = useState('');
+  const [extendedDescriptionKn, setExtendedDescriptionKn] = useState('');
+  const [locationKn, setLocationKn] = useState('');
+  const [typeKn, setTypeKn] = useState('');
 
   const isAdmin = user && user.role === 'ADMIN';
 
@@ -83,6 +100,19 @@ const CuratorGatheringsPage = ({ user }) => {
     setCoverFile(null);
     setCoverPreview('');
     setImageUrls([]);
+    
+    // Clear translations
+    setTitleHi('');
+    setDescriptionHi('');
+    setExtendedDescriptionHi('');
+    setLocationHi('');
+    setTypeHi('');
+    setTitleKn('');
+    setDescriptionKn('');
+    setExtendedDescriptionKn('');
+    setLocationKn('');
+    setTypeKn('');
+
     setIsEditing(true);
   };
 
@@ -102,6 +132,21 @@ const CuratorGatheringsPage = ({ user }) => {
     setCoverFile(null);
     setCoverPreview(event.imageUrl || '');
     setImageUrls(event.imageUrls || []);
+
+    // Load translations
+    const translations = event.translations || {};
+    setTitleHi(translations.hi?.title || '');
+    setDescriptionHi(translations.hi?.description || '');
+    setExtendedDescriptionHi(translations.hi?.extendedDescription || '');
+    setLocationHi(translations.hi?.location || '');
+    setTypeHi(translations.hi?.type || '');
+
+    setTitleKn(translations.kn?.title || '');
+    setDescriptionKn(translations.kn?.description || '');
+    setExtendedDescriptionKn(translations.kn?.extendedDescription || '');
+    setLocationKn(translations.kn?.location || '');
+    setTypeKn(translations.kn?.type || '');
+
     setIsEditing(true);
   };
 
@@ -155,6 +200,47 @@ const CuratorGatheringsPage = ({ user }) => {
     setImageUrls(prev => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
+  const handleTranslateWithGoogle = async () => {
+    if (!title && !type && !location && !description && !extendedDescription) {
+      alert("Please fill in some English fields first to translate.");
+      return;
+    }
+    try {
+      setIsTranslating(true);
+      const fields = {};
+      if (title) fields.title = title;
+      if (type) fields.type = type;
+      if (location) fields.location = location;
+      if (description) fields.description = description;
+      if (extendedDescription) fields.extendedDescription = extendedDescription;
+
+      const res = await translateFields(fields, ['hi', 'kn']);
+      if (res && res.success && res.data) {
+        if (res.data.hi) {
+          if (res.data.hi.title) setTitleHi(res.data.hi.title);
+          if (res.data.hi.type) setTypeHi(res.data.hi.type);
+          if (res.data.hi.location) setLocationHi(res.data.hi.location);
+          if (res.data.hi.description) setDescriptionHi(res.data.hi.description);
+          if (res.data.hi.extendedDescription) setExtendedDescriptionHi(res.data.hi.extendedDescription);
+        }
+        if (res.data.kn) {
+          if (res.data.kn.title) setTitleKn(res.data.kn.title);
+          if (res.data.kn.type) setTypeKn(res.data.kn.type);
+          if (res.data.kn.location) setLocationKn(res.data.kn.location);
+          if (res.data.kn.description) setDescriptionKn(res.data.kn.description);
+          if (res.data.kn.extendedDescription) setExtendedDescriptionKn(res.data.kn.extendedDescription);
+        }
+      } else {
+        alert("Translation api returned failure state. Using default local fallback.");
+      }
+    } catch (err) {
+      console.error("Translation failed:", err);
+      alert("Error invoking Google Translation. Continuing offline.");
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     if (isSaving) return;
@@ -190,7 +276,23 @@ const CuratorGatheringsPage = ({ user }) => {
         capacity: parseInt(capacity) || 50,
         imageUrl: uploadedUrl || 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80',
         imageUrls: imageUrls,
-        rsvps: currentEvent?.rsvps || []
+        rsvps: currentEvent?.rsvps || [],
+        translations: {
+          hi: {
+            title: titleHi.trim(),
+            description: descriptionHi.trim(),
+            extendedDescription: extendedDescriptionHi.trim(),
+            location: locationHi.trim(),
+            type: typeHi.trim()
+          },
+          kn: {
+            title: titleKn.trim(),
+            description: descriptionKn.trim(),
+            extendedDescription: extendedDescriptionKn.trim(),
+            location: locationKn.trim(),
+            type: typeKn.trim()
+          }
+        }
       };
 
       const res = await createOrUpdateEvent(payload);
@@ -231,23 +333,23 @@ const CuratorGatheringsPage = ({ user }) => {
     <div className="curator-gatherings-container animate-fade-in">
       <header className="curator-gatherings-header">
         <Link to="/admin" className="back-link">
-          <ArrowLeft size={16} /> Curator Console
+          <ArrowLeft size={16} /> {t('admin.backToConsole', 'Curator Console')}
         </Link>
         <div className="header-badge-curator">
           <Sparkles size={14} className="gold-glow-icon" />
-          <span className="gold-gradient-text">GATHERING CURATION</span>
+          <span className="gold-gradient-text">{t('admin.gatheringCuration', 'GATHERING CURATION')}</span>
         </div>
-        <h1 className="curator-gatherings-title glow-text">Salon Gatherings Registry</h1>
+        <h1 className="curator-gatherings-title glow-text">{t('admin.gatheringsRegistry', 'Sovereign Gatherings Registry')}</h1>
         <p className="curator-gatherings-subtitle">
-          Schedule upcoming meetups, literary festivals, and academic symposiums. Upload banners, assign spaces, and monitor patron rsvps.
+          {t('admin.gatheringsDesc', 'Schedule upcoming meetups, literary festivals, and symposiums. Manage flyer assets and seat reservations.')}
         </p>
       </header>
 
       {isEditing ? (
         <section className="event-edit-section royal-card animate-fade-in">
           <div className="edit-section-header">
-            <h3>{currentEvent ? 'Refine Sovereign Gathering' : 'Schedule New Salon Gathering'}</h3>
-            <button onClick={() => setIsEditing(false)} className="royal-btn-secondary mini-btn">Cancel</button>
+            <h3>{currentEvent ? t('admin.refineGathering', 'Refine Sovereign Gathering') : t('admin.establishGathering', 'Establish Gathering')}</h3>
+            <button onClick={() => setIsEditing(false)} className="royal-btn-secondary mini-btn">{t('admin.cancel', 'Cancel')}</button>
           </div>
 
           <form onSubmit={handleSave} className="event-edit-form">
@@ -380,6 +482,154 @@ const CuratorGatheringsPage = ({ user }) => {
               />
             </div>
 
+            <div className="translation-section-divider" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', margin: '25px 0 15px' }}>
+              <div>
+                <h4 className="translation-header gold-gradient-text" style={{ margin: '0 0 5px', fontSize: '1.1rem', letterSpacing: '1px', display: 'flex', alignItems: 'center' }}>
+                  <Sparkles size={14} style={{ marginRight: '6px' }} /> {t('admin.hiKnLocalization', 'HI / KN LOCALIZATION OVERRIDES')}
+                </h4>
+                <p style={{ fontSize: '0.85rem', opacity: 0.7, margin: 0 }}>
+                  {t('admin.hiKnLocalizationDesc', 'Optional: Supply dynamic Rajasthani Hindi and Classical Kannada overrides for scholarly accuracy.')}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="royal-btn premium-btn"
+                onClick={handleTranslateWithGoogle}
+                disabled={isTranslating}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'linear-gradient(135deg, var(--gold), var(--accent))',
+                  color: '#000',
+                  fontWeight: '600',
+                  padding: '10px 18px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  opacity: isTranslating ? 0.7 : 1,
+                  boxShadow: '0 4px 12px rgba(212,175,55,0.2)'
+                }}
+              >
+                <Sparkles size={16} className={isTranslating ? "animate-spin" : ""} />
+                {isTranslating ? t('admin.translating', 'Translating...') : t('admin.translateBtn', 'Translate with Google')}
+              </button>
+            </div>
+
+            <div className="translation-panel-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '15px', marginBottom: '20px' }}>
+              {/* Hindi Column */}
+              <div className="translation-column-hi">
+                <h5 style={{ color: 'var(--accent)', marginBottom: '12px', fontSize: '0.95rem' }}>Hindi (राजस्थानी शाही शैली)</h5>
+                <div className="form-group">
+                  <label className="royal-label">Sovereign Title (Hindi)</label>
+                  <input
+                    type="text"
+                    className="royal-input"
+                    value={titleHi}
+                    onChange={(e) => setTitleHi(e.target.value)}
+                    placeholder="e.g. विक्टोरियन सौंदर्यशास्त्र और वाइल्डियन नैतिकता"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="royal-label">Event Type (Hindi)</label>
+                  <input
+                    type="text"
+                    className="royal-input"
+                    value={typeHi}
+                    onChange={(e) => setTypeHi(e.target.value)}
+                    placeholder="e.g. शाही सभा"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="royal-label">Lounge / Hall Location (Hindi)</label>
+                  <input
+                    type="text"
+                    className="royal-input"
+                    value={locationHi}
+                    onChange={(e) => setLocationHi(e.target.value)}
+                    placeholder="e.g. स्वर्णिम सरस्वती भंडार"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="royal-label">Short Summary (Hindi)</label>
+                  <input
+                    type="text"
+                    className="royal-input"
+                    value={descriptionHi}
+                    onChange={(e) => setDescriptionHi(e.target.value)}
+                    placeholder="e.g. सभा का संक्षिप्त सारांश..."
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="royal-label">Detailed Description (Hindi)</label>
+                  <textarea
+                    className="royal-input event-textarea"
+                    style={{ minHeight: '100px' }}
+                    value={extendedDescriptionHi}
+                    onChange={(e) => setExtendedDescriptionHi(e.target.value)}
+                    placeholder="e.g. सभा की विस्तृत रूपरेखा..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              {/* Kannada Column */}
+              <div className="translation-column-kn">
+                <h5 style={{ color: 'var(--accent)', marginBottom: '12px', fontSize: '0.95rem' }}>Kannada (ಶಾಸ್ತ್ರೀಯ ಶೈಲಿ)</h5>
+                <div className="form-group">
+                  <label className="royal-label">Sovereign Title (Kannada)</label>
+                  <input
+                    type="text"
+                    className="royal-input"
+                    value={titleKn}
+                    onChange={(e) => setTitleKn(e.target.value)}
+                    placeholder="e.g. ವಿಕ್ಟೋರಿಯನ್ ಸೌಂದರ್ಯಶಾಸ್ತ್ರ"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="royal-label">Event Type (Kannada)</label>
+                  <input
+                    type="text"
+                    className="royal-input"
+                    value={typeKn}
+                    onChange={(e) => setTypeKn(e.target.value)}
+                    placeholder="e.g. ಶಾಹಿ ಸಭೆ"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="royal-label">Lounge / Hall Location (Kannada)</label>
+                  <input
+                    type="text"
+                    className="royal-input"
+                    value={locationKn}
+                    onChange={(e) => setLocationKn(e.target.value)}
+                    placeholder="e.g. ಸುವರ್ಣ ಗ್ರಂಥಾಲಯ ಸಭೆ"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="royal-label">Short Summary (Kannada)</label>
+                  <input
+                    type="text"
+                    className="royal-input"
+                    value={descriptionKn}
+                    onChange={(e) => setDescriptionKn(e.target.value)}
+                    placeholder="e.g. ಸಭೆಯ ಸಂಕ್ಷಿಪ್ತ ವಿವರಣೆ..."
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="royal-label">Detailed Description (Kannada)</label>
+                  <textarea
+                    className="royal-input event-textarea"
+                    style={{ minHeight: '100px' }}
+                    value={extendedDescriptionKn}
+                    onChange={(e) => setExtendedDescriptionKn(e.target.value)}
+                    placeholder="e.g. ಸಭೆಯ ಸಂಪೂರ್ಣ ವಿವರಣೆ..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="form-group">
               <label className="royal-label">Flyer Cover Banner</label>
               <div className="flyer-upload-zone-gatherings">
@@ -441,7 +691,7 @@ const CuratorGatheringsPage = ({ user }) => {
                 disabled={isSaving}
                 className="royal-btn submit-event-btn"
               >
-                {isSaving ? (isUploading ? 'Uploading Banner...' : 'Recording Registry...') : 'Commit to Registry'}
+                {isSaving ? (isUploading ? t('admin.uploadingBanner', 'Uploading Banner...') : t('admin.recordingRegistry', 'Recording Registry...')) : t('admin.save', 'Commit to Registry')}
               </button>
             </div>
           </form>
@@ -450,26 +700,26 @@ const CuratorGatheringsPage = ({ user }) => {
         <section className="events-registry-list-section">
           <div className="registry-actions">
             <button onClick={handleCreateNew} className="royal-btn add-gathering-btn">
-              <Plus size={16} /> New Salon Gathering
+              <Plus size={16} /> {t('admin.newGatheringBtn', 'New Salon Gathering')}
             </button>
           </div>
 
           {loading ? (
             <div className="loading-boundary">
               <div className="loader-mini"></div>
-              <p>Re-indexing Salon registries...</p>
+              <p>{t('admin.indexingSalon', 'Re-indexing Salon registries...')}</p>
             </div>
           ) : events.length > 0 ? (
             <div className="registry-table-wrapper royal-card">
               <table className="registry-table">
                 <thead>
                   <tr>
-                    <th>Gathering</th>
-                    <th>Type</th>
-                    <th>Date & Time</th>
-                    <th>Seat Capacity</th>
-                    <th>RSVPs</th>
-                    <th>Actions</th>
+                    <th>{t('admin.gatheringCol', 'Gathering')}</th>
+                    <th>{t('admin.typeCol', 'Type')}</th>
+                    <th>{t('admin.dateTimeCol', 'Date & Time')}</th>
+                    <th>{t('admin.seatCapacityCol', 'Seat Capacity')}</th>
+                    <th>{t('admin.rsvpsCol', 'RSVPs')}</th>
+                    <th>{t('admin.actionsCol', 'Actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -493,17 +743,17 @@ const CuratorGatheringsPage = ({ user }) => {
                           <span><Clock size={12} /> {evt.time}</span>
                         </div>
                       </td>
-                      <td>{evt.capacity} seats</td>
+                      <td>{evt.capacity} {t('admin.seats', 'seats')}</td>
                       <td>
                         <span className="table-rsvp-count">
-                          <Users size={12} /> {evt.rsvps?.length || 0} registered
+                          <Users size={12} /> {evt.rsvps?.length || 0} {t('admin.registered', 'registered')}
                         </span>
                       </td>
                       <td className="table-actions-cell">
-                        <button onClick={() => handleEdit(evt)} className="table-action-btn edit-btn" title="Refine">
+                        <button onClick={() => handleEdit(evt)} className="table-action-btn edit-btn" title={t('admin.edit', 'Refine')}>
                           <Edit size={14} />
                         </button>
-                        <button onClick={() => handleDelete(evt.id)} className="table-action-btn delete-btn" title="Dissolve">
+                        <button onClick={() => handleDelete(evt.id)} className="table-action-btn delete-btn" title={t('admin.delete', 'Dissolve')}>
                           <Trash2 size={14} />
                         </button>
                       </td>
@@ -515,8 +765,8 @@ const CuratorGatheringsPage = ({ user }) => {
           ) : (
             <div className="royal-card no-gatherings-fallback">
               <Calendar size={48} className="fallback-icon" />
-              <h3>No Salon Gatherings Scheduled</h3>
-              <p>No literary events or dinners have been recorded. Design a new gathering prospectus!</p>
+              <h3>{t('admin.noGatherings', 'No Salon Gatherings Scheduled')}</h3>
+              <p>{t('admin.noGatheringsDesc', 'No literary events or dinners have been recorded. Design a new gathering prospectus!')}</p>
             </div>
           )}
         </section>

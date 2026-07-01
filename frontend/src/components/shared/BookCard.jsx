@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, CheckCircle, ShoppingBag } from 'lucide-react';
+import { useLanguage } from '../../i18n/LanguageContext';
 import './BookCard.css';
 
 const BookCard = ({
@@ -10,6 +11,7 @@ const BookCard = ({
   onCheckoutClick,
   onReturnClick,
 }) => {
+  const { t } = useLanguage();
   const [checkoutStatus, setCheckoutStatus] = useState(
     resolvedStatus || (book.availableCopies > 0 ? 'available' : 'checked-out-by-other')
   );
@@ -61,16 +63,16 @@ const BookCard = ({
               {checkoutStatus === 'requested-return' && <span className="status-dot pulse"></span>}
               {checkoutStatus === 'checked-out-by-other' && <span className="status-dot red"></span>}
               
-              {checkoutStatus === 'available' && 'In Salon'}
-              {checkoutStatus === 'checked-out' && 'In Your Study'}
-              {checkoutStatus === 'requested-checkout' && 'Pending Checkout'}
-              {checkoutStatus === 'requested-return' && 'Pending Return'}
-              {checkoutStatus === 'checked-out-by-other' && 'In Circulation'}
+              {checkoutStatus === 'available' && t('catalog.inSalon')}
+              {checkoutStatus === 'checked-out' && t('catalog.inYourStudy')}
+              {checkoutStatus === 'requested-checkout' && t('catalog.pendingCheckout')}
+              {checkoutStatus === 'requested-return' && t('catalog.pendingReturn')}
+              {checkoutStatus === 'checked-out-by-other' && t('catalog.inCirculation')}
             </span>
           </div>
 
           <h3 className="book-title glow-text">{book.title || 'Untitled Volume'}</h3>
-          <p className="book-author">by {author}</p>
+          <p className="book-author">{t('common.by')} {author}</p>
           <p className="book-short-description">{book.description || book.subtitle || 'A fine addition to the Royal Library catalog.'}</p>
         </div>
       </Link>
@@ -83,7 +85,7 @@ const BookCard = ({
               className="royal-btn book-checkout-btn"
               id={`checkout-btn-${bookId}`}
             >
-              <ShoppingBag size={14} style={{ marginRight: '6px' }} /> Checkout
+              <ShoppingBag size={14} style={{ marginRight: '6px' }} /> {t('catalog.checkoutBtnLabel')}
             </button>
           ) : (
             <Link
@@ -91,7 +93,7 @@ const BookCard = ({
               className="royal-btn book-checkout-btn"
               id={`checkout-btn-${bookId}`}
             >
-              <ShoppingBag size={14} style={{ marginRight: '6px' }} /> Checkout
+              <ShoppingBag size={14} style={{ marginRight: '6px' }} /> {t('catalog.checkoutBtnLabel')}
             </Link>
           )
         ) : checkoutStatus === 'checked-out' ? (
@@ -109,7 +111,7 @@ const BookCard = ({
                 justifyContent: 'center',
               }}
             >
-              Return Volume
+              {t('catalog.returnVolumeOnly')}
             </button>
           ) : (
             <Link
@@ -126,20 +128,20 @@ const BookCard = ({
                 textDecoration: 'none'
               }}
             >
-              Return Volume
+              {t('catalog.returnVolumeOnly')}
             </Link>
           )
         ) : checkoutStatus === 'requested-checkout' ? (
           <button className="royal-btn-disabled book-checkout-btn" disabled style={{ opacity: 0.6, cursor: 'not-allowed' }}>
-            Pending Checkout
+            {t('catalog.pendingCheckout')}
           </button>
         ) : checkoutStatus === 'requested-return' ? (
           <button className="royal-btn-disabled book-checkout-btn" disabled style={{ opacity: 0.6, cursor: 'not-allowed' }}>
-            Pending Return
+            {t('catalog.pendingReturn')}
           </button>
         ) : (
           <button className="borrowed-indicator-btn" disabled id={`borrowed-btn-${bookId}`}>
-            In Circulation
+            {t('catalog.inCirculation')}
           </button>
         )}
       </div>

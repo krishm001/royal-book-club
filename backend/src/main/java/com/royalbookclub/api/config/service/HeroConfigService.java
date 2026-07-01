@@ -47,6 +47,7 @@ public class HeroConfigService {
             if (document.exists()) {
                 List<String> featuredBookIsbns = (List<String>) document.get("featuredBookIsbns");
                 List<String> featuredQuotes = (List<String>) document.get("featuredQuotes");
+                Map<String, Map<String, Object>> translations = (Map<String, Map<String, Object>>) document.get("translations");
                 return HeroConfig.builder()
                         .id(DOCUMENT_ID)
                         .title(document.getString("title"))
@@ -56,6 +57,7 @@ public class HeroConfigService {
                         .backgroundImageUrlAcademic(document.getString("backgroundImageUrlAcademic"))
                         .featuredBookIsbns(featuredBookIsbns != null ? featuredBookIsbns : new ArrayList<>())
                         .featuredQuotes(featuredQuotes != null ? featuredQuotes : new ArrayList<>())
+                        .translations(translations != null ? translations : new HashMap<>())
                         .build();
             } else {
                 log.info("No Home Hero settings found. Returning default aesthetic values.");
@@ -96,6 +98,7 @@ public class HeroConfigService {
             map.put("backgroundImageUrlAcademic", config.getBackgroundImageUrlAcademic() != null ? config.getBackgroundImageUrlAcademic().trim() : "");
             map.put("featuredBookIsbns", config.getFeaturedBookIsbns() != null ? config.getFeaturedBookIsbns() : new ArrayList<String>());
             map.put("featuredQuotes", config.getFeaturedQuotes() != null ? config.getFeaturedQuotes() : new ArrayList<String>());
+            map.put("translations", config.getTranslations() != null ? config.getTranslations() : new HashMap<String, Map<String, Object>>());
 
             ApiFuture<WriteResult> writeFuture = docRef.set(map);
             writeFuture.get();

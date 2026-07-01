@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { createAdminRequest } from '../../services/adminRequestApi';
 import { getAllUsers, updateUserRole } from '../../services/userApi';
-import { Shield, Users, Award, Radio, CheckCircle, RefreshCw, Key } from 'lucide-react';
+import { Shield, Users, Award, Radio, CheckCircle, RefreshCw, Key, ArrowLeft } from 'lucide-react';
+import { useLanguage } from '../../i18n/LanguageContext';
 import './UserManagementPage.css';
 
 const UserManagementPage = ({ user }) => {
+  const { t } = useLanguage();
   const [assigningRfidId, setAssigningRfidId] = useState(null);
   const [rfidValue, setRfidValue] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -81,8 +84,8 @@ const UserManagementPage = ({ user }) => {
     return (
       <div className="user-mgmt-container animate-fade-in">
         <div style={{ textAlign: 'center', padding: '40px' }}>
-          <h2>Access Denied</h2>
-          <p>Only administrators can access this page.</p>
+          <h2>{t('admin.privilegedSanctuary', 'Access Denied')}</h2>
+          <p>{t('admin.accessDeniedDesc', 'Only administrators can access this page.')}</p>
         </div>
       </div>
     );
@@ -91,13 +94,16 @@ const UserManagementPage = ({ user }) => {
   return (
     <div className="user-mgmt-container animate-fade-in">
       <header className="user-mgmt-header">
+        <Link to="/admin" className="back-link">
+          <ArrowLeft size={16} /> {t('admin.backToConsole', 'Curator Console')}
+        </Link>
         <div className="header-badge-admin">
           <Shield size={14} className="gold-glow-icon" />
-          <span className="gold-gradient-text">MEMBER PROTOCOLS</span>
+          <span className="gold-gradient-text">{t('admin.memberProtocols', 'MEMBER PROTOCOLS')}</span>
         </div>
-        <h1 className="user-mgmt-title glow-text">User Registry & Smart-Access</h1>
+        <h1 className="user-mgmt-title glow-text">{t('admin.userRfidRegistries', 'User Registry & Smart-Access')}</h1>
         <p className="user-mgmt-subtitle">
-          Administer salon credentials, grant administrator access, and register hardware RFID access keys for smart-lock entry.
+          {t('admin.userRfidDesc', 'Administer salon credentials, grant administrator access, and register hardware RFID access keys for smart-lock entry.')}
         </p>
       </header>
 
@@ -110,14 +116,14 @@ const UserManagementPage = ({ user }) => {
             console.error('Failed to submit admin request', e);
             triggerSuccess('Failed to submit admin request');
           }
-        }} className="royal-btn">Request Admin Access</button>
+        }} className="royal-btn">{t('admin.reviewRequests', 'Request Admin Access')}</button>
       </div>
 
       {/* Main Registry Table */}
       <section className="user-registry-table-section royal-card">
         <div className="section-head-with-icon">
           <Users size={20} className="gold-glow-icon" />
-          <h3>Sovereign Patron Ledger</h3>
+          <h3>{t('admin.registeredPatrons', 'Sovereign Patron Ledger')}</h3>
         </div>
 
         {successMsg && (
@@ -127,7 +133,7 @@ const UserManagementPage = ({ user }) => {
         )}
 
         {loading ? (
-          <div style={{ padding: '20px', textAlign: 'center' }}>Loading members...</div>
+          <div style={{ padding: '20px', textAlign: 'center' }}>{t('common.loading', 'Loading members...')}</div>
         ) : members.length === 0 ? (
           <div style={{ padding: '20px', textAlign: 'center' }}>No members found.</div>
         ) : (
@@ -135,11 +141,11 @@ const UserManagementPage = ({ user }) => {
             <table className="ledger-table">
               <thead>
                 <tr>
-                  <th>Scholar Name</th>
+                  <th>{t('admin.patron', 'Scholar Name')}</th>
                   <th>Email Address</th>
-                  <th>Role Rank</th>
-                  <th>RFID Key Ring</th>
-                  <th className="actions-header">Access Controls</th>
+                  <th>{t('admin.role', 'Role Rank')}</th>
+                  <th>{t('admin.nfcUidLabel', 'RFID Key Ring')}</th>
+                  <th className="actions-header">{t('admin.actions', 'Access Controls')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -175,14 +181,14 @@ const UserManagementPage = ({ user }) => {
                         >
                           {user?.uid === member.id
                             ? 'Current Admin'
-                            : member.role === 'ADMIN' ? 'Demote' : 'Promote to Admin'}
+                            : member.role === 'ADMIN' ? t('admin.demoteAdmin', 'Demote') : t('admin.promoteAdmin', 'Promote to Admin')}
                         </button>
                         <button 
                           onClick={() => setAssigningRfidId(member.id)} 
                           className="royal-btn mini-table-btn"
                           id={`assign-rfid-btn-${member.id}`}
                         >
-                          Key RFID
+                          {t('admin.assignNfcBtn', 'Key RFID')}
                         </button>
                       </div>
 
@@ -202,7 +208,7 @@ const UserManagementPage = ({ user }) => {
                               required
                             />
                             <button type="submit" className="royal-btn submit-rfid-btn">
-                              Save
+                              {t('admin.save', 'Save')}
                             </button>
                             <button 
                               type="button" 

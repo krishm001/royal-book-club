@@ -84,6 +84,7 @@ public class BlogGenreService {
             Map<String, Object> map = new HashMap<>();
             map.put("id", id);
             map.put("name", cleanName);
+            map.put("translations", genre.getTranslations() != null ? genre.getTranslations() : new HashMap<String, Map<String, Object>>());
             
             ApiFuture<WriteResult> writeFuture = docRef.set(map);
             writeFuture.get();
@@ -120,11 +121,14 @@ public class BlogGenreService {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private BlogGenre mapToBlogGenre(DocumentSnapshot doc) {
         if (!doc.exists()) return null;
+        Map<String, Map<String, Object>> translations = (Map<String, Map<String, Object>>) doc.get("translations");
         return BlogGenre.builder()
                 .id(doc.getString("id"))
                 .name(doc.getString("name"))
+                .translations(translations != null ? translations : new HashMap<>())
                 .build();
     }
 }

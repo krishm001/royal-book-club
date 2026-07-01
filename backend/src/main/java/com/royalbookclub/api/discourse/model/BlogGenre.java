@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Model representing a Blog Salon House (Category/Genre).
  * Maps to the "blog_genres" collection in Firestore.
@@ -16,4 +19,7 @@ import lombok.NoArgsConstructor;
 public class BlogGenre {
     private String id; // document ID, usually name
     private String name; // display name, e.g. "Symbolist Theses"
+
+    @Builder.Default
+    private Map<String, Map<String, Object>> translations = new HashMap<>();
 }

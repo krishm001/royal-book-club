@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Sparkles, ArrowLeft, Loader2, Save, CheckCircle, AlertTriangle, ToggleLeft, ToggleRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getCheckoutSettings, updateCheckoutSettings } from '../../services/checkoutSettingsApi';
+import { useLanguage } from '../../i18n/LanguageContext';
 import './CuratorSettingsPage.css';
 
 const CuratorSettingsPage = ({ user }) => {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
@@ -35,7 +37,7 @@ const CuratorSettingsPage = ({ user }) => {
         console.error('Failed to load gating settings', err);
         setMessage({
           type: 'error',
-          text: 'Failed to retrieve active gating constraints from the ledger.',
+          text: t('admin.failedRetrieveGating', 'Failed to retrieve active gating constraints from the ledger.'),
         });
       } finally {
         setLoading(false);
@@ -43,7 +45,7 @@ const CuratorSettingsPage = ({ user }) => {
     };
 
     loadSettings();
-  }, [isAdmin]);
+  }, [isAdmin, t]);
 
   const handleToggle = (field) => {
     setSettings((prev) => ({
@@ -62,19 +64,19 @@ const CuratorSettingsPage = ({ user }) => {
         setSettings(res.data);
         setMessage({
           type: 'success',
-          text: 'Self-checkout profile requirements preserved and broadcasted successfully.',
+          text: t('admin.gatingPreservedSuccess', 'Self-checkout profile requirements preserved and broadcasted successfully.'),
         });
       } else {
         setMessage({
           type: 'error',
-          text: res?.message || 'Failed to archive gating rules.',
+          text: res?.message || t('admin.failedArchiveGating', 'Failed to archive gating rules.'),
         });
       }
     } catch (err) {
       console.error('Failed to update gating settings', err);
       setMessage({
         type: 'error',
-        text: `Error updating settings: ${err.message}`,
+        text: `${t('admin.errorUpdatingSettings', 'Error updating settings')}: ${err.message}`,
       });
     } finally {
       setSaving(false);
@@ -88,13 +90,13 @@ const CuratorSettingsPage = ({ user }) => {
           <div className="denied-icon-wrapper">
             <Shield size={48} className="denied-shield-icon" />
           </div>
-          <h2 className="denied-title gold-gradient-text">Privileged Sanctuary</h2>
+          <h2 className="denied-title gold-gradient-text">{t('admin.privilegedSanctuary', 'Privileged Sanctuary')}</h2>
           <p className="denied-message">
-            Your current credentials do not grant access to the Curator Curation Dashboard. Changing checkout requirements is reserved for assigned Curators.
+            {t('admin.privilegedSanctuaryDescSettings', 'Your current credentials do not grant access to the Curator Curation Dashboard. Changing checkout requirements is reserved for assigned Curators.')}
           </p>
           <div className="denied-actions">
             <Link to="/" className="royal-btn return-home-btn">
-              Return to Entrance Hall
+              {t('admin.returnEntrance', 'Return to Entrance Hall')}
             </Link>
           </div>
         </div>
@@ -107,25 +109,25 @@ const CuratorSettingsPage = ({ user }) => {
       <div className="curator-settings-inner">
         {/* Back Link */}
         <Link to="/admin" className="back-link-academy">
-          <ArrowLeft size={16} /> Return to Curator Console
+          <ArrowLeft size={16} /> {t('admin.returnCuratorConsole', 'Return to Curator Console')}
         </Link>
 
         {/* Header */}
         <header className="curator-settings-header">
           <div className="header-badge-settings">
             <Shield size={14} className="gold-glow-icon" />
-            <span className="gold-gradient-text">SOVEREIGN GATING CONSOLE</span>
+            <span className="gold-gradient-text">{t('admin.sovereignGatingConsole', 'SOVEREIGN GATING CONSOLE')}</span>
           </div>
-          <h1 className="settings-page-title glow-text">Self-Checkout Profile Gating</h1>
+          <h1 className="settings-page-title glow-text">{t('admin.gatingControls', 'Self-Checkout Profile Gating')}</h1>
           <p className="settings-page-subtitle">
-            Configure registration requirements that members must satisfy in their Profile Ledger before using automated RFID tap-to-checkout or manual request desks.
+            {t('admin.gatingDesc', 'Configure registration requirements that members must satisfy in their Profile Ledger before using automated RFID tap-to-checkout or manual request desks.')}
           </p>
         </header>
 
         {loading ? (
           <div className="settings-loader-box">
             <Loader2 className="animate-spin gold-glow-icon" size={48} />
-            <p className="loader-text">Loading Checkout Gating rules from database...</p>
+            <p className="loader-text">{t('admin.loadingGatingRules', 'Loading Checkout Gating rules from database...')}</p>
           </div>
         ) : (
           <div className="settings-layout-grid">
@@ -139,14 +141,14 @@ const CuratorSettingsPage = ({ user }) => {
 
               <form onSubmit={handleSave} className="settings-gating-form">
                 <div className="gating-rules-list">
-                  <h3 className="section-title-settings">Profile Requirement Toggles</h3>
+                  <h3 className="section-title-settings">{t('admin.profileRequirementToggles', 'Profile Requirement Toggles')}</h3>
 
                   {/* Phone Toggle */}
                   <div className="gating-toggle-row">
                     <div className="toggle-text-info">
-                      <span className="toggle-label">Require Telephone Coordinates</span>
+                      <span className="toggle-label">{t('admin.requirePhone', 'Require Phone Number')}</span>
                       <span className="toggle-description">
-                        Members must supply a valid contact number. Necessary for courier alignments and SMS book-return reminders.
+                        {t('admin.requirePhoneDesc', 'Members must supply a valid contact number. Necessary for courier alignments and SMS book-return reminders.')}
                       </span>
                     </div>
                     <button
@@ -161,9 +163,9 @@ const CuratorSettingsPage = ({ user }) => {
                   {/* House No Toggle */}
                   <div className="gating-toggle-row">
                     <div className="toggle-text-info">
-                      <span className="toggle-label">Require House / Suite / Apartment Number</span>
+                      <span className="toggle-label">{t('admin.requireHouseNo', 'Require House / Suite / Apartment Number')}</span>
                       <span className="toggle-description">
-                        Members must register their specific dwelling locator within their designated Sovereign House or community.
+                        {t('admin.requireHouseNoDesc', 'Members must register their specific dwelling locator within their designated Sovereign House or community.')}
                       </span>
                     </div>
                     <button
@@ -178,9 +180,9 @@ const CuratorSettingsPage = ({ user }) => {
                   {/* Street Toggle */}
                   <div className="gating-toggle-row">
                     <div className="toggle-text-info">
-                      <span className="toggle-label">Require Street Name alignment</span>
+                      <span className="toggle-label">{t('admin.requireStreet', 'Require Street Name alignment')}</span>
                       <span className="toggle-description">
-                        Members must complete their street alignment details, matching physical post coordinate points.
+                        {t('admin.requireStreetDesc', 'Members must complete their street alignment details, matching physical post coordinate points.')}
                       </span>
                     </div>
                     <button
@@ -195,9 +197,9 @@ const CuratorSettingsPage = ({ user }) => {
                   {/* City Toggle */}
                   <div className="gating-toggle-row">
                     <div className="toggle-text-info">
-                      <span className="toggle-label">Require Municipal City registry</span>
+                      <span className="toggle-label">{t('admin.requireCity', 'Require Municipal City registry')}</span>
                       <span className="toggle-description">
-                        Members must register the city bounds of their residency to track geopolitical scholar density.
+                        {t('admin.requireCityDesc', 'Members must register the city bounds of their residency to track geopolitical scholar density.')}
                       </span>
                     </div>
                     <button
@@ -212,9 +214,9 @@ const CuratorSettingsPage = ({ user }) => {
                   {/* PIN Code Toggle */}
                   <div className="gating-toggle-row">
                     <div className="toggle-text-info">
-                      <span className="toggle-label">Require PIN / Postal Code coordinates</span>
+                      <span className="toggle-label">{t('admin.requirePinCode', 'Require PIN / Postal Code coordinates')}</span>
                       <span className="toggle-description">
-                        Mandatory postal indicator. Ensures physical address verification operates smoothly during collection periods.
+                        {t('admin.requirePinCodeDesc', 'Mandatory postal indicator. Ensures physical address verification operates smoothly during collection periods.')}
                       </span>
                     </div>
                     <button
@@ -231,15 +233,15 @@ const CuratorSettingsPage = ({ user }) => {
                   
                   <h3 className="section-title-settings">
                     <Sparkles size={16} className="gold-glow-icon inline mr-2" style={{ verticalAlign: 'text-bottom', display: 'inline-block' }} />
-                    Automated Blog Content Moderation
+                    {t('admin.automatedBlogModeration', 'Automated Blog Content Moderation')}
                   </h3>
 
                   {/* Blog Moderation Toggle */}
                   <div className="gating-toggle-row">
                     <div className="toggle-text-info">
-                      <span className="toggle-label text-gold-glow">Bypass Default Admin Review (AI Auto-Moderation)</span>
+                      <span className="toggle-label text-gold-glow">{t('admin.bypassAdminReview', 'Bypass Default Admin Review (AI Auto-Moderation)')}</span>
                       <span className="toggle-description">
-                        By default, all newly submitted blog posts (text & images) always route to the manual Curator approval queue. Enable this to delegate moderation checks to Google Cloud NLP & Vision APIs, publishing immediately if no violations are flagged.
+                        {t('admin.bypassAdminReviewDesc', 'By default, all newly submitted blog posts (text & images) always route to the manual Curator approval queue. Enable this to delegate moderation checks to Google Cloud NLP & Vision APIs, publishing immediately if no violations are flagged.')}
                       </span>
                     </div>
                     <button
@@ -256,11 +258,11 @@ const CuratorSettingsPage = ({ user }) => {
                   <button type="submit" disabled={saving} className="royal-btn settings-save-btn">
                     {saving ? (
                       <>
-                        <Loader2 className="animate-spin mr-2" size={16} /> Broadcast-saving Ledger...
+                        <Loader2 className="animate-spin mr-2" size={16} /> {t('admin.savingLedger', 'Broadcast-saving Ledger...')}
                       </>
                     ) : (
                       <>
-                        <Save size={16} /> Broadcast Gating Guidelines
+                        <Save size={16} /> {t('admin.saveGatingRules', 'Broadcast Gating Guidelines')}
                       </>
                     )}
                   </button>
@@ -270,24 +272,24 @@ const CuratorSettingsPage = ({ user }) => {
 
             {/* Informational sidebar panel */}
             <div className="royal-card settings-info-sidebar">
-              <h3 className="section-title-settings">Administrative Impact</h3>
+              <h3 className="section-title-settings">{t('admin.administrativeImpact', 'Administrative Impact')}</h3>
               <p className="sidebar-info-p">
-                Once a requirement is toggled <strong>Active</strong>, the backend's Checkout Gating controller will immediately refuse all subsequent checkout processes for members who lack those coordinates.
+                {t('admin.gatingImpactDesc', "Once a requirement is toggled Active, the backend's Checkout Gating controller will immediately refuse all subsequent checkout processes for members who lack those coordinates.")}
               </p>
 
               <div className="impact-check-box">
-                <h4 className="impact-box-title">Gated Checkout Gateways</h4>
+                <h4 className="impact-box-title">{t('admin.gatedCheckoutGateways', 'Gated Checkout Gateways')}</h4>
                 <ul className="impact-list">
-                  <li>Automated NFC verified card checkouts</li>
-                  <li>In-library terminal tablet self-checkout requests</li>
-                  <li>Manual queue circulation desk requests</li>
+                  <li>{t('admin.gatedCheckoutNfc', 'Automated NFC verified card checkouts')}</li>
+                  <li>{t('admin.gatedCheckoutTablet', 'In-library terminal tablet self-checkout requests')}</li>
+                  <li>{t('admin.gatedCheckoutManual', 'Manual queue circulation desk requests')}</li>
                 </ul>
               </div>
 
               <div className="alert-box-warning-settings">
                 <AlertTriangle size={18} className="warn-icon" />
                 <p>
-                  <strong>Precaution Note:</strong> Checkouts in progress will not be aborted retrospectively. To allow older members to borrow immediately, consider toggling fields progressively.
+                  <strong>{t('admin.precautionNote', 'Precaution Note:')}</strong> {t('admin.precautionDesc', 'Checkouts in progress will not be aborted retrospectively. To allow older members to borrow immediately, consider toggling fields progressively.')}
                 </p>
               </div>
             </div>

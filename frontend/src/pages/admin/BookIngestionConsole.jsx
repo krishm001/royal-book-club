@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw, X, Camera, Cpu, Smartphone, Check } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw, X, Camera, Cpu, Smartphone, Check, ArrowLeft } from 'lucide-react';
 import { createBook, lookupBookByIsbn, fetchBookByIsbn, fetchBooks } from '../../services/libraryApi';
 import { fetchBookHouses } from '../../services/genreApi';
 import { uploadBookImage } from '../../services/storageApi';
@@ -799,34 +800,37 @@ const BookIngestionConsole = ({ user }) => {
       {!isAdmin ? (
         <>
           <header className="ingestion-header">
-            <h1 className="ingestion-title glow-text">Access Denied</h1>
-            <p className="ingestion-subtitle">Only administrators can access the book ingestion console.</p>
+            <h1 className="ingestion-title glow-text">{t('admin.privilegedSanctuary', 'Access Denied')}</h1>
+            <p className="ingestion-subtitle">{t('admin.accessDeniedDesc', 'Only administrators can access the book ingestion console.')}</p>
           </header>
         </>
       ) : (
         <>
           <header className="ingestion-header">
+            <Link to="/admin" className="back-link">
+              <ArrowLeft size={16} /> {t('admin.backToConsole', 'Curator Console')}
+            </Link>
             <div className="header-badge-admin">
               <Shield size={14} className="gold-glow-icon" />
               <span className="gold-gradient-text">ADMIN ACQUISITION</span>
             </div>
-            <h1 className="ingestion-title glow-text">Acquisition Ingestion Console</h1>
+            <h1 className="ingestion-title glow-text">{t('admin.bookIngestionConsole', 'Acquisition Ingestion Console')}</h1>
             <p className="ingestion-subtitle">
-              Acquire and register new physical and digital masterworks into the Royal Library ledger.
+              {t('admin.ingestionDesc', 'Acquire and register new physical and digital masterworks into the Royal Library ledger.')}
             </p>
           </header>
 
           <div className="ingestion-grid">
             <div className="royal-card form-intake-card">
-              <h3>Single Volume Intake</h3>
+              <h3>{t('admin.manualIngestion', 'Single Volume Intake')}</h3>
               <p className="section-p-desc">Register an individual book volume. Query metadata by ISBN or input details manually.</p>
 
               <div className="isbn-query-wrapper">
-                <label className="royal-input-label">ISBN Lookup</label>
+                <label className="royal-input-label">{t('catalog.isbn', 'ISBN Lookup')}</label>
                 <div className="isbn-input-row">
                   <input
                     type="text"
-                    placeholder="e.g. 9780141439570"
+                    placeholder={t('admin.isbnPlaceholder', 'e.g. 9780141439570')}
                     className="royal-input isbn-input-box"
                     value={isbn}
                     onChange={(e) => setIsbn(e.target.value)}
@@ -846,7 +850,7 @@ const BookIngestionConsole = ({ user }) => {
                     disabled={fetchingMetadata}
                     id="isbn-lookup-btn"
                   >
-                    {fetchingMetadata ? <RefreshCw className="spin-icon" size={14} /> : 'Fetch'}
+                    {fetchingMetadata ? <RefreshCw className="spin-icon" size={14} /> : t('admin.fetchMetadata', 'Fetch')}
                   </button>
                 </div>
               </div>
@@ -860,7 +864,7 @@ const BookIngestionConsole = ({ user }) => {
                   </div>
                 )}
                 <div className="input-group">
-                  <label className="royal-input-label">Volume Title</label>
+                  <label className="royal-input-label">{t('admin.titleLabel', 'Volume Title')}</label>
                   <input
                     type="text"
                     placeholder="The Picture of Dorian Gray"
@@ -872,7 +876,7 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
 
                 <div className="input-group">
-                  <label className="royal-input-label">Author Name(s)</label>
+                  <label className="royal-input-label">{t('admin.authorLabel', 'Author Name(s)')}</label>
                   <input
                     type="text"
                     placeholder="Oscar Wilde, Mary Shelley"
@@ -884,7 +888,7 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
 
                 <div className="input-group">
-                  <label className="royal-input-label">Publisher</label>
+                  <label className="royal-input-label">{t('admin.publisherLabel', 'Publisher')}</label>
                   <input
                     type="text"
                     className="royal-input"
@@ -894,7 +898,7 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
 
                 <div className="input-group">
-                  <label className="royal-input-label">Publish Date</label>
+                  <label className="royal-input-label">{t('admin.publishDateLabel', 'Publish Date')}</label>
                   <input
                     type="text"
                     className="royal-input"
@@ -905,7 +909,7 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
 
                 <div className="input-group">
-                  <label className="royal-input-label">Assign Salon House</label>
+                  <label className="royal-input-label">{t('admin.houseLabel', 'Assign Salon House')}</label>
                   <select
                     className="royal-select"
                     value={selectedHouse}
@@ -921,21 +925,21 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
 
                 <div className="input-group">
-                  <label className="royal-input-label">Volume Language</label>
+                  <label className="royal-input-label">{t('admin.languageLabel', 'Volume Language')}</label>
                   <select
                     className="royal-select"
                     value={bookLanguage}
                     onChange={(e) => setBookLanguage(e.target.value)}
                     required
                   >
-                    <option value="en">English (Sovereign Dialect)</option>
-                    <option value="hi">Hindi (Rajasthani Royal Style)</option>
-                    <option value="kn">Kannada (Classical Royal Style)</option>
+                    <option value="en">{t('common.english', 'English (Sovereign Dialect)')}</option>
+                    <option value="hi">{t('common.hindi', 'Hindi (Rajasthani Royal Style)')}</option>
+                    <option value="kn">{t('common.kannada', 'Kannada (Classical Royal Style)')}</option>
                   </select>
                 </div>
 
                 <div className="input-group">
-                  <label className="royal-input-label">Acquisition Labels / Tags</label>
+                  <label className="royal-input-label">{t('admin.tagsLabel', 'Acquisition Labels / Tags')}</label>
                   <input
                     type="text"
                     className="royal-input"
@@ -955,7 +959,7 @@ const BookIngestionConsole = ({ user }) => {
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
-                              handleSaveTagEdit(idx);
+                               handleSaveTagEdit(idx);
                             } else if (e.key === 'Escape') {
                               setEditingTagIndex(null);
                             }
@@ -1004,7 +1008,7 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
 
                 <div className="input-group">
-                  <label className="royal-input-label">Cover Image</label>
+                  <label className="royal-input-label">{t('admin.coverLabel', 'Cover Image')}</label>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
@@ -1111,7 +1115,7 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
 
                 <div className="input-group">
-                  <label className="royal-input-label">Description</label>
+                  <label className="royal-input-label">{t('common.details', 'Description')}</label>
                   <textarea
                     className="royal-textarea"
                     value={description}
@@ -1122,7 +1126,7 @@ const BookIngestionConsole = ({ user }) => {
 
                 <div className="form-grid-two">
                   <div className="input-group">
-                    <label className="royal-input-label">Pages</label>
+                    <label className="royal-input-label">{t('admin.pagesLabel', 'Pages')}</label>
                     <input
                       type="number"
                       className="royal-input"
@@ -1132,7 +1136,7 @@ const BookIngestionConsole = ({ user }) => {
                     />
                   </div>
                   <div className="input-group">
-                    <label className="royal-input-label">Total Copies</label>
+                    <label className="royal-input-label">{t('admin.copiesLabel', 'Total Copies')}</label>
                     <input
                       type="number"
                       className="royal-input"
@@ -1144,7 +1148,7 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
 
                 <div className="input-group">
-                  <label className="royal-input-label">Available Copies</label>
+                  <label className="royal-input-label">{t('catalog.availableCopies', 'Available Copies')}</label>
                   <input
                     type="number"
                     className="royal-input"
@@ -1156,7 +1160,7 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
 
                 <div className="input-group nfc-binding-section">
-                  <label className="royal-input-label">NTAG213 UID (NFC Registration)</label>
+                  <label className="royal-input-label">{t('admin.nfcUidLabel', 'NTAG213 UID (NFC Registration)')}</label>
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <input
                       type="text"
@@ -1173,7 +1177,7 @@ const BookIngestionConsole = ({ user }) => {
                       style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                     >
                       {isNfcReading ? <RefreshCw className="spin-icon" size={14} /> : <Smartphone size={14} />}
-                      {isNfcReading ? 'Reading...' : 'Scan NFC'}
+                      {isNfcReading ? 'Reading...' : t('admin.assignNfcBtn', 'Scan NFC')}
                     </button>
                   </div>
 
@@ -1210,7 +1214,7 @@ const BookIngestionConsole = ({ user }) => {
 
                 <div className="submit-row">
                   <button type="submit" className="royal-btn submit-book-btn" id="add-volume-btn">
-                    {isEditMode ? 'Save Updated Details' : 'Add Volume to Ledger'}
+                    {isEditMode ? t('common.save', 'Save Updated Details') : t('admin.ingestBtn', 'Add Volume to Ledger')}
                   </button>
                 </div>
               </form>

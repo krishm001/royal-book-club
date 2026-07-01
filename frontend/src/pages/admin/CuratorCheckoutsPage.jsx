@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Check, X, Clock, BookOpen, User, RefreshCw, Search, Filter, AlertCircle, CheckCircle, Smartphone } from 'lucide-react';
+import { Shield, Check, X, Clock, BookOpen, User, RefreshCw, Search, Filter, AlertCircle, CheckCircle, Smartphone, ArrowLeft } from 'lucide-react';
 import { fetchCheckouts, approveCheckout, rejectCheckout, approveReturn, fetchBooks } from '../../services/libraryApi';
 import { getAllUsers } from '../../services/userApi';
+import { useLanguage } from '../../i18n/LanguageContext';
 import './CuratorCheckoutsPage.css';
 
 export default function CuratorCheckoutsPage({ user }) {
+  const { t } = useLanguage();
   const [checkouts, setCheckouts] = useState([]);
   const [books, setBooks] = useState([]);
   const [users, setUsers] = useState([]);
@@ -117,13 +119,13 @@ export default function CuratorCheckoutsPage({ user }) {
           <div className="denied-icon-wrapper">
             <Shield size={48} className="denied-shield-icon" />
           </div>
-          <h2 className="denied-title gold-gradient-text">Privileged Sanctuary</h2>
+          <h2 className="denied-title gold-gradient-text">{t('admin.privilegedSanctuary', 'Privileged Sanctuary')}</h2>
           <p className="denied-message">
-            Your current credentials do not grant access to the Curator Requests Ledger. Curation of library circulation is reserved for assigned Curators.
+            {t('admin.circulationDeniedMsg', 'Your current credentials do not grant access to the Curator Requests Ledger. Curation of library circulation is reserved for assigned Curators.')}
           </p>
           <div className="denied-actions">
             <Link to="/" className="royal-btn return-home-btn">
-              Return to Entrance Hall
+              {t('admin.returnEntrance', 'Return to Entrance Hall')}
             </Link>
           </div>
         </div>
@@ -180,7 +182,7 @@ export default function CuratorCheckoutsPage({ user }) {
         <div className="ledger-book-cell">
           <BookOpen className="cell-icon text-muted" size={16} />
           <div>
-            <div className="cell-primary-title">Unknown volume</div>
+            <div className="cell-primary-title">{t('admin.unknownVolume', 'Unknown volume')}</div>
             <div className="cell-sub-detail text-muted">ISBN: {bookId}</div>
           </div>
         </div>
@@ -191,7 +193,7 @@ export default function CuratorCheckoutsPage({ user }) {
         <img src={book.coverUrl || 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=80&q=80'} alt={book.title} className="ledger-book-thumbnail" />
         <div>
           <div className="cell-primary-title truncate">{book.title}</div>
-          <div className="cell-sub-detail truncate-author">by {Array.isArray(book.authors) ? book.authors.join(', ') : book.author || 'Unknown'}</div>
+          <div className="cell-sub-detail truncate-author">{t('common.by', 'by')} {Array.isArray(book.authors) ? book.authors.join(', ') : book.author || t('admin.unknownAuthor', 'Unknown')}</div>
           <div className="cell-sub-detail text-accent">ISBN: {bookId}</div>
         </div>
       </div>
@@ -213,9 +215,9 @@ export default function CuratorCheckoutsPage({ user }) {
       name = tx.memberName || '';
     }
     if (!name) {
-      name = 'Unknown Patron';
+      name = t('admin.unknownPatron', 'Unknown Patron');
     }
-    const email = member?.email || tx?.memberEmail || 'No email';
+    const email = member?.email || tx?.memberEmail || t('admin.noEmail', 'No email');
     return (
       <div className="ledger-member-cell">
         <div className="avatar-mini-circle">
@@ -235,31 +237,31 @@ export default function CuratorCheckoutsPage({ user }) {
       case 'REQUESTED_CHECKOUT':
         return (
           <span className="ledger-status-badge badge-checkout-req animate-pulse">
-            <Clock size={12} /> Checkout Req
+            <Clock size={12} /> {t('admin.checkoutReqBadge', 'Checkout Req')}
           </span>
         );
       case 'REQUESTED_RETURN':
         return (
           <span className="ledger-status-badge badge-return-req animate-pulse">
-            <Clock size={12} /> Return Req
+            <Clock size={12} /> {t('admin.returnReqBadge', 'Return Req')}
           </span>
         );
       case 'CHECKED_OUT':
         return (
           <span className="ledger-status-badge badge-checkedout">
-            <Smartphone size={12} /> Checked Out {ntagUid && <span className="nfc-dot" title={`Verified via NTAG213: ${ntagUid}`}>NFC</span>}
+            <Smartphone size={12} /> {t('admin.checkedOutBadge', 'Checked Out')} {ntagUid && <span className="nfc-dot" title={`Verified via NTAG213: ${ntagUid}`}>NFC</span>}
           </span>
         );
       case 'RETURNED':
         return (
           <span className="ledger-status-badge badge-returned">
-            <CheckCircle size={12} /> Returned
+            <CheckCircle size={12} /> {t('admin.returnedBadge', 'Returned')}
           </span>
         );
       case 'REJECTED':
         return (
           <span className="ledger-status-badge badge-rejected">
-            <X size={12} /> Rejected
+            <X size={12} /> {t('admin.rejectedBadge', 'Rejected')}
           </span>
         );
       default:
@@ -271,13 +273,16 @@ export default function CuratorCheckoutsPage({ user }) {
     <div className="curator-checkouts-container animate-fade-in">
       {/* Page Header */}
       <header className="curator-checkouts-header">
+        <Link to="/admin" className="back-link">
+          <ArrowLeft size={16} /> {t('common.curatorConsole', 'Curator Console')}
+        </Link>
         <div className="header-badge-curator">
           <Shield size={14} className="gold-glow-icon" />
-          <span className="gold-gradient-text">CIRCULATION LEDGER</span>
+          <span className="gold-gradient-text">{t('admin.circulationLedger', 'Sovereign Circulation Ledger')}</span>
         </div>
-        <h1 className="curator-checkouts-title glow-text">Patron Circulation Desk</h1>
+        <h1 className="curator-checkouts-title glow-text">{t('admin.patronCirculationDesk', 'Patron Circulation Desk')}</h1>
         <p className="curator-checkouts-subtitle">
-          Process physical/digital checkout bookings, verify smart card return requests, and audit the active Royal catalog circulation.
+          {t('admin.circulationDesc', 'Process physical/digital checkout bookings, verify smart card return requests, and audit the active Royal library ledger.')}
         </p>
       </header>
 
@@ -285,20 +290,20 @@ export default function CuratorCheckoutsPage({ user }) {
       <section className="circulation-analytics-grid">
         <div className="royal-card analytic-summary-card">
           <span className="count-large gold-gradient-text">{checkoutRequests.length}</span>
-          <span className="label">Checkout Requests</span>
+          <span className="label">{t('admin.checkoutRequests', 'Checkout Requests')}</span>
         </div>
         <div className="royal-card analytic-summary-card">
           <span className="count-large text-warning">{returnRequests.length}</span>
-          <span className="label">Return Requests</span>
+          <span className="label">{t('admin.returnRequests', 'Return Requests')}</span>
         </div>
         <div className="royal-card analytic-summary-card">
           <span className="count-large text-success">{activeCheckouts.length}</span>
-          <span className="label">Active Circulations</span>
+          <span className="label">{t('admin.activeCheckouts', 'Active Checkouts')}</span>
         </div>
         <div className="royal-card analytic-summary-card">
           <button onClick={loadData} className="ledger-refresh-btn" disabled={loading}>
             <RefreshCw size={20} className={loading ? 'spin-icon' : ''} />
-            <span>Sync Ledger</span>
+            <span>{t('admin.syncLedger', 'Sync Ledger')}</span>
           </button>
         </div>
       </section>
@@ -310,7 +315,7 @@ export default function CuratorCheckoutsPage({ user }) {
           <div className="panel-header-row">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Clock size={20} className="gold-glow-icon" />
-              <h3>Pending Checkout Bookings</h3>
+              <h3>{t('admin.pendingCheckoutBookings', 'Pending Checkout Bookings')}</h3>
             </div>
             <span className="count-badge bg-gold">{checkoutRequests.length}</span>
           </div>
@@ -318,7 +323,7 @@ export default function CuratorCheckoutsPage({ user }) {
           {checkoutRequests.length === 0 ? (
             <div className="ledger-empty-state">
               <CheckCircle size={32} className="text-success" />
-              <p>No pending checkout requests from patrons.</p>
+              <p>{t('admin.noPendingCheckouts', 'No pending checkout requests from patrons.')}</p>
             </div>
           ) : (
             <div className="requests-compact-list">
@@ -329,7 +334,7 @@ export default function CuratorCheckoutsPage({ user }) {
                     {renderMemberCell(r.memberId, r)}
                     <div className="request-time">
                       <Clock size={12} className="inline-icon" />
-                      <span>{r.requestedAt ? new Date(r.requestedAt).toLocaleDateString() : 'Today'}</span>
+                      <span>{r.requestedAt ? new Date(r.requestedAt).toLocaleDateString() : t('admin.today', 'Today')}</span>
                     </div>
                   </div>
                   <div className="compact-row-actions">
@@ -337,7 +342,7 @@ export default function CuratorCheckoutsPage({ user }) {
                       onClick={() => handleApproveCheckout(r.id)}
                       className="action-btn-circle btn-approve"
                       disabled={actionLoading[r.id]}
-                      title="Authorize Checkout"
+                      title={t('admin.approveCheckout', 'Approve Loan')}
                     >
                       {actionLoading[r.id] === 'approve' ? <RefreshCw className="spin-icon" size={14} /> : <Check size={14} />}
                     </button>
@@ -345,7 +350,7 @@ export default function CuratorCheckoutsPage({ user }) {
                       onClick={() => handleRejectCheckout(r.id)}
                       className="action-btn-circle btn-reject"
                       disabled={actionLoading[r.id]}
-                      title="Deny Booking"
+                      title={t('admin.rejectCheckout', 'Reject Loan')}
                     >
                       {actionLoading[r.id] === 'reject' ? <RefreshCw className="spin-icon" size={14} /> : <X size={14} />}
                     </button>
@@ -361,7 +366,7 @@ export default function CuratorCheckoutsPage({ user }) {
           <div className="panel-header-row">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <RefreshCw size={20} className="text-warning" />
-              <h3>Pending Return Verifications</h3>
+              <h3>{t('admin.pendingReturnVerifications', 'Pending Return Verifications')}</h3>
             </div>
             <span className="count-badge bg-warning">{returnRequests.length}</span>
           </div>
@@ -369,7 +374,7 @@ export default function CuratorCheckoutsPage({ user }) {
           {returnRequests.length === 0 ? (
             <div className="ledger-empty-state">
               <CheckCircle size={32} className="text-success" />
-              <p>No pending return requests from patrons.</p>
+              <p>{t('admin.noPendingReturns', 'No pending return requests from patrons.')}</p>
             </div>
           ) : (
             <div className="requests-compact-list">
@@ -380,7 +385,7 @@ export default function CuratorCheckoutsPage({ user }) {
                     {renderMemberCell(r.memberId, r)}
                     <div className="request-time">
                       <Clock size={12} className="inline-icon" />
-                      <span>{r.requestedAt ? new Date(r.requestedAt).toLocaleDateString() : 'Today'}</span>
+                      <span>{r.requestedAt ? new Date(r.requestedAt).toLocaleDateString() : t('admin.today', 'Today')}</span>
                     </div>
                   </div>
                   <div className="compact-row-actions">
@@ -388,7 +393,7 @@ export default function CuratorCheckoutsPage({ user }) {
                       onClick={() => handleApproveReturn(r.id)}
                       className="action-btn-circle btn-approve-return"
                       disabled={actionLoading[r.id]}
-                      title="Confirm Return & Re-stock Volume"
+                      title={t('admin.approveReturn', 'Approve Return')}
                     >
                       {actionLoading[r.id] === 'return' ? <RefreshCw className="spin-icon" size={14} /> : <Check size={14} />}
                     </button>
@@ -403,7 +408,7 @@ export default function CuratorCheckoutsPage({ user }) {
       {/* Master Ledger Audit Table */}
       <section className="master-ledger-section royal-card">
         <div className="ledger-table-header-row">
-          <h3 className="section-title">Master Circulation Registry</h3>
+          <h3 className="section-title">{t('admin.masterCirculationRegistry', 'Master Circulation Registry')}</h3>
           
           <div className="ledger-search-filters">
             {/* Search */}
@@ -411,7 +416,7 @@ export default function CuratorCheckoutsPage({ user }) {
               <Search size={16} className="search-icon" />
               <input
                 type="text"
-                placeholder="Search volume, ISBN, user, email..."
+                placeholder={t('admin.searchCirculationPlaceholder', 'Search volume, ISBN, user, email...')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="ledger-search-input"
@@ -426,10 +431,10 @@ export default function CuratorCheckoutsPage({ user }) {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="ledger-filter-select"
               >
-                <option value="ALL">All Entries</option>
-                <option value="PENDING">Pending Requests Only</option>
-                <option value="ACTIVE">Active Checkouts</option>
-                <option value="RETURNED">Successfully Returned</option>
+                <option value="ALL">{t('admin.allEntries', 'All Entries')}</option>
+                <option value="PENDING">{t('admin.pendingRequestsOnly', 'Pending Requests Only')}</option>
+                <option value="ACTIVE">{t('admin.activeCheckoutsOnly', 'Active Checkouts')}</option>
+                <option value="RETURNED">{t('admin.successfullyReturnedOnly', 'Successfully Returned')}</option>
               </select>
             </div>
           </div>
@@ -438,24 +443,24 @@ export default function CuratorCheckoutsPage({ user }) {
         {loading ? (
           <div className="ledger-table-loading">
             <RefreshCw className="spin-icon text-accent" size={32} />
-            <p>Retrieving master transactions registry...</p>
+            <p>{t('admin.loadingLedger', 'Retrieving master transactions registry...')}</p>
           </div>
         ) : getFilteredList().length === 0 ? (
           <div className="ledger-table-empty">
             <AlertCircle size={40} className="text-muted" />
-            <p>No matching transactions found in database matching criteria.</p>
+            <p>{t('admin.noMatchingTransactions', 'No matching transactions found in database matching criteria.')}</p>
           </div>
         ) : (
           <div className="ledger-table-wrapper">
             <table className="ledger-table">
               <thead>
                 <tr>
-                  <th>Volume Detail</th>
-                  <th>Sovereign Patron</th>
-                  <th>Checked Out / Req</th>
-                  <th>Return Date</th>
-                  <th>Circulation Status</th>
-                  <th>Verification Card</th>
+                  <th>{t('admin.book', 'Volume')}</th>
+                  <th>{t('admin.patron', 'Patron')}</th>
+                  <th>{t('admin.loanDate', 'Loan Date')}</th>
+                  <th>{t('admin.dueDate', 'Due Date')}</th>
+                  <th>{t('admin.status', 'Status')}</th>
+                  <th>{t('admin.verificationCard', 'Verification Card')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -495,7 +500,7 @@ export default function CuratorCheckoutsPage({ user }) {
                         </span>
                         {entry.status === 'CHECKED_OUT' && entry.dueDate && (
                           <span className={`due-badge ${new Date(entry.dueDate) < new Date() ? 'overdue' : 'pending'}`}>
-                            {new Date(entry.dueDate) < new Date() ? 'Overdue' : 'Outstanding'}
+                            {new Date(entry.dueDate) < new Date() ? t('admin.overdue', 'Overdue') : t('admin.outstanding', 'Outstanding')}
                           </span>
                         )}
                       </div>

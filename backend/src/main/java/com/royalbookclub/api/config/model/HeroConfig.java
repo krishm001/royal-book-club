@@ -5,7 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Configuration model for the Home page hero section.
@@ -28,4 +30,7 @@ public class HeroConfig {
 
     @Builder.Default
     private List<String> featuredQuotes = new ArrayList<>();
+
+    @Builder.Default
+    private Map<String, Map<String, Object>> translations = new HashMap<>();
 }

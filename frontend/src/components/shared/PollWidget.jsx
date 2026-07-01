@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, CheckCircle2, Users, Lock, RefreshCw } from 'lucide-react';
 import { fetchActivePoll, castVote } from '../../services/pollApi';
+import { useLanguage } from '../../i18n/LanguageContext';
 import './PollWidget.css';
 
 const PollWidget = ({ user, onSignIn }) => {
+  const { t, getLocalized } = useLanguage();
   const [poll, setPoll] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -112,12 +114,12 @@ const PollWidget = ({ user, onSignIn }) => {
         <div className="poll-gated-icon-wrapper">
           <Lock size={24} />
         </div>
-        <h3 className="poll-gated-title gold-gradient-text">Sovereign Plebiscite Gated</h3>
+        <h3 className="poll-gated-title gold-gradient-text">{t('poll.gatedTitle')}</h3>
         <p className="poll-gated-desc">
-          This community plebiscite is restricted to active members of the Royal Guild. Please sign in or request an invitation to participate.
+          {t('poll.gatedDesc')}
         </p>
         <button onClick={onSignIn} className="poll-gated-btn">
-          Sign In to Vote
+          {t('poll.gatedBtn')}
         </button>
       </div>
     );
@@ -133,14 +135,14 @@ const PollWidget = ({ user, onSignIn }) => {
         </div>
         <div className="poll-meta">
           <span className="poll-tag">
-            {poll.membersOnly ? 'Sovereign Guild Plebiscite' : 'Community Plebiscite'}
+            {poll.membersOnly ? t('poll.membersOnlyPlebiscite') : t('poll.communityPlebiscite')}
           </span>
-          <h3 className="poll-question">{poll.question}</h3>
+          <h3 className="poll-question">{getLocalized(poll, 'question')}</h3>
         </div>
       </div>
 
       <div className="poll-options-container">
-        {poll.options.map((optionText, idx) => {
+        {getLocalized(poll, 'options').map((optionText, idx) => {
           const optionVotes = poll.votes[idx] || 0;
           const votePercentage = totalVotes > 0 ? Math.round((optionVotes / totalVotes) * 100) : 0;
           const isSelected = votedIndex === idx;
@@ -193,11 +195,11 @@ const PollWidget = ({ user, onSignIn }) => {
       <div className="poll-footer-row">
         <div className="poll-stats">
           <Users size={16} />
-          <span>{totalVotes.toLocaleString()} votes cast in Scribes Ledger</span>
+          <span>{totalVotes.toLocaleString()} {t('poll.votesCast')}</span>
         </div>
         {votedIndex !== null && (
           <span style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: '600', letterSpacing: '0.05em' }}>
-            ✓ VOTE RECORDED
+            {t('poll.voteRecorded')}
           </span>
         )}
       </div>

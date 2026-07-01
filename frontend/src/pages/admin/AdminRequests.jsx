@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { listAdminRequests, approveAdminRequest, rejectAdminRequest } from '../../services/adminRequestApi';
 
 export default function AdminRequests({ user }) {
@@ -52,7 +54,10 @@ export default function AdminRequests({ user }) {
   if (loading) return <div>Loading admin requests...</div>;
 
   return (
-    <div className="admin-requests">
+    <div className="admin-requests" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      <Link to="/admin" className="back-link" style={{ marginBottom: '20px' }}>
+        <ArrowLeft size={16} /> Curator Console
+      </Link>
       <h3>Pending Admin Requests</h3>
       {requests.length === 0 ? (
         <div>No pending requests.</div>

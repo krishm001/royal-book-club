@@ -391,12 +391,12 @@ function App() {
               <p>Constantly surpassing our bad faith towards absolute freedom by cultivating intellectual community since 2026.</p>
             </div>
             <div className="footer-links">
-              <h4>The Library</h4>
+              <h4>{t('common.theLibrary')}</h4>
               <Link to="/catalog">{t('common.study')}</Link>
               <Link to="/events">{t('common.assembly')}</Link>
               <Link to="/discourses">{t('common.discourses')}</Link>
-              <Link to="/terms">Terms & Conditions</Link>
-              <Link to="/privacy">Privacy Notice</Link>
+              <Link to="/terms">{t('common.termsAndConditions')}</Link>
+              <Link to="/privacy">{t('common.privacyNotice')}</Link>
             </div>
             <div className="footer-motto">
               <blockquote>

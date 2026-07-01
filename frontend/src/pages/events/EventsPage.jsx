@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Sparkles, Filter, CheckCircle2 } from 'lucide-react';
 import EventCard from '../../components/shared/EventCard';
 import { fetchEvents } from '../../services/eventApi';
+import { useLanguage } from '../../i18n/LanguageContext';
 import './EventsPage.css';
 
 const EventsPage = ({ user }) => {
+  const { t } = useLanguage();
   const [selectedType, setSelectedType] = useState('All');
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,11 +47,11 @@ const EventsPage = ({ user }) => {
       <header className="events-header">
         <div className="header-badge">
           <Sparkles size={14} className="gold-glow-icon" />
-          <span className="gold-gradient-text">LITERARY SALONS & GATHERINGS</span>
+          <span className="gold-gradient-text">{t('assembly.literarySalons')}</span>
         </div>
-        <h1 className="events-title glow-text">Intellectual Banquets</h1>
+        <h1 className="events-title glow-text">{t('assembly.intellectualBanquets')}</h1>
         <p className="events-subtitle">
-          Secure your physical invitation to upcoming master-level panels, poetry recitals, and prestigious autumn litfests.
+          {t('assembly.tagline')}
         </p>
       </header>
 
@@ -57,7 +59,7 @@ const EventsPage = ({ user }) => {
       <section className="events-filter-bar royal-card">
         <div className="filter-title-wrapper">
           <Filter size={16} className="gold-glow-icon" />
-          <span>Select Salon Type:</span>
+          <span>{t('assembly.selectSalonType')}:</span>
         </div>
         <div className="filter-tags-group">
           {types.map((type) => (

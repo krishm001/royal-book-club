@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Data Transfer Object for creating or customizing a Guild Plebiscite.
@@ -26,4 +27,6 @@ public class PollDto {
     private List<String> options;
 
     private boolean membersOnly;
+
+    private Map<String, Map<String, Object>> translations;
 }

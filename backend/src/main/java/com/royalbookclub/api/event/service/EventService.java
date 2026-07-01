@@ -204,6 +204,7 @@ public class EventService {
         map.put("imageUrl", event.getImageUrl());
         map.put("rsvps", event.getRsvps() != null ? event.getRsvps() : new ArrayList<String>());
         map.put("imageUrls", event.getImageUrls() != null ? event.getImageUrls() : new ArrayList<String>());
+        map.put("translations", event.getTranslations() != null ? event.getTranslations() : new HashMap<String, Map<String, Object>>());
         map.put("createdAt", event.getCreatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(event.getCreatedAt().getEpochSecond(), event.getCreatedAt().getNano()) : null);
         map.put("updatedAt", event.getUpdatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(event.getUpdatedAt().getEpochSecond(), event.getUpdatedAt().getNano()) : null);
         return map;
@@ -217,6 +218,7 @@ public class EventService {
         com.google.cloud.Timestamp updatedTimestamp = doc.getTimestamp("updatedAt");
         List<String> rsvps = (List<String>) doc.get("rsvps");
         List<String> imageUrls = (List<String>) doc.get("imageUrls");
+        Map<String, Map<String, Object>> translations = (Map<String, Map<String, Object>>) doc.get("translations");
 
         return Event.builder()
                 .id(doc.getString("id"))
@@ -233,6 +235,7 @@ public class EventService {
                 .imageUrl(doc.getString("imageUrl"))
                 .rsvps(rsvps != null ? rsvps : new ArrayList<>())
                 .imageUrls(imageUrls != null ? imageUrls : new ArrayList<>())
+                .translations(translations != null ? translations : new HashMap<>())
                 .createdAt(createdTimestamp != null ? Instant.ofEpochSecond(createdTimestamp.getSeconds(), createdTimestamp.getNanos()) : null)
                 .updatedAt(updatedTimestamp != null ? Instant.ofEpochSecond(updatedTimestamp.getSeconds(), updatedTimestamp.getNanos()) : null)
                 .build();

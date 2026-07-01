@@ -22,7 +22,16 @@ const defaultFeaturedBook = {
 };
 
 const HomePage = ({ user, onSignIn, theme }) => {
-  const { t } = useLanguage();
+  const { t, getLocalized } = useLanguage();
+
+  const getShowcaseCitation = () => {
+    if (!currentShowcaseItem) return '';
+    if (currentShowcaseItem.citationIndex !== undefined && currentShowcaseItem.citationIndex !== -1 && heroConfig) {
+      const langQuotes = getLocalized(heroConfig, 'featuredQuotes') || [];
+      return langQuotes[currentShowcaseItem.citationIndex] || currentShowcaseItem.citation;
+    }
+    return getLocalized(currentShowcaseItem, 'citation') || currentShowcaseItem.citation;
+  };
   const [currentShowcaseItem, setCurrentShowcaseItem] = useState(defaultFeaturedBook);
   const [currentShowcaseType, setCurrentShowcaseType] = useState('book'); // 'book' or 'assembly'
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -114,9 +123,8 @@ const HomePage = ({ user, onSignIn, theme }) => {
         const index = Math.floor(Math.random() * pool.length);
         const chosen = pool[index];
         const quotesPool = currentHeroConfig.featuredQuotes || [];
-        const randomQuote = quotesPool.length > 0
-          ? quotesPool[Math.floor(Math.random() * quotesPool.length)]
-          : (chosen.citation || defaultFeaturedBook.citation);
+        const quoteIdx = quotesPool.length > 0 ? Math.floor(Math.random() * quotesPool.length) : -1;
+        const randomQuote = quoteIdx !== -1 ? quotesPool[quoteIdx] : (chosen.citation || defaultFeaturedBook.citation);
 
         setCurrentShowcaseItem({
           id: chosen.isbn || chosen.bookId || chosen.id || 'book-1',
@@ -127,6 +135,8 @@ const HomePage = ({ user, onSignIn, theme }) => {
           coverUrl: chosen.coverUrl || chosen.cover || defaultFeaturedBook.coverUrl,
           description: chosen.description || chosen.subtitle || defaultFeaturedBook.description,
           citation: randomQuote,
+          citationIndex: quoteIdx,
+          translations: chosen.translations || null,
         });
         setCurrentShowcaseType('book');
       } else if (events.length > 0) {
@@ -163,9 +173,8 @@ const HomePage = ({ user, onSignIn, theme }) => {
               const randomIndex = Math.floor(Math.random() * pool.length);
               const chosen = pool[randomIndex];
               const quotesPool = heroConfig.featuredQuotes || [];
-              const randomQuote = quotesPool.length > 0
-                ? quotesPool[Math.floor(Math.random() * quotesPool.length)]
-                : (chosen.citation || defaultFeaturedBook.citation);
+              const quoteIdx = quotesPool.length > 0 ? Math.floor(Math.random() * quotesPool.length) : -1;
+              const randomQuote = quoteIdx !== -1 ? quotesPool[quoteIdx] : (chosen.citation || defaultFeaturedBook.citation);
 
               setCurrentShowcaseItem({
                 id: chosen.isbn || chosen.bookId || chosen.id || 'book-1',
@@ -176,6 +185,8 @@ const HomePage = ({ user, onSignIn, theme }) => {
                 coverUrl: chosen.coverUrl || chosen.cover || defaultFeaturedBook.coverUrl,
                 description: chosen.description || chosen.subtitle || defaultFeaturedBook.description,
                 citation: randomQuote,
+                citationIndex: quoteIdx,
+                translations: chosen.translations || null,
               });
             }
           }
@@ -295,13 +306,13 @@ const HomePage = ({ user, onSignIn, theme }) => {
         <div className="hero-content">
           <div className="hero-badge">
             <Award size={14} className="gold-glow-icon" />
-            <span className="gold-gradient-text">ESTABLISHED MMXXVI</span>
+            <span className="gold-gradient-text">{t('home.established')} MMXXVI</span>
           </div>
           <h1 className="hero-title glow-text" style={{ whiteSpace: 'pre-line' }}>
-            {heroConfig.title === 'Words, Wisdom, Will.' ? t('home.heroTitle') : heroConfig.title}
+            {getLocalized(heroConfig, 'title') || t('home.heroTitle')}
           </h1>
           <p className="hero-subtitle">
-            {heroConfig.subtitle?.startsWith('The wisest humans') ? t('home.heroSubtitle') : heroConfig.subtitle}
+            {getLocalized(heroConfig, 'subtitle') || t('home.heroSubtitle')}
           </p>
           <div className="hero-cta-group">
             <Link to="/catalog" className="royal-btn">
@@ -316,14 +327,14 @@ const HomePage = ({ user, onSignIn, theme }) => {
             <div className="royal-card featured-highlight-card">
               <div className="highlight-tag gold-gradient-text">★ {t('home.featuredSelection')} ★</div>
               <div className="highlight-body">
-                <img src={currentShowcaseItem.coverUrl} alt={currentShowcaseItem.title} className="highlight-img" />
+                <img src={currentShowcaseItem.coverUrl} alt={getLocalized(currentShowcaseItem, 'title')} className="highlight-img" />
                 <div className="highlight-details">
-                  <h3 className="highlight-title">{currentShowcaseItem.title}</h3>
-                  <span className="highlight-author">by {currentShowcaseItem.author}</span>
-                  <p className="highlight-desc">{currentShowcaseItem.description}</p>
+                  <h3 className="highlight-title">{getLocalized(currentShowcaseItem, 'title')}</h3>
+                  <span className="highlight-author">{t('common.by')} {currentShowcaseItem.author}</span>
+                  <p className="highlight-desc">{getLocalized(currentShowcaseItem, 'description')}</p>
                   {featuredError && <div className="highlight-note">{featuredError}</div>}
-                  {currentShowcaseItem.citation && (
-                    <blockquote className="highlight-quote">{currentShowcaseItem.citation}</blockquote>
+                  {getShowcaseCitation() && (
+                    <blockquote className="highlight-quote">{getShowcaseCitation()}</blockquote>
                   )}
                   <Link to={`/catalog/${currentShowcaseItem.id}`} className="highlight-action-btn">
                     {t('catalog.checkout')} <ChevronRight size={14} />
@@ -345,14 +356,14 @@ const HomePage = ({ user, onSignIn, theme }) => {
                     <img
                       key={currentAssemblyImage}
                       src={currentAssemblyImage}
-                      alt={currentShowcaseItem.title}
+                      alt={getLocalized(currentShowcaseItem, 'title')}
                       className="highlight-img assembly-img assembly-img-fade-in"
                     />
                   </div>
                   <div className="highlight-details">
-                    <span className="assembly-type-tag">{currentShowcaseItem.type}</span>
-                    <h3 className="highlight-title">{currentShowcaseItem.title}</h3>
-                    <p className="highlight-desc">{currentShowcaseItem.description}</p>
+                    <span className="assembly-type-tag">{getLocalized(currentShowcaseItem, 'type')}</span>
+                    <h3 className="highlight-title">{getLocalized(currentShowcaseItem, 'title')}</h3>
+                    <p className="highlight-desc">{getLocalized(currentShowcaseItem, 'description')}</p>
  
                     <div className="assembly-specs">
                       <span className="assembly-spec-item">
@@ -362,13 +373,13 @@ const HomePage = ({ user, onSignIn, theme }) => {
                         <Clock size={12} className="gold-glow-icon" /> {currentShowcaseItem.time}
                       </span>
                       <span className="assembly-spec-item">
-                        <MapPin size={12} className="gold-glow-icon" /> {currentShowcaseItem.location}
+                        <MapPin size={12} className="gold-glow-icon" /> {getLocalized(currentShowcaseItem, 'location')}
                       </span>
                     </div>
  
                     <div className="showcase-actions" style={{ display: 'flex', gap: '12px', marginTop: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
                       <Link to={`/events/${currentShowcaseItem.id}`} className="royal-btn-secondary" style={{ padding: '8px 16px', fontSize: '0.75rem', textDecoration: 'none' }}>
-                        Details <ChevronRight size={12} />
+                        {t('common.details')} <ChevronRight size={12} />
                       </Link>
                       {isUserRsvped(currentShowcaseItem) ? (
                         <button className="royal-btn-disabled" disabled style={{ padding: '8px 16px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
@@ -434,11 +445,11 @@ const HomePage = ({ user, onSignIn, theme }) => {
                 activeEvents.map((evt, idx) => (
                   <Link to={`/events/${evt.id}`} className="feed-item animate-fade-in" key={evt.id || idx}>
                     <div className="feed-item-meta">
-                      <span className="feed-item-tag">{evt.type}</span>
+                      <span className="feed-item-tag">{getLocalized(evt, 'type')}</span>
                       <span className="feed-item-date">{evt.date}</span>
                     </div>
-                    <h4 className="feed-item-title">{evt.title}</h4>
-                    <p className="feed-item-desc">Venue: {evt.location}</p>
+                    <h4 className="feed-item-title">{getLocalized(evt, 'title')}</h4>
+                    <p className="feed-item-desc">Venue: {getLocalized(evt, 'location')}</p>
                   </Link>
                 ))
               ) : (
@@ -454,7 +465,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
               <h3 className="feed-title">
                 <BookText size={18} className="gold-glow-icon" /> {t('home.recentDiscourses')}
               </h3>
-              <Link to="/discourses" className="feed-link">Browse Essays <ChevronRight size={14} /></Link>
+              <Link to="/discourses" className="feed-link">{t('home.browseEssays')} <ChevronRight size={14} /></Link>
             </div>
             <div className="feed-list">
               {dissertations.length > 0 ? (

@@ -113,6 +113,7 @@ public class PollService {
                 .active(true)
                 .membersOnly(pollDto.isMembersOnly())
                 .createdAt(Instant.now())
+                .translations(pollDto.getTranslations() != null ? pollDto.getTranslations() : new HashMap<>())
                 .build();
 
         try {
@@ -263,6 +264,7 @@ public class PollService {
         map.put("active", poll.isActive());
         map.put("membersOnly", poll.isMembersOnly());
         map.put("createdAt", poll.getCreatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(poll.getCreatedAt().getEpochSecond(), poll.getCreatedAt().getNano()) : null);
+        map.put("translations", poll.getTranslations() != null ? poll.getTranslations() : new HashMap<String, Map<String, Object>>());
         return map;
     }
 
@@ -273,6 +275,7 @@ public class PollService {
         com.google.cloud.Timestamp createdTimestamp = doc.getTimestamp("createdAt");
         List<String> options = (List<String>) doc.get("options");
         List<Long> votesLong = (List<Long>) doc.get("votes");
+        Map<String, Map<String, Object>> translations = (Map<String, Map<String, Object>>) doc.get("translations");
         List<Integer> votes = new ArrayList<>();
         if (votesLong != null) {
             for (Long v : votesLong) {
@@ -290,6 +293,7 @@ public class PollService {
                 .active(doc.getBoolean("active") != null && doc.getBoolean("active"))
                 .membersOnly(doc.getBoolean("membersOnly") != null && doc.getBoolean("membersOnly"))
                 .createdAt(createdTimestamp != null ? Instant.ofEpochSecond(createdTimestamp.getSeconds(), createdTimestamp.getNanos()) : null)
+                .translations(translations != null ? translations : new HashMap<>())
                 .build();
     }
 }

@@ -4,6 +4,7 @@ import { Calendar as CalendarIcon, MapPin, Users, CheckCircle2, Award, Clock } f
 import './EventCard.css';
 
 import { rsvpToEvent, cancelRsvpToEvent } from '../../services/eventApi';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 const EventCard = ({
   event = {
@@ -21,6 +22,7 @@ const EventCard = ({
   user,
   onRsvpSuccess = () => {}
 }) => {
+  const { t } = useLanguage();
   const isUserRsvped = () => {
     if (!user || !event?.rsvps || !Array.isArray(event.rsvps)) return false;
     return event.rsvps.includes(user.uid || user.id);
@@ -150,29 +152,28 @@ const EventCard = ({
         </div>
       </Link>
 
-      {/* Action Footer */}
       <div className="event-action-footer">
         {rsvpState === 'none' ? (
           isFull ? (
             <button className="royal-btn-disabled rsvp-btn" disabled>
-              Fully Booked
+              {t('assembly.fullyBooked')}
             </button>
           ) : (
             <button onClick={handleRsvp} className="royal-btn rsvp-btn" id={`rsvp-btn-${event.id}`}>
-              Request Invitation
+              {t('home.requestInvitation')}
             </button>
           )
         ) : rsvpState === 'rsvping' ? (
           <button className="royal-btn-disabled rsvp-btn" disabled>
-            <div className="loader-mini"></div> Reserving...
+            <div className="loader-mini"></div> {t('assembly.reserving')}
           </button>
         ) : (
           <div className="rsvped-actions">
             <span className="rsvp-confirmed-tag">
-              <CheckCircle2 size={14} /> RSVP Confirmed
+              <CheckCircle2 size={14} /> {t('assembly.rsvpConfirmed')}
             </span>
             <button onClick={handleCancelRsvp} className="rsvp-cancel-link" id={`cancel-rsvp-${event.id}`}>
-              Cancel RSVP
+              {t('assembly.cancelRsvp')}
             </button>
           </div>
         )}

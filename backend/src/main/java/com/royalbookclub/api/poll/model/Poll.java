@@ -7,7 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Model representing a Guild Plebiscite (Poll) in Google Cloud Firestore.
@@ -30,4 +32,7 @@ public class Poll {
     private boolean active;
     private boolean membersOnly;
     private Instant createdAt;
+
+    @Builder.Default
+    private Map<String, Map<String, Object>> translations = new HashMap<>();
 }

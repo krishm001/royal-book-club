@@ -560,7 +560,6 @@ const ProfilePage = ({ user }) => {
                       setLanguage(newLang, user);
                     }}
                     className="royal-input"
-                    style={{ background: 'var(--input-bg, rgba(255, 255, 255, 0.02))', border: '1px solid var(--border-color, rgba(255,255,255,0.08))', color: 'var(--text-color, #ffffff)', padding: '10px 14px' }}
                   >
                     <option value="en">{t('common.english')}</option>
                     <option value="hi">{t('common.hindi')}</option>

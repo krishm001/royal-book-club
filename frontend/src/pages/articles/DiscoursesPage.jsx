@@ -37,9 +37,11 @@ import {
 import { fetchBlogHouses } from '../../services/genreApi';
 import { uploadBookImage } from '../../services/storageApi';
 import RichTextEditor from '../../components/shared/RichTextEditor';
+import { useLanguage } from '../../i18n/LanguageContext';
 import './DiscoursesPage.css';
 
 const DiscoursesPage = ({ user }) => {
+  const { t, getLocalized } = useLanguage();
   const [activeTab, setActiveTab] = useState('CHRONICLE'); // 'CHRONICLE' or 'DEBATE'
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -207,7 +209,7 @@ const DiscoursesPage = ({ user }) => {
   };
 
   const handleDeleteCommentClick = async (commentId) => {
-    if (!window.confirm("Are you sure you wish to delete this comment? This action is irreversible.")) return;
+    if (!window.confirm(t('discourses.deleteCommentConfirm', "Are you sure you wish to delete this comment? This action is irreversible."))) return;
     try {
       const res = await deleteComment(commentId);
       if (res && res.success) {
@@ -274,7 +276,7 @@ const DiscoursesPage = ({ user }) => {
         try {
           uploadedCoverUrl = await uploadBookImage(coverFile);
         } catch (uploadErr) {
-          alert(`Cover Upload Failed: ${uploadErr.message}`);
+          alert(`${t('discourses.coverUploadFailed', 'Cover Upload Failed')}: ${uploadErr.message}`);
           setIsPublishing(false);
           setIsUploading(false);
           return;
@@ -321,7 +323,7 @@ const DiscoursesPage = ({ user }) => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you certain you wish to purge this academic discourse? This action is irreversible and will also remove all associated comments or replies.")) {
+    if (!window.confirm(t('discourses.deleteDiscourseConfirm', "Are you certain you wish to purge this academic discourse? This action is irreversible and will also remove all associated comments or replies."))) {
       return;
     }
     try {
@@ -331,11 +333,11 @@ const DiscoursesPage = ({ user }) => {
         setExpandedDebate(null);
         loadDiscourses();
       } else {
-        alert(res?.message || "Failed to delete discourse");
+        alert(res?.message || t('discourses.failedToDeleteDiscourse', "Failed to delete discourse"));
       }
     } catch (err) {
       console.error('Failed to delete discourse:', err);
-      alert("Error deleting discourse");
+      alert(t('discourses.errorDeletingDiscourse', "Error deleting discourse"));
     }
   };
 
@@ -411,7 +413,7 @@ const DiscoursesPage = ({ user }) => {
   };
 
   const handleDeleteReply = async (replyId) => {
-    if (!window.confirm("Are you certain you wish to purge this dialectic reply? This action is irreversible.")) {
+    if (!window.confirm(t('discourses.deleteReplyConfirm', "Are you certain you wish to purge this dialectic reply? This action is irreversible."))) {
       return;
     }
     try {
@@ -423,11 +425,11 @@ const DiscoursesPage = ({ user }) => {
           setDebateReplies(detailRes.data.responses || []);
         }
       } else {
-        alert(res?.message || "Failed to delete reply");
+        alert(res?.message || t('discourses.failedToDeleteReply', "Failed to delete reply"));
       }
     } catch (err) {
       console.error('Failed to delete reply:', err);
-      alert("Error deleting reply");
+      alert(t('discourses.errorDeletingReply', "Error deleting reply"));
     }
   };
 
@@ -458,7 +460,7 @@ const DiscoursesPage = ({ user }) => {
 
   const handleToggleReaction = async (id, reactionType, targetType) => {
     if (!user) {
-      alert("You must be logged in to participate in academic reactions.");
+      alert(t('discourses.mustBeLoggedInReaction', "You must be logged in to participate in academic reactions."));
       return;
     }
     const userId = user.uid || user.id;
@@ -564,7 +566,7 @@ const DiscoursesPage = ({ user }) => {
                 type="button"
                 onClick={() => handleToggleReaction(node.id, emoji, targetType)}
                 className={`reaction-pill-badge ${hasReacted ? 'active' : ''}`}
-                title={`${count} patron(s) reacted`}
+                title={`${count} ${t('discourses.patronsReacted', 'patron(s) reacted')}`}
               >
                 <span className="pill-emoji">{emoji}</span>
                 <span className="pill-count">{count}</span>
@@ -576,9 +578,9 @@ const DiscoursesPage = ({ user }) => {
         {/* Hoverable reaction picker */}
         {user && (
           <div className="reaction-picker-trigger-wrapper">
-            <button type="button" className="reaction-picker-trigger" title="Voice Academic Response">
+            <button type="button" className="reaction-picker-trigger" title={t('discourses.voiceAcademicResponse', 'Voice Academic Response')}>
               <Sparkles size={12} className="trigger-icon" />
-              <span className="trigger-lbl">React</span>
+              <span className="trigger-lbl">{t('discourses.react', 'React')}</span>
             </button>
             <div className="hover-emoji-bar glassmorphic animate-scale-up">
               {emojis.map(emoji => {
@@ -590,7 +592,12 @@ const DiscoursesPage = ({ user }) => {
                     type="button"
                     onClick={() => handleToggleReaction(node.id, emoji, targetType)}
                     className={`picker-emoji-btn ${hasReacted ? 'active' : ''}`}
-                    title={emoji === "👍" ? "Concur" : emoji === "❤️" ? "Adore" : emoji === "💡" ? "Inspiriting" : "Scholarly"}
+                    title={
+                      emoji === "👍" ? t('discourses.concur', 'Concur') :
+                      emoji === "❤️" ? t('discourses.adore', 'Adore') :
+                      emoji === "💡" ? t('discourses.inspiriting', 'Inspiriting') :
+                      t('discourses.scholarly', 'Scholarly')
+                    }
                   >
                     {emoji}
                   </button>
@@ -646,7 +653,7 @@ const DiscoursesPage = ({ user }) => {
             {/* Citation Quote Card for flattened sub-replies */}
             {isFlattened && parentReply && (
               <div className="socratic-citation-card">
-                <span className="citation-author">Replying to {parentReply.authorName}</span>
+                <span className="citation-author">{t('discourses.replyingTo', 'Replying to')} {parentReply.authorName}</span>
                 <p className="citation-text">"{parentReply.content.slice(0, 60)}{parentReply.content.length > 60 ? '...' : ''}"</p>
               </div>
             )}
@@ -661,7 +668,7 @@ const DiscoursesPage = ({ user }) => {
                 <span className="reply-author-name gold-gradient-text">{reply.authorName}</span>
               </div>
               <span className="reply-date">
-                {reply.createdAt ? new Date(reply.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                {reply.createdAt ? new Date(reply.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : t('discourses.justNow', 'Just now')}
               </span>
             </div>
 
@@ -676,10 +683,10 @@ const DiscoursesPage = ({ user }) => {
                 />
                 <div className="reply-edit-actions-row">
                   <button type="submit" disabled={isSubmittingReplyEdit} className="royal-btn reply-save-btn">
-                    Save
+                    {t('common.save', 'Save')}
                   </button>
                   <button type="button" onClick={() => setEditingReplyId(null)} className="royal-btn-secondary reply-cancel-btn">
-                    Cancel
+                    {t('common.cancel', 'Cancel')}
                   </button>
                 </div>
               </form>
@@ -700,7 +707,7 @@ const DiscoursesPage = ({ user }) => {
                     }} 
                     className="reply-trigger-btn"
                   >
-                    <MessageCircle size={12} /> <span className="btn-label-text">Reply</span>
+                    <MessageCircle size={12} /> <span className="btn-label-text">{t('discourses.reply')}</span>
                   </button>
 
                   {(user.uid === reply.authorId || user.id === reply.authorId || user.role === 'ADMIN') && (
@@ -709,13 +716,13 @@ const DiscoursesPage = ({ user }) => {
                         onClick={() => handleStartEditReply(reply)}
                         className="reply-edit-btn"
                       >
-                        <PenTool size={12} /> <span className="btn-label-text">Edit</span>
+                        <PenTool size={12} /> <span className="btn-label-text">{t('discourses.edit')}</span>
                       </button>
                       <button 
                         onClick={() => handleDeleteReply(reply.id)}
                         className="reply-delete-btn"
                       >
-                        <Trash2 size={12} /> <span className="btn-label-text">Delete</span>
+                        <Trash2 size={12} /> <span className="btn-label-text">{t('discourses.delete')}</span>
                       </button>
                     </>
                   )}
@@ -727,7 +734,7 @@ const DiscoursesPage = ({ user }) => {
               <form onSubmit={(e) => handlePostReply(e, reply.id)} className="reply-submit-form animate-fade-in">
                 <input
                   type="text"
-                  placeholder={`Reply to ${reply.authorName}...`}
+                  placeholder={`${t('discourses.replyTo', 'Reply to')} ${reply.authorName}...`}
                   className="royal-input reply-input"
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
@@ -769,7 +776,7 @@ const DiscoursesPage = ({ user }) => {
         ) : (
           <div className="no-replies-placeholder">
             <HelpCircle size={24} className="gold-glow-icon" />
-            <p>No opinions voiced yet. Share your sovereign intellectual stance first!</p>
+            <p>{t('discourses.noOpinionsVoiced', 'No opinions voiced yet. Share your sovereign intellectual stance first!')}</p>
           </div>
         )}
       </div>
@@ -790,7 +797,7 @@ const DiscoursesPage = ({ user }) => {
             {loadingDetail ? (
               <div className="focal-loading">
                 <div className="loader-mini"></div>
-                <p>Retrieving sacred chronicles...</p>
+                <p>{t('discourses.retrievingSacredChronicles', 'Retrieving sacred chronicles...')}</p>
               </div>
             ) : chronicleDetail ? (
               <div className="focal-content-scroll">
@@ -801,7 +808,7 @@ const DiscoursesPage = ({ user }) => {
                 
                 <div className="focal-body">
                   <div className="focal-meta-row">
-                    <span className="house-badge">{chronicleDetail.house || 'Sovereign Lore'}</span>
+                    <span className="house-badge">{chronicleDetail.house || t('discourses.sovereignLore', 'Sovereign Lore')}</span>
                     <span className="focal-meta-item"><Calendar size={12} /> {new Date(chronicleDetail.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                   </div>
 
@@ -810,7 +817,7 @@ const DiscoursesPage = ({ user }) => {
                   <div className="focal-author-signature">
                     <Award size={18} className="gold-glow-icon" />
                     <div className="sig-text">
-                      <span className="sig-lbl">Scribed By</span>
+                      <span className="sig-lbl">{t('discourses.scribedBy', 'Scribed By')}</span>
                       <span className="sig-name gold-gradient-text">{chronicleDetail.authorName}</span>
                     </div>
                   </div>
@@ -822,14 +829,14 @@ const DiscoursesPage = ({ user }) => {
                         className="royal-btn edit-discourse-btn"
                         style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '0.85rem' }}
                       >
-                        <PenTool size={14} /> Edit Chronicle
+                        <PenTool size={14} /> {t('discourses.edit', 'Edit')}
                       </button>
                       <button 
                         onClick={() => handleDelete(chronicleDetail.id)} 
                         className="royal-btn delete-discourse-btn"
                         style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '0.85rem', backgroundColor: '#e63946', borderColor: '#e63946', color: '#fff' }}
                       >
-                        <Trash2 size={14} /> Delete Chronicle
+                        <Trash2 size={14} /> {t('discourses.delete', 'Delete')}
                       </button>
                     </div>
                   )}
@@ -854,13 +861,13 @@ const DiscoursesPage = ({ user }) => {
                   {/* Comments Section */}
                   <div className="focal-comments-section">
                     <h3 className="comments-section-title">
-                      <MessageSquare size={16} /> Scholarly Dialogue ({chronicleComments.length})
+                      <MessageSquare size={16} /> {t('discourses.scholarlyDialogue', 'Scholarly Dialogue')} ({chronicleComments.length})
                     </h3>
 
                     {user ? (
                       <form onSubmit={handleAddComment} className="comment-post-box">
                         <textarea
-                          placeholder="Grace this dissertation with your insights..."
+                          placeholder={t('discourses.graceInsightsPlaceholder', 'Grace this dissertation with your insights...')}
                           className="royal-input comment-textarea"
                           value={commentText}
                           onChange={(e) => setCommentText(e.target.value)}
@@ -868,12 +875,12 @@ const DiscoursesPage = ({ user }) => {
                           rows={3}
                         />
                         <button type="submit" disabled={isSubmittingComment} className="royal-btn comment-submit-btn">
-                          {isSubmittingComment ? 'Transcribing...' : 'Scribe Insight'} <Send size={12} />
+                          {isSubmittingComment ? t('discourses.transcribing', 'Transcribing...') : t('discourses.scribeInsight', 'Scribe Insight')} <Send size={12} />
                         </button>
                       </form>
                     ) : (
                       <div className="comments-unauth-notice royal-card">
-                        <p>Only verified salon patrons may record insights. Please enter the salon.</p>
+                        <p>{t('discourses.verifiedPatronsNotice', 'Only verified salon patrons may record insights. Please enter the salon.')}</p>
                       </div>
                     )}
 
@@ -904,7 +911,7 @@ const DiscoursesPage = ({ user }) => {
                                       <button 
                                         onClick={() => handleStartEditComment(c.id, c.content)} 
                                         className="comment-action-btn edit-btn" 
-                                        title="Edit Insight"
+                                        title={t('discourses.editInsight')}
                                         style={{ background: 'none', border: 'none', color: 'var(--gold-color)', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
                                       >
                                         <Pencil size={12} />
@@ -913,7 +920,7 @@ const DiscoursesPage = ({ user }) => {
                                     <button 
                                       onClick={() => handleDeleteCommentClick(c.id)} 
                                       className="comment-action-btn delete-btn" 
-                                      title="Purge Insight"
+                                      title={t('discourses.purgeInsight')}
                                       style={{ background: 'none', border: 'none', color: '#ff4d4d', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
                                     >
                                       <Trash2 size={12} />
@@ -933,10 +940,10 @@ const DiscoursesPage = ({ user }) => {
                                 />
                                 <div className="comment-edit-actions" style={{ display: 'flex', gap: '0.5rem' }}>
                                   <button onClick={() => handleUpdateCommentSubmit(c.id)} className="royal-btn small-btn save-btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}>
-                                    Update
+                                    {t('common.update', 'Update')}
                                   </button>
                                   <button onClick={handleCancelEditComment} className="royal-btn small-btn cancel-btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)', color: '#ccc' }}>
-                                    Cancel
+                                    {t('common.cancel', 'Cancel')}
                                   </button>
                                 </div>
                               </div>
@@ -953,8 +960,8 @@ const DiscoursesPage = ({ user }) => {
               </div>
             ) : (
               <div className="focal-error">
-                <h3>Error loading details</h3>
-                <p>Failed to unroll this specific chronicle.</p>
+                <h3>{t('discourses.errorLoadingDetails', 'Error loading details')}</h3>
+                <p>{t('discourses.failedToUnroll', 'Failed to unroll this specific chronicle.')}</p>
               </div>
             )}
           </div>
@@ -965,11 +972,11 @@ const DiscoursesPage = ({ user }) => {
       <header className="discourses-header">
         <div className="header-badge">
           <Sparkles size={14} className="gold-glow-icon" />
-          <span className="gold-gradient-text">INTELLECTUAL DISCOURSES</span>
+          <span className="gold-gradient-text">{t('discourses.intellectualDiscourses', 'Intellectual Discourses')}</span>
         </div>
-        <h1 className="discourses-title glow-text">The Socratic Portico</h1>
+        <h1 className="discourses-title glow-text">{t('discourses.socraticPortico', 'The Socratic Portico')}</h1>
         <p className="discourses-subtitle">
-          Where questions matter more than answers. In a world drowning in opinions, Royal Book Club offers something rare - rigorous inquiry. Through 'Intellectual Chronicles' and 'Courtyard Debates', we do not tell you what to think. We dare you to.
+          {t('discourses.tagline', "Where questions matter more than answers. In a world drowning in opinions, Royal Book Club offers something rare - rigorous inquiry. Through 'Intellectual Chronicles' and 'Courtyard Debates', we do not tell you what to think. We dare you to.")}
         </p>
 
         {/* Tab Selector */}
@@ -978,13 +985,13 @@ const DiscoursesPage = ({ user }) => {
             className={`royal-tab-btn ${activeTab === 'CHRONICLE' ? 'active' : ''}`}
             onClick={() => { setActiveTab('CHRONICLE'); setIsCreating(false); }}
           >
-            <BookText size={16} /> Intellectual Chronicles
+            <BookText size={16} /> {t('discourses.intellectualChronicles', 'Intellectual Chronicles')}
           </button>
           <button 
             className={`royal-tab-btn ${activeTab === 'DEBATE' ? 'active' : ''}`}
             onClick={() => { setActiveTab('DEBATE'); setIsCreating(false); }}
           >
-            <HelpCircle size={16} /> Courtyard Debates
+            <HelpCircle size={16} /> {t('discourses.courtyardDebates', 'Courtyard Debates')}
           </button>
         </div>
       </header>
@@ -999,18 +1006,18 @@ const DiscoursesPage = ({ user }) => {
             >
               {activeTab === 'CHRONICLE' ? (
                 <>
-                  <PenTool size={16} /> Scribe a Chronicle
+                  <PenTool size={16} /> {t('discourses.scribeChronicle', 'Scribe a Chronicle')}
                 </>
               ) : (
                 <>
-                  <Plus size={16} /> Ignite a Debate Topic
+                  <Plus size={16} /> {t('discourses.igniteDebateTopic', 'Ignite a Debate Topic')}
                 </>
               )}
             </button>
           ) : (
             <div className="royal-card composition-card animate-fade-in">
               <div className="comp-header">
-                <h3>{editingDiscourse ? (formType === 'CHRONICLE' ? 'Edit Intellectual Chronicle' : 'Edit Courtyard Debate Topic') : (formType === 'CHRONICLE' ? 'Scribe New Intellectual Chronicle' : 'Ignite Courtyard Debate Topic')}</h3>
+                <h3>{editingDiscourse ? (formType === 'CHRONICLE' ? t('discourses.editChronicle', 'Edit Intellectual Chronicle') : t('discourses.editDebateTopic', 'Edit Debate Topic')) : (formType === 'CHRONICLE' ? t('discourses.scribeNewChronicle', 'Scribe New Intellectual Chronicle') : t('discourses.igniteNewDebate', 'Ignite Courtyard Debate Topic'))}</h3>
                 <button onClick={() => { setIsCreating(false); resetForm(); }} className="close-comp-btn">
                   <X size={16} />
                 </button>
@@ -1018,11 +1025,11 @@ const DiscoursesPage = ({ user }) => {
 
               <form onSubmit={handlePublish} className="composition-form">
                 <div className="form-group">
-                  <label className="royal-label">Sovereign Title</label>
+                  <label className="royal-label">{t('discourses.sovereignTitleLabel', 'Sovereign Title')}</label>
                   <input
                     type="text"
                     className="royal-input"
-                    placeholder={formType === 'CHRONICLE' ? 'e.g. The Hedonistic Tapestry of Oscar Wilde' : 'e.g. Should Classicism remain the cornerstone of modern curation?'}
+                    placeholder={formType === 'CHRONICLE' ? t('discourses.chronicleTitlePlaceholder', 'e.g. The Hedonistic Tapestry of Oscar Wilde') : t('discourses.debateTitlePlaceholder', 'e.g. Should Classicism remain the cornerstone of modern curation?')}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     required
@@ -1032,7 +1039,7 @@ const DiscoursesPage = ({ user }) => {
                 {formType === 'CHRONICLE' && (
                   <div className="form-row-grid">
                     <div className="form-group">
-                      <label className="royal-label">Salon House</label>
+                      <label className="royal-label">{t('discourses.salonHouseLabel', 'Salon House')}</label>
                       <select 
                         className="royal-input royal-select"
                         value={selectedHouse}
@@ -1046,7 +1053,7 @@ const DiscoursesPage = ({ user }) => {
                     </div>
 
                     <div className="form-group">
-                      <label className="royal-label">Image Cover flyer</label>
+                      <label className="royal-label">{t('discourses.imageCoverFlyerLabel', 'Image Cover flyer')}</label>
                       <div className="flyer-upload-zone">
                         <input
                           type="file"
@@ -1056,11 +1063,11 @@ const DiscoursesPage = ({ user }) => {
                           style={{ display: 'none' }}
                         />
                         <label htmlFor="chronicle-cover-file" className="flyer-upload-trigger">
-                          <Image size={16} /> Upload Banner
+                          <Image size={16} /> {t('discourses.uploadBanner', 'Upload Banner')}
                         </label>
                         {coverPreview && (
                           <div className="flyer-upload-preview">
-                            <img src={coverPreview} alt="Preview" />
+                            <img src={coverPreview} alt={t('discourses.previewImageAlt', 'Preview')} />
                           </div>
                         )}
                       </div>
@@ -1069,17 +1076,17 @@ const DiscoursesPage = ({ user }) => {
                 )}
 
                 <div className="form-group">
-                  <label className="royal-label">Sacred Content</label>
+                  <label className="royal-label">{t('discourses.sacredContentLabel', 'Sacred Content')}</label>
                   {formType === 'CHRONICLE' ? (
                     <RichTextEditor 
                       value={content}
                       onChange={setContent}
-                      placeholder="Draft your exquisite dissertation..."
+                      placeholder={t('discourses.dissertationPlaceholder', 'Draft your exquisite dissertation...')}
                     />
                   ) : (
                     <textarea
                       className="royal-input debate-textarea"
-                      placeholder="Describe the philosophical bounds or query of your debate..."
+                      placeholder={t('discourses.debateBoundsPlaceholder', 'Describe the philosophical bounds or query of your debate...')}
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
                       required
@@ -1090,11 +1097,11 @@ const DiscoursesPage = ({ user }) => {
 
                 {formType === 'CHRONICLE' && (
                   <div className="form-group">
-                    <label className="royal-label">Custom Tags (Press Enter after each)</label>
+                    <label className="royal-label">{t('discourses.customTagsLabel', 'Custom Tags (Press Enter after each)')}</label>
                     <input
                       type="text"
                       className="royal-input"
-                      placeholder="Type tag and press Enter..."
+                      placeholder={t('discourses.typeTagPlaceholder', 'Type tag and press Enter...')}
                       value={tagInput}
                       onChange={(e) => setTagInput(e.target.value)}
                       onKeyDown={handleAddTag}
@@ -1117,7 +1124,7 @@ const DiscoursesPage = ({ user }) => {
                     disabled={isPublishing || (formType === 'CHRONICLE' && !content)}
                     className="royal-btn comp-submit-btn"
                   >
-                    {isPublishing ? (isUploading ? 'Uploading cover image...' : 'Transcribing lore...') : (editingDiscourse ? 'Save Sovereign Updates' : 'Publish to Portico')}
+                    {isPublishing ? (isUploading ? t('discourses.uploadingCover', 'Uploading cover image...') : t('discourses.transcribingLore', 'Transcribing lore...')) : (editingDiscourse ? t('discourses.saveSovereignUpdates', 'Save Sovereign Updates') : t('discourses.publishToPortico', 'Publish to Portico'))}
                   </button>
                 </div>
               </form>
@@ -1132,7 +1139,7 @@ const DiscoursesPage = ({ user }) => {
           <Search className="search-icon" size={16} />
           <input
             type="text"
-            placeholder={`Search ${activeTab === 'CHRONICLE' ? 'chronicles' : 'debates'} by title, tags, or author...`}
+            placeholder={activeTab === 'CHRONICLE' ? t('discourses.searchChroniclesPlaceholder', 'Search chronicles by title, tags, or author...') : t('discourses.searchDebatesPlaceholder', 'Search debates by title, tags, or author...')}
             className="royal-input search-input"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -1145,7 +1152,7 @@ const DiscoursesPage = ({ user }) => {
         {loading ? (
           <div className="loading-boundary">
             <div className="loader-mini"></div>
-            <p>Gathering sovereign words...</p>
+            <p>{t('discourses.gatheringSovereignWords', 'Gathering sovereign words...')}</p>
           </div>
         ) : filteredDiscourses.length > 0 ? (
           <div className={activeTab === 'CHRONICLE' ? 'chronicles-grid' : 'debates-list'}>
@@ -1155,7 +1162,7 @@ const DiscoursesPage = ({ user }) => {
               <div key={disc.id} className="chronicle-card royal-card glassmorphic animate-fade-in">
                 <div className="chron-cover-wrapper">
                   <img src={disc.coverUrl || 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80'} alt={disc.title} />
-                  <div className="chron-badge">{disc.house || 'Sovereign Lore'}</div>
+                  <div className="chron-badge">{disc.house || t('discourses.sovereignLore', 'Sovereign Lore')}</div>
                 </div>
                 <div className="chron-content">
                   <div className="chron-meta">
@@ -1165,9 +1172,9 @@ const DiscoursesPage = ({ user }) => {
                   <div className="chron-excerpt" dangerouslySetInnerHTML={{ __html: disc.content.substring(0, 160) + '...' }} />
                   {renderReactions(disc, 'chronicle')}
                   <div className="chron-footer">
-                    <span className="chron-author">by <strong className="gold-gradient-text">{disc.authorName}</strong></span>
+                    <span className="chron-author">{t('common.by', 'by')} <strong className="gold-gradient-text">{disc.authorName}</strong></span>
                     <button onClick={() => handleOpenChronicle(disc)} className="chron-read-btn">
-                      Examine Essay <ChevronRight size={14} />
+                      {t('discourses.examineEssay', 'Examine Essay')} <ChevronRight size={14} />
                     </button>
                   </div>
                 </div>
@@ -1185,22 +1192,22 @@ const DiscoursesPage = ({ user }) => {
                       <div className="title-text">
                         <h4>{disc.title}</h4>
                         <div className="debate-meta">
-                          <span>Sparked by <strong className="gold-gradient-text">{disc.authorName}</strong></span>
+                          <span>{t('discourses.sparked', 'Sparked')} {t('common.by', 'by')} <strong className="gold-gradient-text">{disc.authorName}</strong></span>
                           <span>•</span>
                           <span>{new Date(disc.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                           <span>•</span>
-                          <span>{disc.repliesCount || 0} {disc.repliesCount === 1 ? 'instance' : 'instances'}</span>
+                          <span>{disc.repliesCount || 0} {disc.repliesCount === 1 ? t('discourses.instance', 'instance') : t('discourses.instances', 'instances')}</span>
                         </div>
                       </div>
                     </div>
                     <button className="debate-expand-trigger" onClick={(e) => { e.stopPropagation(); handleOpenDebate(disc); }}>
                       {isExpanded ? (
                         <>
-                          <X size={14} /> <span className="btn-label-text">Fold Dialogue</span>
+                          <X size={14} /> <span className="btn-label-text">{t('discourses.foldDialogue', 'Fold Dialogue')}</span>
                         </>
                       ) : (
                         <>
-                          <MessageSquare size={14} /> <span className="btn-label-text">Join Dialogue</span>
+                          <MessageSquare size={14} /> <span className="btn-label-text">{t('discourses.joinDialogue', 'Join Dialogue')}</span>
                         </>
                       )}
                     </button>
@@ -1218,14 +1225,14 @@ const DiscoursesPage = ({ user }) => {
                             className="royal-btn edit-discourse-btn"
                             style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', fontSize: '0.8rem' }}
                           >
-                            <PenTool size={12} /> Edit Debate Topic
+                            <PenTool size={12} /> {t('discourses.editDebateTopic', 'Edit Debate Topic')}
                           </button>
                           <button 
                             onClick={() => handleDelete(disc.id)} 
                             className="royal-btn delete-discourse-btn"
                             style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', fontSize: '0.8rem', backgroundColor: '#e63946', borderColor: '#e63946', color: '#fff' }}
                           >
-                            <Trash2 size={12} /> Delete Topic
+                            <Trash2 size={12} /> {t('discourses.deleteTopic', 'Delete Topic')}
                           </button>
                         </div>
                       )}
@@ -1235,7 +1242,7 @@ const DiscoursesPage = ({ user }) => {
                         <div className="debate-stance-sticky-wrapper royal-card glassmorphic">
                           <form onSubmit={(e) => handlePostReply(e, disc.id)} className="debate-root-reply-form">
                             <textarea
-                              placeholder="Submit your dialectic response to this topic..."
+                              placeholder={t('discourses.submitResponsePlaceholder', 'Submit your dialectic response to this topic...')}
                               className="royal-input root-reply-textarea"
                               value={replyText}
                               onChange={(e) => setReplyText(e.target.value)}
@@ -1243,7 +1250,7 @@ const DiscoursesPage = ({ user }) => {
                               rows={2}
                             />
                             <button type="submit" disabled={isSubmittingReply} className="royal-btn root-reply-submit">
-                              Voice Stance <Send size={12} />
+                              {t('discourses.voiceStance', 'Voice Stance')} <Send size={12} />
                             </button>
                           </form>
                         </div>
@@ -1251,7 +1258,7 @@ const DiscoursesPage = ({ user }) => {
                       
                       <div className="debate-dialectic-portico">
                         <h5>
-                          <MessageCircle size={14} /> Dialectical Thread
+                          <MessageCircle size={14} /> {t('discourses.dialecticalThread', 'Dialectical Thread')}
                         </h5>
                         
                         {/* Debate replies tree render */}
@@ -1267,8 +1274,8 @@ const DiscoursesPage = ({ user }) => {
         ) : (
           <div className="royal-card no-discourses-fallback">
             <BookText size={48} className="fallback-icon" />
-            <h3>No Academic Discourses Sparked</h3>
-            <p>No Chronicles or Debates were found matching your query. Scribe the first entry to begin the dialogue!</p>
+            <h3>{t('discourses.noDiscoursesTitle', 'No Academic Discourses Sparked')}</h3>
+            <p>{t('discourses.noDiscoursesDesc', 'No Chronicles or Debates were found matching your query. Scribe the first entry to begin the dialogue!')}</p>
           </div>
         )}
       </main>
