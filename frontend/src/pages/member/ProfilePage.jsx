@@ -27,11 +27,15 @@ const ProfilePage = ({ user }) => {
     pinCodeMandatory: false,
   });
 
-  // Google Places state and refs
-  const [mapsLoaded, setMapsLoaded] = useState(false);
-  const [mapError, setMapError] = useState(false);
+  // OpenStreetMap Autocomplete state & refs
   const [detectingLocation, setDetectingLocation] = useState(false);
+  const [osmSuggestions, setOsmSuggestions] = useState([]);
+  const [showOsmSuggestions, setShowOsmSuggestions] = useState(false);
+  const [loadingOsmSuggestions, setLoadingOsmSuggestions] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
+  const suggestionsContainerRef = useRef(null);
+  const debounceTimeoutRef = useRef(null);
   const autocompleteInputRef = useRef(null);
 
   // Message notifications
@@ -79,50 +83,17 @@ const ProfilePage = ({ user }) => {
     }
   }, [user]);
 
-  // Load Google Maps API Script
+  // Handle click outside of OSM suggestions list to close dropdown
   useEffect(() => {
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.VITE_FIREBASE_API_KEY || '';
-    if (!apiKey) {
-      console.warn("Google Maps API key is missing from environments.");
-      setMapError(true);
-      return;
-    }
-
-    if (window.google && window.google.maps) {
-      setMapsLoaded(true);
-      return;
-    }
-
-    const existingScript = document.getElementById('google-maps-api-script');
-    if (existingScript) {
-      const handleScriptLoad = () => setMapsLoaded(true);
-      const handleScriptError = () => setMapError(true);
-
-      existingScript.addEventListener('load', handleScriptLoad);
-      existingScript.addEventListener('error', handleScriptError);
-
-      return () => {
-        existingScript.removeEventListener('load', handleScriptLoad);
-        existingScript.removeEventListener('error', handleScriptError);
-      };
-    }
-
-    const script = document.createElement('script');
-    script.id = 'google-maps-api-script';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-
-    script.onload = () => {
-      setMapsLoaded(true);
+    const handleClickOutside = (event) => {
+      if (suggestionsContainerRef.current && !suggestionsContainerRef.current.contains(event.target)) {
+        setShowOsmSuggestions(false);
+      }
     };
-
-    script.onerror = () => {
-      console.error('Failed to load Google Maps script.');
-      setMapError(true);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
     };
-
-    document.head.appendChild(script);
   }, []);
 
   const detectLocation = () => {
@@ -170,109 +141,49 @@ const ProfilePage = ({ user }) => {
     );
   };
 
-  const reverseGeocode = (latitude, longitude, ipDataFallback = null) => {
-    if (!window.google || !window.google.maps) {
-      if (ipDataFallback) {
-        populateAddressFromIp(ipDataFallback);
-      } else {
-        detectLocationViaIp();
-      }
-      return;
-    }
-
-    let geocoderResolved = false;
-
-    // Set a 3-second timeout for the Google Geocoder callback
-    const geocoderTimeoutId = setTimeout(() => {
-      if (!geocoderResolved) {
-        geocoderResolved = true;
-        console.warn('Google Maps Geocoder timed out. Falling back to IP address parsing.');
-        if (ipDataFallback) {
-          populateAddressFromIp(ipDataFallback);
-        } else {
-          detectLocationViaIp();
-        }
-      }
-    }, 3000);
-
+  const reverseGeocode = async (latitude, longitude, ipDataFallback = null) => {
     try {
-      const geocoder = new window.google.maps.Geocoder();
-      const latlng = { lat: latitude, lng: longitude };
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`);
+      if (!response.ok) throw new Error('OSM Nominatim reverse geocode failed');
+      const data = await response.json();
+      if (data && data.address) {
+        const addr = data.address;
+        
+        // Extract house number/building name
+        const houseNoVal = addr.house_number || addr.building || addr.amenity || addr.tourism || addr.shop || addr.office || '';
+        // Extract street
+        const streetComponents = [addr.road, addr.suburb || addr.neighbourhood].filter(Boolean);
+        const streetVal = streetComponents.join(', ') || addr.pedestrian || '';
+        // Extract city
+        const cityVal = addr.city || addr.town || addr.village || addr.municipality || '';
+        // Extract postcode
+        const postcodeVal = addr.postcode || '';
 
-      geocoder.geocode({ location: latlng }, (results, status) => {
-        if (geocoderResolved) return;
-        geocoderResolved = true;
-        clearTimeout(geocoderTimeoutId);
+        setProfile((prev) => ({
+          ...prev,
+          houseNo: houseNoVal || prev.houseNo || '',
+          street: streetVal || prev.street || '',
+          city: cityVal || prev.city || '',
+          pinCode: postcodeVal || prev.pinCode || '',
+        }));
 
+        setSearchQuery(data.display_name);
+
+        setMessage({
+          type: 'success',
+          text: 'Coordinates successfully geocoded and filled via OpenStreetMap.',
+        });
         setDetectingLocation(false);
-        if (status === 'OK' && results[0]) {
-          const place = results[0];
-          const addressComponents = place.address_components;
-
-          let streetNumber = '';
-          let route = '';
-          let neighborhood = '';
-          let cityVal = '';
-          let postcode = '';
-
-          for (const component of addressComponents) {
-            const types = component.types;
-            if (types.includes('street_number')) {
-              streetNumber = component.long_name;
-            } else if (types.includes('route')) {
-              route = component.long_name;
-            } else if (types.includes('neighborhood') || types.includes('sublocality') || types.includes('sublocality_level_1')) {
-              neighborhood = component.long_name;
-            } else if (types.includes('locality')) {
-              cityVal = component.long_name;
-            } else if (types.includes('administrative_area_level_2') && !cityVal) {
-              cityVal = component.long_name;
-            } else if (types.includes('postal_code')) {
-              postcode = component.long_name;
-            }
-          }
-
-          const streetVal = [route, neighborhood].filter(Boolean).join(', ');
-
-          setProfile((prev) => ({
-            ...prev,
-            houseNo: streetNumber || prev.houseNo || '',
-            street: streetVal || prev.street || '',
-            city: cityVal || prev.city || '',
-            pinCode: postcode || prev.pinCode || '',
-          }));
-
-          if (autocompleteInputRef.current) {
-            autocompleteInputRef.current.value = place.formatted_address;
-          }
-
-          setMessage({
-            type: 'success',
-            text: 'Sovereign coordinates successfully geocoded and filled.',
-          });
-          setTimeout(() => setMessage(null), 4000);
-        } else {
-          console.error('Geocoder failed due to: ' + status);
-          if (ipDataFallback) {
-            populateAddressFromIp(ipDataFallback);
-          } else {
-            setMessage({
-              type: 'error',
-              text: `Reverse geocoding failed: ${status}. Please enter address manually.`,
-            });
-          }
-        }
-      });
-    } catch (e) {
-      console.error('Google Geocoder instantiation or call exception:', e);
-      if (geocoderResolved) return;
-      geocoderResolved = true;
-      clearTimeout(geocoderTimeoutId);
-
+        setTimeout(() => setMessage(null), 4000);
+      } else {
+        throw new Error('Invalid Nominatim response format');
+      }
+    } catch (err) {
+      console.error('Nominatim reverse geocode failed:', err);
       if (ipDataFallback) {
         populateAddressFromIp(ipDataFallback);
       } else {
-        detectLocationViaIp();
+        await detectLocationViaIp();
       }
     }
   };
@@ -284,7 +195,7 @@ const ProfilePage = ({ user }) => {
       const data = await response.json();
       if (data && data.latitude && data.longitude) {
         console.log('IP coordinates extracted successfully:', data.latitude, data.longitude);
-        reverseGeocode(data.latitude, data.longitude, data);
+        await reverseGeocode(data.latitude, data.longitude, data);
       } else {
         throw new Error('Invalid IP data format');
       }
@@ -305,72 +216,83 @@ const ProfilePage = ({ user }) => {
       pinCode: data.postal || prev.pinCode || '',
       street: data.region || prev.street || '',
     }));
-    if (autocompleteInputRef.current) {
-      autocompleteInputRef.current.value = `${data.city || ''}, ${data.region || ''} ${data.postal || ''}, ${data.country_name || ''}`.trim().replace(/^,\s*/, '');
-    }
+    setSearchQuery(`${data.city || ''}, ${data.region || ''} ${data.postal || ''}, ${data.country_name || ''}`.trim().replace(/^,\s*/, ''));
     setMessage({
       type: 'success',
-      text: 'Coordinates successfully filled using secure IP Geolocation Ledger.',
+      text: 'Coordinates successfully filled using backup IP Geolocation.',
     });
     setDetectingLocation(false);
     setTimeout(() => setMessage(null), 4000);
   };
 
-  // Set up Google Places Autocomplete
-  useEffect(() => {
-    if (!mapsLoaded || !autocompleteInputRef.current) return;
+  const fetchOsmSuggestions = async (query) => {
+    if (!query || query.length < 3) {
+      setOsmSuggestions([]);
+      return;
+    }
+    setLoadingOsmSuggestions(true);
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`);
+      if (!response.ok) throw new Error('OSM Nominatim search failed');
+      const data = await response.json();
+      setOsmSuggestions(data || []);
+    } catch (err) {
+      console.error('OSM Nominatim autocomplete query failed:', err);
+    } finally {
+      setLoadingOsmSuggestions(false);
+    }
+  };
 
-    const autocomplete = new window.google.maps.places.Autocomplete(autocompleteInputRef.current);
+  const handleSearchQueryChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setShowOsmSuggestions(true);
 
-    autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace();
-      if (!place || !place.address_components) {
-        console.warn("No autocomplete address components found.");
-        return;
-      }
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
 
-      // Parse address components
-      const addressComponents = place.address_components;
-      let streetNumber = '';
-      let route = '';
-      let neighborhood = '';
-      let cityVal = '';
-      let postcode = '';
+    if (!value.trim() || value.length < 3) {
+      setOsmSuggestions([]);
+      return;
+    }
 
-      for (const component of addressComponents) {
-        const types = component.types;
-        if (types.includes('street_number')) {
-          streetNumber = component.long_name;
-        } else if (types.includes('route')) {
-          route = component.long_name;
-        } else if (types.includes('neighborhood') || types.includes('sublocality')) {
-          neighborhood = component.long_name;
-        } else if (types.includes('locality')) {
-          cityVal = component.long_name;
-        } else if (types.includes('administrative_area_level_2') && !cityVal) {
-          cityVal = component.long_name;
-        } else if (types.includes('postal_code')) {
-          postcode = component.long_name;
-        }
-      }
+    debounceTimeoutRef.current = setTimeout(() => {
+      fetchOsmSuggestions(value);
+    }, 400);
+  };
 
-      const streetVal = [route, neighborhood].filter(Boolean).join(', ');
+  const handleSelectOsmSuggestion = (suggestion) => {
+    const addr = suggestion.address || {};
+    
+    // Extract house number / building name
+    const houseNoVal = addr.house_number || addr.building || addr.amenity || addr.tourism || addr.shop || addr.office || '';
+    // Extract street
+    const streetComponents = [addr.road, addr.suburb || addr.neighbourhood].filter(Boolean);
+    const streetVal = streetComponents.join(', ') || addr.pedestrian || '';
+    // Extract city
+    const cityVal = addr.city || addr.town || addr.village || addr.municipality || '';
+    // Extract postcode
+    const postcodeVal = addr.postcode || '';
 
-      setProfile((prev) => ({
-        ...prev,
-        houseNo: streetNumber || prev.houseNo || '',
-        street: streetVal || prev.street || '',
-        city: cityVal || prev.city || '',
-        pinCode: postcode || prev.pinCode || '',
-      }));
+    setProfile((prev) => ({
+      ...prev,
+      houseNo: houseNoVal || prev.houseNo || '',
+      street: streetVal || prev.street || '',
+      city: cityVal || prev.city || '',
+      pinCode: postcodeVal || prev.pinCode || '',
+    }));
 
-      setMessage({
-        type: 'success',
-        text: 'Address coordinates synchronized with Google Places Ledger.',
-      });
-      setTimeout(() => setMessage(null), 4000);
+    setSearchQuery(suggestion.display_name);
+    setShowOsmSuggestions(false);
+    setOsmSuggestions([]);
+
+    setMessage({
+      type: 'success',
+      text: 'Address registry populated from OpenStreetMap ledger.',
     });
-  }, [mapsLoaded]);
+    setTimeout(() => setMessage(null), 4000);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -582,8 +504,8 @@ const ProfilePage = ({ user }) => {
                   </button>
                 </div>
 
-                {/* Google Places Address Search Field */}
-                <div className="form-group">
+                {/* Sovereign Address Autocomplete Search Field */}
+                <div className="form-group" ref={suggestionsContainerRef}>
                   <label htmlFor="googleAddressSearch">Sovereign Address Lookup</label>
                   <div className="input-with-icon-wrapper">
                     <Search className="input-field-icon" size={16} />
@@ -591,13 +513,33 @@ const ProfilePage = ({ user }) => {
                       ref={autocompleteInputRef}
                       type="text"
                       id="googleAddressSearch"
-                      placeholder="Type address to autocomplete with Google Places..."
+                      value={searchQuery}
+                      onChange={handleSearchQueryChange}
+                      placeholder="Type address to autocomplete with OpenStreetMap..."
                       className="royal-input input-padded-left"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') e.preventDefault();
                       }}
                     />
+                    {loadingOsmSuggestions && (
+                      <Loader2 className="animate-spin input-spinner-icon" size={16} />
+                    )}
                   </div>
+
+                  {showOsmSuggestions && osmSuggestions.length > 0 && (
+                    <ul className="osm-suggestions-dropdown">
+                      {osmSuggestions.map((suggestion) => (
+                        <li 
+                          key={suggestion.place_id} 
+                          onClick={() => handleSelectOsmSuggestion(suggestion)}
+                          className="osm-suggestion-item"
+                        >
+                          <MapPin size={14} className="suggestion-pin-icon" />
+                          <span className="suggestion-text">{suggestion.display_name}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
 
                 <div className="form-row">

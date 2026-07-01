@@ -286,40 +286,88 @@
   margin-top: 2px;
 }
 
-/* Google Places Autocomplete Dropdown Custom Style */
-.pac-container {
-  background-color: var(--surface-elevated, #1e1e3f) !important;
-  border: 1px solid var(--glass-border, rgba(212, 165, 116, 0.15)) !important;
-  border-radius: 8px !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
-  font-family: var(--font-body) !important;
-  margin-top: 4px !important;
-  z-index: 9999 !important;
+/* Custom OSM Nominatim Suggestions Dropdown Style */
+.osm-suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(15, 15, 18, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(var(--accent-rgb, 210, 165, 116), 0.3);
+  border-radius: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.75), 0 0 20px rgba(var(--accent-rgb, 210, 165, 116), 0.15);
+  margin: 6px 0 0 0;
+  padding: 6px 0;
+  list-style: none;
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 1000;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--accent-rgb, 210, 165, 116), 0.3) rgba(0, 0, 0, 0.2);
 }
 
-.pac-item {
-  border-top: 1px solid rgba(255, 255, 255, 0.03) !important;
-  padding: 10px 12px !important;
-  color: var(--text-secondary, #8b8ba3) !important;
-  cursor: pointer !important;
-  font-size: 0.88rem !important;
+/* Custom Scrollbar for dropdown */
+.osm-suggestions-dropdown::-webkit-scrollbar {
+  width: 6px;
 }
 
-.pac-item:hover {
-  background-color: rgba(var(--accent-rgb, 210, 165, 116), 0.08) !important;
+.osm-suggestions-dropdown::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
 }
 
-.pac-item-query {
-  font-size: 0.92rem !important;
-  color: var(--text-primary, #f0e6d3) !important;
+.osm-suggestions-dropdown::-webkit-scrollbar-thumb {
+  background: rgba(var(--accent-rgb, 210, 165, 116), 0.3);
+  border-radius: 8px;
 }
 
-.pac-matched {
-  color: var(--accent) !important;
+.osm-suggestions-dropdown::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--accent-rgb, 210, 165, 116), 0.5);
 }
 
-.pac-icon {
-  display: none !important; /* Hide default generic search icons to keep design pure */
+.osm-suggestion-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  color: #ccd6f6;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.osm-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.osm-suggestion-item:hover {
+  background-color: rgba(var(--accent-rgb, 210, 165, 116), 0.12);
+  color: #fff;
+  padding-left: 18px; /* Smooth slide-in micro-interaction */
+}
+
+.suggestion-pin-icon {
+  color: var(--accent);
+  margin-top: 2px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 4px rgba(var(--accent-rgb, 210, 165, 116), 0.3));
+}
+
+.suggestion-text {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.osm-suggestion-item:hover .suggestion-pin-icon {
+  filter: drop-shadow(0 0 6px rgba(var(--accent-rgb, 210, 165, 116), 0.6));
+  transform: scale(1.1);
+  transition: all 0.2s ease;
 }
 
 /* Right column layout containing both checklist and map */
