@@ -320,9 +320,7 @@ const ProfilePage = ({ user }) => {
   useEffect(() => {
     if (!mapsLoaded || !autocompleteInputRef.current) return;
 
-    const autocomplete = new window.google.maps.places.Autocomplete(autocompleteInputRef.current, {
-      types: ['address'],
-    });
+    const autocomplete = new window.google.maps.places.Autocomplete(autocompleteInputRef.current);
 
     autocomplete.addListener('place_changed', () => {
       const place = autocomplete.getPlace();
