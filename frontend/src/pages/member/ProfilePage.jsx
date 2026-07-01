@@ -5,6 +5,57 @@ import { getCurrentUserProfile, updateUserProfile } from '../../services/userApi
 import { getCheckoutSettings } from '../../services/checkoutSettingsApi';
 import './ProfilePage.css';
 
+// Helper to parse location details from OpenStreetMap Nominatim address & display_name with advanced fallback split-parsing
+const parseOsmAddress = (data) => {
+  if (!data) return { houseNo: '', street: '', city: '', pinCode: '' };
+  
+  const addr = data.address || {};
+  const displayName = data.display_name || '';
+
+  // 1. Extract house number / building / amenity details
+  const houseNoVal = addr.house_number || addr.building || addr.amenity || addr.tourism || addr.shop || addr.office || addr.house_name || '';
+
+  // 2. Extract city / town / village / suburb / municipality
+  let cityVal = addr.city || addr.town || addr.village || addr.municipality || addr.suburb || addr.county || addr.city_district || addr.state_district || addr.state || '';
+
+  // 3. Extract street name (combining road, neighbourhood, suburb, etc. if available)
+  const streetComponents = [
+    addr.road || addr.street || addr.pedestrian || addr.footway || addr.path || addr.cycleway,
+    addr.neighbourhood || addr.quarter || addr.hamlet || addr.square || addr.croft || addr.place || addr.residential || addr.commercial
+  ].filter(Boolean);
+  let streetVal = streetComponents.join(', ');
+
+  // 4. Extract postcode
+  const postcodeVal = addr.postcode || '';
+
+  // 5. Fallback Parsing via comma-split of display_name if city or street are still empty
+  if (displayName) {
+    const parts = displayName.split(',').map(p => p.trim());
+    
+    // If city is still empty and we have enough parts, extract from display_name
+    if (!cityVal && parts.length > 2) {
+      // Typically, city/town is around 3-4 elements from the end (excluding postcode/country)
+      const candidateIndex = parts.length - 3;
+      if (candidateIndex >= 0) {
+        cityVal = parts[candidateIndex];
+      }
+    }
+
+    // If street is still empty and we have enough parts
+    if (!streetVal && parts.length > 1) {
+      // Use the first 1-2 parts of display_name
+      streetVal = parts.slice(0, Math.min(2, parts.length - 2)).join(', ');
+    }
+  }
+
+  return {
+    houseNo: houseNoVal.trim(),
+    street: streetVal.trim(),
+    city: cityVal.trim(),
+    pinCode: postcodeVal.trim(),
+  };
+};
+
 const ProfilePage = ({ user }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -179,25 +230,15 @@ const ProfilePage = ({ user }) => {
       const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`);
       if (!response.ok) throw new Error('OSM Nominatim reverse geocode failed');
       const data = await response.json();
-      if (data && data.address) {
-        const addr = data.address;
-        
-        // Extract house number/building name
-        const houseNoVal = addr.house_number || addr.building || addr.amenity || addr.tourism || addr.shop || addr.office || '';
-        // Extract street
-        const streetComponents = [addr.road, addr.suburb || addr.neighbourhood].filter(Boolean);
-        const streetVal = streetComponents.join(', ') || addr.pedestrian || '';
-        // Extract city
-        const cityVal = addr.city || addr.town || addr.village || addr.municipality || '';
-        // Extract postcode
-        const postcodeVal = addr.postcode || '';
+      if (data) {
+        const parsed = parseOsmAddress(data);
 
         setProfile((prev) => ({
           ...prev,
-          houseNo: houseNoVal || prev.houseNo || '',
-          street: streetVal || prev.street || '',
-          city: cityVal || prev.city || '',
-          pinCode: postcodeVal || prev.pinCode || '',
+          houseNo: parsed.houseNo || prev.houseNo || '',
+          street: parsed.street || prev.street || '',
+          city: parsed.city || prev.city || '',
+          pinCode: parsed.pinCode || prev.pinCode || '',
         }));
 
         setSearchQuery(data.display_name);
@@ -296,25 +337,17 @@ const ProfilePage = ({ user }) => {
   };
 
   const handleSelectOsmSuggestion = (suggestion) => {
-    const addr = suggestion.address || {};
-    
-    // Extract house number / building name
-    const houseNoVal = addr.house_number || addr.building || addr.amenity || addr.tourism || addr.shop || addr.office || '';
-    // Extract street
-    const streetComponents = [addr.road, addr.suburb || addr.neighbourhood].filter(Boolean);
-    const streetVal = streetComponents.join(', ') || addr.pedestrian || '';
-    // Extract city
-    const cityVal = addr.city || addr.town || addr.village || addr.municipality || '';
-    // Extract postcode
-    const postcodeVal = addr.postcode || '';
+    if (suggestion) {
+      const parsed = parseOsmAddress(suggestion);
 
-    setProfile((prev) => ({
-      ...prev,
-      houseNo: houseNoVal || prev.houseNo || '',
-      street: streetVal || prev.street || '',
-      city: cityVal || prev.city || '',
-      pinCode: postcodeVal || prev.pinCode || '',
-    }));
+      setProfile((prev) => ({
+        ...prev,
+        houseNo: parsed.houseNo || prev.houseNo || '',
+        street: parsed.street || prev.street || '',
+        city: parsed.city || prev.city || '',
+        pinCode: parsed.pinCode || prev.pinCode || '',
+      }));
+    }
 
     setSearchQuery(suggestion.display_name);
     setShowOsmSuggestions(false);
