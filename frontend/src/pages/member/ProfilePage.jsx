@@ -175,78 +175,106 @@ const ProfilePage = ({ user }) => {
       if (ipDataFallback) {
         populateAddressFromIp(ipDataFallback);
       } else {
-        setMessage({
-          type: 'error',
-          text: 'Google Maps Library is not loaded yet.',
-        });
-        setDetectingLocation(false);
+        detectLocationViaIp();
       }
       return;
     }
 
-    const geocoder = new window.google.maps.Geocoder();
-    const latlng = { lat: latitude, lng: longitude };
+    let geocoderResolved = false;
 
-    geocoder.geocode({ location: latlng }, (results, status) => {
-      setDetectingLocation(false);
-      if (status === 'OK' && results[0]) {
-        const place = results[0];
-        const addressComponents = place.address_components;
-
-        let streetNumber = '';
-        let route = '';
-        let neighborhood = '';
-        let cityVal = '';
-        let postcode = '';
-
-        for (const component of addressComponents) {
-          const types = component.types;
-          if (types.includes('street_number')) {
-            streetNumber = component.long_name;
-          } else if (types.includes('route')) {
-            route = component.long_name;
-          } else if (types.includes('neighborhood') || types.includes('sublocality') || types.includes('sublocality_level_1')) {
-            neighborhood = component.long_name;
-          } else if (types.includes('locality')) {
-            cityVal = component.long_name;
-          } else if (types.includes('administrative_area_level_2') && !cityVal) {
-            cityVal = component.long_name;
-          } else if (types.includes('postal_code')) {
-            postcode = component.long_name;
-          }
-        }
-
-        const streetVal = [route, neighborhood].filter(Boolean).join(', ');
-
-        setProfile((prev) => ({
-          ...prev,
-          houseNo: streetNumber || prev.houseNo || '',
-          street: streetVal || prev.street || '',
-          city: cityVal || prev.city || '',
-          pinCode: postcode || prev.pinCode || '',
-        }));
-
-        if (autocompleteInputRef.current) {
-          autocompleteInputRef.current.value = place.formatted_address;
-        }
-
-        setMessage({
-          type: 'success',
-          text: 'Sovereign coordinates successfully geocoded and filled.',
-        });
-        setTimeout(() => setMessage(null), 4000);
-      } else {
-        console.error('Geocoder failed due to: ' + status);
+    // Set a 3-second timeout for the Google Geocoder callback
+    const geocoderTimeoutId = setTimeout(() => {
+      if (!geocoderResolved) {
+        geocoderResolved = true;
+        console.warn('Google Maps Geocoder timed out. Falling back to IP address parsing.');
         if (ipDataFallback) {
           populateAddressFromIp(ipDataFallback);
         } else {
-          setMessage({
-            type: 'error',
-            text: `Reverse geocoding failed: ${status}. Please enter address manually.`,
-          });
+          detectLocationViaIp();
         }
       }
-    });
+    }, 3000);
+
+    try {
+      const geocoder = new window.google.maps.Geocoder();
+      const latlng = { lat: latitude, lng: longitude };
+
+      geocoder.geocode({ location: latlng }, (results, status) => {
+        if (geocoderResolved) return;
+        geocoderResolved = true;
+        clearTimeout(geocoderTimeoutId);
+
+        setDetectingLocation(false);
+        if (status === 'OK' && results[0]) {
+          const place = results[0];
+          const addressComponents = place.address_components;
+
+          let streetNumber = '';
+          let route = '';
+          let neighborhood = '';
+          let cityVal = '';
+          let postcode = '';
+
+          for (const component of addressComponents) {
+            const types = component.types;
+            if (types.includes('street_number')) {
+              streetNumber = component.long_name;
+            } else if (types.includes('route')) {
+              route = component.long_name;
+            } else if (types.includes('neighborhood') || types.includes('sublocality') || types.includes('sublocality_level_1')) {
+              neighborhood = component.long_name;
+            } else if (types.includes('locality')) {
+              cityVal = component.long_name;
+            } else if (types.includes('administrative_area_level_2') && !cityVal) {
+              cityVal = component.long_name;
+            } else if (types.includes('postal_code')) {
+              postcode = component.long_name;
+            }
+          }
+
+          const streetVal = [route, neighborhood].filter(Boolean).join(', ');
+
+          setProfile((prev) => ({
+            ...prev,
+            houseNo: streetNumber || prev.houseNo || '',
+            street: streetVal || prev.street || '',
+            city: cityVal || prev.city || '',
+            pinCode: postcode || prev.pinCode || '',
+          }));
+
+          if (autocompleteInputRef.current) {
+            autocompleteInputRef.current.value = place.formatted_address;
+          }
+
+          setMessage({
+            type: 'success',
+            text: 'Sovereign coordinates successfully geocoded and filled.',
+          });
+          setTimeout(() => setMessage(null), 4000);
+        } else {
+          console.error('Geocoder failed due to: ' + status);
+          if (ipDataFallback) {
+            populateAddressFromIp(ipDataFallback);
+          } else {
+            setMessage({
+              type: 'error',
+              text: `Reverse geocoding failed: ${status}. Please enter address manually.`,
+            });
+          }
+        }
+      });
+    } catch (e) {
+      console.error('Google Geocoder instantiation or call exception:', e);
+      if (geocoderResolved) return;
+      geocoderResolved = true;
+      clearTimeout(geocoderTimeoutId);
+
+      if (ipDataFallback) {
+        populateAddressFromIp(ipDataFallback);
+      } else {
+        detectLocationViaIp();
+      }
+    }
   };
 
   const detectLocationViaIp = async () => {
