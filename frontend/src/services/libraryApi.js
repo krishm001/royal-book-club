@@ -95,4 +95,9 @@ export const fetchCheckoutsByMember = async (memberId) => {
   return response.data;
 };
 
+export const clearCheckout = async (id, adminId) => {
+  const response = await api.post(`/api/v1/checkout/clear/${id}?adminId=${encodeURIComponent(adminId || '')}`);
+  return response.data;
+};
+
 

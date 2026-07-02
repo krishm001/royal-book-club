@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Check, X, Clock, BookOpen, User, RefreshCw, Search, Filter, AlertCircle, CheckCircle, Smartphone, ArrowLeft } from 'lucide-react';
-import { fetchCheckouts, approveCheckout, rejectCheckout, approveReturn, fetchBooks } from '../../services/libraryApi';
+import { Shield, Check, X, Clock, BookOpen, User, RefreshCw, Search, Filter, AlertCircle, CheckCircle, Smartphone, ArrowLeft, Phone, MapPin } from 'lucide-react';
+import { fetchCheckouts, approveCheckout, rejectCheckout, approveReturn, fetchBooks, clearCheckout } from '../../services/libraryApi';
 import { getAllUsers } from '../../services/userApi';
 import { useLanguage } from '../../i18n/LanguageContext';
 import './CuratorCheckoutsPage.css';
@@ -15,6 +15,7 @@ export default function CuratorCheckoutsPage({ user }) {
   const [actionLoading, setActionLoading] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL', 'PENDING', 'ACTIVE', 'RETURNED'
+  const [showContactDetails, setShowContactDetails] = useState(false);
 
   // Access check
   const isAdmin = user && user.role === 'ADMIN';
@@ -112,6 +113,23 @@ export default function CuratorCheckoutsPage({ user }) {
     }
   };
 
+  const handleClearCheckout = async (id) => {
+    if (!window.confirm(t('admin.confirmClearCheckout', 'Are you sure you want to forcibly clear this checkout? The book copies in catalog will be incremented.'))) {
+      return;
+    }
+    setActionLoading(prev => ({ ...prev, [id]: 'clear' }));
+    const adminId = user?.uid || user?.id || '';
+    try {
+      await clearCheckout(id, adminId);
+      await loadData();
+    } catch (err) {
+      console.error('Failed to clear checkout:', err);
+      window.alert(`Failed to clear checkout: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setActionLoading(prev => ({ ...prev, [id]: null }));
+    }
+  };
+
   if (!isAdmin) {
     return (
       <div className="admin-access-denied-container animate-fade-in">
@@ -200,6 +218,21 @@ export default function CuratorCheckoutsPage({ user }) {
     );
   };
 
+  const isContactIncomplete = (memberId) => {
+    const member = userMap[memberId];
+    if (!member) return true;
+    const phoneVal = (member.phone || member.phoneNumber || '').trim();
+    const addressParts = [
+      member.houseNo,
+      member.street,
+      member.city,
+      member.pinCode
+    ].filter(Boolean).map(v => String(v).trim()).filter(v => v !== 'null' && v !== '');
+    const hasPhone = !!phoneVal;
+    const hasAddress = addressParts.length > 0;
+    return !hasPhone && !hasAddress;
+  };
+
   const renderMemberCell = (memberId, tx) => {
     const member = userMap[memberId];
     let name = '';
@@ -218,6 +251,21 @@ export default function CuratorCheckoutsPage({ user }) {
       name = t('admin.unknownPatron', 'Unknown Patron');
     }
     const email = member?.email || tx?.memberEmail || t('admin.noEmail', 'No email');
+    
+    // Contact Info formatting for toggle view
+    const phoneVal = member ? (member.phone || member.phoneNumber || '') : '';
+    const addressParts = member ? [
+      member.houseNo,
+      member.street,
+      member.city,
+      member.pinCode
+    ] : [];
+    const addressVal = addressParts
+      .filter(Boolean)
+      .map(v => String(v).trim())
+      .filter(v => v !== 'null' && v !== '')
+      .join(', ');
+
     return (
       <div className="ledger-member-cell">
         <div className="avatar-mini-circle">
@@ -227,6 +275,33 @@ export default function CuratorCheckoutsPage({ user }) {
           <div className="cell-primary-title">{name}</div>
           <div className="cell-sub-detail text-muted truncate">{email}</div>
           <div className="cell-sub-detail text-muted font-mono" style={{ fontSize: '0.65rem' }}>UID: {memberId ? `${memberId.slice(0, 8)}...` : '—'}</div>
+          
+          {showContactDetails && (
+            <div className="member-contact-details animate-slide-down">
+              {phoneVal ? (
+                <div className="contact-detail-item">
+                  <Phone size={10} className="contact-icon text-accent" />
+                  <span className="contact-text font-mono">{phoneVal}</span>
+                </div>
+              ) : (
+                <div className="contact-detail-item empty-detail">
+                  <Phone size={10} className="contact-icon text-muted" />
+                  <span className="contact-text text-muted italic">{t('admin.noPhone', 'No phone')}</span>
+                </div>
+              )}
+              {addressVal ? (
+                <div className="contact-detail-item">
+                  <MapPin size={10} className="contact-icon text-accent" />
+                  <span className="contact-text">{addressVal}</span>
+                </div>
+              ) : (
+                <div className="contact-detail-item empty-detail">
+                  <MapPin size={10} className="contact-icon text-muted" />
+                  <span className="contact-text text-muted italic">{t('admin.noAddress', 'No address')}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -423,6 +498,19 @@ export default function CuratorCheckoutsPage({ user }) {
               />
             </div>
 
+            {/* Patron Contacts Toggle Switch */}
+            <div className="contact-toggle-wrapper">
+              <span className="toggle-label">{t('admin.showPatronContacts', 'Show Patron Contacts')}</span>
+              <button
+                type="button"
+                className={`luxury-toggle-btn ${showContactDetails ? 'active' : ''}`}
+                onClick={() => setShowContactDetails(!showContactDetails)}
+                title={t('admin.showPatronContacts', 'Show Patron Contacts')}
+              >
+                <span className="luxury-toggle-slider" />
+              </button>
+            </div>
+
             {/* Filter */}
             <div className="status-filter-wrapper">
               <Filter size={14} className="filter-icon" />
@@ -461,11 +549,15 @@ export default function CuratorCheckoutsPage({ user }) {
                   <th>{t('admin.dueDate', 'Due Date')}</th>
                   <th>{t('admin.status', 'Status')}</th>
                   <th>{t('admin.verificationCard', 'Verification Card')}</th>
+                  <th>{t('admin.actions', 'Actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {getFilteredList().map(entry => (
-                  <tr key={entry.id} className="ledger-tr animate-fade-in">
+                  <tr 
+                    key={entry.id} 
+                    className={`ledger-tr animate-fade-in ${isContactIncomplete(entry.memberId) ? 'contact-incomplete-warning' : ''}`}
+                  >
                     <td>{renderBookCell(entry.bookId)}</td>
                     <td>{renderMemberCell(entry.memberId, entry)}</td>
                     <td>
@@ -514,6 +606,27 @@ export default function CuratorCheckoutsPage({ user }) {
                         </div>
                       ) : (
                         <span className="ntag-none">—</span>
+                      )}
+                    </td>
+                    <td>
+                      {(entry.status === 'CHECKED_OUT' || entry.status === 'REQUESTED_RETURN') ? (
+                        <button
+                          onClick={() => handleClearCheckout(entry.id)}
+                          className="clear-checkout-btn"
+                          disabled={actionLoading[entry.id] === 'clear'}
+                          title={t('admin.clearCheckout', 'Forcibly Clear Checkout')}
+                        >
+                          {actionLoading[entry.id] === 'clear' ? (
+                            <RefreshCw className="spin-icon" size={13} />
+                          ) : (
+                            <>
+                              <X size={12} />
+                              <span>{t('admin.clear', 'Clear')}</span>
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <span className="action-none">—</span>
                       )}
                     </td>
                   </tr>

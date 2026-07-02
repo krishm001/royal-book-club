@@ -1,5 +1,4 @@
 package com.royalbookclub.api.checkout.controller;
-
 import com.royalbookclub.api.checkout.dto.CheckoutRequestDto;
 import com.royalbookclub.api.checkout.dto.IotKeyTokenResponseDto;
 import com.royalbookclub.api.checkout.dto.ReturnRequestDto;
@@ -13,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -136,6 +136,22 @@ public class CheckoutController {
         String resolvedAdminId = resolveAdminId(adminId, user);
         log.info("REST request to approve return request: {} by admin: {} (resolved: {})", id, adminId, resolvedAdminId);
         Checkout checkout = checkoutService.approveReturnRequest(id, resolvedAdminId);
+        return ResponseEntity.ok(checkout);
+    }
+
+    /**
+     * Clear / Force Return an active book checkout against a member.
+     */
+    @PostMapping("/clear/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Clear/Force-return a checkout", description = "Forcibly return an active book checkout, updating status to RETURNED and incrementing available copies.")
+    public ResponseEntity<Checkout> clearCheckout(
+            @PathVariable String id,
+            @RequestParam(required = false) String adminId,
+            @AuthenticationPrincipal User user) {
+        String resolvedAdminId = resolveAdminId(adminId, user);
+        log.info("REST request to clear/force-return checkout: {} by admin: {} (resolved: {})", id, adminId, resolvedAdminId);
+        Checkout checkout = checkoutService.forceClearCheckout(id, resolvedAdminId);
         return ResponseEntity.ok(checkout);
     }
 

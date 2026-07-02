@@ -821,6 +821,61 @@ public class CheckoutService {
         }
     }
 
+    /**
+     * Admin-forced return/clear of an active checkout or return request.
+     */
+    public Checkout forceClearCheckout(String checkoutId, String adminId) {
+        log.info("Force clearing checkout ID: {} by Admin: {}", checkoutId, adminId);
+        DocumentReference checkoutRef = firestore.collection(COLLECTION_NAME).document(checkoutId);
+
+        try {
+            firestore.runTransaction(transaction -> {
+                DocumentSnapshot checkoutDoc = transaction.get(checkoutRef).get();
+                if (!checkoutDoc.exists()) {
+                    throw new IllegalArgumentException("Checkout record not found.");
+                }
+
+                String status = checkoutDoc.getString("status");
+                if (!"CHECKED_OUT".equals(status) && !"REQUESTED_RETURN".equals(status)) {
+                    throw new IllegalStateException("Only active checkouts or return requests can be cleared.");
+                }
+
+                String cleanIsbn = checkoutDoc.getString("bookId");
+                DocumentReference bookRef = firestore.collection("books").document(cleanIsbn);
+                DocumentSnapshot bookDoc = transaction.get(bookRef).get();
+
+                if (bookDoc.exists()) {
+                    Long available = bookDoc.getLong("availableCopies");
+                    Long total = bookDoc.getLong("totalCopies");
+                    long newAvailable = (available != null ? available : 0) + 1;
+                    if (total != null && newAvailable > total) {
+                        newAvailable = total;
+                    }
+                    transaction.update(bookRef, "availableCopies", newAvailable);
+                }
+
+                Instant now = Instant.now();
+                transaction.update(checkoutRef,
+                        "status", "RETURNED",
+                        "returnedAt", toTimestamp(now),
+                        "approvedAt", toTimestamp(now),
+                        "approvedBy", adminId + " (FORCED_CLEAR)"
+                );
+
+                return null;
+            }).get();
+
+            return getCheckoutById(checkoutId)
+                    .orElseThrow(() -> new RuntimeException("Failed to read updated checkout."));
+        } catch (Exception e) {
+            log.error("Failed to force clear checkout: {}", checkoutId, e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new RuntimeException(e.getMessage(), e);
+        }
+    }
+
     private com.google.cloud.Timestamp toTimestamp(Instant instant) {
         return instant != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(instant.getEpochSecond(), instant.getNano()) : null;
     }
@@ -842,6 +897,8 @@ public class CheckoutService {
                 .approvedAt(toInstant(doc.getTimestamp("approvedAt")))
                 .approvedBy(doc.getString("approvedBy"))
                 .ntagUid(doc.getString("ntagUid"))
+                .memberEmail(doc.getString("memberEmail"))
+                .memberName(doc.getString("memberName"))
                 .build();
     }
 }
