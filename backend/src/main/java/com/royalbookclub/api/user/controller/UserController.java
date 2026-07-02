@@ -75,7 +75,9 @@ public class UserController {
     @Operation(summary = "Register new user in Firestore (called after Firebase signup)")
     public ResponseEntity<ApiResponse<User>> registerUser(@RequestBody RegisterRequest request) {
         User user = userService.getOrCreateUser(request.getUid(), request.getEmail(), request.getDisplayName());
-        return ResponseEntity.ok(ApiResponse.success(user));
+        user.setConsentAcceptedAt(new java.util.Date());
+        User updated = userService.updateUser(user.getId(), user);
+        return ResponseEntity.ok(ApiResponse.success(updated));
     }
 
     /**
@@ -107,4 +109,26 @@ public class UserController {
         User updated = userService.getUserById(id);
         return ResponseEntity.ok(ApiResponse.success(updated, "User role updated successfully."));
     }
+
+    @GetMapping("/api/v1/admin/users/{id}/active-checkouts-count")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Get count of active checkouts for a user (Admin only)", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<ApiResponse<Long>> getActiveCheckoutsCount(@PathVariable String id) {
+        long count = userService.getActiveCheckoutsCount(id);
+        return ResponseEntity.ok(ApiResponse.success(count));
+    }
+
+    @DeleteMapping("/api/v1/admin/users/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Permanently soft-delete / anonymize a user (Admin only)", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            @PathVariable String id,
+            @RequestParam(defaultValue = "false") boolean force,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        String performedBy = currentUser != null ? currentUser.getId() : "SYSTEM";
+        userService.deleteUserPermanently(id, performedBy, force);
+        return ResponseEntity.ok(ApiResponse.success(null, "User record anonymized successfully."));
+    }
 }
+

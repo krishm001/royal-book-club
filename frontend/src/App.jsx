@@ -40,6 +40,27 @@ function App() {
   const [footerAuthor, setFooterAuthor] = useState("Sovereign Reader Guild");
   const [heroConfig, setHeroConfig] = useState(null);
   const [quoteIndex, setQuoteIndex] = useState(-1);
+  const [consentLoading, setConsentLoading] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
+
+  const handleAcceptGoogleConsent = async () => {
+    try {
+      setConsentLoading(true);
+      const consentDate = new Date();
+      await api.put('/api/v1/users/profile', {
+        consentAcceptedAt: consentDate
+      });
+      setUser(prev => ({
+        ...prev,
+        consentAcceptedAt: consentDate
+      }));
+      window.location.hash = '#/profile';
+    } catch (err) {
+      console.error("Failed to save consent:", err);
+    } finally {
+      setConsentLoading(false);
+    }
+  };
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -134,7 +155,9 @@ function App() {
               email: firebaseUser.email || backendUser?.email || 'patron@royalbook.club',
               photoURL: firebaseUser.photoURL || backendUser?.photoUrl || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=150&q=80',
               tier: backendUser?.role === 'ADMIN' ? 'Curator' : 'Sovereign Reader',
-              role: backendUser?.role || 'MEMBER'
+              role: backendUser?.role || 'MEMBER',
+              consentAcceptedAt: backendUser?.consentAcceptedAt || null,
+              isAnonymous: firebaseUser.isAnonymous
             });
           } catch (err) {
             console.error('Failed to fetch backend profile', err);
@@ -146,7 +169,9 @@ function App() {
               displayName: fallbackName,
               email: firebaseUser.email || 'patron@royalbook.club',
               photoURL: firebaseUser.photoURL || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=150&q=80',
-              tier: 'Sovereign Reader'
+              tier: 'Sovereign Reader',
+              consentAcceptedAt: null,
+              isAnonymous: firebaseUser.isAnonymous
             });
           } finally {
             setLoading(false);
@@ -424,6 +449,62 @@ function App() {
             <p>&copy; {new Date().getFullYear()} The Royal Book Club. All rights reserved. Created for premium aesthetic readers.</p>
           </div>
         </footer>
+
+        {/* Premium Google Sign up Consent Overlay */}
+        {user && !user.isAnonymous && !user.consentAcceptedAt && (
+          <div className="consent-overlay">
+            <div className="consent-modal animate-scale-up">
+              <div className="consent-modal-header">
+                <Sparkles className="gold-glow" size={32} />
+                <h2 className="gold-gradient-text">Activate Your Sovereign Portal</h2>
+              </div>
+              <div className="consent-modal-body">
+                <p className="consent-intro">
+                  Welcome, seeker of wisdom. Before stepping into the <strong>Royal Book Club</strong>, we require you to accept our covenant of privacy and terms.
+                </p>
+                <div className="consent-scroll-box">
+                  <h4>Covenant Highlights</h4>
+                  <ul>
+                    <li><strong>Your Personal Sanctuary:</strong> We never sell, rent, or trade your personal data. Your email is used solely for secure access and club communications.</li>
+                    <li><strong>Address Registry & Borrowing:</strong> Members may optionally supply a phone number and postal address (including house number) on their profile. This registry is required for active book checkouts.</li>
+                    <li><strong>Overdue Outreach:</strong> In the rare event that a checked-out volume is overdue, we reserve the right to contact you directly using your registered email or phone.</li>
+                    <li><strong>Future Upgrades:</strong> A member profile photo is a future requirement, currently not active.</li>
+                  </ul>
+                  <p className="consent-links-text">
+                    Please read our full, detailed <Link to="/privacy" target="_blank" rel="noopener noreferrer">Privacy Notice</Link> and <Link to="/terms" target="_blank" rel="noopener noreferrer">Terms & Conditions</Link>.
+                  </p>
+                </div>
+                <div className="consent-checkbox-field">
+                  <label className="consent-checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={consentChecked}
+                      onChange={(e) => setConsentChecked(e.target.checked)}
+                    />
+                    <span>
+                      I agree to the <Link to="/terms" target="_blank" rel="noopener noreferrer">Terms & Conditions</Link> and have read the <Link to="/privacy" target="_blank" rel="noopener noreferrer">Privacy Notice</Link>. I provide my explicit consent to royalbookclub.com to process my email and account information for book club activities.
+                    </span>
+                  </label>
+                </div>
+              </div>
+              <div className="consent-modal-actions">
+                <button 
+                  onClick={handleSignOut} 
+                  className="royal-btn-secondary leave-sanctuary-btn"
+                >
+                  Leave Sanctuary
+                </button>
+                <button 
+                  onClick={handleAcceptGoogleConsent} 
+                  disabled={!consentChecked || consentLoading} 
+                  className="royal-btn activate-btn"
+                >
+                  {consentLoading ? 'Activating...' : 'Agree & Enter'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Router>
   );

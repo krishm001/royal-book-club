@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -24,11 +25,14 @@ public class UserService {
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final Firestore firestore;
+    private final com.google.firebase.auth.FirebaseAuth firebaseAuth;
     private static final String COLLECTION_NAME = "users";
 
-    public UserService(Firestore firestore) {
+    public UserService(Firestore firestore, com.google.firebase.auth.FirebaseAuth firebaseAuth) {
         this.firestore = firestore;
+        this.firebaseAuth = firebaseAuth;
     }
+
 
     private String sanitizeName(String name) {
         if (name == null) return "";
@@ -177,7 +181,11 @@ public class UserService {
                 User user = document.toObject(User.class);
                 if (user != null) {
                     user.setId(document.getId());
+                    if (user.getDeleted() != null && user.getDeleted()) {
+                        continue;
+                    }
                     users.add(user);
+
                 }
             }
             return users;
@@ -206,16 +214,35 @@ public class UserService {
             }
 
             // Update allowed fields
-            existing.setFirstName(updatedUser.getFirstName());
-            existing.setLastName(updatedUser.getLastName());
-            existing.setRfidToken(updatedUser.getRfidToken());
-            existing.setPhone(updatedUser.getPhone());
-            existing.setHouseNo(updatedUser.getHouseNo());
-            existing.setStreet(updatedUser.getStreet());
-            existing.setCity(updatedUser.getCity());
-            existing.setPinCode(updatedUser.getPinCode());
+            if (updatedUser.getFirstName() != null) {
+                existing.setFirstName(updatedUser.getFirstName());
+            }
+            if (updatedUser.getLastName() != null) {
+                existing.setLastName(updatedUser.getLastName());
+            }
+            if (updatedUser.getRfidToken() != null) {
+                existing.setRfidToken(updatedUser.getRfidToken());
+            }
+            if (updatedUser.getPhone() != null) {
+                existing.setPhone(updatedUser.getPhone());
+            }
+            if (updatedUser.getHouseNo() != null) {
+                existing.setHouseNo(updatedUser.getHouseNo());
+            }
+            if (updatedUser.getStreet() != null) {
+                existing.setStreet(updatedUser.getStreet());
+            }
+            if (updatedUser.getCity() != null) {
+                existing.setCity(updatedUser.getCity());
+            }
+            if (updatedUser.getPinCode() != null) {
+                existing.setPinCode(updatedUser.getPinCode());
+            }
             if (updatedUser.getLanguage() != null) {
                 existing.setLanguage(updatedUser.getLanguage());
+            }
+            if (updatedUser.getConsentAcceptedAt() != null) {
+                existing.setConsentAcceptedAt(updatedUser.getConsentAcceptedAt());
             }
             existing.setUpdatedAt(new Date());
 
@@ -274,4 +301,95 @@ public class UserService {
             throw new RuntimeException("Database error updating user role", e);
         }
     }
+
+    /**
+     * Counts active checkouts for a given member.
+     */
+    public long getActiveCheckoutsCount(String targetUid) {
+        if (targetUid == null || targetUid.isBlank()) {
+            return 0;
+        }
+        try {
+            Query activeQuery = firestore.collection("checkouts")
+                    .whereEqualTo("memberId", targetUid)
+                    .whereIn("status", java.util.Arrays.asList("CHECKED_OUT", "REQUESTED_CHECKOUT", "REQUESTED_RETURN"));
+            return activeQuery.get().get().size();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Request interrupted while checking active checkouts.", e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException("Database error checking active checkouts: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Soft deletes and anonymizes a user.
+     */
+    public void deleteUserPermanently(String targetUid, String performedByUid, boolean force) {
+        if (targetUid == null || targetUid.isBlank()) {
+            throw new BusinessRuleException("Target user UID must be provided.");
+        }
+        if (targetUid.equals(performedByUid)) {
+            throw new BusinessRuleException("You are not authorized to delete your own administrative ledger entry.");
+        }
+
+        DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(targetUid);
+        try {
+            DocumentSnapshot docSnapshot = docRef.get().get();
+            if (!docSnapshot.exists()) {
+                throw new ResourceNotFoundException("User not found with ID: " + targetUid);
+            }
+
+            User existingUser = docSnapshot.toObject(User.class);
+            if (existingUser != null && existingUser.getDeleted() != null && existingUser.getDeleted()) {
+                throw new BusinessRuleException("User is already deleted.");
+            }
+
+            long activeCount = getActiveCheckoutsCount(targetUid);
+            if (activeCount > 0 && !force) {
+                throw new BusinessRuleException("ACTIVE_CHECKOUTS_FOUND:" + activeCount);
+            }
+
+            // 1. Delete from Firebase Authentication credentials
+            try {
+                firebaseAuth.deleteUser(targetUid);
+                log.info("Successfully deleted user {} from Firebase Authentication credentials.", targetUid);
+            } catch (com.google.firebase.auth.FirebaseAuthException e) {
+                log.warn("Firebase Auth deletion failed for uid: {}. Message: {}. Proceeding to anonymize Firestore document.", targetUid, e.getMessage());
+            }
+
+            // 2. Soft-delete user document from Firestore (anonymize fields, keeping only firstName and lastName)
+            Map<String, Object> updates = new java.util.HashMap<>();
+            updates.put("email", null);
+            updates.put("phone", null);
+            updates.put("rfidToken", null);
+            updates.put("houseNo", null);
+            updates.put("street", null);
+            updates.put("city", null);
+            updates.put("pinCode", null);
+            updates.put("consentAcceptedAt", null);
+            updates.put("deleted", true);
+            updates.put("updatedAt", new Date());
+
+            docRef.update(updates).get();
+            log.info("Successfully anonymized user {} in Firestore, preserving only name.", targetUid);
+
+            // 3. Write an audit entry
+            DocumentReference auditRef = firestore.collection("admin_actions").document();
+            auditRef.set(new java.util.HashMap<String, Object>() {{
+                put("userId", targetUid);
+                put("action", "SOFT_DELETION_ANONYMIZED");
+                put("performedBy", performedByUid);
+                put("performedAt", new Date());
+                put("hadActiveCheckouts", activeCount > 0);
+            }}).get();
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Request interrupted while deleting user.", e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException("Database error deleting user: " + e.getMessage(), e);
+        }
+    }
 }
+

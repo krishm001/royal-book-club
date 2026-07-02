@@ -28,8 +28,12 @@ public class User {
     private String pinCode;
     private Date createdAt;
     private Date updatedAt;
+    private Date consentAcceptedAt;
     @Builder.Default
     private String language = "en";
+    @Builder.Default
+    private Boolean deleted = false;
+
 
     public String getFullName() {
         String first = firstName != null ? firstName.trim() : "";

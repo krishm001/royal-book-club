@@ -217,3 +217,216 @@
     font-size: 2.2rem;
   }
 }
+
+/* Deletion Button Styling */
+.delete-member-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.delete-member-btn:hover:not(:disabled) {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.35);
+  transform: translateY(-1px);
+}
+
+.delete-member-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Modal Overlay with premium glassmorphism */
+.delete-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(8, 8, 16, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+/* Luxurious card with gold-gilded accents */
+.delete-modal-content {
+  width: 100%;
+  max-width: 520px;
+  background: rgba(22, 22, 43, 0.85);
+  border: 1px solid rgba(212, 165, 116, 0.25);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(212, 165, 116, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 30px;
+}
+
+.delete-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid rgba(212, 165, 116, 0.15);
+  padding-bottom: 18px;
+  margin-bottom: 20px;
+}
+
+.delete-modal-header h2 {
+  font-size: 1.6rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  margin: 0;
+}
+
+.delete-modal-body {
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.delete-warning-intro {
+  margin-bottom: 20px;
+  color: var(--text-secondary);
+}
+
+.delete-member-name {
+  font-size: 1.3rem;
+  color: var(--text-primary);
+  display: inline-block;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.uid-label {
+  font-size: 0.85rem;
+}
+
+.uid-code {
+  font-family: monospace;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+/* Warning boxes */
+.delete-warning-box {
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+}
+
+.delete-warning-box.standard-warning {
+  background: rgba(212, 165, 116, 0.05);
+  border: 1px solid rgba(212, 165, 116, 0.15);
+  color: var(--text-secondary);
+}
+
+.delete-warning-box.active-checkouts {
+  background: rgba(220, 38, 38, 0.07);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: #fca5a5;
+}
+
+.delete-warning-box.active-checkouts h3 {
+  color: #ef4444;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.override-disclaimer {
+  margin-top: 12px;
+  border-top: 1px solid rgba(220, 38, 38, 0.15);
+  padding-top: 12px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.override-disclaimer strong {
+  color: var(--accent);
+}
+
+.delete-error-banner {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+}
+
+.delete-modal-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  gap: 16px;
+  color: var(--text-secondary);
+}
+
+/* Actions */
+.delete-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 20px;
+}
+
+.royal-btn-danger {
+  background: #dc2626;
+  color: #ffffff;
+  border: 1px solid #dc2626;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.royal-btn-danger:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+}
+
+.override-btn {
+  background: linear-gradient(135deg, #b91c1c, #dc2626);
+  border: 1px solid rgba(212, 165, 116, 0.4);
+}
+
+.override-btn:hover {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4), 0 0 5px rgba(212, 165, 116, 0.2);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1.5s linear infinite;
+}
+

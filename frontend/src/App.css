@@ -678,3 +678,216 @@
   background: #181416;
   color: #f5f2f0;
 }
+
+/* Google Consent Modal Overlay */
+.consent-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(10, 8, 12, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.consent-modal {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--border-radius-md, 8px);
+  max-width: 580px;
+  width: 100%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), var(--glow-shadow-intense);
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.consent-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+  padding-bottom: 15px;
+}
+
+.consent-modal-header h2 {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.05em;
+}
+
+.consent-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.consent-intro {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.consent-scroll-box {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--border-radius-sm, 4px);
+  padding: 15px 20px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.consent-scroll-box h4 {
+  font-family: var(--font-heading);
+  color: var(--accent);
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.consent-scroll-box ul {
+  margin: 0 0 10px 0;
+  padding-left: 15px;
+}
+
+.consent-scroll-box li {
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+}
+
+.consent-links-text {
+  margin: 5px 0 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.consent-links-text a {
+  color: var(--accent);
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.consent-links-text a:hover {
+  color: var(--accent-hover);
+}
+
+.consent-checkbox-field {
+  padding: 12px 15px;
+  background: rgba(212, 175, 55, 0.04);
+  border: 1px dashed rgba(212, 175, 55, 0.15);
+  border-radius: var(--border-radius-sm, 4px);
+}
+
+.consent-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  user-select: none;
+}
+
+.consent-checkbox-label input[type="checkbox"] {
+  margin-top: 3px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.consent-checkbox-label span {
+  color: var(--text-secondary);
+}
+
+.consent-checkbox-label a {
+  color: var(--accent);
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.consent-checkbox-label a:hover {
+  color: var(--accent-hover);
+}
+
+.consent-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 15px;
+}
+
+.consent-modal-actions button {
+  padding: 10px 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: var(--border-radius-sm, 4px);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.leave-sanctuary-btn {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.leave-sanctuary-btn:hover {
+  background: rgba(255, 0, 0, 0.08);
+  color: #ff4d4d;
+  border-color: rgba(255, 0, 0, 0.2);
+}
+
+.activate-btn {
+  background: var(--accent-gradient);
+  color: var(--surface) !important;
+  border: 1px solid var(--accent);
+}
+
+.activate-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--glow-shadow-intense);
+}
+
+.activate-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+/* Scrollbar Customization for scroll-box */
+.consent-scroll-box::-webkit-scrollbar {
+  width: 6px;
+}
+
+.consent-scroll-box::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.consent-scroll-box::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.25);
+  border-radius: 3px;
+}
+
+.consent-scroll-box::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}

@@ -138,6 +138,17 @@ const ProfilePage = ({ user }) => {
     }
   }, [user]);
 
+  // Synchronize local form state with context language selection
+  useEffect(() => {
+    if (language) {
+      setProfile((prev) => ({
+        ...prev,
+        language: language,
+      }));
+    }
+  }, [language]);
+
+
   // Handle click outside of OSM suggestions list to close dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {

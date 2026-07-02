@@ -20,3 +20,14 @@ export const updateUserProfile = async (profileUpdate) => {
   return response.data;
 };
 
+export const getActiveCheckoutsCount = async (userId) => {
+  const response = await api.get(`/api/v1/admin/users/${userId}/active-checkouts-count`);
+  return response.data;
+};
+
+export const deleteUserPermanently = async (userId, force = false) => {
+  const response = await api.delete(`/api/v1/admin/users/${userId}?force=${force}`);
+  return response.data;
+};
+
+

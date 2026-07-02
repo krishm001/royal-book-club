@@ -15,14 +15,16 @@ export default function PrivacyNotice() {
         <p>We only collect personal information that you voluntarily provide to us.</p>
         <ul>
           <li><strong>Current Requirements:</strong> To create an account, you must provide your <strong>email address</strong> and a <strong>password</strong>.</li>
-          <li><strong>Future Requirements:</strong> As our club grows, we may optionally ask you for additional details to improve your experience, including your <strong>phone number</strong>, <strong>postal address</strong>, and a <strong>profile photo</strong>.</li>
+          <li><strong>Member Profiles & Address Registry:</strong> For members, there is a way to provide your <strong>phone number</strong> and <strong>postal address (including house number)</strong>. These may be made mandatory for certain active features such as checking out scholarly volumes from our library.</li>
+          <li><strong>Future Requirements:</strong> We may ask you for additional details to improve your experience in the future, including a <strong>profile photo</strong>.</li>
         </ul>
 
         <h2>2. How We Use Your Information</h2>
         <ul>
           <li>To create, maintain, and secure your book club account.</li>
           <li>To communicate club updates, newsletter mailings, and event notifications.</li>
-          <li>To personalize your profile (such as displaying your photo or shipping physical books to your address, if applicable in the future).</li>
+          <li>To support and process library book checkouts.</li>
+          <li>To reach out and contact you in case a borrowed library book's return is overdue.</li>
         </ul>
 
         <h2>3. Legal Basis for Processing (India DPDP Act)</h2>

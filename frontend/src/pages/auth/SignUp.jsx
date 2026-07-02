@@ -35,7 +35,7 @@ export default function SignUp() {
       // Create Firestore user record
       await registerUser(user.uid, email, displayName);
 
-      navigate('/');
+      navigate('/profile');
     } catch (err) {
       setError(err.message || 'Sign up failed');
     } finally {
