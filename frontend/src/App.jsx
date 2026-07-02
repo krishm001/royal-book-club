@@ -31,13 +31,15 @@ import { fetchHeroConfig } from './services/heroApi';
 import { useLanguage } from './i18n/LanguageContext';
 
 function App() {
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage, t, getLocalized } = useLanguage();
   const [user, setUser] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useState(() => localStorage.getItem('royal-theme') || 'academic');
   const [footerQuote, setFooterQuote] = useState("A word, deeply read, becomes conviction. A conviction becomes a life. You do not read a great book. You are slowly, quietly, being rewritten by it.");
   const [footerAuthor, setFooterAuthor] = useState("Sovereign Reader Guild");
+  const [heroConfig, setHeroConfig] = useState(null);
+  const [quoteIndex, setQuoteIndex] = useState(-1);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -49,37 +51,50 @@ function App() {
   };
 
   useEffect(() => {
-    const loadFooterQuote = async () => {
+    const loadHeroConfigData = async () => {
       try {
         const res = await fetchHeroConfig();
-        if (res?.success && Array.isArray(res.data?.featuredQuotes) && res.data.featuredQuotes.length > 0) {
-          const quotes = res.data.featuredQuotes;
-          const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
-          
-          let text = randomQuote;
-          let author = "Sovereign Reader Guild";
-          const separators = [" — ", " - ", " – "];
-          for (const sep of separators) {
-            if (randomQuote.includes(sep)) {
-              const parts = randomQuote.split(sep);
-              text = parts[0].trim();
-              author = parts.slice(1).join(sep).trim();
-              break;
-            }
+        if (res?.success && res.data) {
+          setHeroConfig(res.data);
+          const quotes = res.data.featuredQuotes || [];
+          if (Array.isArray(quotes) && quotes.length > 0) {
+            const randomIndex = Math.floor(Math.random() * quotes.length);
+            setQuoteIndex(randomIndex);
           }
-          
-          if (text.startsWith('"') && text.endsWith('"')) {
-            text = text.slice(1, -1);
-          }
-          setFooterQuote(text);
-          setFooterAuthor(author);
         }
       } catch (err) {
-        console.warn('Unable to load custom footer quote, using default.', err);
+        console.warn('Unable to load hero config for footer quote.', err);
       }
     };
-    loadFooterQuote();
+    loadHeroConfigData();
   }, []);
+
+  useEffect(() => {
+    if (!heroConfig || quoteIndex === -1) return;
+
+    const quotes = getLocalized(heroConfig, 'featuredQuotes') || [];
+    const randomQuote = quotes[quoteIndex];
+    
+    if (randomQuote) {
+      let text = randomQuote;
+      let author = "Sovereign Reader Guild";
+      const separators = [" — ", " - ", " – "];
+      for (const sep of separators) {
+        if (randomQuote.includes(sep)) {
+          const parts = randomQuote.split(sep);
+          text = parts[0].trim();
+          author = parts.slice(1).join(sep).trim();
+          break;
+        }
+      }
+      
+      if (text.startsWith('"') && text.endsWith('"')) {
+        text = text.slice(1, -1);
+      }
+      setFooterQuote(text);
+      setFooterAuthor(author);
+    }
+  }, [language, heroConfig, quoteIndex]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
