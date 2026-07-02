@@ -60,11 +60,11 @@ public class UserService {
                     String fName = sanitizeName(user.getFirstName());
                     String lName = sanitizeName(user.getLastName());
                     
-                    if (!fName.equals(user.getFirstName())) {
+                    if (user.getFirstName() != null && !fName.equals(user.getFirstName())) {
                         user.setFirstName(fName);
                         needsUpdate = true;
                     }
-                    if (!lName.equals(user.getLastName())) {
+                    if (user.getLastName() != null && !lName.equals(user.getLastName())) {
                         user.setLastName(lName);
                         needsUpdate = true;
                     }

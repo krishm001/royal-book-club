@@ -194,8 +194,8 @@ function App() {
             <Link to="/" className="brand-logo" onClick={closeMobileMenu}>
               <Sparkles className="brand-icon gold-glow" />
               <div className="brand-text">
-                <span className="brand-title gold-gradient-text">Royal Book Club</span>
-                <span className="brand-tagline">To Read Deeply is to Remain Human</span>
+                <span className="brand-title gold-gradient-text">{t('common.royalBookClub')}</span>
+                <span className="brand-tagline">{t('common.tagline')}</span>
               </div>
             </Link>
 

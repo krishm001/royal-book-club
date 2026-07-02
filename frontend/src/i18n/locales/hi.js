@@ -1,5 +1,7 @@
 export default {
   common: {
+    royalBookClub: "शाही पुस्तक मंडल",
+    tagline: "गहनता से पढ़ना ही मनुष्य बने रहना है",
     pavilion: "मुख्य महाल",
     study: "सरस्वती भंडार",
     assembly: "शाही सभा",

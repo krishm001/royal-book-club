@@ -1,5 +1,7 @@
 export default {
   common: {
+    royalBookClub: "ಶಾಹಿ ಪುಸ್ತಕ ಸಂಘ",
+    tagline: "ಆಳವಾಗಿ ಓದುವುದೇ ಮನುಷ್ಯನಾಗಿ ಉಳಿಯುವುದು",
     pavilion: "ರಾಜಮಂಟಪ",
     study: "ಶಾಹಿ ಗ್ರಂಥಾಲಯ",
     assembly: "ಶಾಹಿ ಸಭೆ",

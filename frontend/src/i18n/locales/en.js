@@ -1,5 +1,7 @@
 export default {
   common: {
+    royalBookClub: "Royal Book Club",
+    tagline: "To Read Deeply is to Remain Human",
     pavilion: "Pavilion",
     study: "Study",
     assembly: "Assembly",

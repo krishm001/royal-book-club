@@ -724,6 +724,27 @@
   cursor: not-allowed;
 }
 
+[data-theme="academic"] .verification-tab-btn:not(.active) {
+  color: rgba(245, 242, 235, 0.85);
+}
+
+[data-theme="academic"] .verification-tab-btn:not(.active):hover:not(:disabled) {
+  color: #ffffff;
+  background: rgba(212, 175, 55, 0.15);
+}
+
+[data-theme="academic"] .fallback-explanation {
+  color: rgba(245, 242, 235, 0.9) !important;
+}
+
+[data-theme="academic"] .fallback-form-summary p {
+  color: rgba(245, 242, 235, 0.95) !important;
+}
+
+[data-theme="academic"] .fallback-form-summary p:last-child {
+  color: rgba(245, 242, 235, 0.7) !important;
+}
+
 .tab-pane {
   display: flex;
   flex-direction: column;
