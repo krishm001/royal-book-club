@@ -177,19 +177,19 @@ const CatalogPage = ({ user }) => {
         });
         topHtml5QrCodeRef.current = html5QrCode;
 
+        // iOS rejects width/height resolution constraints on several models (Safari/Chrome), causing false permission crashes.
+        // We drop resolution constraints completely on iOS and rely solely on facingMode.
         const cameraConfig = isIOS ? {
-          facingMode: "environment",
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
+          facingMode: "environment"
         } : { facingMode: "environment" };
 
         html5QrCode.start(
           cameraConfig,
           {
-            fps: 10,
+            fps: 25, // Boosted scan rate for faster recognition
             qrbox: (width, height) => {
-              const idealW = isIOS ? Math.min(width * 0.85, 340) : Math.min(width * 0.8, 300);
-              const idealH = isIOS ? 160 : 120;
+              const idealW = Math.min(width * 0.9, 350);
+              const idealH = Math.min(height * 0.8, 250);
               return { width: idealW, height: idealH };
             },
             formatsToSupport: [
@@ -226,14 +226,21 @@ const CatalogPage = ({ user }) => {
                 if (isIOS && capabilities.zoom) {
                   const minZ = capabilities.zoom.min || 1;
                   const maxZ = capabilities.zoom.max || 10;
-                  advancedConstraints.zoom = Math.min(Math.max(2.0, minZ), maxZ);
+                  advancedConstraints.zoom = Math.min(Math.max(1.75, minZ), maxZ);
                   console.log('[top-barcode-reader] Applied optimal iOS WebRTC zoom:', advancedConstraints.zoom);
                 }
 
                 if (Object.keys(advancedConstraints).length > 0) {
                   track.applyConstraints({ advanced: [advancedConstraints] })
                     .then(() => console.log('[top-barcode-reader] Track constraints applied successfully:', advancedConstraints))
-                    .catch(err => console.warn('[top-barcode-reader] Failed to apply track constraints', err));
+                    .catch(err => {
+                      console.warn('[top-barcode-reader] Failed to apply advanced zoom/focus constraints. Retrying with focus only.', err);
+                      if (advancedConstraints.focusMode) {
+                        track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] })
+                          .then(() => console.log('[top-barcode-reader] Continuous focus-only applied successfully'))
+                          .catch(e => console.warn('[top-barcode-reader] Focus-only failed too', e));
+                      }
+                    });
                 }
               }
             }
@@ -610,19 +617,19 @@ const CatalogPage = ({ user }) => {
         });
         cardHtml5QrCodeRef.current = html5QrCode;
 
+        // iOS rejects width/height resolution constraints on several models (Safari/Chrome), causing false permission crashes.
+        // We drop resolution constraints completely on iOS and rely solely on facingMode.
         const cameraConfig = isIOS ? {
-          facingMode: "environment",
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
+          facingMode: "environment"
         } : { facingMode: "environment" };
 
         html5QrCode.start(
           cameraConfig,
           {
-            fps: 10,
+            fps: 25, // Boosted scan rate for faster recognition
             qrbox: (width, height) => {
-              const idealW = isIOS ? Math.min(width * 0.85, 340) : Math.min(width * 0.8, 280);
-              const idealH = isIOS ? 160 : 120;
+              const idealW = Math.min(width * 0.9, 350);
+              const idealH = Math.min(height * 0.8, 250);
               return { width: idealW, height: idealH };
             },
             formatsToSupport: [
@@ -659,14 +666,21 @@ const CatalogPage = ({ user }) => {
                 if (isIOS && capabilities.zoom) {
                   const minZ = capabilities.zoom.min || 1;
                   const maxZ = capabilities.zoom.max || 10;
-                  advancedConstraints.zoom = Math.min(Math.max(2.0, minZ), maxZ);
+                  advancedConstraints.zoom = Math.min(Math.max(1.75, minZ), maxZ);
                   console.log('[card-barcode-reader] Applied optimal iOS WebRTC zoom:', advancedConstraints.zoom);
                 }
 
                 if (Object.keys(advancedConstraints).length > 0) {
                   track.applyConstraints({ advanced: [advancedConstraints] })
                     .then(() => console.log('[card-barcode-reader] Track constraints applied successfully:', advancedConstraints))
-                    .catch(err => console.warn('[card-barcode-reader] Failed to apply track constraints', err));
+                    .catch(err => {
+                      console.warn('[card-barcode-reader] Failed to apply advanced zoom/focus constraints. Retrying with focus only.', err);
+                      if (advancedConstraints.focusMode) {
+                        track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] })
+                          .then(() => console.log('[card-barcode-reader] Continuous focus-only applied successfully'))
+                          .catch(e => console.warn('[card-barcode-reader] Focus-only failed too', e));
+                      }
+                    });
                 }
               }
             }
@@ -1090,6 +1104,10 @@ const CatalogPage = ({ user }) => {
                         <div className="scanner-laser-line"></div>
                       </div>
 
+                      <p className="scanner-iphone-tip" style={{ fontSize: '0.78rem', color: 'var(--accent)', background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.2)', padding: '6px 10px', borderRadius: '4px', margin: '0 auto 12px auto', maxWidth: '320px', textAlign: 'center', lineHeight: '1.4' }}>
+                        {t('catalog.iphoneAutofocusTip')}
+                      </p>
+
                       <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 10px 0' }}>
                         {t('catalog.alignBarcodePrompt')}
                       </p>
@@ -1235,6 +1253,10 @@ const CatalogPage = ({ user }) => {
 
             <div className="scanner-modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <div id="top-barcode-reader" className="scanner-focus-ring-container" onClick={(e) => handleScannerClick(e, topHtml5QrCodeRef.current)} style={{ width: '100%', maxWidth: '400px', background: '#000', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}></div>
+              
+              <p className="scanner-iphone-tip" style={{ fontSize: '0.78rem', color: 'var(--accent)', background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.2)', padding: '6px 10px', borderRadius: '4px', marginTop: '12px', marginBottom: '0', maxWidth: '400px', textAlign: 'center', lineHeight: '1.4', width: '100%' }}>
+                {t('catalog.iphoneAutofocusTip')}
+              </p>
               
               {topScannerError ? (
                 <div className="top-p2d-error-banner" style={{ marginTop: '16px', padding: '12px', background: 'rgba(255, 123, 114, 0.1)', border: '1px solid #ff7b72', color: '#ff7b72', fontSize: '0.85rem', display: 'flex', gap: '8px', alignItems: 'center', borderRadius: '4px', width: '100%' }}>

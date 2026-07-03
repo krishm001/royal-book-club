@@ -143,7 +143,7 @@ public class TranslationService {
 
     private String getSimulatedTranslation(String text, String targetLang) {
         // Simple mock translation mapper for key standard terms or fallback
-        String prefix = targetLang.equals("hi") ? "[शाही अनुवाद - हिन्दी] " : "[ರಾಜಮನೆತನದ ಶೈಲಿ - ಕನ್ನಡ] ";
+        String prefix = targetLang.equals("hi") ? "[राजसी अनुवाद - हिन्दी] " : "[ರಾಜಮನೆತನದ ಶೈಲಿ - ಕನ್ನಡ] ";
         
         // Provide decent looking mock translations for common entities if possible,
         // or just prepend thematic language markers so curators can see it worked offline.
@@ -151,13 +151,13 @@ public class TranslationService {
         if (targetLang.equals("hi")) {
             if (trimmed.equalsIgnoreCase("Litfest")) return "साहित्य महोत्सव";
             if (trimmed.equalsIgnoreCase("Discussion")) return "शास्त्रार्थ विचार";
-            if (trimmed.equalsIgnoreCase("Meetup")) return "शाही बैठक";
+            if (trimmed.equalsIgnoreCase("Meetup")) return "राजसी बैठक";
             if (trimmed.equalsIgnoreCase("Sovereign Reader Autumn Litfest")) return "Sovereign शरद साहित्य उत्सव";
             return prefix + text;
         } else if (targetLang.equals("kn")) {
             if (trimmed.equalsIgnoreCase("Litfest")) return "ಸಾಹಿತ್ಯೋತ್ಸವ";
             if (trimmed.equalsIgnoreCase("Discussion")) return "ಚರ್ಚ್ಹಾಗೋಷ್ಠಿ";
-            if (trimmed.equalsIgnoreCase("Meetup")) return "ಶಾಹಿ ಸಭೆ";
+            if (trimmed.equalsIgnoreCase("Meetup")) return "ರಾಜಸಿ ಸಭೆ";
             if (trimmed.equalsIgnoreCase("Sovereign Reader Autumn Litfest")) return "ಸಾರ್ವಭೌಮ ಶರತ್ ಸಾಹಿತ್ಯೋತ್ಸವ";
             return prefix + text;
         }

@@ -519,7 +519,7 @@ const CuratorGatheringsPage = ({ user }) => {
             <div className="translation-panel-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '15px', marginBottom: '20px' }}>
               {/* Hindi Column */}
               <div className="translation-column-hi">
-                <h5 style={{ color: 'var(--accent)', marginBottom: '12px', fontSize: '0.95rem' }}>Hindi (राजस्थानी शाही शैली)</h5>
+                <h5 style={{ color: 'var(--accent)', marginBottom: '12px', fontSize: '0.95rem' }}>Hindi (राजस्थानी राजसी शैली)</h5>
                 <div className="form-group">
                   <label className="royal-label">Sovereign Title (Hindi)</label>
                   <input
@@ -537,7 +537,7 @@ const CuratorGatheringsPage = ({ user }) => {
                     className="royal-input"
                     value={typeHi}
                     onChange={(e) => setTypeHi(e.target.value)}
-                    placeholder="e.g. शाही सभा"
+                    placeholder="e.g. राजसी सभा"
                   />
                 </div>
                 <div className="form-group">
@@ -547,7 +547,7 @@ const CuratorGatheringsPage = ({ user }) => {
                     className="royal-input"
                     value={locationHi}
                     onChange={(e) => setLocationHi(e.target.value)}
-                    placeholder="e.g. स्वर्णिम सरस्वती भंडार"
+                    placeholder="e.g. स्वर्णिम राजसी अध्ययन कक्ष"
                   />
                 </div>
                 <div className="form-group">
@@ -593,7 +593,7 @@ const CuratorGatheringsPage = ({ user }) => {
                     className="royal-input"
                     value={typeKn}
                     onChange={(e) => setTypeKn(e.target.value)}
-                    placeholder="e.g. ಶಾಹಿ ಸಭೆ"
+                    placeholder="e.g. ರಾಜಸಿ ಸಭೆ"
                   />
                 </div>
                 <div className="form-group">

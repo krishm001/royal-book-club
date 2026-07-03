@@ -262,9 +262,11 @@ const BookDetailPage = ({ user }) => {
         html5QrCode.start(
           { facingMode: "environment" },
           {
-            fps: 10,
+            fps: 25, // Boosted scan rate for faster recognition
             qrbox: (width, height) => {
-              return { width: Math.min(width * 0.8, 280), height: 120 };
+              const idealW = Math.min(width * 0.9, 350);
+              const idealH = Math.min(height * 0.8, 250);
+              return { width: idealW, height: idealH };
             },
             formatsToSupport: [
               SafeHtml5QrcodeSupportedFormats.EAN_13,
@@ -291,10 +293,30 @@ const BookDetailPage = ({ user }) => {
               const track = stream.getVideoTracks()[0];
               if (track) {
                 const capabilities = typeof track.getCapabilities === 'function' ? track.getCapabilities() : {};
+                const advancedConstraints = {};
+
                 if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-                  track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] })
-                    .then(() => console.log('[detail-barcode-reader] Continuous autofocus applied successfully'))
-                    .catch(err => console.warn('[detail-barcode-reader] Failed to apply focusMode constraint', err));
+                  advancedConstraints.focusMode = 'continuous';
+                }
+
+                if (isIOS && capabilities.zoom) {
+                  const minZ = capabilities.zoom.min || 1;
+                  const maxZ = capabilities.zoom.max || 10;
+                  advancedConstraints.zoom = Math.min(Math.max(1.75, minZ), maxZ);
+                  console.log('[detail-barcode-reader] Applied optimal iOS WebRTC zoom:', advancedConstraints.zoom);
+                }
+
+                if (Object.keys(advancedConstraints).length > 0) {
+                  track.applyConstraints({ advanced: [advancedConstraints] })
+                    .then(() => console.log('[detail-barcode-reader] Track constraints applied successfully:', advancedConstraints))
+                    .catch(err => {
+                      console.warn('[detail-barcode-reader] Failed to apply advanced zoom/focus constraints. Retrying with focus only.', err);
+                      if (advancedConstraints.focusMode) {
+                        track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] })
+                          .then(() => console.log('[detail-barcode-reader] Continuous focus-only applied successfully'))
+                          .catch(e => console.warn('[detail-barcode-reader] Focus-only failed too', e));
+                      }
+                    });
                 }
               }
             }
@@ -929,6 +951,10 @@ const BookDetailPage = ({ user }) => {
                       <div id="detail-barcode-reader" style={{ width: '100%', height: '100%' }}></div>
                       <div className="scanner-laser-line"></div>
                     </div>
+
+                    <p className="scanner-iphone-tip" style={{ fontSize: '0.78rem', color: 'var(--accent)', background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.2)', padding: '6px 10px', borderRadius: '4px', margin: '0 auto 12px auto', maxWidth: '320px', textAlign: 'center', lineHeight: '1.4' }}>
+                      {t('catalog.iphoneAutofocusTip')}
+                    </p>
 
                     <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 10px 0' }}>
                       {t('catalog.alignBarcodePrompt')}

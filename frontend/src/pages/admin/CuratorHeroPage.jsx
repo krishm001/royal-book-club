@@ -709,7 +709,7 @@ const CuratorHeroPage = ({ user }) => {
                   <div className="translation-panel-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '15px', marginBottom: '25px' }}>
                     {/* Hindi Column */}
                     <div className="translation-column-hi">
-                      <h5 style={{ color: 'var(--accent)', marginBottom: '12px', fontSize: '0.95rem' }}>Hindi (राजस्थानी शाही शैली)</h5>
+                      <h5 style={{ color: 'var(--accent)', marginBottom: '12px', fontSize: '0.95rem' }}>Hindi (राजस्थानी राजसी शैली)</h5>
                       <div className="form-group">
                         <label className="royal-label">Sovereign Headline (Hindi)</label>
                         <input
@@ -931,7 +931,7 @@ const CuratorHeroPage = ({ user }) => {
                   <div className="translation-panel-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '15px', marginBottom: '25px' }}>
                     {/* Hindi Column */}
                     <div className="translation-column-hi">
-                      <h5 style={{ color: 'var(--accent)', marginBottom: '12px', fontSize: '0.95rem' }}>Hindi (राजस्थानी शाही शैली)</h5>
+                      <h5 style={{ color: 'var(--accent)', marginBottom: '12px', fontSize: '0.95rem' }}>Hindi (राजस्थानी राजसी शैली)</h5>
                       <div className="form-group">
                         <label className="royal-label">Sovereign Question (Hindi)</label>
                         <input
@@ -1282,7 +1282,7 @@ const CuratorHeroPage = ({ user }) => {
                   {/* Translations for new quote */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '10px' }}>
                     <div>
-                      <label className="royal-label" style={{ fontSize: '0.8rem', opacity: 0.8 }}>Hindi (राजस्थानी शाही शैली)</label>
+                      <label className="royal-label" style={{ fontSize: '0.8rem', opacity: 0.8 }}>Hindi (राजस्थानी राजसी शैली)</label>
                       <textarea
                         className="royal-input"
                         placeholder="Hindi translation override..."
