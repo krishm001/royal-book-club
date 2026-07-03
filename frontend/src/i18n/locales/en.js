@@ -60,7 +60,7 @@ export default {
   },
   catalog: {
     studyTitle: "The Sovereign Study",
-    studySubtitle: "Browse the absolute curated collection of physical books, request loans, or scan barcode parameters to instantly check out volumes.",
+    studySubtitle: "Browse the absolute curated collection of physical books, request loans, or utilize elegant NFC tap and barcode scanning to instantly check out volumes.",
     isbn: "ISBN",
     publisher: "Publisher",
     publishDate: "Publish Date",
