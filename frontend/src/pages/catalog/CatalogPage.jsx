@@ -82,6 +82,76 @@ const CatalogPage = ({ user }) => {
     };
   }, []);
 
+  useEffect(() => {
+    if (nfcModalOpen && selectedBook) {
+      const timer = setTimeout(() => {
+        const cameraView = document.getElementById("card-barcode-reader");
+        const modalContent = cameraView || document.querySelector(".nfc-modal-card") || document.querySelector(".nfc-modal-overlay");
+        if (modalContent) {
+          modalContent.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [nfcModalOpen, activeTab, selectedBook]);
+
+  const handleScannerClick = (e, scannerInstance) => {
+    if (!scannerInstance) return;
+
+    const container = e.currentTarget;
+    const rect = container.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Create a beautiful focus ring element
+    const ring = document.createElement('div');
+    ring.className = 'scanner-focus-ring';
+    ring.style.left = `${x}px`;
+    ring.style.top = `${y}px`;
+    container.appendChild(ring);
+
+    // Remove the ring after animation completes
+    setTimeout(() => {
+      ring.remove();
+    }, 750);
+
+    // Refocus trick!
+    try {
+      const videoElem = container.querySelector('video');
+      if (videoElem && videoElem.srcObject) {
+        const stream = videoElem.srcObject;
+        const track = stream.getVideoTracks()[0];
+        if (track) {
+          const capabilities = typeof track.getCapabilities === 'function' ? track.getCapabilities() : {};
+          if (capabilities.zoom) {
+            const currentZ = 2.0; // default ideal zoom
+            const tempZoom = 1.8;
+            track.applyConstraints({ advanced: [{ zoom: tempZoom }] })
+              .then(() => {
+                setTimeout(() => {
+                  track.applyConstraints({ advanced: [{ zoom: currentZ }] })
+                    .catch(err => console.warn('[Scanner refocus] Failed to restore zoom:', err));
+                }, 120);
+              })
+              .catch(err => console.warn('[Scanner refocus] Failed to toggle zoom:', err));
+          } else {
+            // Nudge continuous focus if zoom isn't available
+            const advancedConstraints = {};
+            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+              advancedConstraints.focusMode = 'continuous';
+            }
+            if (Object.keys(advancedConstraints).length > 0) {
+              track.applyConstraints({ advanced: [advancedConstraints] })
+                .catch(err => console.warn('[Scanner refocus] Failed to apply focusMode:', err));
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[Scanner refocus] Error during manual refocus trigger:', err);
+    }
+  };
+
   const startTopBarcodeScanner = () => {
     setTopScannerOpen(true);
     setTopScannerError('');
@@ -106,12 +176,21 @@ const CatalogPage = ({ user }) => {
           }
         });
         topHtml5QrCodeRef.current = html5QrCode;
+
+        const cameraConfig = isIOS ? {
+          facingMode: "environment",
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        } : { facingMode: "environment" };
+
         html5QrCode.start(
-          { facingMode: "environment" },
+          cameraConfig,
           {
             fps: 10,
             qrbox: (width, height) => {
-              return { width: Math.min(width * 0.8, 300), height: 120 };
+              const idealW = isIOS ? Math.min(width * 0.85, 340) : Math.min(width * 0.8, 300);
+              const idealH = isIOS ? 160 : 120;
+              return { width: idealW, height: idealH };
             },
             formatsToSupport: [
               SafeHtml5QrcodeSupportedFormats.EAN_13,
@@ -138,10 +217,23 @@ const CatalogPage = ({ user }) => {
               const track = stream.getVideoTracks()[0];
               if (track) {
                 const capabilities = typeof track.getCapabilities === 'function' ? track.getCapabilities() : {};
+                const advancedConstraints = {};
+
                 if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-                  track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] })
-                    .then(() => console.log('[top-barcode-reader] Continuous autofocus applied successfully'))
-                    .catch(err => console.warn('[top-barcode-reader] Failed to apply focusMode constraint', err));
+                  advancedConstraints.focusMode = 'continuous';
+                }
+
+                if (isIOS && capabilities.zoom) {
+                  const minZ = capabilities.zoom.min || 1;
+                  const maxZ = capabilities.zoom.max || 10;
+                  advancedConstraints.zoom = Math.min(Math.max(2.0, minZ), maxZ);
+                  console.log('[top-barcode-reader] Applied optimal iOS WebRTC zoom:', advancedConstraints.zoom);
+                }
+
+                if (Object.keys(advancedConstraints).length > 0) {
+                  track.applyConstraints({ advanced: [advancedConstraints] })
+                    .then(() => console.log('[top-barcode-reader] Track constraints applied successfully:', advancedConstraints))
+                    .catch(err => console.warn('[top-barcode-reader] Failed to apply track constraints', err));
                 }
               }
             }
@@ -517,12 +609,21 @@ const CatalogPage = ({ user }) => {
           }
         });
         cardHtml5QrCodeRef.current = html5QrCode;
+
+        const cameraConfig = isIOS ? {
+          facingMode: "environment",
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        } : { facingMode: "environment" };
+
         html5QrCode.start(
-          { facingMode: "environment" },
+          cameraConfig,
           {
             fps: 10,
             qrbox: (width, height) => {
-              return { width: Math.min(width * 0.8, 280), height: 120 };
+              const idealW = isIOS ? Math.min(width * 0.85, 340) : Math.min(width * 0.8, 280);
+              const idealH = isIOS ? 160 : 120;
+              return { width: idealW, height: idealH };
             },
             formatsToSupport: [
               SafeHtml5QrcodeSupportedFormats.EAN_13,
@@ -549,10 +650,23 @@ const CatalogPage = ({ user }) => {
               const track = stream.getVideoTracks()[0];
               if (track) {
                 const capabilities = typeof track.getCapabilities === 'function' ? track.getCapabilities() : {};
+                const advancedConstraints = {};
+
                 if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-                  track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] })
-                    .then(() => console.log('[card-barcode-reader] Continuous autofocus applied successfully'))
-                    .catch(err => console.warn('[card-barcode-reader] Failed to apply focusMode constraint', err));
+                  advancedConstraints.focusMode = 'continuous';
+                }
+
+                if (isIOS && capabilities.zoom) {
+                  const minZ = capabilities.zoom.min || 1;
+                  const maxZ = capabilities.zoom.max || 10;
+                  advancedConstraints.zoom = Math.min(Math.max(2.0, minZ), maxZ);
+                  console.log('[card-barcode-reader] Applied optimal iOS WebRTC zoom:', advancedConstraints.zoom);
+                }
+
+                if (Object.keys(advancedConstraints).length > 0) {
+                  track.applyConstraints({ advanced: [advancedConstraints] })
+                    .then(() => console.log('[card-barcode-reader] Track constraints applied successfully:', advancedConstraints))
+                    .catch(err => console.warn('[card-barcode-reader] Failed to apply track constraints', err));
                 }
               }
             }
@@ -972,7 +1086,7 @@ const CatalogPage = ({ user }) => {
                   {activeTab === 'barcode' && (
                     <div className="tab-pane barcode-tab-pane animate-fade-in" style={{ width: '100%' }}>
                       <div className="barcode-scanner-viewfinder" style={{ margin: '15px auto', position: 'relative', width: '100%', maxWidth: '320px', height: '280px', overflow: 'hidden', background: '#000', borderRadius: '8px', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
-                        <div id="card-barcode-reader" style={{ width: '100%', height: '100%' }}></div>
+                        <div id="card-barcode-reader" className="scanner-focus-ring-container" onClick={(e) => handleScannerClick(e, cardHtml5QrCodeRef.current)} style={{ width: '100%', height: '100%' }}></div>
                         <div className="scanner-laser-line"></div>
                       </div>
 
@@ -1120,7 +1234,7 @@ const CatalogPage = ({ user }) => {
             </div>
 
             <div className="scanner-modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div id="top-barcode-reader" style={{ width: '100%', maxWidth: '400px', background: '#000', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}></div>
+              <div id="top-barcode-reader" className="scanner-focus-ring-container" onClick={(e) => handleScannerClick(e, topHtml5QrCodeRef.current)} style={{ width: '100%', maxWidth: '400px', background: '#000', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}></div>
               
               {topScannerError ? (
                 <div className="top-p2d-error-banner" style={{ marginTop: '16px', padding: '12px', background: 'rgba(255, 123, 114, 0.1)', border: '1px solid #ff7b72', color: '#ff7b72', fontSize: '0.85rem', display: 'flex', gap: '8px', alignItems: 'center', borderRadius: '4px', width: '100%' }}>

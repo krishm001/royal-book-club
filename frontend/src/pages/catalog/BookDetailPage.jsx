@@ -222,6 +222,19 @@ const BookDetailPage = ({ user }) => {
     };
   }, []);
 
+  useEffect(() => {
+    if (nfcModalOpen) {
+      const timer = setTimeout(() => {
+        const cameraView = document.getElementById("detail-barcode-reader");
+        const modalContent = cameraView || document.querySelector(".inline-action-panel") || document.querySelector(".nfc-modal-overlay");
+        if (modalContent) {
+          modalContent.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [nfcModalOpen, activeTab]);
+
   const startDetailBarcodeScanner = () => {
     setDetailScannerError('');
     setDetailScannerOpen(true);
@@ -562,8 +575,9 @@ const BookDetailPage = ({ user }) => {
   const coverUrl = book.coverUrl || book.thumbnail || 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80';
 
   return (
-    <div className="book-detail-container animate-fade-in">
-      <Link to="/catalog" className="back-link">
+    <>
+      <div className="book-detail-container animate-fade-in">
+        <Link to="/catalog" className="back-link">
         <ArrowLeft size={16} /> {t('catalog.returnArchives')}
       </Link>
 
@@ -688,162 +702,7 @@ const BookDetailPage = ({ user }) => {
               </div>
             )}
 
-            {/* Inline NFC Reader Tap-to-Transaction Panel */}
-            {nfcModalOpen && (
-              <div className="inline-action-panel royal-card border-gold animate-fade-in" style={{ marginTop: '16px', padding: '20px', background: 'rgba(20, 16, 12, 0.6)', backdropFilter: 'blur(12px)' }}>
-                <div className="panel-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '10px' }}>
-                  <h4 style={{ color: 'var(--accent)', fontSize: '1rem', fontWeight: '600', margin: 0, letterSpacing: '0.05em' }}>
-                    {nfcActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
-                  </h4>
-                  <button onClick={handleCloseNfcModal} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: '4px' }}>
-                    <X size={16} />
-                  </button>
-                </div>
 
-                <div className="verification-tabs-header">
-                  <button
-                    className={`verification-tab-btn ${activeTab === 'nfc' ? 'active' : ''}`}
-                    onClick={() => handleTabChange('nfc')}
-                    disabled={nfcSuccess || fallbackSuccess}
-                  >
-                    <Smartphone size={14} />
-                    <span>{t('catalog.nfcTap')}</span>
-                  </button>
-                  <button
-                    className={`verification-tab-btn ${activeTab === 'barcode' ? 'active' : ''}`}
-                    onClick={() => handleTabChange('barcode')}
-                    disabled={nfcSuccess || fallbackSuccess}
-                  >
-                    <ShoppingBag size={14} />
-                    <span>{t('catalog.barcodeScan')}</span>
-                  </button>
-                  <button
-                    className={`verification-tab-btn ${activeTab === 'manual' ? 'active' : ''}`}
-                    onClick={() => handleTabChange('manual')}
-                    disabled={nfcSuccess || fallbackSuccess}
-                  >
-                    <Clock size={14} />
-                    <span>{t('catalog.manualRequest')}</span>
-                  </button>
-                </div>
-
-                <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginTop: '16px' }}>
-                  {nfcSuccess ? (
-                    <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0' }}>
-                      <CheckCircle size={48} className="text-success gold-glow-icon" style={{ marginBottom: '12px' }} />
-                      <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.verifConfirmed')}</h4>
-                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.ledgerUpdated')}</p>
-                    </div>
-                  ) : fallbackSuccess ? (
-                    <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0' }}>
-                      <CheckCircle size={48} className="gold-glow-icon" style={{ color: 'var(--accent)', marginBottom: '12px' }} />
-                      <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.scribeRequestSaved')}</h4>
-                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.requestSubmittedDesc')}</p>
-                    </div>
-                  ) : (
-                    <>
-                      {activeTab === 'nfc' && (
-                        <div className="tab-pane nfc-tab-pane animate-fade-in" style={{ width: '100%' }}>
-                          <div className="nfc-scanner-pulse" style={{ margin: '15px 0' }}>
-                            <Smartphone size={40} className="gold-glow-icon animate-pulse" />
-                            <div className="pulse-ring"></div>
-                          </div>
-                          
-                          <p className="nfc-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
-                            {t('catalog.holdNfcTagDesc')}
-                          </p>
-
-                          <div className="nfc-meta-box" style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', padding: '8px 12px', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                            <span style={{ color: 'var(--text-secondary)' }}>{t('catalog.targetVolumeId')}</span>
-                            <code style={{ color: 'var(--accent)', fontFamily: 'monospace', fontWeight: 'bold' }}>{book.ntagUid}</code>
-                          </div>
-
-                          {nfcError && (
-                            <div className="nfc-error-message royal-card" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '12px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)', color: '#ff7b72', marginBottom: '16px', fontSize: '0.75rem', textAlign: 'left', width: '100%' }}>
-                              <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
-                              <span>{nfcError}</span>
-                            </div>
-                          )}
-
-
-                        </div>
-                      )}
-
-                      {activeTab === 'barcode' && (
-                        <div className="tab-pane barcode-tab-pane animate-fade-in" style={{ width: '100%' }}>
-                          <div className="barcode-scanner-viewfinder" style={{ margin: '15px auto', position: 'relative', width: '100%', maxWidth: '320px', height: '280px', overflow: 'hidden', background: '#000', borderRadius: '8px', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
-                            <div id="detail-barcode-reader" style={{ width: '100%', height: '100%' }}></div>
-                            <div className="scanner-laser-line"></div>
-                          </div>
-
-                          <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 10px 0' }}>
-                            {t('catalog.alignBarcodePrompt')}
-                          </p>
-
-                          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0', marginBottom: '16px' }}>
-                            {t('catalog.cantScanBarcode')}{' '}
-                            <button type="button" onClick={() => handleTabChange('manual')} style={{ background: 'none', border: 'none', color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', padding: 0, font: 'inherit' }}>
-                              {t('catalog.submitManualRequest')}
-                            </button>
-                          </p>
-
-                          {detailScannerError && (
-                            <div className="nfc-error-message royal-card" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '12px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)', color: '#ff7b72', marginBottom: '16px', fontSize: '0.75rem', textAlign: 'left', width: '100%' }}>
-                              <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
-                              <span>{detailScannerError}</span>
-                            </div>
-                          )}
-
-                          {nfcError && (
-                            <div className="nfc-error-message royal-card" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '12px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)', color: '#ff7b72', marginBottom: '16px', fontSize: '0.75rem', textAlign: 'left', width: '100%' }}>
-                              <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
-                              <span>{nfcError}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {activeTab === 'manual' && (
-                        <div className="tab-pane manual-tab-pane animate-fade-in" style={{ width: '100%' }}>
-                          <p className="fallback-explanation" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: '0 0 16px 0', textAlign: 'left' }}>
-                            {nfcActionType === 'checkout'
-                              ? t('catalog.fallbackExplanationCheckout')
-                              : t('catalog.fallbackExplanationReturn')}
-                          </p>
-
-                          <div className="fallback-form-summary royal-card" style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '16px' }}>
-                            <h5 style={{ color: 'var(--accent)', fontWeight: '600', marginBottom: '4px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('catalog.volumeDetails')}</h5>
-                            <p style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>{book.title}</p>
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>ISBN: {book.isbn}</p>
-                          </div>
-
-                          <div className="fallback-actions-row" style={{ display: 'flex', gap: '12px', width: '100%' }}>
-                            <button
-                              type="button"
-                              onClick={handleCloseNfcModal}
-                              className="royal-btn-secondary"
-                              style={{ flex: 1, padding: '10px' }}
-                            >
-                              {t('common.cancel')}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleSubmitFallbackRequest}
-                              className="royal-btn"
-                              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px' }}
-                              disabled={fallbackLoading}
-                            >
-                              {fallbackLoading ? <RefreshCw className="spin-icon" size={12} /> : <CheckCircle size={12} />}
-                              {fallbackLoading ? t('profile.submitting') : t('catalog.submitManualRequest')}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -981,6 +840,166 @@ const BookDetailPage = ({ user }) => {
         </div>
       </section>
     </div>
+
+    {/* Sovereign Checkout/Return Verification Modal Overlay (rendered at root level to guarantee absolute viewport centering) */}
+    {nfcModalOpen && (
+      <div className="nfc-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+        <div className="inline-action-panel royal-card border-gold animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '24px', background: 'rgba(26, 21, 16, 0.95)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', borderRadius: '8px' }}>
+          <div className="panel-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '10px' }}>
+            <h4 style={{ color: 'var(--accent)', fontSize: '1rem', fontWeight: '600', margin: 0, letterSpacing: '0.05em' }}>
+              {nfcActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
+            </h4>
+            <button onClick={handleCloseNfcModal} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: '4px' }}>
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="verification-tabs-header">
+            <button
+              className={`verification-tab-btn ${activeTab === 'nfc' ? 'active' : ''}`}
+              onClick={() => handleTabChange('nfc')}
+              disabled={nfcSuccess || fallbackSuccess}
+            >
+              <Smartphone size={14} />
+              <span>{t('catalog.nfcTap')}</span>
+            </button>
+            <button
+              className={`verification-tab-btn ${activeTab === 'barcode' ? 'active' : ''}`}
+              onClick={() => handleTabChange('barcode')}
+              disabled={nfcSuccess || fallbackSuccess}
+            >
+              <ShoppingBag size={14} />
+              <span>{t('catalog.barcodeScan')}</span>
+            </button>
+            <button
+              className={`verification-tab-btn ${activeTab === 'manual' ? 'active' : ''}`}
+              onClick={() => handleTabChange('manual')}
+              disabled={nfcSuccess || fallbackSuccess}
+            >
+              <Clock size={14} />
+              <span>{t('catalog.manualRequest')}</span>
+            </button>
+          </div>
+
+          <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginTop: '16px' }}>
+            {nfcSuccess ? (
+              <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0' }}>
+                <CheckCircle size={48} className="text-success gold-glow-icon" style={{ marginBottom: '12px' }} />
+                <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.verifConfirmed')}</h4>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.ledgerUpdated')}</p>
+              </div>
+            ) : fallbackSuccess ? (
+              <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0' }}>
+                <CheckCircle size={48} className="gold-glow-icon" style={{ color: 'var(--accent)', marginBottom: '12px' }} />
+                <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.scribeRequestSaved')}</h4>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.requestSubmittedDesc')}</p>
+              </div>
+            ) : (
+              <>
+                {activeTab === 'nfc' && (
+                  <div className="tab-pane nfc-tab-pane animate-fade-in" style={{ width: '100%' }}>
+                    <div className="nfc-scanner-pulse" style={{ margin: '15px 0' }}>
+                      <Smartphone size={40} className="gold-glow-icon animate-pulse" />
+                      <div className="pulse-ring"></div>
+                    </div>
+                    
+                    <p className="nfc-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+                      {t('catalog.holdNfcTagDesc')}
+                    </p>
+
+                    <div className="nfc-meta-box" style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', padding: '8px 12px', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('catalog.targetVolumeId')}</span>
+                      <code style={{ color: 'var(--accent)', fontFamily: 'monospace', fontWeight: 'bold' }}>{book.ntagUid}</code>
+                    </div>
+
+                    {nfcError && (
+                      <div className="nfc-error-message royal-card" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '12px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)', color: '#ff7b72', marginBottom: '16px', fontSize: '0.75rem', textAlign: 'left', width: '100%' }}>
+                        <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                        <span>{nfcError}</span>
+                      </div>
+                    )}
+
+
+                  </div>
+                )}
+
+                {activeTab === 'barcode' && (
+                  <div className="tab-pane barcode-tab-pane animate-fade-in" style={{ width: '100%' }}>
+                    <div className="barcode-scanner-viewfinder" style={{ margin: '15px auto', position: 'relative', width: '100%', maxWidth: '320px', height: '280px', overflow: 'hidden', background: '#000', borderRadius: '8px', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
+                      <div id="detail-barcode-reader" style={{ width: '100%', height: '100%' }}></div>
+                      <div className="scanner-laser-line"></div>
+                    </div>
+
+                    <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 10px 0' }}>
+                      {t('catalog.alignBarcodePrompt')}
+                    </p>
+
+                    <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0', marginBottom: '16px' }}>
+                      {t('catalog.cantScanBarcode')}{' '}
+                      <button type="button" onClick={() => handleTabChange('manual')} style={{ background: 'none', border: 'none', color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', padding: 0, font: 'inherit' }}>
+                        {t('catalog.submitManualRequest')}
+                      </button>
+                    </p>
+
+                    {detailScannerError && (
+                      <div className="nfc-error-message royal-card" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '12px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)', color: '#ff7b72', marginBottom: '16px', fontSize: '0.75rem', textAlign: 'left', width: '100%' }}>
+                        <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                        <span>{detailScannerError}</span>
+                      </div>
+                    )}
+
+                    {nfcError && (
+                      <div className="nfc-error-message royal-card" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '12px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)', color: '#ff7b72', marginBottom: '16px', fontSize: '0.75rem', textAlign: 'left', width: '100%' }}>
+                        <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                        <span>{nfcError}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'manual' && (
+                  <div className="tab-pane manual-tab-pane animate-fade-in" style={{ width: '100%' }}>
+                    <p className="fallback-explanation" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: '0 0 16px 0', textAlign: 'left' }}>
+                      {nfcActionType === 'checkout'
+                        ? t('catalog.fallbackExplanationCheckout')
+                        : t('catalog.fallbackExplanationReturn')}
+                    </p>
+
+                    <div className="fallback-form-summary royal-card" style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '16px' }}>
+                      <h5 style={{ color: 'var(--accent)', fontWeight: '600', marginBottom: '4px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('catalog.volumeDetails')}</h5>
+                      <p style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>{book.title}</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>ISBN: {book.isbn}</p>
+                    </div>
+
+                    <div className="fallback-actions-row" style={{ display: 'flex', gap: '12px', width: '100%' }}>
+                      <button
+                        type="button"
+                        onClick={handleCloseNfcModal}
+                        className="royal-btn-secondary"
+                        style={{ flex: 1, padding: '10px' }}
+                      >
+                        {t('common.cancel')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSubmitFallbackRequest}
+                        className="royal-btn"
+                        style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px' }}
+                        disabled={fallbackLoading}
+                      >
+                        {fallbackLoading ? <RefreshCw className="spin-icon" size={12} /> : <CheckCircle size={12} />}
+                        {fallbackLoading ? t('profile.submitting') : t('catalog.submitManualRequest')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

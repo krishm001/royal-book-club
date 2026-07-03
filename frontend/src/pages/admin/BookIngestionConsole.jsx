@@ -228,6 +228,63 @@ const BookIngestionConsole = ({ user }) => {
     setCameraModalOpen(false);
   };
 
+  const handleScannerClick = (e, scannerInstance) => {
+    if (!scannerInstance) return;
+
+    const container = e.currentTarget;
+    const rect = container.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Create a beautiful focus ring element
+    const ring = document.createElement('div');
+    ring.className = 'scanner-focus-ring';
+    ring.style.left = `${x}px`;
+    ring.style.top = `${y}px`;
+    container.appendChild(ring);
+
+    // Remove the ring after animation completes
+    setTimeout(() => {
+      ring.remove();
+    }, 750);
+
+    // Refocus trick!
+    try {
+      const videoElem = container.querySelector('video');
+      if (videoElem && videoElem.srcObject) {
+        const stream = videoElem.srcObject;
+        const track = stream.getVideoTracks()[0];
+        if (track) {
+          const capabilities = typeof track.getCapabilities === 'function' ? track.getCapabilities() : {};
+          if (capabilities.zoom) {
+            const currentZ = 2.0; // default ideal zoom
+            const tempZoom = 1.8;
+            track.applyConstraints({ advanced: [{ zoom: tempZoom }] })
+              .then(() => {
+                setTimeout(() => {
+                  track.applyConstraints({ advanced: [{ zoom: currentZ }] })
+                    .catch(err => console.warn('[Scanner refocus] Failed to restore zoom:', err));
+                }, 120);
+              })
+              .catch(err => console.warn('[Scanner refocus] Failed to toggle zoom:', err));
+          } else {
+            // Nudge continuous focus if zoom isn't available
+            const advancedConstraints = {};
+            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+              advancedConstraints.focusMode = 'continuous';
+            }
+            if (Object.keys(advancedConstraints).length > 0) {
+              track.applyConstraints({ advanced: [advancedConstraints] })
+                .catch(err => console.warn('[Scanner refocus] Failed to apply focusMode:', err));
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[Scanner refocus] Error during manual refocus trigger:', err);
+    }
+  };
+
   useEffect(() => {
     if (cameraModalOpen && cameraMode === 'isbn') {
       const timer = setTimeout(() => {
@@ -259,19 +316,28 @@ const BookIngestionConsole = ({ user }) => {
           });
           html5QrCodeRef.current = html5QrCode;
 
+          const cameraConfig = isIOS ? {
+            facingMode: "environment",
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          } : { facingMode: "environment" };
+
           const startScanning = (cameraIdOrConfig) => {
             if (!html5QrCodeRef.current) return;
+            const activeConfig = isIOS ? cameraConfig : cameraIdOrConfig;
+
             html5QrCode.start(
-              cameraIdOrConfig,
+              activeConfig,
               {
                 fps: 25,
                 qrbox: (w, h) => {
-                  // Make qrbox highly responsive: 85% of stream width or max 400, 35% of stream height or max 150
-                  const boxWidth = Math.floor(Math.min(w * 0.85, 400));
-                  const boxHeight = Math.floor(Math.min(h * 0.35, 150));
+                  const boxWidth = isIOS 
+                    ? Math.floor(Math.min(w * 0.85, 340))
+                    : Math.floor(Math.min(w * 0.85, 400));
+                  const boxHeight = isIOS ? 160 : Math.floor(Math.min(h * 0.35, 150));
                   return { width: boxWidth, height: boxHeight };
                 },
-                videoConstraints: {
+                videoConstraints: isIOS ? cameraConfig : {
                   facingMode: "environment"
                 }
               },
@@ -299,10 +365,23 @@ const BookIngestionConsole = ({ user }) => {
                   const track = stream.getVideoTracks()[0];
                   if (track) {
                     const capabilities = typeof track.getCapabilities === 'function' ? track.getCapabilities() : {};
+                    const advancedConstraints = {};
+
                     if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-                      track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] })
-                        .then(() => console.log('[qr-reader] Continuous autofocus applied successfully'))
-                        .catch(err => console.warn('[qr-reader] Failed to apply focusMode constraint', err));
+                      advancedConstraints.focusMode = 'continuous';
+                    }
+
+                    if (isIOS && capabilities.zoom) {
+                      const minZ = capabilities.zoom.min || 1;
+                      const maxZ = capabilities.zoom.max || 10;
+                      advancedConstraints.zoom = Math.min(Math.max(2.0, minZ), maxZ);
+                      console.log('[qr-reader] Applied optimal iOS WebRTC zoom:', advancedConstraints.zoom);
+                    }
+
+                    if (Object.keys(advancedConstraints).length > 0) {
+                      track.applyConstraints({ advanced: [advancedConstraints] })
+                        .then(() => console.log('[qr-reader] Track constraints applied successfully:', advancedConstraints))
+                        .catch(err => console.warn('[qr-reader] Failed to apply track constraints', err));
                     }
                   }
                 }
@@ -326,37 +405,42 @@ const BookIngestionConsole = ({ user }) => {
             });
           };
 
-          // Actively probe for hardware back cameras first for robust mobile compatibility
-          SafeHtml5Qrcode.getCameras().then(devices => {
-            if (devices && devices.length > 0) {
-              console.log("Ingestion barcode scanner detected video devices:", devices);
-              
-              // Filter to find physical back/rear/environment cameras
-              let selectedDevice = devices.find(device => {
-                const label = device.label.toLowerCase();
-                return label.includes('back') || label.includes('rear') || label.includes('environment') || label.includes('main') || label.includes('external');
-              });
-              
-              // Fallback: any camera that doesn't state it's a front-facing lens
-              if (!selectedDevice) {
-                selectedDevice = devices.find(device => {
+          if (isIOS) {
+            console.log("iOS device detected. Starting directly with environment HD config to bypass lens bugs.");
+            startScanning(cameraConfig);
+          } else {
+            // Actively probe for hardware back cameras first for robust mobile compatibility
+            SafeHtml5Qrcode.getCameras().then(devices => {
+              if (devices && devices.length > 0) {
+                console.log("Ingestion barcode scanner detected video devices:", devices);
+                
+                // Filter to find physical back/rear/environment cameras
+                let selectedDevice = devices.find(device => {
                   const label = device.label.toLowerCase();
-                  return !label.includes('front') && !label.includes('selfie') && !label.includes('user');
+                  return label.includes('back') || label.includes('rear') || label.includes('environment') || label.includes('main') || label.includes('external');
                 });
+                
+                // Fallback: any camera that doesn't state it's a front-facing lens
+                if (!selectedDevice) {
+                  selectedDevice = devices.find(device => {
+                    const label = device.label.toLowerCase();
+                    return !label.includes('front') && !label.includes('selfie') && !label.includes('user');
+                  });
+                }
+                
+                // Fallback to the last video input device (rear cameras are usually indexed last on standard dual-camera mobiles)
+                const finalCameraId = selectedDevice ? selectedDevice.id : devices[devices.length - 1].id;
+                console.log(`Starting barcode scanner with camera ID: ${finalCameraId} (${selectedDevice?.label || 'Last input fallback'})`);
+                startScanning(finalCameraId);
+              } else {
+                console.log("No video devices listed. Starting with environment constraint directly.");
+                startScanning({ facingMode: "environment" });
               }
-              
-              // Fallback to the last video input device (rear cameras are usually indexed last on standard dual-camera mobiles)
-              const finalCameraId = selectedDevice ? selectedDevice.id : devices[devices.length - 1].id;
-              console.log(`Starting barcode scanner with camera ID: ${finalCameraId} (${selectedDevice?.label || 'Last input fallback'})`);
-              startScanning(finalCameraId);
-            } else {
-              console.log("No video devices listed. Starting with environment constraint directly.");
+            }).catch(err => {
+              console.warn("getCameras failed or denied, attempting default environment startup:", err);
               startScanning({ facingMode: "environment" });
-            }
-          }).catch(err => {
-            console.warn("getCameras failed or denied, attempting default environment startup:", err);
-            startScanning({ facingMode: "environment" });
-          });
+            });
+          }
 
         } catch (err) {
           console.error('Html5Qrcode initialization error:', err);
@@ -1305,7 +1389,7 @@ const BookIngestionConsole = ({ user }) => {
             ) : (
               <div className={`camera-stream-wrapper ${cameraMode === 'cover' ? 'cover-mode' : 'isbn-mode'}`}>
                 {cameraMode === 'isbn' ? (
-                  <div id="qr-reader" style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} />
+                  <div id="qr-reader" className="scanner-focus-ring-container" onClick={(e) => handleScannerClick(e, html5QrCodeRef.current)} style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} />
                 ) : (
                   <video ref={videoRef} autoPlay playsInline muted className="camera-video" />
                 )}
