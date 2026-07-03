@@ -391,6 +391,31 @@ export default {
     moderationLedger: "सामग्री समीक्षा बहीखाता",
     approvePost: "प्रकाशन स्वीकृत करें",
     flagSpam: "अनधिकृत घोषित करें"
+  },
+  auth: {
+    signIn: "प्रवेश करें (Sign In)",
+    signUp: "सदस्यता लें (Sign Up)",
+    email: "ईमेल",
+    password: "पासवर्ड",
+    fullName: "पूरा नाम",
+    forgotPassword: "पासवर्ड भूल गए?",
+    newHere: "नए सदस्य हैं? ",
+    createAccount: "खाता बनाएँ",
+    creating: "खाता बनाया जा रहा है...",
+    alreadyMember: "पहले से सदस्य हैं? ",
+    orSignInWithEmail: "अथवा ईमेल से प्रवेश करें",
+    signInWithGoogle: "Google से प्रवेश करें",
+    rememberedPassword: "पासवर्ड याद आ गया? ",
+    needAccount: "नया खाता चाहिए? ",
+    sendResetLink: "रीसेट लिंक भेजें",
+    sending: "भेजा जा रहा है...",
+    consentPart1: "मैं ",
+    consentPart2: " से सहमत हूँ और मैंने ",
+    consentPart3: " पढ़ ली है। मैं royalbookclub.com को पुस्तक मंडल की गतिविधियों के लिए मेरे ईमेल और खाते की जानकारी को संसाधित करने की अपनी स्पष्ट सहमति प्रदान करता हूँ।",
+    resetPassword: "पासवर्ड रीसेट करें",
+    resetLinkSent: "पासवर्ड रीसेट लिंक भेज दिया गया है। कृपया अपना इनबॉक्स जांचें।",
+    resetLinkError: "पासवर्ड रीसेट लिंक भेजने में विफल।",
+    consentError: "कृपया सदस्य बनने से पहले नियम और शर्तों तथा गोपनीयता सूचना से सहमत हों।"
   }
 };
 

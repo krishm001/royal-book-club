@@ -3,9 +3,11 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 import { useNavigate, Link } from 'react-router-dom';
 import { registerUser } from '../../services/authApi';
+import { useLanguage } from '../../i18n/LanguageContext';
 import './Auth.css';
 
 export default function SignUp() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -19,7 +21,7 @@ export default function SignUp() {
     setError(null);
 
     if (!consentChecked) {
-      setError('Please agree to the Terms & Conditions and Privacy Notice before signing up.');
+      setError(t('auth.consentError'));
       return;
     }
 
@@ -46,14 +48,14 @@ export default function SignUp() {
   return (
     <div className="auth-page">
       <form onSubmit={handleSubmit} className="auth-form">
-        <h2>Sign Up</h2>
-        <label>Full Name</label>
+        <h2>{t('auth.signUp')}</h2>
+        <label>{t('auth.fullName')}</label>
         <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
         
-        <label>Email</label>
+        <label>{t('auth.email')}</label>
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         
-        <label>Password</label>
+        <label>{t('auth.password')}</label>
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
 
         <div className="checkbox-field">
@@ -64,15 +66,22 @@ export default function SignUp() {
               onChange={(e) => setConsentChecked(e.target.checked)}
             />
             <span>
-              I agree to the <Link to="/terms">Terms & Conditions</Link> and have read the <Link to="/privacy">Privacy Notice</Link>. I provide my explicit consent to royalbookclub.com to process my email and account information for book club activities.
+              {t('auth.consentPart1')}
+              <Link to="/terms">{t('common.termsAndConditions')}</Link>
+              {t('auth.consentPart2')}
+              <Link to="/privacy">{t('common.privacyNotice')}</Link>
+              {t('auth.consentPart3')}
             </span>
           </label>
         </div>
         
         {error && <div className="auth-error">{error}</div>}
-        <button type="submit" className="royal-btn" disabled={loading}>{loading ? 'Creating...' : 'Create Account'}</button>
+        <button type="submit" className="royal-btn" disabled={loading}>
+          {loading ? t('auth.creating') : t('auth.createAccount')}
+        </button>
         <div>
-          <span>Already a member? </span><Link to="/auth/signin">Sign in</Link>
+          <span>{t('auth.alreadyMember')}</span>
+          <Link to="/auth/signin">{t('auth.signIn')}</Link>
         </div>
       </form>
     </div>

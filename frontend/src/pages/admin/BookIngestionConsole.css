@@ -67,6 +67,7 @@
 
 .isbn-input-box {
   flex: 1;
+  min-width: 4ch; /* Ensure input width is at least 2 characters on mobile to prevent reverse typing */
 }
 
 .lookup-btn {
@@ -578,6 +579,14 @@
 
 /* Mobile full-screen camera modal and immersive camera view adjustments */
 @media (max-width: 768px) {
+  .isbn-input-row {
+    gap: 8px; /* Slightly tighter gap on mobile */
+  }
+
+  .lookup-btn {
+    padding: 10px 12px; /* Reduce horizontal padding on mobile to give more room for the input box */
+  }
+
   .camera-modal-overlay {
     padding: 0; /* Immersive edge-to-edge container */
   }

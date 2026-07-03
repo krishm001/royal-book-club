@@ -391,6 +391,31 @@ export default {
     moderationLedger: "Content Moderation Ledger",
     approvePost: "Approve Post",
     flagSpam: "Mark as Spam"
+  },
+  auth: {
+    signIn: "Sign In",
+    signUp: "Sign Up",
+    email: "Email",
+    password: "Password",
+    fullName: "Full Name",
+    forgotPassword: "Forgot password?",
+    newHere: "New here? ",
+    createAccount: "Create an account",
+    creating: "Creating...",
+    alreadyMember: "Already a member? ",
+    orSignInWithEmail: "or sign in with email",
+    signInWithGoogle: "Sign in with Google",
+    rememberedPassword: "Remembered your password? ",
+    needAccount: "Need a new account? ",
+    sendResetLink: "Send Reset Link",
+    sending: "Sending...",
+    consentPart1: "I agree to the ",
+    consentPart2: " and have read the ",
+    consentPart3: ". I provide my explicit consent to royalbookclub.com to process my email and account information for book club activities.",
+    resetPassword: "Reset Password",
+    resetLinkSent: "Password reset link sent. Please check your inbox.",
+    resetLinkError: "Failed to send password reset link.",
+    consentError: "Please agree to the Terms & Conditions and Privacy Notice before signing up."
   }
 };
 

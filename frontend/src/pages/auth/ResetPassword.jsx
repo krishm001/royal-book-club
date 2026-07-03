@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 import { useNavigate, Link } from 'react-router-dom';
+import { useLanguage } from '../../i18n/LanguageContext';
 import './Auth.css';
 
 export default function ResetPassword() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
@@ -19,9 +21,9 @@ export default function ResetPassword() {
 
     try {
       await sendPasswordResetEmail(auth, email);
-      setMessage('Password reset link sent. Please check your inbox.');
+      setMessage(t('auth.resetLinkSent'));
     } catch (err) {
-      setError(err.message || 'Failed to send password reset link.');
+      setError(err.message || t('auth.resetLinkError'));
     } finally {
       setLoading(false);
     }
@@ -30,8 +32,8 @@ export default function ResetPassword() {
   return (
     <div className="auth-page">
       <form onSubmit={handleSubmit} className="auth-form">
-        <h2>Reset Password</h2>
-        <label>Email</label>
+        <h2>{t('auth.resetPassword')}</h2>
+        <label>{t('auth.email')}</label>
         <input
           type="email"
           value={email}
@@ -44,16 +46,16 @@ export default function ResetPassword() {
         {error && <div className="auth-error">{error}</div>}
 
         <button type="submit" className="royal-btn" disabled={loading}>
-          {loading ? 'Sending...' : 'Send Reset Link'}
+          {loading ? t('auth.sending') : t('auth.sendResetLink')}
         </button>
 
         <div>
-          <span>Remembered your password? </span>
-          <Link to="/auth/signin">Sign in</Link>
+          <span>{t('auth.rememberedPassword')}</span>
+          <Link to="/auth/signin">{t('auth.signIn')}</Link>
         </div>
         <div>
-          <span>Need a new account? </span>
-          <Link to="/auth/signup">Sign up</Link>
+          <span>{t('auth.needAccount')}</span>
+          <Link to="/auth/signup">{t('auth.signUp')}</Link>
         </div>
       </form>
     </div>
