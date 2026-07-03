@@ -15,7 +15,7 @@ const defaultFeaturedBook = {
   title: 'Ikigai: The Japanese Secret to a Long and Happy Life',
   author: 'Héctor García; Francesc Miralles',
   genre: 'Self-Help',
-  rating: 5.0,
+  rating: 4.9,
   coverUrl: 'https://firebasestorage.googleapis.com/v0/b/royal-book-club.firebasestorage.app/o/books%2F1780737939254_Screenshot_2026-06-06_at_2.49.57_PM.png?alt=media&token=b14ac641-494a-4b9e-aa7f-3b98b42e69e7',
   description: "The Japanese secret to a long and happy life. We all have an ikigai. It's the Japanese word for 'a reason to live' or 'a reason to jump out of bed in the morning'.It's the place where your needs, desires, ambitions, and satisfaction meet. A place of balance. Small wonder that finding your ikigai is closely linked to living longer. Finding your ikigai is easier than you might think. This book will help you work out what your own ikigai really is, and equip you to change your life. You have a purpose in this world: your skills, your interests, your desires and your history have made you the perfect candidate for something. All you have to do is find it. Do that, and you can make every single day of your life joyful and meaningful.",
   citation: '"To define is to limit." — Lord Henry Wotton'
