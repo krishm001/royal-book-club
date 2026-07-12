@@ -99,5 +99,17 @@ export const clearCheckout = async (id, adminId) => {
   const response = await api.post(`/api/v1/checkout/clear/${id}?adminId=${encodeURIComponent(adminId || '')}`);
   return response.data;
 };
+export const fetchBookByNtagUid = async (uid) => {
+  const response = await api.get(`/api/v1/books/ntag/${encodeURIComponent(uid)}`);
+  return response.data;
+};
 
+export const pairNtagUid = async (isbn, ntagUid) => {
+  const response = await api.post(`/api/v1/admin/books/pair?isbn=${encodeURIComponent(isbn)}&ntagUid=${encodeURIComponent(ntagUid)}`);
+  return response.data;
+};
 
+export const fetchCheckoutById = async (id) => {
+  const response = await api.get(`/api/v1/checkout/${encodeURIComponent(id)}`);
+  return response.data;
+};

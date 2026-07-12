@@ -21,4 +21,7 @@ public class CheckoutSettings {
     private boolean cityMandatory;
     private boolean pinCodeMandatory;
     private boolean autoModerateBlogs;
+    private Double libraryLatitude;
+    private Double libraryLongitude;
+    private Double validRadiusMeters;
 }

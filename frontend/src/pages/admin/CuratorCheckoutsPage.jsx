@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Check, X, Clock, BookOpen, User, RefreshCw, Search, Filter, AlertCircle, CheckCircle, Smartphone, ArrowLeft, Phone, MapPin } from 'lucide-react';
-import { fetchCheckouts, approveCheckout, rejectCheckout, approveReturn, fetchBooks, clearCheckout } from '../../services/libraryApi';
+import { fetchCheckouts, approveCheckout, rejectCheckout, approveReturn, fetchBooks, clearCheckout, verifiedReturn } from '../../services/libraryApi';
+import { getCheckoutSettings } from '../../services/checkoutSettingsApi';
 import { getAllUsers } from '../../services/userApi';
 import { useLanguage } from '../../i18n/LanguageContext';
 import './CuratorCheckoutsPage.css';
@@ -15,6 +16,12 @@ export default function CuratorCheckoutsPage({ user }) {
   const [actionLoading, setActionLoading] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL', 'PENDING', 'ACTIVE', 'RETURNED'
+  const [librarySettings, setLibrarySettings] = useState(null);
+  const [showSandbox, setShowSandbox] = useState(false);
+  const [simBookId, setSimBookId] = useState('');
+  const [simLat, setSimLat] = useState(12.9716);
+  const [simLon, setSimLon] = useState(77.5946);
+  const [simNfc, setSimNfc] = useState('04:A3:B2:C1:D0:E9:80');
   const [showContactDetails, setShowContactDetails] = useState(false);
 
   // Access check
@@ -23,14 +30,20 @@ export default function CuratorCheckoutsPage({ user }) {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [checkoutsRes, booksData, usersRes] = await Promise.all([
+      const [checkoutsRes, booksData, usersRes, settingsRes] = await Promise.all([
         fetchCheckouts(),
         fetchBooks(),
-        getAllUsers()
+        getAllUsers(),
+        getCheckoutSettings()
       ]);
 
       setCheckouts(checkoutsRes || []);
       setBooks(booksData || []);
+      if (settingsRes?.success && settingsRes?.data) {
+        setLibrarySettings(settingsRes.data);
+        if (settingsRes.data.libraryLatitude) setSimLat(settingsRes.data.libraryLatitude);
+        if (settingsRes.data.libraryLongitude) setSimLon(settingsRes.data.libraryLongitude);
+      }
       
       if (usersRes?.success && Array.isArray(usersRes.data)) {
         setUsers(usersRes.data);
@@ -51,6 +64,119 @@ export default function CuratorCheckoutsPage({ user }) {
       loadData();
     }
   }, [isAdmin]);
+
+  const canvasRef = useRef(null);
+
+  const handleCanvasClick = (e) => {
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    const width = canvasRef.current.width;
+    const height = canvasRef.current.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    const centerLat = librarySettings?.libraryLatitude || 12.9716;
+    const centerLon = librarySettings?.libraryLongitude || 77.5946;
+    const radiusMeters = librarySettings?.validRadiusMeters || 100;
+    const scale = 80 / radiusMeters;
+
+    const diffLon = (clickX - centerX) / (111320 * Math.cos(centerLat * Math.PI / 180) * scale);
+    const diffLat = (centerY - clickY) / (111320 * scale);
+
+    setSimLat(parseFloat((centerLat + diffLat).toFixed(6)));
+    setSimLon(parseFloat((centerLon + diffLon).toFixed(6)));
+  };
+
+  useEffect(() => {
+    if (!showSandbox || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+
+    // Draw background grid
+    ctx.strokeStyle = 'rgba(212, 165, 116, 0.05)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < width; x += 20) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+    for (let y = 0; y < height; y += 20) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+
+    // Geofence info
+    const centerLat = librarySettings?.libraryLatitude || 12.9716;
+    const centerLon = librarySettings?.libraryLongitude || 77.5946;
+    const radiusMeters = librarySettings?.validRadiusMeters || 100;
+
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const scale = 80 / radiusMeters; // 80 pixels represents the radius
+
+    // Draw geofence circle
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radiusMeters * scale, 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(212, 165, 116, 0.05)';
+    ctx.fill();
+    ctx.strokeStyle = '#d4a574';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw Library Center
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 6, 0, 2 * Math.PI);
+    ctx.fillStyle = '#d4a574';
+    ctx.fill();
+    ctx.strokeStyle = '#121212';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Draw simulated return position pin
+    const simDiffLat = simLat - centerLat;
+    const simDiffLon = simLon - centerLon;
+    const simX = centerX + simDiffLon * 111320 * Math.cos(centerLat * Math.PI / 180) * scale;
+    const simY = centerY - simDiffLat * 111320 * scale;
+
+    ctx.beginPath();
+    ctx.arc(simX, simY, 8, 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(0, 191, 255, 0.8)';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Draw active/pending returns from patrons
+    const returnRequests = checkouts.filter(c => c.status === 'REQUESTED_RETURN');
+    returnRequests.forEach(r => {
+      if (r.returnLatitude && r.returnLongitude) {
+        const diffLat = r.returnLatitude - centerLat;
+        const diffLon = r.returnLongitude - centerLon;
+        const rx = centerX + diffLon * 111320 * Math.cos(centerLat * Math.PI / 180) * scale;
+        const ry = centerY - diffLat * 111320 * scale;
+
+        ctx.beginPath();
+        ctx.arc(rx, ry, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = r.locationVerified ? '#4caf50' : '#f44336';
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    });
+
+  }, [showSandbox, librarySettings, simLat, simLon, checkouts]);
 
   // Helper maps
   const bookMap = React.useMemo(() => {
@@ -113,6 +239,65 @@ export default function CuratorCheckoutsPage({ user }) {
     }
   };
 
+  const handleBulkApproveReturns = async () => {
+    const adminId = user?.uid || user?.id || '';
+    if (!adminId) return;
+    const targets = checkouts
+      .filter(c => c.status === 'REQUESTED_RETURN')
+      .filter(c => c.locationVerified === true);
+
+    if (targets.length === 0) return;
+
+    if (!window.confirm(`Are you sure you want to bulk approve all ${targets.length} location-verified return requests?`)) {
+      return;
+    }
+
+    setLoading(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const r of targets) {
+      try {
+        await approveReturn(r.id, adminId);
+        successCount++;
+      } catch (err) {
+        console.error(`Failed to approve return for checkout ${r.id}:`, err);
+        failCount++;
+      }
+    }
+
+    await loadData();
+    window.alert(`Bulk return processing complete! Approved: ${successCount}, Failed: ${failCount}`);
+  };
+
+  const handleSimulateReturn = async () => {
+    if (!simBookId) {
+      window.alert("Please select a book volume to return!");
+      return;
+    }
+    const adminId = user?.uid || user?.id || '';
+    setLoading(true);
+    try {
+      await verifiedReturn({
+        bookId: simBookId,
+        memberId: adminId,
+        ntagUid: simNfc || '04:A3:B2:C1:D0:E9:80',
+        memberName: `${user?.firstName || 'Curator'} ${user?.lastName || 'Tester'}`,
+        memberEmail: user?.email || 'curator@royalbookclub.com',
+        returnLatitude: simLat,
+        returnLongitude: simLon,
+        nfcOrBarcode: 'NFC_SIMULATOR'
+      });
+      window.alert("Successfully injected simulated NFC return request into the royal ledger!");
+      await loadData();
+    } catch (err) {
+      console.error("Simulation return request failed:", err);
+      window.alert(`Simulation failed: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleClearCheckout = async (id) => {
     if (!window.confirm(t('admin.confirmClearCheckout', 'Are you sure you want to forcibly clear this checkout? The book copies in catalog will be incremented.'))) {
       return;
@@ -154,6 +339,7 @@ export default function CuratorCheckoutsPage({ user }) {
   // Segmenting transactions
   const checkoutRequests = checkouts.filter(c => c.status === 'REQUESTED_CHECKOUT');
   const returnRequests = checkouts.filter(c => c.status === 'REQUESTED_RETURN');
+  const preVerifiedReturns = returnRequests.filter(c => c.locationVerified === true);
   const activeCheckouts = checkouts.filter(c => c.status === 'CHECKED_OUT');
   const historyTransactions = checkouts.filter(c => c.status === 'RETURNED' || c.status === 'REJECTED');
 
@@ -375,13 +561,151 @@ export default function CuratorCheckoutsPage({ user }) {
           <span className="count-large text-success">{activeCheckouts.length}</span>
           <span className="label">{t('admin.activeCheckouts', 'Active Checkouts')}</span>
         </div>
-        <div className="royal-card analytic-summary-card">
-          <button onClick={loadData} className="ledger-refresh-btn" disabled={loading}>
-            <RefreshCw size={20} className={loading ? 'spin-icon' : ''} />
+        <div className="royal-card analytic-summary-card" style={{ display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center' }}>
+          <button onClick={loadData} className="ledger-refresh-btn" disabled={loading} style={{ width: '100%', padding: '6px 12px' }}>
+            <RefreshCw size={16} className={loading ? 'spin-icon' : ''} />
             <span>{t('admin.syncLedger', 'Sync Ledger')}</span>
+          </button>
+          <button 
+            onClick={() => setShowSandbox(prev => !prev)} 
+            className="royal-btn" 
+            style={{ 
+              width: '100%', 
+              fontSize: '0.8rem', 
+              padding: '6px 12px', 
+              background: showSandbox ? 'rgba(244,67,54,0.15)' : 'rgba(212,165,116,0.15)',
+              border: showSandbox ? '1px solid #f44336' : '1px solid #d4a574',
+              color: showSandbox ? '#ff5252' : '#d4a574',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              borderRadius: '4px',
+              transition: 'background 0.2s'
+            }}
+          >
+            {showSandbox ? "Close Simulator" : "Open Simulator"}
           </button>
         </div>
       </section>
+
+      {showSandbox && (
+        <section className="royal-card curator-sandbox-card animate-fade-in" style={{ border: '1px solid rgba(212, 165, 116, 0.4)', padding: '24px', marginBottom: '30px', background: 'rgba(18, 18, 18, 0.95)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(212, 165, 116, 0.2)', paddingBottom: '12px', marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '1.15rem', color: '#d4a574', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+              <span>🛰️</span> Sovereign Geofencing & NFC Simulator Console
+            </h2>
+            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', background: 'rgba(212, 165, 116, 0.1)', color: '#d4a574', padding: '4px 10px', borderRadius: '12px', fontWeight: 'bold' }}>Active Sandbox</span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+            {/* Simulation controls */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <h3 style={{ fontSize: '1rem', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px', margin: 0 }}>Simulate Patron Return</h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>Select Book Volume</label>
+                <select 
+                  value={simBookId} 
+                  onChange={(e) => setSimBookId(e.target.value)}
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(212,165,116,0.2)', padding: '10px', borderRadius: '4px', color: '#fff', fontSize: '0.9rem' }}
+                >
+                  <option value="" style={{ background: '#121212' }}>-- Select a Book --</option>
+                  {books.map(b => (
+                    <option key={b.isbn} value={b.isbn} style={{ background: '#121212' }}>{b.title} ({b.isbn})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>NFC Chip UID</label>
+                <input 
+                  type="text" 
+                  value={simNfc} 
+                  onChange={(e) => setSimNfc(e.target.value)}
+                  placeholder="e.g. 04:A3:B2:C1:D0:E9:80"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(212,165,116,0.2)', padding: '10px', borderRadius: '4px', color: '#fff', fontSize: '0.9rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>Simulated Latitude</label>
+                  <input 
+                    type="number" 
+                    step="any"
+                    value={simLat} 
+                    onChange={(e) => setSimLat(parseFloat(e.target.value) || 0)}
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(212,165,116,0.2)', padding: '10px', borderRadius: '4px', color: '#fff', fontSize: '0.9rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>Simulated Longitude</label>
+                  <input 
+                    type="number" 
+                    step="any"
+                    value={simLon} 
+                    onChange={(e) => setSimLon(parseFloat(e.target.value) || 0)}
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(212,165,116,0.2)', padding: '10px', borderRadius: '4px', color: '#fff', fontSize: '0.9rem' }}
+                  />
+                </div>
+              </div>
+
+              <button 
+                onClick={handleSimulateReturn}
+                className="royal-btn"
+                style={{ 
+                  background: 'linear-gradient(135deg, #d4a574 0%, #b8860b 100%)',
+                  color: '#121212',
+                  border: 'none',
+                  padding: '12px',
+                  borderRadius: '4px',
+                  fontSize: '0.9rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  marginTop: '10px',
+                  boxShadow: '0 4px 15px rgba(212, 165, 116, 0.4)'
+                }}
+              >
+                Simulate NFC return request
+              </button>
+            </div>
+
+            {/* Geofence circular coverage canvas */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px' }}>
+                <h3 style={{ fontSize: '1.05rem', color: '#fff', margin: 0 }}>Geofence Radar Live Coverage</h3>
+                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', alignSelf: 'center' }}>Click map to relocate Pin</span>
+              </div>
+              <canvas 
+                ref={canvasRef} 
+                width={200} 
+                height={200} 
+                onClick={handleCanvasClick}
+                style={{ 
+                  background: '#0d0d0d', 
+                  border: '1.5px solid #d4a574', 
+                  borderRadius: '100px', 
+                  cursor: 'crosshair',
+                  boxShadow: 'inset 0 0 20px rgba(212, 165, 116, 0.2), 0 0 15px rgba(212, 165, 116, 0.15)'
+                }}
+              />
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', fontSize: '0.7rem' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#d4a574' }}>
+                  <span style={{ width: '6px', height: '6px', background: '#d4a574', borderRadius: '3px', display: 'inline-block' }}></span> Library Center
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(0,191,255,0.9)' }}>
+                  <span style={{ width: '6px', height: '6px', background: 'rgba(0,191,255,0.9)', borderRadius: '3px', display: 'inline-block' }}></span> Simulated Pin
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#4caf50' }}>
+                  <span style={{ width: '6px', height: '6px', background: '#4caf50', borderRadius: '3px', display: 'inline-block' }}></span> Verified Return
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#f44336' }}>
+                  <span style={{ width: '6px', height: '6px', background: '#f44336', borderRadius: '3px', display: 'inline-block' }}></span> Unverified Return
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Main Ledger Split for Quick Actions */}
       <div className="ledger-splits-row">
@@ -438,12 +762,45 @@ export default function CuratorCheckoutsPage({ user }) {
 
         {/* Return Requests Card */}
         <div className="royal-card split-panel-card border-warning">
-          <div className="panel-header-row">
+          <div className="panel-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <RefreshCw size={20} className="text-warning" />
               <h3>{t('admin.pendingReturnVerifications', 'Pending Return Verifications')}</h3>
+              <span className="count-badge bg-warning">{returnRequests.length}</span>
             </div>
-            <span className="count-badge bg-warning">{returnRequests.length}</span>
+            {preVerifiedReturns.length > 0 && (
+              <button 
+                onClick={handleBulkApproveReturns} 
+                className="royal-btn" 
+                style={{ 
+                  background: 'linear-gradient(135deg, #d4a574 0%, #b8860b 100%)',
+                  color: '#121212',
+                  border: 'none',
+                  padding: '6px 14px',
+                  borderRadius: '4px',
+                  fontSize: '0.75rem',
+                  fontWeight: '700',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 15px rgba(212, 165, 116, 0.4)',
+                  transition: 'transform 0.2s, box-shadow 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.03)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(212, 165, 116, 0.6)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(212, 165, 116, 0.4)';
+                }}
+              >
+                <CheckCircle size={12} /> Bulk Confirm ({preVerifiedReturns.length})
+              </button>
+            )}
           </div>
 
           {returnRequests.length === 0 ? (
@@ -454,13 +811,33 @@ export default function CuratorCheckoutsPage({ user }) {
           ) : (
             <div className="requests-compact-list">
               {returnRequests.map(r => (
-                <div key={r.id} className="compact-request-row animate-fade-in">
-                  <div className="compact-row-meta">
-                    {renderBookCell(r.bookId)}
-                    {renderMemberCell(r.memberId, r)}
-                    <div className="request-time">
-                      <Clock size={12} className="inline-icon" />
-                      <span>{r.requestedAt ? new Date(r.requestedAt).toLocaleDateString() : t('admin.today', 'Today')}</span>
+                <div key={r.id} className="compact-request-row animate-fade-in" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="compact-row-meta" style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '1' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      {renderBookCell(r.bookId)}
+                      {renderMemberCell(r.memberId, r)}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                      <div className="request-time" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
+                        <Clock size={12} />
+                        <span>{r.requestedAt ? new Date(r.requestedAt).toLocaleDateString() : t('admin.today', 'Today')}</span>
+                      </div>
+                      <div className="compact-location-badge">
+                        {r.locationVerified ? (
+                          <span className="location-badge verified" style={{ color: '#d4a574', border: '1px solid #d4a574', background: 'rgba(212, 165, 116, 0.1)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <MapPin size={10} /> Location Verified
+                          </span>
+                        ) : (
+                          <span className="location-badge unverified" style={{ color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255, 255, 255, 0.05)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <MapPin size={10} /> Unverified Location
+                          </span>
+                        )}
+                      </div>
+                      {r.nfcOrBarcode && (
+                        <div style={{ fontSize: '0.7rem', color: 'rgba(212, 165, 116, 0.7)', border: '1px solid rgba(212, 165, 116, 0.3)', background: 'rgba(212, 165, 116, 0.05)', padding: '2px 8px', borderRadius: '4px', textTransform: 'uppercase', fontWeight: 'bold' }}>
+                          {r.nfcOrBarcode}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="compact-row-actions">

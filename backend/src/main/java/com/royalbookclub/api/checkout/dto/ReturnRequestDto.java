@@ -28,5 +28,9 @@ public class ReturnRequestDto {
 
     private String memberEmail;
     private String memberName;
+
+    private Double returnLatitude;
+    private Double returnLongitude;
+    private String nfcOrBarcode; // e.g. "NFC" or "BARCODE"
 }
 

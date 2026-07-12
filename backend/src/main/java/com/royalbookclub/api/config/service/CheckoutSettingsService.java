@@ -50,6 +50,9 @@ public class CheckoutSettingsService {
                         .cityMandatory(Boolean.TRUE.equals(document.getBoolean("cityMandatory")))
                         .pinCodeMandatory(Boolean.TRUE.equals(document.getBoolean("pinCodeMandatory")))
                         .autoModerateBlogs(Boolean.TRUE.equals(document.getBoolean("autoModerateBlogs")))
+                        .libraryLatitude(document.getDouble("libraryLatitude"))
+                        .libraryLongitude(document.getDouble("libraryLongitude"))
+                        .validRadiusMeters(document.getDouble("validRadiusMeters"))
                         .build();
             } else {
                 log.info("No checkout settings document found. Initializing with optional defaults.");
@@ -61,6 +64,9 @@ public class CheckoutSettingsService {
                         .cityMandatory(false)
                         .pinCodeMandatory(false)
                         .autoModerateBlogs(false)
+                        .libraryLatitude(37.7749) // SF default or equivalent
+                        .libraryLongitude(-122.4194)
+                        .validRadiusMeters(100.0)
                         .build();
             }
         } catch (InterruptedException e) {
@@ -88,6 +94,9 @@ public class CheckoutSettingsService {
             map.put("cityMandatory", settings.isCityMandatory());
             map.put("pinCodeMandatory", settings.isPinCodeMandatory());
             map.put("autoModerateBlogs", settings.isAutoModerateBlogs());
+            map.put("libraryLatitude", settings.getLibraryLatitude());
+            map.put("libraryLongitude", settings.getLibraryLongitude());
+            map.put("validRadiusMeters", settings.getValidRadiusMeters());
 
             ApiFuture<WriteResult> writeFuture = docRef.set(map);
             writeFuture.get();

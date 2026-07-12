@@ -130,7 +130,7 @@
 .toggle-label {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--text-normal, #e2e8f0);
+  color: var(--toggle-text);
 }
 
 .toggle-description {

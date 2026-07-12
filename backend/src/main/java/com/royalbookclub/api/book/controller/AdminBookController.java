@@ -98,4 +98,18 @@ public class AdminBookController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    /**
+     * Pair or bind an NTAG UID to an existing book's ISBN.
+     */
+    @PostMapping("/pair")
+    @Operation(summary = "Pair an NTAG UID to a book ISBN", description = "Updates the Ntag UID mapping for an existing volume in the catalog.")
+    public ResponseEntity<Book> pairNtagUid(@RequestParam String isbn, @RequestParam String ntagUid) {
+        try {
+            Book updatedBook = bookService.bindNtagUid(isbn, ntagUid);
+            return ResponseEntity.ok(updatedBook);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }

@@ -74,6 +74,24 @@ public class CheckoutService {
         }
     }
 
+    private void verifyNoPendingReturns(String memberId) {
+        try {
+            Query pendingReturnsQuery = firestore.collection(COLLECTION_NAME)
+                    .whereEqualTo("memberId", memberId)
+                    .whereEqualTo("status", "REQUESTED_RETURN")
+                    .limit(1);
+            QuerySnapshot snap = pendingReturnsQuery.get().get();
+            if (!snap.isEmpty()) {
+                throw new BusinessRuleException("You have a pending return verification. You must wait for an administrator to approve your pending return before performing new checkouts.");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Failed to verify pending return status", e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException("Failed to verify pending return status", e);
+        }
+    }
+
     /**
      * Atomically check out a book to a member.
      * Decrements availableCopies inside a database transaction.
@@ -87,6 +105,7 @@ public class CheckoutService {
 
         // Profile details validation
         verifyUserProfileRequirements(memberId);
+        verifyNoPendingReturns(memberId);
 
         DocumentReference bookRef = firestore.collection("books").document(cleanIsbn);
         DocumentReference checkoutRef = firestore.collection(COLLECTION_NAME).document();
@@ -185,6 +204,7 @@ public class CheckoutService {
 
         // Profile details validation
         verifyUserProfileRequirements(memberId);
+        verifyNoPendingReturns(memberId);
 
         DocumentReference bookRef = firestore.collection("books").document(cleanIsbn);
         DocumentReference checkoutRef = firestore.collection(COLLECTION_NAME).document();
@@ -393,6 +413,10 @@ public class CheckoutService {
             updates.put("status", "REQUESTED_RETURN");
             updates.put("requestedAt", toTimestamp(now));
             updates.put("ntagUid", request.getNtagUid());
+            updates.put("returnLatitude", request.getReturnLatitude());
+            updates.put("returnLongitude", request.getReturnLongitude());
+            updates.put("locationVerified", checkLocationVerification(request.getReturnLatitude(), request.getReturnLongitude()));
+            updates.put("nfcOrBarcode", request.getNfcOrBarcode());
 
             if (checkoutDoc.getString("memberEmail") == null) {
                 String email = request.getMemberEmail();
@@ -544,7 +568,11 @@ public class CheckoutService {
 
                 transaction.update(checkoutRef,
                         "status", "RETURNED",
-                        "returnedAt", com.google.cloud.Timestamp.now()
+                        "returnedAt", com.google.cloud.Timestamp.now(),
+                        "returnLatitude", request.getReturnLatitude(),
+                        "returnLongitude", request.getReturnLongitude(),
+                        "locationVerified", checkLocationVerification(request.getReturnLatitude(), request.getReturnLongitude()),
+                        "nfcOrBarcode", request.getNfcOrBarcode()
                 );
 
                 return checkoutRef.getId();
@@ -899,6 +927,42 @@ public class CheckoutService {
                 .ntagUid(doc.getString("ntagUid"))
                 .memberEmail(doc.getString("memberEmail"))
                 .memberName(doc.getString("memberName"))
+                .returnLatitude(doc.getDouble("returnLatitude"))
+                .returnLongitude(doc.getDouble("returnLongitude"))
+                .locationVerified(doc.getBoolean("locationVerified"))
+                .nfcOrBarcode(doc.getString("nfcOrBarcode"))
                 .build();
+    }
+
+    private boolean checkLocationVerification(Double clientLat, Double clientLon) {
+        if (clientLat == null || clientLon == null) {
+            return false;
+        }
+        var settings = checkoutSettingsService.getCheckoutSettings();
+        if (settings == null || settings.getLibraryLatitude() == null || settings.getLibraryLongitude() == null) {
+            return true;
+        }
+        double libraryLat = settings.getLibraryLatitude();
+        double libraryLon = settings.getLibraryLongitude();
+        double allowedRadius = settings.getValidRadiusMeters() != null ? settings.getValidRadiusMeters() : 100.0;
+
+        double distance = calculateHaversineDistance(clientLat, clientLon, libraryLat, libraryLon);
+        log.info("Haversine check: user distance from library is {} meters (allowed limit: {} meters)", distance, allowedRadius);
+        return distance <= allowedRadius;
+    }
+
+    private double calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {
+        final double R = 6371e3; // Earth radius in meters
+        double phi1 = Math.toRadians(lat1);
+        double phi2 = Math.toRadians(lat2);
+        double deltaPhi = Math.toRadians(lat2 - lat1);
+        double deltaLambda = Math.toRadians(lon2 - lon1);
+
+        double a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+                   Math.cos(phi1) * Math.cos(phi2) *
+                   Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c;
     }
 }

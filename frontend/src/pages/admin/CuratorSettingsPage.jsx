@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Sparkles, ArrowLeft, Loader2, Save, CheckCircle, AlertTriangle, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Shield, Sparkles, ArrowLeft, Loader2, Save, CheckCircle, AlertTriangle, ToggleLeft, ToggleRight, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getCheckoutSettings, updateCheckoutSettings } from '../../services/checkoutSettingsApi';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -19,7 +19,18 @@ const CuratorSettingsPage = ({ user }) => {
     cityMandatory: false,
     pinCodeMandatory: false,
     autoModerateBlogs: false,
+    libraryLatitude: null,
+    libraryLongitude: null,
+    validRadiusMeters: null,
   });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setSettings((prev) => ({
+      ...prev,
+      [name]: value === '' ? null : parseFloat(value),
+    }));
+  };
 
   const isAdmin = user && user.role === 'ADMIN';
 
@@ -251,6 +262,58 @@ const CuratorSettingsPage = ({ user }) => {
                     >
                       {settings.autoModerateBlogs ? <ToggleRight size={38} className="gold-toggle" /> : <ToggleLeft size={38} className="muted-toggle" />}
                     </button>
+                  </div>
+                  {/* Geofencing Settings */}
+                  <div className="settings-divider-custom"></div>
+                  
+                  <h3 className="section-title-settings">
+                    <MapPin size={16} className="gold-glow-icon inline mr-2" style={{ verticalAlign: 'text-bottom', display: 'inline-block' }} />
+                    {t('admin.geolocationGeofencingSettings', 'Library Return Geofencing Bounds')}
+                  </h3>
+
+                  <p className="toggle-description" style={{ marginBottom: '15px' }}>
+                    {t('admin.geofencingDesc', 'Configure the coordinates of your Royal Library structure and define the valid haversine radius (in meters) within which mobile return transactions are marked as Location Verified.')}
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+                    <div className="gating-field-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', fontWeight: 'bold' }}>Library Latitude</label>
+                      <input 
+                        type="number" 
+                        step="any" 
+                        name="libraryLatitude"
+                        value={settings.libraryLatitude ?? ''} 
+                        onChange={handleChange}
+                        placeholder="e.g. 12.9716"
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(212,165,116,0.2)', padding: '10px', borderRadius: '4px', color: '#fff', fontSize: '0.9rem' }}
+                      />
+                    </div>
+
+                    <div className="gating-field-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', fontWeight: 'bold' }}>Library Longitude</label>
+                      <input 
+                        type="number" 
+                        step="any" 
+                        name="libraryLongitude"
+                        value={settings.libraryLongitude ?? ''} 
+                        onChange={handleChange}
+                        placeholder="e.g. 77.5946"
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(212,165,116,0.2)', padding: '10px', borderRadius: '4px', color: '#fff', fontSize: '0.9rem' }}
+                      />
+                    </div>
+
+                    <div className="gating-field-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', fontWeight: 'bold' }}>Geofence Radius (meters)</label>
+                      <input 
+                        type="number" 
+                        step="any" 
+                        name="validRadiusMeters"
+                        value={settings.validRadiusMeters ?? ''} 
+                        onChange={handleChange}
+                        placeholder="e.g. 100"
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(212,165,116,0.2)', padding: '10px', borderRadius: '4px', color: '#fff', fontSize: '0.9rem' }}
+                      />
+                    </div>
                   </div>
                 </div>
 

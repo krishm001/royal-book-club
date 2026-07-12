@@ -57,4 +57,17 @@ public class BookController {
         return isbnLookupService.lookupIsbn(isbn)
                 .map(ResponseEntity::ok);
     }
+
+    /**
+     * Fetch book by NTAG UID.
+     */
+    @GetMapping("/ntag/{uid}")
+    @Operation(summary = "Get book by NTAG UID", description = "Query Firestore catalog to fetch book by physical NTAG UID.")
+    public ResponseEntity<Book> getBookByNtagUid(@PathVariable String uid) {
+        Book book = bookService.getBookByNtagUid(uid);
+        if (book != null) {
+            return ResponseEntity.ok(book);
+        }
+        return ResponseEntity.notFound().build();
+    }
 }

@@ -612,6 +612,7 @@ const BookIngestionConsole = ({ user }) => {
       ndef.addEventListener("reading", async ({ serialNumber, message }) => {
         console.log(`NFC tag read. Serial Number: ${serialNumber}`);
         let extractedIsbn = null;
+        let extractedUid = null;
         if (message && message.records) {
           for (const record of message.records) {
             if (record.recordType === "url") {
@@ -621,10 +622,14 @@ const BookIngestionConsole = ({ user }) => {
               if (match && match[1]) {
                 extractedIsbn = match[1];
               }
+              const uMatch = url.match(/[?&]u=([^&]+)/);
+              if (uMatch && uMatch[1]) {
+                extractedUid = uMatch[1];
+              }
             }
           }
         }
-        await processScannedNtag(serialNumber, extractedIsbn);
+        await processScannedNtag(extractedUid || serialNumber, extractedIsbn);
       });
     } catch (error) {
       console.error("NFC reading error: ", error);
@@ -809,11 +814,13 @@ const BookIngestionConsole = ({ user }) => {
     const targetDto = bookDtoToSave || pendingBookDto;
     try {
       const ndef = new window.NDEFReader();
+      const tagUidToWrite = targetDto?.ntagUid || ntagUid || '04:A3:B2:C1:D0:E9:80';
+      
       await ndef.write({
         records: [
           {
             recordType: "url",
-            data: `${window.location.origin}/#/catalog/${bookIsbn}?action=checkout`
+            data: `${window.location.origin}/?u=${tagUidToWrite}`
           }
         ]
       });

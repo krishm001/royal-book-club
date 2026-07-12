@@ -26,9 +26,11 @@ import SignIn from './pages/auth/SignIn';
 import SignUp from './pages/auth/SignUp';
 import ResetPassword from './pages/auth/ResetPassword';
 import ProfilePage from './pages/member/ProfilePage';
+import GatepassPage from './pages/catalog/GatepassPage';
 import './App.css';
 import { fetchHeroConfig } from './services/heroApi';
 import { useLanguage } from './i18n/LanguageContext';
+import OnboardingWizard from './components/OnboardingWizard';
 
 function App() {
   const { language, setLanguage, t, getLocalized } = useLanguage();
@@ -42,6 +44,24 @@ function App() {
   const [quoteIndex, setQuoteIndex] = useState(-1);
   const [consentLoading, setConsentLoading] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [onboardingTarget, setOnboardingTarget] = useState(null);
+
+  const triggerOnboarding = (target) => {
+    setOnboardingTarget(target);
+    setOnboardingOpen(true);
+  };
+
+  const handleOnboardingResume = (target) => {
+    if (!target) return;
+    if (target.actionType === 'nfc') {
+      sessionStorage.setItem('nfc_session_uid', target.ntagUid);
+      sessionStorage.setItem('nfc_session_isbn', target.isbn);
+      sessionStorage.setItem('nfc_session_time', Date.now().toString());
+    }
+    const event = new CustomEvent('onboarding_complete', { detail: target });
+    window.dispatchEvent(event);
+  };
 
   const handleAcceptGoogleConsent = async () => {
     try {
@@ -66,6 +86,63 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('royal-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    const handleUrlDeepLink = async () => {
+      const href = window.location.href;
+      let u = null;
+      
+      // Parse query params directly or via search/hash structures
+      try {
+        const urlObj = new URL(href.replace('#/', ''));
+        u = urlObj.searchParams.get('u');
+      } catch (e) {
+        // Fallback search parsing
+      }
+      
+      if (!u) {
+        u = new URLSearchParams(window.location.search).get('u');
+      }
+      if (!u) {
+        const match = href.match(/[?&]u=([^&]+)/);
+        if (match) u = match[1];
+      }
+      
+      if (u) {
+        console.info("Intercepted NFC deep link UID:", u);
+        try {
+          const response = await api.get(`/api/v1/books/ntag/${u}`);
+          const book = response?.data;
+          
+          if (book && book.isbn) {
+            console.info("Found book from NFC UID:", book.title);
+            
+            // Mask the address bar by replacing history state
+            const cleanUrl = `${window.location.origin}/#/catalog/${book.isbn}`;
+            window.history.replaceState(null, '', cleanUrl);
+            
+            // Save NFC session state in sessionStorage with 5-minute timeout
+            const sessionData = {
+              ntagUid: u,
+              isbn: book.isbn,
+              timestamp: Date.now()
+            };
+            sessionStorage.setItem('nfc_session', JSON.stringify(sessionData));
+            
+            // Route internally to Book Details page
+            window.location.hash = `#/catalog/${book.isbn}`;
+            
+            // Dispatch custom event for real-time reactivity
+            window.dispatchEvent(new CustomEvent('nfc_tap_detected', { detail: sessionData }));
+          }
+        } catch (error) {
+          console.error("Failed to resolve book from NFC deep link:", error);
+        }
+      }
+    };
+
+    handleUrlDeepLink();
+  }, []);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'academic' : 'dark'));
@@ -395,8 +472,8 @@ function App() {
         <main className="main-content">
           <Routes>
             <Route path="/" element={<HomePage user={user} onSignIn={handleSignIn} theme={theme} />} />
-            <Route path="/catalog" element={<CatalogPage user={user} />} />
-            <Route path="/catalog/:id" element={<BookDetailPage user={user} />} />
+            <Route path="/catalog" element={<CatalogPage user={user} triggerOnboarding={triggerOnboarding} />} />
+            <Route path="/catalog/:id" element={<BookDetailPage user={user} triggerOnboarding={triggerOnboarding} />} />
             <Route path="/events" element={<EventsPage user={user} />} />
             <Route path="/events/:id" element={<EventDetailPage user={user} />} />
             <Route path="/discourses" element={<DiscoursesPage user={user} />} />
@@ -411,6 +488,7 @@ function App() {
             <Route path="/admin/settings" element={<CuratorSettingsPage user={user} />} />
             <Route path="/admin/moderation" element={<CuratorModerationPage user={user} />} />
             <Route path="/profile" element={<ProfilePage user={user} />} />
+            <Route path="/gatepass/:checkoutId" element={<GatepassPage />} />
             <Route path="/privacy" element={<PrivacyNotice />} />
             <Route path="/terms" element={<TermsAndConditions />} />
 
@@ -504,6 +582,15 @@ function App() {
               </div>
             </div>
           </div>
+        )}
+        {/* Onboarding Wizard Overlay */}
+        {onboardingOpen && (
+          <OnboardingWizard
+            user={user}
+            targetState={onboardingTarget}
+            onClose={() => setOnboardingOpen(false)}
+            onResume={handleOnboardingResume}
+          />
         )}
       </div>
     </Router>

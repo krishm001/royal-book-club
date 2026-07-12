@@ -10,7 +10,7 @@ import './CatalogPage.css';
 const SafeHtml5Qrcode = Html5Qrcode;
 const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
 
-const CatalogPage = ({ user }) => {
+const CatalogPage = ({ user, triggerOnboarding }) => {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedHouse, setSelectedHouse] = useState('All');
@@ -153,6 +153,10 @@ const CatalogPage = ({ user }) => {
   };
 
   const startTopBarcodeScanner = () => {
+    if (!user || user.isAnonymous) {
+      if (triggerOnboarding) triggerOnboarding({ actionType: 'scan' });
+      return;
+    }
     setTopScannerOpen(true);
     setTopScannerError('');
 
@@ -328,8 +332,8 @@ const CatalogPage = ({ user }) => {
   };
 
   const startTopNfcRead = async () => {
-    if (!user) {
-      window.alert(t('catalog.signInToNfcCheckout'));
+    if (!user || user.isAnonymous) {
+      if (triggerOnboarding) triggerOnboarding({ actionType: 'scan' });
       return;
     }
     setTopNfcActive(true);
@@ -497,8 +501,8 @@ const CatalogPage = ({ user }) => {
   };
 
   const handleCheckoutClick = (book) => {
-    if (!user) {
-      window.alert(t('catalog.signInToCheckout'));
+    if (!user || user.isAnonymous) {
+      if (triggerOnboarding) triggerOnboarding({ actionType: 'checkout', isbn: book?.isbn });
       return;
     }
     setSelectedBook(book);
@@ -517,8 +521,8 @@ const CatalogPage = ({ user }) => {
   };
 
   const handleReturnClick = (book) => {
-    if (!user) {
-      window.alert(t('catalog.signInToReturn'));
+    if (!user || user.isAnonymous) {
+      if (triggerOnboarding) triggerOnboarding({ actionType: 'return', isbn: book?.isbn });
       return;
     }
     setSelectedBook(book);

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
+import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2, Shield } from 'lucide-react';
 import { fetchBookByIsbn, checkoutBook, fetchBookReviews, submitBookReview, requestCheckout, requestReturn, verifiedCheckout, verifiedReturn, fetchCheckoutsByMember, updateBookReview, deleteBookReview } from '../../services/libraryApi';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -9,9 +9,31 @@ import './BookDetailPage.css';
 const SafeHtml5Qrcode = Html5Qrcode;
 const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
 
-const BookDetailPage = ({ user }) => {
+const BookDetailPage = ({ user, triggerOnboarding }) => {
   const { id } = useParams();
   const { t } = useLanguage();
+
+  const getCoordinates = () => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        resolve({ latitude: null, longitude: null });
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.warn("Unable to obtain GPS coordinates:", error.message);
+          resolve({ latitude: null, longitude: null });
+        },
+        { enableHighAccuracy: true, timeout: 3500 }
+      );
+    });
+  };
   const [book, setBook] = useState(null);
   const [memberCheckouts, setMemberCheckouts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,6 +44,88 @@ const BookDetailPage = ({ user }) => {
   const [editingReviewId, setEditingReviewId] = useState(null);
   const [editingReviewText, setEditingReviewText] = useState('');
   const [editingReviewRating, setEditingReviewRating] = useState(5);
+  const [nfcSession, setNfcSession] = useState(null);
+
+  useEffect(() => {
+    const checkNfcSession = () => {
+      const sessionStr = sessionStorage.getItem('nfc_session');
+      if (sessionStr) {
+        try {
+          const session = JSON.parse(sessionStr);
+          // 5-minute timeout check (300,000 milliseconds)
+          if (session.isbn === id && (Date.now() - session.timestamp < 300000)) {
+            setNfcSession(session);
+          } else if (session.isbn === id) {
+            sessionStorage.removeItem('nfc_session');
+          }
+        } catch (e) {
+          console.error("Error reading NFC session from storage", e);
+        }
+      }
+    };
+
+    checkNfcSession();
+
+    const handleNfcTap = (e) => {
+      const session = e.detail;
+      if (session && session.isbn === id) {
+        setNfcSession(session);
+      }
+    };
+
+    window.addEventListener('nfc_tap_detected', handleNfcTap);
+    return () => {
+      window.removeEventListener('nfc_tap_detected', handleNfcTap);
+    };
+  }, [id]);
+
+  const handleInstantNfcAction = async (actionType) => {
+    if (!user || user.isAnonymous) {
+      if (triggerOnboarding) triggerOnboarding({ actionType: actionType, isbn: book?.isbn });
+      return;
+    }
+
+    const confirmMsg = actionType === 'checkout'
+      ? `Do you wish to instantly check out "${book.title}" via your active NFC session?`
+      : `Do you wish to instantly return "${book.title}" via your active NFC session?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setLoading(true);
+      const targetUid = nfcSession?.ntagUid || book?.ntagUid || '04:A3:B2:C1:D0:E9:80';
+      if (actionType === 'checkout') {
+        await verifiedCheckout({
+          bookId: book.isbn,
+          memberId: user.uid || user.id,
+          ntagUid: targetUid,
+          memberName: user?.displayName,
+          memberEmail: user?.email
+        });
+      } else {
+        const coords = await getCoordinates();
+        await verifiedReturn({
+          bookId: book.isbn,
+          memberId: user.uid || user.id,
+          ntagUid: targetUid,
+          memberName: user?.displayName,
+          memberEmail: user?.email,
+          returnLatitude: coords.latitude,
+          returnLongitude: coords.longitude,
+          nfcOrBarcode: 'NFC'
+        });
+      }
+      window.alert(actionType === 'checkout' ? 'Instant checkout successful!' : 'Instant return successful!');
+      sessionStorage.removeItem('nfc_session');
+      setNfcSession(null);
+      await refreshState();
+    } catch (txError) {
+      console.error('Instant NFC transaction error:', txError);
+      window.alert(t('catalog.unableToSubmitRequest') + ': ' + (txError.response?.data?.message || txError.message));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // NFC & Fallback request states
   const [nfcModalOpen, setNfcModalOpen] = useState(false);
@@ -76,6 +180,15 @@ const BookDetailPage = ({ user }) => {
     }
 
     return book.availableCopies > 0 ? 'available' : 'checked-out-by-other';
+  };
+
+  const getActiveCheckoutInstance = () => {
+    if (!book || !user) return null;
+    const bookIsbn = book.isbn || '';
+    return memberCheckouts.find(
+      (c) => c.bookId === bookIsbn && 
+             (c.status === 'CHECKED_OUT' || c.status === 'REQUESTED_CHECKOUT' || c.status === 'REQUESTED_RETURN' || c.status === 'RETURNED')
+    );
   };
 
   const checkoutStatus = getResolvedStatus();
@@ -166,8 +279,8 @@ const BookDetailPage = ({ user }) => {
   }, [book, memberCheckouts]);
 
   const handleCheckoutClick = () => {
-    if (!user) {
-      window.alert(t('catalog.signInToCheckout'));
+    if (!user || user.isAnonymous) {
+      if (triggerOnboarding) triggerOnboarding({ actionType: 'checkout', isbn: book?.isbn });
       return;
     }
     setNfcActionType('checkout');
@@ -187,8 +300,8 @@ const BookDetailPage = ({ user }) => {
   };
 
   const handleReturnClick = () => {
-    if (!user) {
-      window.alert(t('catalog.signInToReturn'));
+    if (!user || user.isAnonymous) {
+      if (triggerOnboarding) triggerOnboarding({ actionType: 'return', isbn: book?.isbn });
       return;
     }
     setNfcActionType('return');
@@ -399,7 +512,17 @@ const BookDetailPage = ({ user }) => {
         if (nfcActionType === 'checkout') {
           await verifiedCheckout({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
         } else {
-          await verifiedReturn({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
+          const coords = await getCoordinates();
+          await verifiedReturn({
+            bookId: book.isbn,
+            memberId: user.uid || user.id,
+            ntagUid: targetUid,
+            memberName: user?.displayName,
+            memberEmail: user?.email,
+            returnLatitude: coords.latitude,
+            returnLongitude: coords.longitude,
+            nfcOrBarcode: 'BARCODE'
+          });
         }
         setNfcSuccess(true);
         await refreshState();
@@ -461,7 +584,15 @@ const BookDetailPage = ({ user }) => {
             if (actionType === 'checkout') {
               await verifiedCheckout({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: serialNumber });
             } else {
-              await verifiedReturn({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: serialNumber });
+              const coords = await getCoordinates();
+              await verifiedReturn({
+                bookId: book.isbn,
+                memberId: user.uid || user.id,
+                ntagUid: serialNumber,
+                returnLatitude: coords.latitude,
+                returnLongitude: coords.longitude,
+                nfcOrBarcode: 'NFC'
+              });
             }
             setNfcSuccess(true);
             setNfcReading(false);
@@ -488,7 +619,16 @@ const BookDetailPage = ({ user }) => {
       if (nfcActionType === 'checkout') {
         await requestCheckout({ bookId: book.isbn, memberId: user.uid || user.id, memberName: user?.displayName, memberEmail: user?.email });
       } else {
-        await requestReturn({ bookId: book.isbn, memberId: user.uid || user.id, memberName: user?.displayName, memberEmail: user?.email });
+        const coords = await getCoordinates();
+        await requestReturn({
+          bookId: book.isbn,
+          memberId: user.uid || user.id,
+          memberName: user?.displayName,
+          memberEmail: user?.email,
+          returnLatitude: coords.latitude,
+          returnLongitude: coords.longitude,
+          nfcOrBarcode: 'NONE'
+        });
       }
       setFallbackSuccess(true);
       setFallbackLoading(false);
@@ -679,6 +819,32 @@ const BookDetailPage = ({ user }) => {
           )}
 
           <div className="detail-checkout-action-box">
+            {nfcSession && (
+              <div className="nfc-instant-checkout-container" style={{ margin: '0 0 16px 0', padding: '16px', border: '1px dashed var(--accent)', borderRadius: '8px', background: 'rgba(141, 18, 34, 0.05)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Sparkles size={16} className="gold-glow" style={{ color: 'var(--accent)' }} />
+                  <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>NFC Physical Sync Active</span>
+                </div>
+                <p style={{ fontSize: '0.8rem', margin: 0, color: 'var(--text-secondary)' }}>You are holding the physical volume. Bypassing standard scans.</p>
+                {checkoutStatus === 'available' ? (
+                  <button 
+                    onClick={() => handleInstantNfcAction('checkout')} 
+                    className="royal-btn checkout-cta-btn pulse-button"
+                    style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 'bold' }}
+                  >
+                    <Smartphone size={16} /> Instant NFC Checkout
+                  </button>
+                ) : checkoutStatus === 'checked-out' ? (
+                  <button 
+                    onClick={() => handleInstantNfcAction('return')} 
+                    className="royal-btn checkout-cta-btn pulse-button"
+                    style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 'bold' }}
+                  >
+                    <Smartphone size={16} /> Instant NFC Return
+                  </button>
+                ) : null}
+              </div>
+            )}
             {checkoutStatus === 'available' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <button onClick={handleCheckoutClick} className="royal-btn checkout-cta-btn" id="book-detail-checkout-btn">
@@ -722,6 +888,34 @@ const BookDetailPage = ({ user }) => {
                   <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>{t('catalog.checkedOutByOtherScholar')}</p>
                 </div>
               </div>
+            )}
+
+            {getActiveCheckoutInstance() && (
+              <Link 
+                to={`/gatepass/${getActiveCheckoutInstance().id}`} 
+                className="royal-btn-secondary view-gatepass-btn"
+                style={{ 
+                  marginTop: '15px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  gap: '8px',
+                  textDecoration: 'none',
+                  padding: '12px 16px',
+                  width: '100%',
+                  fontWeight: '700',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  fontSize: '0.8rem',
+                  border: '1px solid var(--accent)',
+                  color: 'var(--accent)',
+                  background: 'transparent',
+                  borderRadius: '6px',
+                  transition: 'all 0.2s ease-in-out'
+                }}
+              >
+                <Shield size={14} /> View Security Gatepass
+              </Link>
             )}
 
 

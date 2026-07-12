@@ -1,0 +1,319 @@
+.gatepass-outer-wrapper {
+  max-width: 750px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.gatepass-actions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.gatepass-actions-header .back-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: opacity 0.2s ease;
+}
+
+.gatepass-actions-header .back-link:hover {
+  opacity: 0.8;
+}
+
+.gatepass-loading-container,
+.gatepass-error-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  gap: 15px;
+  color: var(--text-primary);
+}
+
+.royal-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(var(--accent-rgb, 141, 18, 34), 0.1);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.gatepass-card-container {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e5e5e5);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md, 0 4px 15px rgba(0, 0, 0, 0.05));
+  position: relative;
+  overflow: hidden;
+  padding: 4px;
+}
+
+/* Beautiful academic theme border */
+.gatepass-card-inner {
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  padding: 30px;
+  background: var(--card-bg, #ffffff);
+}
+
+.gatepass-hologram-seal {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px dashed var(--accent);
+  border-radius: 50%;
+  width: 75px;
+  height: 75px;
+  justify-content: center;
+  color: var(--accent);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-align: center;
+  background: rgba(141, 18, 34, 0.03);
+  transform: rotate(12deg);
+  opacity: 0.85;
+  box-shadow: 0 0 10px rgba(141, 18, 34, 0.05);
+}
+
+.gatepass-hologram-seal span {
+  font-size: 0.5rem;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.seal-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.gatepass-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.header-badge {
+  width: 48px;
+  height: 48px;
+  color: var(--accent);
+}
+
+.header-titles h1 {
+  font-size: 1.6rem;
+  font-family: 'Cinzel', serif, Georgia;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.header-titles h2 {
+  font-size: 0.9rem;
+  letter-spacing: 0.15em;
+  font-weight: 600;
+  color: var(--text-muted, #666);
+  margin: 3px 0 0 0;
+}
+
+.serial-num {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.gatepass-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border-color), transparent);
+  margin: 20px 0;
+}
+
+.gatepass-book-preview {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.gatepass-book-cover {
+  width: 80px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.gatepass-book-details h3 {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  margin: 0 0 5px 0;
+}
+
+.gatepass-book-details .author-line {
+  color: var(--text-muted);
+  margin: 0 0 8px 0;
+  font-size: 0.95rem;
+}
+
+.gatepass-book-details .isbn-line {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.ntag-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  background: rgba(141, 18, 34, 0.08);
+  color: var(--accent);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-top: 8px;
+  letter-spacing: 0.05em;
+}
+
+.gatepass-transaction-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.detail-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.detail-icon {
+  color: var(--accent);
+  margin-top: 3px;
+}
+
+.detail-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.detail-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.due-alert {
+  color: var(--accent);
+}
+
+.gatepass-security-status {
+  display: flex;
+  justify-content: center;
+  margin: 25px 0;
+}
+
+.status-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+}
+
+.approved-stamp {
+  background: rgba(141, 18, 34, 0.08);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.returned-stamp {
+  background: rgba(16, 124, 65, 0.08);
+  color: #107c41;
+  border: 1px solid #107c41;
+}
+
+.gatepass-barcode-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 25px;
+}
+
+.barcode-bars {
+  display: flex;
+  height: 45px;
+  align-items: stretch;
+}
+
+.barcode-bar {
+  background-color: #000000;
+}
+
+.barcode-text {
+  font-family: monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  color: #000000;
+}
+
+/* Print CSS variables mapping and custom overrides */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+
+  .gatepass-outer-wrapper {
+    margin: 0;
+    padding: 0;
+    max-width: 100%;
+  }
+
+  .gatepass-card-container {
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
+    padding: 0;
+  }
+
+  .gatepass-card-inner {
+    border: 2px solid #8d1222 !important;
+    background: transparent !important;
+  }
+
+  .barcode-bar {
+    background-color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

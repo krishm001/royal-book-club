@@ -29,5 +29,9 @@ public class Checkout {
     private String ntagUid;
     private String memberEmail;
     private String memberName;
+    private Double returnLatitude;
+    private Double returnLongitude;
+    private Boolean locationVerified;
+    private String nfcOrBarcode;
 }
 

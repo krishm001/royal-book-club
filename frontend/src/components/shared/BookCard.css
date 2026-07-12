@@ -45,9 +45,9 @@
 }
 
 .book-genre-tag {
-  background: rgba(15, 15, 35, 0.85);
-  border: 1px solid var(--accent);
-  color: var(--accent);
+  background: var(--genre-tag-bg);
+  border: 1px solid var(--genre-tag-border);
+  color: var(--genre-tag-color);
   font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;

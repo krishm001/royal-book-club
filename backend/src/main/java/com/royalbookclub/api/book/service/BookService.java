@@ -4,6 +4,7 @@ import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
 import com.royalbookclub.api.book.dto.BookDto;
@@ -192,6 +193,74 @@ public class BookService {
         } catch (ExecutionException e) {
             log.error("Error deleting book: {}", cleanIsbn, e);
             throw new RuntimeException("Failed to delete book", e);
+        }
+    }
+
+    /**
+     * Get a book from the catalog by its physical Ntag UID.
+     *
+     * @param ntagUid The unique serial number of the NFC chip
+     * @return The Book if found, or null
+     */
+    public Book getBookByNtagUid(String ntagUid) {
+        String cleanUid = ntagUid.trim();
+        log.info("Querying book from Firestore by Ntag UID: {}", cleanUid);
+        try {
+            ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME)
+                    .whereEqualTo("ntagUid", cleanUid)
+                    .limit(1)
+                    .get();
+            List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+            if (!documents.isEmpty()) {
+                return mapToBook(documents.get(0));
+            }
+            return null;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Interrupted while querying book by Ntag UID: {}", cleanUid, e);
+            throw new RuntimeException("Failed to query book by NTAG UID", e);
+        } catch (ExecutionException e) {
+            log.error("Error querying book by Ntag UID: {}", cleanUid, e);
+            throw new RuntimeException("Failed to query book by NTAG UID", e);
+        }
+    }
+
+    /**
+     * Bind or pair an NTAG UID to an existing book by its ISBN.
+     *
+     * @param isbn   The book's ISBN
+     * @param ntagUid The physical NTAG213 UID
+     * @return The updated Book
+     */
+    public Book bindNtagUid(String isbn, String ntagUid) {
+        String cleanIsbn = isbn.trim().replace("-", "");
+        String cleanUid = ntagUid.trim();
+        log.info("Binding Ntag UID '{}' to book with ISBN: {}", cleanUid, cleanIsbn);
+
+        try {
+            DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(cleanIsbn);
+            ApiFuture<DocumentSnapshot> future = docRef.get();
+            DocumentSnapshot document = future.get();
+
+            if (!document.exists()) {
+                throw new IllegalArgumentException("Book with ISBN " + cleanIsbn + " does not exist.");
+            }
+
+            Book book = mapToBook(document);
+            book.setNtagUid(cleanUid);
+            book.setUpdatedAt(Instant.now());
+
+            ApiFuture<WriteResult> writeFuture = docRef.set(bookToMap(book));
+            writeFuture.get(); // block to verify completion
+            log.info("Successfully bound Ntag UID to book: {}", cleanIsbn);
+            return book;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Interrupted while binding NTAG UID '{}' to book '{}'", cleanUid, cleanIsbn, e);
+            throw new RuntimeException("Failed to bind NTAG UID", e);
+        } catch (ExecutionException e) {
+            log.error("Error while binding NTAG UID '{}' to book '{}'", cleanUid, cleanIsbn, e);
+            throw new RuntimeException("Failed to bind NTAG UID", e);
         }
     }
 
