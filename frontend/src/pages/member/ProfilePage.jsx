@@ -552,7 +552,6 @@ const ProfilePage = ({ user }) => {
                       name="phone"
                       value={profile.phone}
                       onChange={handleInputChange}
-                      required={settings.phoneMandatory}
                       placeholder="e.g. +1 (555) 019-2831"
                       className="royal-input input-padded-left"
                     />
@@ -653,7 +652,6 @@ const ProfilePage = ({ user }) => {
                       name="houseNo"
                       value={profile.houseNo}
                       onChange={handleInputChange}
-                      required={settings.houseNoMandatory}
                       placeholder="e.g. Suite 404"
                       className="royal-input"
                     />
@@ -668,7 +666,6 @@ const ProfilePage = ({ user }) => {
                       name="street"
                       value={profile.street}
                       onChange={handleInputChange}
-                      required={settings.streetMandatory}
                       placeholder="e.g. Boulevard of Philosophy"
                       className="royal-input"
                     />
@@ -686,7 +683,6 @@ const ProfilePage = ({ user }) => {
                       name="city"
                       value={profile.city}
                       onChange={handleInputChange}
-                      required={settings.cityMandatory}
                       placeholder="e.g. Königsberg"
                       className="royal-input"
                     />
@@ -701,7 +697,6 @@ const ProfilePage = ({ user }) => {
                       name="pinCode"
                       value={profile.pinCode}
                       onChange={handleInputChange}
-                      required={settings.pinCodeMandatory}
                       placeholder="e.g. 10928"
                       className="royal-input"
                     />

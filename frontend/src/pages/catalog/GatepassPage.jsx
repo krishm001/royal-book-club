@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Printer, CheckCircle, Calendar, User, Bookmark, Sparkles, Shield, ArrowLeft } from 'lucide-react';
-import { fetchCheckoutById, fetchBookByIsbn } from '../../services/libraryApi';
+import { Printer, CheckCircle, Calendar, User, Bookmark, Sparkles, Shield, ArrowLeft, BookOpen, Clock, Activity, FileText } from 'lucide-react';
+import { fetchCheckoutById, fetchBookByIsbn, fetchCheckouts, fetchBooks } from '../../services/libraryApi';
 import { useLanguage } from '../../i18n/LanguageContext';
 import './GatepassPage.css';
 
@@ -13,32 +13,60 @@ const GatepassPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Consolidated ledger state
+  const [isLedgerMode, setIsLedgerMode] = useState(false);
+  const [ledgerCheckouts, setLedgerCheckouts] = useState([]);
+  const [booksMap, setBooksMap] = useState({});
+  const [ledgerTab, setLedgerTab] = useState('transits'); // 'transits' or 'sync'
+
   useEffect(() => {
     const loadGatepassData = async () => {
       try {
         setLoading(true);
-        const checkoutData = await fetchCheckoutById(checkoutId);
-        setCheckout(checkoutData);
+        setError('');
+        if (checkoutId) {
+          setIsLedgerMode(false);
+          const checkoutData = await fetchCheckoutById(checkoutId);
+          setCheckout(checkoutData);
 
-        if (checkoutData && checkoutData.bookId) {
-          const bookData = await fetchBookByIsbn(checkoutData.bookId);
-          setBook(bookData);
+          if (checkoutData && checkoutData.bookId) {
+            const bookData = await fetchBookByIsbn(checkoutData.bookId);
+            setBook(bookData);
+          }
+        } else {
+          setIsLedgerMode(true);
+          const [checkoutsRes, booksData] = await Promise.all([
+            fetchCheckouts(),
+            fetchBooks()
+          ]);
+          setLedgerCheckouts(checkoutsRes || []);
+          
+          const bMap = {};
+          if (Array.isArray(booksData)) {
+            booksData.forEach(b => {
+              bMap[b.isbn] = b;
+            });
+          }
+          setBooksMap(bMap);
         }
       } catch (err) {
-        console.error("Error loading gatepass:", err);
-        setError("Unable to retrieve security gatepass ledger details.");
+        console.error("Error loading gatepass/ledger:", err);
+        setError(checkoutId ? "Unable to retrieve security gatepass ledger details." : "Unable to retrieve consolidated gatepass ledger.");
       } finally {
         setLoading(false);
       }
     };
 
-    if (checkoutId) {
-      loadGatepassData();
-    }
+    loadGatepassData();
   }, [checkoutId]);
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const formattedDate = (inst) => {
+    if (!inst) return "N/A";
+    return new Date(inst).toLocaleString();
   };
 
   if (loading) {
@@ -50,12 +78,12 @@ const GatepassPage = () => {
     );
   }
 
-  if (error || !checkout) {
+  if (error) {
     return (
       <div className="gatepass-error-container">
         <div className="error-card">
           <h2>Access Denied</h2>
-          <p>{error || "Secure record not found."}</p>
+          <p>{error}</p>
           <Link to="/catalog" className="royal-btn">
             <ArrowLeft size={16} /> Return to Study
           </Link>
@@ -64,11 +92,264 @@ const GatepassPage = () => {
     );
   }
 
-  const formattedDate = (inst) => {
-    if (!inst) return "N/A";
-    return new Date(inst).toLocaleString();
-  };
+  // --- RENDERING CONSOLIDATED LEDGER ---
+  if (isLedgerMode) {
+    const activeCheckouts = ledgerCheckouts
+      .filter(c => c.status !== 'RETURNED' && c.status !== 'REJECTED')
+      .sort((a, b) => new Date(b.checkedOutAt || b.createdAt) - new Date(a.checkedOutAt || a.createdAt));
 
+    const returnedCheckouts = ledgerCheckouts
+      .filter(c => c.status === 'RETURNED')
+      .sort((a, b) => new Date(b.returnedAt || b.updatedAt) - new Date(a.returnedAt || a.updatedAt));
+
+    // Dynamic mapping to keep both checkout and return timestamps dynamically in sync for each active book
+    const bookSyncMap = {};
+    ledgerCheckouts.forEach(c => {
+      const bId = c.bookId;
+      if (!bookSyncMap[bId]) {
+        bookSyncMap[bId] = {
+          bookId: bId,
+          latestCheckout: null,
+          latestReturn: null,
+          status: 'AVAILABLE'
+        };
+      }
+
+      const checkoutTime = c.checkedOutAt ? new Date(c.checkedOutAt) : new Date(c.createdAt);
+      const returnTime = c.returnedAt ? new Date(c.returnedAt) : (c.updatedAt ? new Date(c.updatedAt) : null);
+
+      if (c.status === 'RETURNED') {
+        if (!bookSyncMap[bId].latestReturn || returnTime > new Date(bookSyncMap[bId].latestReturn.returnedAt)) {
+          bookSyncMap[bId].latestReturn = c;
+        }
+      } else if (c.status !== 'REJECTED') {
+        if (!bookSyncMap[bId].latestCheckout || checkoutTime > new Date(bookSyncMap[bId].latestCheckout.checkedOutAt)) {
+          bookSyncMap[bId].latestCheckout = c;
+        }
+        if (c.status === 'CHECKED_OUT' || c.status === 'REQUESTED_RETURN') {
+          bookSyncMap[bId].status = c.status;
+          bookSyncMap[bId].activeCheckoutId = c.id;
+        }
+      }
+    });
+
+    const syncedBooksList = Object.values(bookSyncMap).map(item => {
+      const bDetail = booksMap[item.bookId] || { title: `Volume ${item.bookId}`, isbn: item.bookId, authors: 'Unknown' };
+      return {
+        ...item,
+        ...bDetail
+      };
+    });
+
+    return (
+      <div className="gatepass-outer-wrapper consolidated-ledger-container animate-fade-in">
+        <div className="ledger-main-header">
+          <div className="header-meta">
+            <Shield className="header-shield" size={32} />
+            <div>
+              <h1>Consolidated Gatepass Ledger</h1>
+              <p className="subtitle">Security Clearance & Volume Transit Registry</p>
+            </div>
+          </div>
+          <div className="ledger-tabs no-print">
+            <button 
+              className={`ledger-tab-btn ${ledgerTab === 'transits' ? 'active' : ''}`}
+              onClick={() => setLedgerTab('transits')}
+            >
+              <Activity size={14} /> Daily Transits
+            </button>
+            <button 
+              className={`ledger-tab-btn ${ledgerTab === 'sync' ? 'active' : ''}`}
+              onClick={() => setLedgerTab('sync')}
+            >
+              <Clock size={14} /> Book Registry Sync
+            </button>
+          </div>
+        </div>
+
+        {/* Stats strip */}
+        <div className="ledger-stats-strip">
+          <div className="stat-panel active-transits">
+            <span className="stat-label">Active Transits</span>
+            <span className="stat-value">{activeCheckouts.length}</span>
+          </div>
+          <div className="stat-panel restored-vols">
+            <span className="stat-label">Restored to Study</span>
+            <span className="stat-value">{returnedCheckouts.length}</span>
+          </div>
+        </div>
+
+        {ledgerTab === 'transits' ? (
+          <div className="ledger-grid-columns">
+            {/* Active Checkouts Column */}
+            <div className="ledger-col-pane">
+              <h2 className="pane-title active-color">
+                <span className="status-indicator active-dot"></span>
+                Active Sovereignties ({activeCheckouts.length})
+              </h2>
+              <div className="ledger-list-stack">
+                {activeCheckouts.length === 0 ? (
+                  <div className="empty-ledger-state">
+                    <BookOpen size={24} />
+                    <p>No active transits recorded today.</p>
+                  </div>
+                ) : (
+                  activeCheckouts.map(c => {
+                    const b = booksMap[c.bookId] || {};
+                    return (
+                      <div key={c.id} className="ledger-card-item">
+                        <img 
+                          src={b.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} 
+                          alt={b.title} 
+                          className="ledger-thumb" 
+                        />
+                        <div className="ledger-item-info">
+                          <h3>{b.title || c.bookId}</h3>
+                          <p className="author">by {b.authors || 'Unknown'}</p>
+                          <div className="txn-details">
+                            <p><strong>Scholar:</strong> {c.memberName || 'Verified Scholar'}</p>
+                            <p><strong>Checked Out:</strong> {formattedDate(c.checkedOutAt)}</p>
+                          </div>
+                          <div className="card-actions no-print">
+                            <Link to={`/gatepass/${c.id}`} className="royal-btn-secondary gatepass-mini-btn">
+                              View Gatepass
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Restored Columns */}
+            <div className="ledger-col-pane">
+              <h2 className="pane-title restored-color">
+                <span className="status-indicator restored-dot"></span>
+                Restored & Sealed ({returnedCheckouts.length})
+              </h2>
+              <div className="ledger-list-stack">
+                {returnedCheckouts.length === 0 ? (
+                  <div className="empty-ledger-state">
+                    <CheckCircle size={24} />
+                    <p>No books restored to the Study today.</p>
+                  </div>
+                ) : (
+                  returnedCheckouts.map(c => {
+                    const b = booksMap[c.bookId] || {};
+                    return (
+                      <div key={c.id} className="ledger-card-item returned-item">
+                        <img 
+                          src={b.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} 
+                          alt={b.title} 
+                          className="ledger-thumb" 
+                        />
+                        <div className="ledger-item-info">
+                          <h3>{b.title || c.bookId}</h3>
+                          <p className="author">by {b.authors || 'Unknown'}</p>
+                          <div className="txn-details">
+                            <p><strong>Scholar:</strong> {c.memberName || 'Verified Scholar'}</p>
+                            <p><strong>Restored:</strong> {formattedDate(c.returnedAt)}</p>
+                          </div>
+                          <div className="card-actions no-print">
+                            <Link to={`/gatepass/${c.id}`} className="royal-btn-secondary gatepass-mini-btn">
+                              View Gatepass
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Book Registry Sync View (Book-Centric Timestamps Sync) */
+          <div className="ledger-sync-view">
+            <h2 className="pane-title sync-header-title">
+              <Sparkles size={16} /> Volume Timestamp Synchronization Registry
+            </h2>
+            <div className="sync-table-container">
+              <table className="sync-ledger-table">
+                <thead>
+                  <tr>
+                    <th>Volume Details</th>
+                    <th>Status</th>
+                    <th>Latest Outflow</th>
+                    <th>Latest Restoration</th>
+                    <th className="no-print">Clearance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {syncedBooksList.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: '30px' }}>
+                        No volume activities found in the ledger.
+                      </td>
+                    </tr>
+                  ) : (
+                    syncedBooksList.map(item => (
+                      <tr key={item.bookId}>
+                        <td>
+                          <div className="table-book-meta">
+                            <img 
+                              src={item.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} 
+                              alt={item.title} 
+                              className="table-book-thumb" 
+                            />
+                            <div>
+                              <div className="table-title">{item.title}</div>
+                              <div className="table-isbn">ISBN: {item.isbn}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`sync-status-badge ${item.status === 'CHECKED_OUT' ? 'status-out' : item.status === 'REQUESTED_RETURN' ? 'status-verifying' : 'status-in'}`}>
+                            {item.status === 'CHECKED_OUT' ? 'Checked Out' : item.status === 'REQUESTED_RETURN' ? 'Verifying Return' : 'In Study'}
+                          </span>
+                        </td>
+                        <td className="time-col">
+                          {item.latestCheckout ? (
+                            <div className="time-cell">
+                              <span className="time-val">{formattedDate(item.latestCheckout.checkedOutAt)}</span>
+                              <span className="member-val">by {item.latestCheckout.memberName}</span>
+                            </div>
+                          ) : (
+                            <span className="not-avail">-</span>
+                          )}
+                        </td>
+                        <td className="time-col">
+                          {item.latestReturn ? (
+                            <div className="time-cell">
+                              <span className="time-val">{formattedDate(item.latestReturn.returnedAt)}</span>
+                              <span className="member-val">by {item.latestReturn.memberName}</span>
+                            </div>
+                          ) : (
+                            <span className="not-avail">-</span>
+                          )}
+                        </td>
+                        <td className="no-print">
+                          {item.status !== 'AVAILABLE' && item.activeCheckoutId && (
+                            <Link to={`/gatepass/${item.activeCheckoutId}`} className="sync-view-gatepass-link">
+                              View Gatepass
+                            </Link>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // --- RENDERING SINGLE GATEPASS ---
   const isReturned = checkout.status === 'RETURNED' || checkout.status === 'REQUESTED_RETURN';
 
   return (

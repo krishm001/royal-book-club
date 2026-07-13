@@ -6,6 +6,7 @@ export default {
     study: "Study",
     assembly: "Assembly",
     discourses: "Discourses",
+    gatepass: "Gatepass",
     curatorConsole: "Curator Console",
     profileLedger: "Profile Ledger",
     leaveRealm: "Leave the Realm",

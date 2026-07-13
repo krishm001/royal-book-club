@@ -142,13 +142,6 @@ export default function OnboardingWizard({
   const checkIfProfileMeetsGating = (u, gating) => {
     if (!gating) return false;
 
-    // Check email verification status:
-    // If user's email is not verified, they do not pass self-checkout gating
-    const emailVerified = auth.currentUser?.emailVerified;
-    if (!emailVerified) {
-      return false;
-    }
-
     if (gating.phoneMandatory && !u?.phone) return false;
     if (gating.houseNoMandatory && !u?.houseNo) return false;
     if (gating.streetMandatory && !u?.street) return false;

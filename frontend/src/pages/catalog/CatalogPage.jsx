@@ -5,6 +5,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { fetchBooks, fetchCheckoutsByMember, verifiedCheckout, verifiedReturn, requestCheckout, requestReturn } from '../../services/libraryApi';
 import { fetchBookHouses } from '../../services/genreApi';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import api from '../../api/apiClient';
 import './CatalogPage.css';
 
 const SafeHtml5Qrcode = Html5Qrcode;
@@ -325,6 +326,11 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
     });
 
     if (matchedBook) {
+      const resolvedStatus = getResolvedStatus(matchedBook);
+      if (resolvedStatus !== 'checked-out') {
+        const passes = await checkGatingPasses('checkout', matchedBook.isbn);
+        if (!passes) return;
+      }
       openP2dOverlay(matchedBook);
     } else {
       window.alert(t('catalog.noBarcodeMatch') + decodedText + ".");
@@ -382,6 +388,11 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
 
         if (matchedBook) {
           setTopNfcActive(false);
+          const resolvedStatus = getResolvedStatus(matchedBook);
+          if (resolvedStatus !== 'checked-out') {
+            const passes = await checkGatingPasses('checkout', matchedBook.isbn);
+            if (!passes) return;
+          }
           openP2dOverlay(matchedBook);
         } else {
           setTopNfcError(`No book in catalog registered with NFC Serial ${serialNumber}`);
@@ -500,11 +511,70 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
     await loadMemberCheckouts();
   };
 
-  const handleCheckoutClick = (book) => {
+  const checkGatingPasses = async (actionType, isbn) => {
+    if (!user || user.isAnonymous) {
+      if (triggerOnboarding) triggerOnboarding({ actionType, isbn });
+      return false;
+    }
+
+    try {
+      // 1. Fetch gating settings
+      let gating = null;
+      try {
+        const response = await api.get('/api/v1/public/checkout-settings');
+        if (response?.data?.success && response?.data?.data) {
+          gating = response.data.data;
+        } else if (response?.data) {
+          gating = response.data;
+        }
+      } catch (err) {
+        console.error("Failed to load gating settings in CatalogPage", err);
+      }
+
+      // 2. Fetch detailed profile
+      const res = await api.get('/api/v1/auth/me');
+      const backendUser = res?.data?.data;
+      if (!backendUser) {
+        if (triggerOnboarding) triggerOnboarding({ actionType, isbn });
+        return false;
+      }
+
+      // 3. Consent Check
+      if (!backendUser.consentAcceptedAt) {
+        if (triggerOnboarding) triggerOnboarding({ actionType, isbn });
+        return false;
+      }
+
+      // 4. Gating Settings Check
+      if (gating) {
+        const phoneMissing = gating.phoneMandatory && !backendUser.phone;
+        const houseNoMissing = gating.houseNoMandatory && !backendUser.houseNo;
+        const streetMissing = gating.streetMandatory && !backendUser.street;
+        const cityMissing = gating.cityMandatory && !backendUser.city;
+        const pinCodeMissing = gating.pinCodeMandatory && !backendUser.pinCode;
+
+        if (phoneMissing || houseNoMissing || streetMissing || cityMissing || pinCodeMissing) {
+          if (triggerOnboarding) triggerOnboarding({ actionType, isbn });
+          return false;
+        }
+      }
+
+      return true;
+    } catch (err) {
+      console.error("Gating check error in CatalogPage:", err);
+      if (triggerOnboarding) triggerOnboarding({ actionType, isbn });
+      return false;
+    }
+  };
+
+  const handleCheckoutClick = async (book) => {
     if (!user || user.isAnonymous) {
       if (triggerOnboarding) triggerOnboarding({ actionType: 'checkout', isbn: book?.isbn });
       return;
     }
+    const passes = await checkGatingPasses('checkout', book?.isbn);
+    if (!passes) return;
+
     setSelectedBook(book);
     setNfcActionType('checkout');
     setNfcError('');

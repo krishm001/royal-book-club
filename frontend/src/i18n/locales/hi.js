@@ -6,6 +6,7 @@ export default {
     study: "राजसी अध्ययन कक्ष",
     assembly: "राजसी सभा",
     discourses: "राजसी शास्त्रार्थ",
+    gatepass: "प्रवेश पत्र",
     curatorConsole: "राजसी प्रबंध कार्यालय",
     profileLedger: "राजसी बहीखाता",
     leaveRealm: "प्रस्थान करें",

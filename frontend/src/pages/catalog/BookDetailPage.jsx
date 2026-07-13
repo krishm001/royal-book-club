@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2, Shield } from 'lucide-react';
+import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2, Shield, Check, Loader2 } from 'lucide-react';
 import { fetchBookByIsbn, checkoutBook, fetchBookReviews, submitBookReview, requestCheckout, requestReturn, verifiedCheckout, verifiedReturn, fetchCheckoutsByMember, updateBookReview, deleteBookReview } from '../../services/libraryApi';
+import api from '../../api/apiClient';
+import { auth } from '../../config/firebase';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useLanguage } from '../../i18n/LanguageContext';
 import './BookDetailPage.css';
@@ -45,14 +47,40 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
   const [editingReviewText, setEditingReviewText] = useState('');
   const [editingReviewRating, setEditingReviewRating] = useState(5);
   const [nfcSession, setNfcSession] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [gatingSettings, setGatingSettings] = useState(null);
 
+  // Custom Instant Confirmation modal states
+  const [instantConfirmOpen, setInstantConfirmOpen] = useState(false);
+  const [instantActionType, setInstantActionType] = useState('checkout');
+  const [instantSuccess, setInstantSuccess] = useState(false);
+  const [instantError, setInstantError] = useState('');
+
+  // Load gating settings on mount
+  useEffect(() => {
+    const fetchGatingSettings = async () => {
+      try {
+        const response = await api.get('/api/v1/public/checkout-settings');
+        if (response?.data?.success && response?.data?.data) {
+          setGatingSettings(response.data.data);
+        } else if (response?.data) {
+          setGatingSettings(response.data);
+        }
+      } catch (err) {
+        console.error("Failed to load gating settings", err);
+      }
+    };
+    fetchGatingSettings();
+  }, []);
+
+  // Monitor NFC active session with a countdown timer
   useEffect(() => {
     const checkNfcSession = () => {
       const sessionStr = sessionStorage.getItem('nfc_session');
       if (sessionStr) {
         try {
           const session = JSON.parse(sessionStr);
-          // 5-minute timeout check (300,000 milliseconds)
+          // 5-minute timeout check
           if (session.isbn === id && (Date.now() - session.timestamp < 300000)) {
             setNfcSession(session);
           } else if (session.isbn === id) {
@@ -79,22 +107,138 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     };
   }, [id]);
 
-  const handleInstantNfcAction = async (actionType) => {
-    if (!user || user.isAnonymous) {
-      if (triggerOnboarding) triggerOnboarding({ actionType: actionType, isbn: book?.isbn });
+  // Handle live 5-minute clock ticks
+  useEffect(() => {
+    if (!nfcSession) {
+      setTimeLeft(0);
       return;
     }
 
-    const confirmMsg = actionType === 'checkout'
-      ? `Do you wish to instantly check out "${book.title}" via your active NFC session?`
-      : `Do you wish to instantly return "${book.title}" via your active NFC session?`;
+    const calculateTimeLeft = () => {
+      const elapsed = Date.now() - nfcSession.timestamp;
+      const remaining = Math.max(0, Math.floor((300000 - elapsed) / 1000));
+      return remaining;
+    };
 
-    if (!window.confirm(confirmMsg)) return;
+    setTimeLeft(calculateTimeLeft());
+
+    const timer = setInterval(() => {
+      const remaining = calculateTimeLeft();
+      setTimeLeft(remaining);
+      if (remaining <= 0) {
+        clearInterval(timer);
+        sessionStorage.removeItem('nfc_session');
+        setNfcSession(null);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [nfcSession]);
+
+  // Monitor onboarding / login status changes to reset the countdown
+  const prevUserRef = React.useRef(user);
+  useEffect(() => {
+    if (user && !prevUserRef.current && nfcSession) {
+      const sessionStr = sessionStorage.getItem('nfc_session');
+      if (sessionStr) {
+        try {
+          const session = JSON.parse(sessionStr);
+          session.timestamp = Date.now();
+          sessionStorage.setItem('nfc_session', JSON.stringify(session));
+          setNfcSession(session);
+        } catch (e) {
+          console.error("Failed to reset NFC session timestamp on login:", e);
+        }
+      }
+    }
+    prevUserRef.current = user;
+  }, [user, nfcSession]);
+
+  useEffect(() => {
+    const handleOnboardingComplete = () => {
+      const sessionStr = sessionStorage.getItem('nfc_session');
+      if (sessionStr) {
+        try {
+          const session = JSON.parse(sessionStr);
+          session.timestamp = Date.now();
+          sessionStorage.setItem('nfc_session', JSON.stringify(session));
+          setNfcSession(session);
+        } catch (e) {
+          console.error("Failed to reset NFC session timestamp on onboarding event:", e);
+        }
+      }
+    };
+
+    window.addEventListener('onboarding_complete', handleOnboardingComplete);
+    return () => {
+      window.removeEventListener('onboarding_complete', handleOnboardingComplete);
+    };
+  }, []);
+
+  // Progressive profile gating checker
+  const checkGatingPasses = async (actionType) => {
+    if (!user || user.isAnonymous) {
+      if (triggerOnboarding) triggerOnboarding({ actionType: actionType, isbn: book?.isbn });
+      return false;
+    }
 
     try {
       setLoading(true);
+      const res = await api.get('/api/v1/auth/me');
+      const backendUser = res?.data?.data;
+      
+      if (!backendUser) {
+        if (triggerOnboarding) triggerOnboarding({ actionType: actionType, isbn: book?.isbn });
+        return false;
+      }
+
+      // 1. Consent Check
+      if (!backendUser.consentAcceptedAt) {
+        if (triggerOnboarding) triggerOnboarding({ actionType: actionType, isbn: book?.isbn });
+        return false;
+      }
+
+      // 2. Gating Settings Check
+      const gating = gatingSettings;
+      if (gating) {
+        const phoneMissing = gating.phoneMandatory && !backendUser.phone;
+        const houseNoMissing = gating.houseNoMandatory && !backendUser.houseNo;
+        const streetMissing = gating.streetMandatory && !backendUser.street;
+        const cityMissing = gating.cityMandatory && !backendUser.city;
+        const pinCodeMissing = gating.pinCodeMandatory && !backendUser.pinCode;
+
+        if (phoneMissing || houseNoMissing || streetMissing || cityMissing || pinCodeMissing) {
+          if (triggerOnboarding) triggerOnboarding({ actionType: actionType, isbn: book?.isbn });
+          return false;
+        }
+      }
+
+      return true;
+    } catch (err) {
+      console.error("Gating check error:", err);
+      if (triggerOnboarding) triggerOnboarding({ actionType: actionType, isbn: book?.isbn });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInstantNfcAction = async (actionType) => {
+    const passes = await checkGatingPasses(actionType);
+    if (!passes) return;
+
+    setInstantActionType(actionType);
+    setInstantConfirmOpen(true);
+    setInstantSuccess(false);
+    setInstantError('');
+  };
+
+  const handleConfirmInstantAction = async () => {
+    try {
+      setLoading(true);
+      setInstantError('');
       const targetUid = nfcSession?.ntagUid || book?.ntagUid || '04:A3:B2:C1:D0:E9:80';
-      if (actionType === 'checkout') {
+      if (instantActionType === 'checkout') {
         await verifiedCheckout({
           bookId: book.isbn,
           memberId: user.uid || user.id,
@@ -115,13 +259,18 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
           nfcOrBarcode: 'NFC'
         });
       }
-      window.alert(actionType === 'checkout' ? 'Instant checkout successful!' : 'Instant return successful!');
+      setInstantSuccess(true);
       sessionStorage.removeItem('nfc_session');
       setNfcSession(null);
       await refreshState();
+      
+      // Auto-close after 3 seconds on success
+      setTimeout(() => {
+        setInstantConfirmOpen(false);
+      }, 3000);
     } catch (txError) {
       console.error('Instant NFC transaction error:', txError);
-      window.alert(t('catalog.unableToSubmitRequest') + ': ' + (txError.response?.data?.message || txError.message));
+      setInstantError(txError.response?.data?.message || txError.message);
     } finally {
       setLoading(false);
     }
@@ -278,11 +427,10 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     }
   }, [book, memberCheckouts]);
 
-  const handleCheckoutClick = () => {
-    if (!user || user.isAnonymous) {
-      if (triggerOnboarding) triggerOnboarding({ actionType: 'checkout', isbn: book?.isbn });
-      return;
-    }
+  const handleCheckoutClick = async () => {
+    const passes = await checkGatingPasses('checkout');
+    if (!passes) return;
+
     setNfcActionType('checkout');
     setNfcError('');
     setNfcSuccess(false);
@@ -299,11 +447,10 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     }
   };
 
-  const handleReturnClick = () => {
-    if (!user || user.isAnonymous) {
-      if (triggerOnboarding) triggerOnboarding({ actionType: 'return', isbn: book?.isbn });
-      return;
-    }
+  const handleReturnClick = async () => {
+    const passes = await checkGatingPasses('return');
+    if (!passes) return;
+
     setNfcActionType('return');
     setNfcError('');
     setNfcSuccess(false);
@@ -757,73 +904,16 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         </div>
 
         <div className="book-info-panel royal-card">
-          <div className="genre-rating-row">
-            <span className="detail-genre-tag">{book.genre || book.publishDate || 'Library Edition'}</span>
-            <div className="detail-stars">
-              <Star size={16} fill="var(--accent)" stroke="var(--accent)" />
-              <span className="rating-num">{book.rating || '—'} / 5.0</span>
-            </div>
-          </div>
-
-          <h1 className="detail-book-title glow-text">{book.title}</h1>
-          <h2 className="detail-book-author">{t('common.by')} <span className="gold-gradient-text">{authors}</span></h2>
-
-          <div className="metadata-spec-grid">
-            <div className="spec-item">
-              <span className="spec-label">{t('catalog.isbn')}</span>
-              <span className="spec-value">{book.isbn}</span>
-            </div>
-            <div className="spec-item">
-              <span className="spec-label">{t('catalog.publisher')}</span>
-              <span className="spec-value">{book.publisher || 'N/A'}</span>
-            </div>
-            <div className="spec-item">
-              <span className="spec-label">{t('catalog.publishDate')}</span>
-              <span className="spec-value">{book.publishDate || 'N/A'}</span>
-            </div>
-            <div className="spec-item">
-              <span className="spec-label">{t('catalog.availability')}</span>
-              <span className="spec-value">
-                {checkoutStatus === 'available' ? (
-                  <span className="text-success"><BadgeCheck size={14} className="inline-icon" /> {t('catalog.inSalon')}</span>
-                ) : (
-                  <span className="text-warning"><Clock size={14} className="inline-icon" /> {t('catalog.inCirculation')}</span>
-                )}
-              </span>
-            </div>
-            <div className="spec-item">
-              <span className="spec-label">{t('catalog.languageField')}</span>
-              <span className="spec-value">
-                {t('common.' + (book.language === 'kn' ? 'kannada' : book.language === 'hi' ? 'hindi' : 'english'))}
-              </span>
-            </div>
-          </div>
-
-          <div className="detail-description-section">
-            <h3>{t('catalog.literaryOverview')}</h3>
-            <p>{book.description || 'A refined volume from the Royal archives.'}</p>
-            {book.details && <p className="extended-desc">{book.details}</p>}
-          </div>
-
-          {book.tags && Array.isArray(book.tags) && book.tags.length > 0 && (
-            <div style={{ marginTop: '1.5rem' }}>
-              <h4 style={{ fontSize: '0.9rem', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>{t('catalog.acquisitionLabels')}</h4>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {book.tags.map((tag, idx) => (
-                  <span key={idx} style={{ background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.15)', color: 'var(--accent)', borderRadius: '4px', padding: '3px 8px', fontSize: '0.75rem', fontWeight: '500' }}>
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="detail-checkout-action-box">
+          <div className="detail-checkout-action-box" style={{ marginBottom: '24px', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '20px' }}>
             {nfcSession && (
               <div className="nfc-instant-checkout-container" style={{ margin: '0 0 16px 0', padding: '16px', border: '1px dashed var(--accent)', borderRadius: '8px', background: 'rgba(141, 18, 34, 0.05)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Sparkles size={16} className="gold-glow" style={{ color: 'var(--accent)' }} />
                   <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>NFC Physical Sync Active</span>
+                  <div className="nfc-countdown-clock" style={{ marginLeft: 'auto', background: 'rgba(212, 175, 55, 0.15)', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '3px 8px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Clock size={12} className="animate-pulse" />
+                    <span>{Math.floor(timeLeft / 60).toString().padStart(2, '0')}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+                  </div>
                 </div>
                 <p style={{ fontSize: '0.8rem', margin: 0, color: 'var(--text-secondary)' }}>You are holding the physical volume. Bypassing standard scans.</p>
                 {checkoutStatus === 'available' ? (
@@ -918,8 +1008,75 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
               </Link>
             )}
 
-
+            {/* Custom Link to Daily Consolidated Gatepass Ledger */}
+            <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <Link to="/gatepass" className="gatepass-link-action" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--accent)', textDecoration: 'none', fontWeight: '600', transition: 'all 0.2s', opacity: 0.85 }}>
+                <Shield size={14} />
+                <span>View Daily Gatepass Ledger</span>
+              </Link>
+            </div>
           </div>
+
+          <div className="genre-rating-row">
+            <span className="detail-genre-tag">{book.genre || book.publishDate || 'Library Edition'}</span>
+            <div className="detail-stars">
+              <Star size={16} fill="var(--accent)" stroke="var(--accent)" />
+              <span className="rating-num">{book.rating || '—'} / 5.0</span>
+            </div>
+          </div>
+
+          <h1 className="detail-book-title glow-text">{book.title}</h1>
+          <h2 className="detail-book-author">{t('common.by')} <span className="gold-gradient-text">{authors}</span></h2>
+
+          <div className="metadata-spec-grid">
+            <div className="spec-item">
+              <span className="spec-label">{t('catalog.isbn')}</span>
+              <span className="spec-value">{book.isbn}</span>
+            </div>
+            <div className="spec-item">
+              <span className="spec-label">{t('catalog.publisher')}</span>
+              <span className="spec-value">{book.publisher || 'N/A'}</span>
+            </div>
+            <div className="spec-item">
+              <span className="spec-label">{t('catalog.publishDate')}</span>
+              <span className="spec-value">{book.publishDate || 'N/A'}</span>
+            </div>
+            <div className="spec-item">
+              <span className="spec-label">{t('catalog.availability')}</span>
+              <span className="spec-value">
+                {checkoutStatus === 'available' ? (
+                  <span className="text-success"><BadgeCheck size={14} className="inline-icon" /> {t('catalog.inSalon')}</span>
+                ) : (
+                  <span className="text-warning"><Clock size={14} className="inline-icon" /> {t('catalog.inCirculation')}</span>
+                )}
+              </span>
+            </div>
+            <div className="spec-item">
+              <span className="spec-label">{t('catalog.languageField')}</span>
+              <span className="spec-value">
+                {t('common.' + (book.language === 'kn' ? 'kannada' : book.language === 'hi' ? 'hindi' : 'english'))}
+              </span>
+            </div>
+          </div>
+
+          <div className="detail-description-section">
+            <h3>{t('catalog.literaryOverview')}</h3>
+            <p>{book.description || 'A refined volume from the Royal archives.'}</p>
+            {book.details && <p className="extended-desc">{book.details}</p>}
+          </div>
+
+          {book.tags && Array.isArray(book.tags) && book.tags.length > 0 && (
+            <div style={{ marginTop: '1.5rem' }}>
+              <h4 style={{ fontSize: '0.9rem', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>{t('catalog.acquisitionLabels')}</h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {book.tags.map((tag, idx) => (
+                  <span key={idx} style={{ background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.15)', color: 'var(--accent)', borderRadius: '4px', padding: '3px 8px', fontSize: '0.75rem', fontWeight: '500' }}>
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1049,7 +1206,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
               );
             })
           ) : (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
               {t('catalog.noReviewsDetail')}
             </div>
           )}
@@ -1060,7 +1217,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     {/* Sovereign Checkout/Return Verification Modal Overlay (rendered at root level to guarantee absolute viewport centering) */}
     {nfcModalOpen && (
       <div className="nfc-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-        <div className="inline-action-panel royal-card border-gold animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '24px', background: 'rgba(26, 21, 16, 0.95)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', borderRadius: '8px' }}>
+        <div className="inline-action-panel royal-card border-gold animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '24px', background: 'var(--overlay-bg)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', borderRadius: '8px' }}>
           <div className="panel-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '10px' }}>
             <h4 style={{ color: 'var(--accent)', fontSize: '1rem', fontWeight: '600', margin: 0, letterSpacing: '0.05em' }}>
               {nfcActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
@@ -1119,11 +1276,11 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                       <div className="pulse-ring"></div>
                     </div>
                     
-                    <p className="nfc-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+                    <p className="nfc-prompt-desc" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
                       {t('catalog.holdNfcTagDesc')}
                     </p>
 
-                    <div className="nfc-meta-box" style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', padding: '8px 12px', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <div className="nfc-meta-box" style={{ width: '100%', background: 'rgba(0,0,0,0.06)', border: '1px solid var(--glass-border)', borderRadius: '4px', padding: '8px 12px', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                       <span style={{ color: 'var(--text-secondary)' }}>{t('catalog.targetVolumeId')}</span>
                       <code style={{ color: 'var(--accent)', fontFamily: 'monospace', fontWeight: 'bold' }}>{book.ntagUid}</code>
                     </div>
@@ -1150,11 +1307,11 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                       {t('catalog.iphoneAutofocusTip')}
                     </p>
 
-                    <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 10px 0' }}>
+                    <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: '0 0 10px 0' }}>
                       {t('catalog.alignBarcodePrompt')}
                     </p>
 
-                    <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0', marginBottom: '16px' }}>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0', marginBottom: '16px' }}>
                       {t('catalog.cantScanBarcode')}{' '}
                       <button type="button" onClick={() => handleTabChange('manual')} style={{ background: 'none', border: 'none', color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', padding: 0, font: 'inherit' }}>
                         {t('catalog.submitManualRequest')}
@@ -1185,7 +1342,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                         : t('catalog.fallbackExplanationReturn')}
                     </p>
 
-                    <div className="fallback-form-summary royal-card" style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '16px' }}>
+                    <div className="fallback-form-summary royal-card" style={{ padding: '12px', background: 'rgba(0,0,0,0.06)', border: '1px solid var(--glass-border)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '16px' }}>
                       <h5 style={{ color: 'var(--accent)', fontWeight: '600', marginBottom: '4px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('catalog.volumeDetails')}</h5>
                       <p style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>{book.title}</p>
                       <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>ISBN: {book.isbn}</p>
@@ -1214,6 +1371,65 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                   </div>
                 )}
               </>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+
+    {instantConfirmOpen && (
+      <div className="nfc-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+        <div className="inline-action-panel royal-card border-gold animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '24px', background: 'rgba(26, 21, 16, 0.95)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', borderRadius: '8px' }}>
+          <div className="panel-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '10px' }}>
+            <h4 style={{ color: 'var(--accent)', fontSize: '1rem', fontWeight: '600', margin: 0, letterSpacing: '0.05em' }}>
+              {instantActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
+            </h4>
+            <button onClick={() => setInstantConfirmOpen(false)} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: '4px' }}>
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginTop: '16px' }}>
+            {instantSuccess ? (
+              <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0' }}>
+                <CheckCircle size={48} className="text-success gold-glow-icon" style={{ marginBottom: '12px' }} />
+                <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>{instantActionType === 'checkout' ? 'Sovereign Checkout Confirmed' : 'Sovereign Return Confirmed'}</h4>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>The digital transaction ledger has been updated successfully.</p>
+              </div>
+            ) : instantError ? (
+              <div className="nfc-error-state animate-fade-in" style={{ padding: '10px 0', width: '100%' }}>
+                <AlertTriangle size={48} style={{ color: 'var(--error, #ff7b72)', marginBottom: '12px' }} />
+                <h4 style={{ color: 'var(--text-primary)', margin: '0 0 8px 0', fontSize: '1rem' }}>Transaction Failed</h4>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '0 0 16px 0' }}>{instantError}</p>
+                <button onClick={handleConfirmInstantAction} className="royal-btn" style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                  Try Again
+                </button>
+              </div>
+            ) : (
+              <div className="instant-confirm-prompt animate-fade-in" style={{ width: '100%' }}>
+                {/* Book Mini Card */}
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '6px', border: '1px solid rgba(212,175,55,0.1)', marginBottom: '20px', textAlign: 'left' }}>
+                  <img src={coverUrl} alt={book?.title} style={{ width: '45px', height: '65px', objectFit: 'cover', borderRadius: '4px', border: '1px solid rgba(212,175,55,0.2)' }} />
+                  <div>
+                    <h5 style={{ color: 'var(--text-primary)', margin: 0, fontSize: '0.9rem', fontWeight: '600', lineBreak: 'anywhere' }}>{book?.title}</h5>
+                    <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0 0', fontSize: '0.75rem' }}>{authors}</p>
+                  </div>
+                </div>
+
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: '1.5', margin: '0 0 24px 0' }}>
+                  Do you wish to instantly {instantActionType === 'checkout' ? 'check out' : 'return'} this sovereign volume via your active physical NFC session?
+                </p>
+
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', width: '100%' }}>
+                  <button onClick={() => setInstantConfirmOpen(false)} className="royal-btn" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: 'var(--text-secondary)', padding: '10px 18px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                    Cancel
+                  </button>
+                  <button onClick={handleConfirmInstantAction} disabled={loading} className="royal-btn" style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {loading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                    {instantActionType === 'checkout' ? 'Confirm Checkout' : 'Confirm Return'}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>

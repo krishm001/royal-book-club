@@ -6,6 +6,7 @@ export default {
     study: "ರಾಜಸಿ ಗ್ರಂಥಾಲಯ",
     assembly: "ರಾಜಸಿ ಸಭೆ",
     discourses: "ರಾಜವಿಚಾರ ಪ್ರವಚನ",
+    gatepass: "ಪ್ರವೇಶ ಪತ್ರ",
     curatorConsole: "ಪ್ರಧಾನ ದಿವಾನರ ಕಛೇರಿ",
     profileLedger: "ರಾಜಸಿ ವಹಿ",
     leaveRealm: "ನಿರ್ಗಮಿಸಿ",

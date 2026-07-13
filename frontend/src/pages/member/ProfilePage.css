@@ -615,3 +615,15 @@
   background: linear-gradient(to right, rgba(88, 17, 26, 0.01), rgba(88, 17, 26, 0.15), rgba(88, 17, 26, 0.01)) !important;
 }
 
+[data-theme="academic"] .profile-submit-btn {
+  background: var(--accent-gradient) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 15px rgba(141, 18, 34, 0.2) !important;
+}
+
+[data-theme="academic"] .profile-submit-btn:hover:not(:disabled) {
+  background: var(--accent-hover) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 20px rgba(141, 18, 34, 0.35) !important;
+}
+

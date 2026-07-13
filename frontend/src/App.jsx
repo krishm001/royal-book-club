@@ -46,6 +46,7 @@ function App() {
   const [consentChecked, setConsentChecked] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingTarget, setOnboardingTarget] = useState(null);
+  const [deepLinkResolving, setDeepLinkResolving] = useState(false);
 
   const triggerOnboarding = (target) => {
     setOnboardingTarget(target);
@@ -111,6 +112,7 @@ function App() {
       if (u) {
         console.info("Intercepted NFC deep link UID:", u);
         try {
+          setDeepLinkResolving(true);
           const response = await api.get(`/api/v1/books/ntag/${u}`);
           const book = response?.data;
           
@@ -129,14 +131,20 @@ function App() {
             };
             sessionStorage.setItem('nfc_session', JSON.stringify(sessionData));
             
-            // Route internally to Book Details page
-            window.location.hash = `#/catalog/${book.isbn}`;
+            // Route internally to Book Details page with window.location.replace to prevent loops
+            window.location.replace(`${window.location.origin}/#/catalog/${book.isbn}`);
             
             // Dispatch custom event for real-time reactivity
             window.dispatchEvent(new CustomEvent('nfc_tap_detected', { detail: sessionData }));
+          } else {
+            // Strip parameter if invalid
+            window.location.replace(`${window.location.origin}/#/`);
           }
         } catch (error) {
           console.error("Failed to resolve book from NFC deep link:", error);
+          window.location.replace(`${window.location.origin}/#/`);
+        } finally {
+          setDeepLinkResolving(false);
         }
       }
     };
@@ -284,6 +292,16 @@ function App() {
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
+  if (deepLinkResolving) {
+    return (
+      <div className="gatepass-loading-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-gradient, #0f0c08)', color: 'var(--text-primary, #ffffff)' }}>
+        <div className="royal-spinner" style={{ width: '50px', height: '50px', marginBottom: '20px' }}></div>
+        <h2 style={{ fontFamily: 'Cinzel, serif', color: 'var(--accent, #d4af37)', letterSpacing: '0.05em', margin: 0 }}>Verifying Sovereign Volume...</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '12px' }}>Retrieving digital ledger credentials from NFC physical hotspots.</p>
+      </div>
+    );
+  }
+
   return (
     <Router>
       <div className="app-container">
@@ -314,6 +332,9 @@ function App() {
               </NavLink>
               <NavLink to="/discourses" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <BookText size={16} /> {t('common.discourses')}
+              </NavLink>
+              <NavLink to="/gatepass" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <Shield size={16} /> {t('common.gatepass')}
               </NavLink>
               {user?.role === 'ADMIN' && (
                 <NavLink to="/admin" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
@@ -402,6 +423,9 @@ function App() {
                 <NavLink to="/discourses" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu}>
                   <BookText size={20} /> {t('common.discourses')}
                 </NavLink>
+                <NavLink to="/gatepass" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu}>
+                  <Shield size={20} /> {t('common.gatepass')}
+                </NavLink>
 
                 <div className="mobile-language-section" style={{ padding: '10px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
@@ -488,6 +512,7 @@ function App() {
             <Route path="/admin/settings" element={<CuratorSettingsPage user={user} />} />
             <Route path="/admin/moderation" element={<CuratorModerationPage user={user} />} />
             <Route path="/profile" element={<ProfilePage user={user} />} />
+            <Route path="/gatepass" element={<GatepassPage />} />
             <Route path="/gatepass/:checkoutId" element={<GatepassPage />} />
             <Route path="/privacy" element={<PrivacyNotice />} />
             <Route path="/terms" element={<TermsAndConditions />} />
