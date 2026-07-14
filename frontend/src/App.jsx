@@ -219,27 +219,37 @@ function App() {
             const cleanUrl = `${window.location.origin}/#/catalog/${book.isbn}`;
             window.history.replaceState(null, '', cleanUrl);
             
-            // Save NFC session state in sessionStorage with 5-minute timeout
-            const sessionData = {
-              ntagUid: u,
-              isbn: book.isbn,
-              timestamp: Date.now()
-            };
-            sessionStorage.setItem('nfc_session', JSON.stringify(sessionData));
-            
-            // Route internally to Book Details page with window.location.replace to prevent loops
-            window.location.replace(`${window.location.origin}/#/catalog/${book.isbn}`);
-            
-            // Dispatch custom event for real-time reactivity
-            window.dispatchEvent(new CustomEvent('nfc_tap_detected', { detail: sessionData }));
+            if (c) {
+              // Save NFC session state in sessionStorage with 5-minute timeout
+              const sessionData = {
+                ntagUid: u,
+                isbn: book.isbn,
+                timestamp: Date.now()
+              };
+              sessionStorage.setItem('nfc_session', JSON.stringify(sessionData));
+              
+              // Route internally to Book Details page with window.location.replace to prevent loops
+              window.location.replace(`${window.location.origin}/#/catalog/${book.isbn}`);
+              
+              // Dispatch custom event for real-time reactivity
+              window.dispatchEvent(new CustomEvent('nfc_tap_detected', { detail: sessionData }));
+            } else {
+              // c is not present: DO NOT allow instant checkout. Just open the book details page.
+              window.location.replace(`${window.location.origin}/#/catalog/${book.isbn}`);
+            }
           } else {
             // Strip parameter if invalid
             window.location.replace(`${window.location.origin}/#/`);
           }
         } catch (error) {
           console.error("Failed to resolve book from NFC deep link:", error);
-          const errorMsg = error?.response?.data?.message || "The physical NFC tap has expired or is invalid. Please re-tap the physical book to obtain a fresh security token.";
-          setNfcExpiryError(errorMsg);
+          if (c) {
+            const errorMsg = error?.response?.data?.message || "The physical NFC tap has expired or is invalid. Please re-tap the physical book to obtain a fresh security token.";
+            setNfcExpiryError(errorMsg);
+          } else {
+            // If c is not present, just open the home page silently
+            window.location.replace(`${window.location.origin}/#/`);
+          }
         } finally {
           setDeepLinkResolving(false);
         }
