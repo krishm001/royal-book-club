@@ -928,7 +928,7 @@ const BookIngestionConsole = ({ user }) => {
         records: [
           {
             recordType: "url",
-            data: `${window.location.origin}/?u=${tagUidToWrite}`
+            data: `${window.location.origin}/?u=${tagUidToWrite}&c=000000`
           }
         ]
       });
@@ -1679,7 +1679,90 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
                 <div className="nfc-target-url-badge">
                   <span>Writes Target NDEF URL:</span>
-                  <code>{`${window.location.origin}/#/catalog/${pendingBookDto.isbn}?action=checkout`}</code>
+                  <code style={{ fontSize: '0.8rem', wordBreak: 'break-all' }}>{`${window.location.origin}/?u=${pendingBookDto.ntagUid || ntagUid || '04:A3:B2:C1:D0:E9:80'}&c=000000`}</code>
+                </div>
+
+                {/* NTAG213 Advanced Hardware Configuration Tool */}
+                <div className="ntag-hw-config-section" style={{
+                  marginTop: '12px',
+                  padding: '12px',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(212, 165, 116, 0.2)',
+                  borderRadius: '6px',
+                  fontSize: '0.75rem',
+                  lineHeight: '1.4'
+                }}>
+                  <div style={{ fontWeight: '600', color: 'var(--accent)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Cpu size={12} />
+                    <span>NTAG213 Hardware Counter Mirror Guide</span>
+                  </div>
+                  <p style={{ color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                    Web NFC standard is sandboxed and cannot execute raw configuration register writes (Pages 29h-2Ch). After writing the NDEF URL using this browser console, use an NFC developer tool (such as NXP TagWriter) to issue these exact sector commands to enable the automatic counter:
+                  </p>
+                  
+                  {(() => {
+                    const tagUid = pendingBookDto.ntagUid || ntagUid || '04:A3:B2:C1:D0:E9:80';
+                    const fullUrl = `${window.location.origin}/?u=${tagUid}&c=000000`;
+                    
+                    let cleanUrl = fullUrl;
+                    let prefixCode = "03h (https://)";
+                    let idCode = 0x03;
+                    if (fullUrl.startsWith("https://")) {
+                      idCode = 0x03;
+                      cleanUrl = fullUrl.substring(8);
+                    } else if (fullUrl.startsWith("http://")) {
+                      idCode = 0x01;
+                      prefixCode = "01h (http://)";
+                      cleanUrl = fullUrl.substring(7);
+                    } else {
+                      idCode = 0x00;
+                      prefixCode = "00h (raw)";
+                    }
+                    
+                    const cIndex = cleanUrl.indexOf("&c=");
+                    if (cIndex === -1) return null;
+                    const zerosIndex = cIndex + 3; // Index of first '0' of '000000' relative to cleanUrl.
+                    const absoluteOffset = 23 + zerosIndex; // 23 byte offset from Page 0 in standard NDEF.
+                    const mirrorPage = Math.floor(absoluteOffset / 4);
+                    const mirrorByte = absoluteOffset % 4;
+                    
+                    const mirrorHex = (0x80 | (mirrorByte << 4)).toString(16).toUpperCase().padStart(2, '0') + "h";
+                    const pageHex = mirrorPage.toString(16).toUpperCase().padStart(2, '0') + "h";
+                    
+                    return (
+                      <div className="ntag-registers-table" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px' }}>
+                          <span style={{ color: 'var(--text-secondary)' }}>Placeholder Position Offset:</span>
+                          <strong>Byte {absoluteOffset}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px' }}>
+                          <span style={{ color: 'var(--text-secondary)' }}>Configuration Target Page:</span>
+                          <strong>Page {mirrorPage} ({pageHex})</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px' }}>
+                          <span style={{ color: 'var(--text-secondary)' }}>Target Byte Position:</span>
+                          <strong>Byte {mirrorByte}</strong>
+                        </div>
+                        <div style={{ marginTop: '6px', fontWeight: '500', color: 'var(--accent)' }}>Raw Mifare / APDU Programming Commands:</div>
+                        <code style={{ 
+                          background: 'rgba(0, 0, 0, 0.2)', 
+                          padding: '6px', 
+                          borderRadius: '4px', 
+                          fontSize: '0.7rem', 
+                          color: '#d4a574', 
+                          fontFamily: 'monospace',
+                          display: 'block',
+                          whiteSpace: 'pre-wrap',
+                          border: '1px solid rgba(255,255,255,0.05)'
+                        }}>
+                          {`// Command 1: Configure Page 29h (MIRROR=${mirrorHex.substring(0, 2)}, RFUI=00, MIRROR_PAGE=${pageHex.substring(0, 2)}, AUTH0=FF)\n`}
+                          {`A2 29 ${mirrorHex.substring(0, 2)} 00 ${pageHex.substring(0, 2)} FF\n\n`}
+                          {`// Command 2: Configure Page 2Ah (ACCESS: Enable NFC_CNT_EN bit to trigger counter increment)\n`}
+                          {`A2 2A 04 00 00 00`}
+                        </code>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -1741,7 +1824,7 @@ const BookIngestionConsole = ({ user }) => {
                     <strong>Database Status:</strong> Digital registration is completely successful! The book catalog details and physical chip UID (<code>{pendingBookDto.ntagUid || "N/A"}</code>) are permanently registered in the royal ledger.
                   </p>
                   <p>
-                    <strong>NTAG Memory Action:</strong> Writing the direct checkout deep-link URL (<code>{`/#/catalog/${pendingBookDto.isbn}`}</code>) to the physical chip's physical NTAG sector will need to be completed later from an Android or NFC-compatible workstation.
+                    <strong>NTAG Memory Action:</strong> Writing the secure checkout instant deep-link URL (<code>{`/?u=${pendingBookDto.ntagUid || "uid"}&c=000000`}</code>) with hardware counter mirror support will need to be completed later from an Android or NFC-compatible workstation.
                   </p>
                 </div>
               </div>
