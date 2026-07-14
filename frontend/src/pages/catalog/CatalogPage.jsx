@@ -1135,14 +1135,14 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
               {nfcSuccess ? (
                 <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0' }}>
                   <CheckCircle size={48} className="text-success gold-glow-icon" style={{ marginBottom: '12px' }} />
-                  <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.verifConfirmed')}</h4>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.ledgerUpdated')}</p>
+                  <h4 style={{ color: 'rgba(255, 255, 255, 0.95)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.verifConfirmed')}</h4>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.ledgerUpdated')}</p>
                 </div>
               ) : fallbackSuccess ? (
                 <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0' }}>
                   <CheckCircle size={48} className="gold-glow-icon" style={{ color: 'var(--accent)', marginBottom: '12px' }} />
-                  <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.scribeRequestSaved')}</h4>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.requestSubmittedDesc')}</p>
+                  <h4 style={{ color: 'rgba(255, 255, 255, 0.95)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.scribeRequestSaved')}</h4>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.requestSubmittedDesc')}</p>
                 </div>
               ) : (
                 <>
@@ -1158,7 +1158,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                       </p>
 
                       <div className="nfc-meta-box" style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', padding: '8px 12px', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>{t('catalog.targetVolumeId')}</span>
+                        <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>{t('catalog.targetVolumeId')}</span>
                         <code style={{ color: 'var(--accent)', fontFamily: 'monospace', fontWeight: 'bold' }}>{selectedBook.ntagUid}</code>
                       </div>
 
@@ -1168,6 +1168,15 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                           <span>{nfcError}</span>
                         </div>
                       )}
+
+                      <button
+                        type="button"
+                        onClick={handleCloseCardModal}
+                        className="royal-btn-secondary"
+                        style={{ width: '100%', padding: '10px', marginTop: '8px' }}
+                      >
+                        {t('common.cancel')}
+                      </button>
                     </div>
                   )}
 
@@ -1203,12 +1212,21 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                           <span>{nfcError}</span>
                         </div>
                       )}
+
+                      <button
+                        type="button"
+                        onClick={handleCloseCardModal}
+                        className="royal-btn-secondary"
+                        style={{ width: '100%', padding: '10px', marginTop: '8px' }}
+                      >
+                        {t('common.cancel')}
+                      </button>
                     </div>
                   )}
 
                   {activeTab === 'manual' && (
                     <div className="tab-pane manual-tab-pane animate-fade-in" style={{ width: '100%' }}>
-                      <p className="fallback-explanation" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: '0 0 16px 0', textAlign: 'left' }}>
+                      <p className="fallback-explanation" style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.7)', lineHeight: '1.5', margin: '0 0 16px 0', textAlign: 'left' }}>
                         {nfcActionType === 'checkout'
                           ? t('catalog.fallbackExplanationCheckout')
                           : t('catalog.fallbackExplanationReturn')}
@@ -1216,8 +1234,8 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
 
                       <div className="fallback-form-summary royal-card" style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '16px' }}>
                         <h5 style={{ color: 'var(--accent)', fontWeight: '600', marginBottom: '4px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('catalog.volumeDetails')}</h5>
-                        <p style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>{selectedBook.title}</p>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>{t('catalog.isbn')}: {selectedBook.isbn}</p>
+                        <p style={{ fontSize: '0.85rem', fontWeight: '700', color: '#ffffff', margin: 0 }}>{selectedBook.title}</p>
+                        <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.6)', margin: '2px 0 0 0' }}>{t('catalog.isbn')}: {selectedBook.isbn}</p>
                       </div>
 
                       <div className="fallback-actions-row" style={{ display: 'flex', gap: '12px', width: '100%' }}>
