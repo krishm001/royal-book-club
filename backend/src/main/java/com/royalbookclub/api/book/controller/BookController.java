@@ -59,12 +59,24 @@ public class BookController {
     }
 
     /**
+     * Search book metadata on Google Books by keywords.
+     */
+    @GetMapping("/search-metadata")
+    @Operation(summary = "Search book metadata on Google Books", description = "Query Google Books API to search and retrieve potential book matches.")
+    public Mono<ResponseEntity<List<OpenLibraryBookDto>>> searchGoogleBooks(@RequestParam String q) {
+        return isbnLookupService.searchGoogleBooks(q)
+                .map(ResponseEntity::ok);
+    }
+
+    /**
      * Fetch book by NTAG UID.
      */
     @GetMapping("/ntag/{uid}")
-    @Operation(summary = "Get book by NTAG UID", description = "Query Firestore catalog to fetch book by physical NTAG UID.")
-    public ResponseEntity<Book> getBookByNtagUid(@PathVariable String uid) {
-        Book book = bookService.getBookByNtagUid(uid);
+    @Operation(summary = "Get book by NTAG UID", description = "Query Firestore catalog to fetch book by physical NTAG UID with an optional safety counter verification.")
+    public ResponseEntity<Book> getBookByNtagUid(
+            @PathVariable String uid,
+            @RequestParam(required = false) String c) {
+        Book book = bookService.getBookByNtagUid(uid, c);
         if (book != null) {
             return ResponseEntity.ok(book);
         }

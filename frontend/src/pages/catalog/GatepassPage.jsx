@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Printer, CheckCircle, Calendar, User, Bookmark, Sparkles, Shield, ArrowLeft, BookOpen, Clock, Activity, FileText } from 'lucide-react';
-import { fetchCheckoutById, fetchBookByIsbn, fetchCheckouts, fetchBooks } from '../../services/libraryApi';
+import { fetchCheckoutById, fetchBookByIsbn, fetchCheckouts, fetchBooks, fetchCheckoutsByMember } from '../../services/libraryApi';
 import { useLanguage } from '../../i18n/LanguageContext';
 import './GatepassPage.css';
 
-const GatepassPage = () => {
+const GatepassPage = ({ user }) => {
   const { checkoutId } = useParams();
   const { t } = useLanguage();
   const [checkout, setCheckout] = useState(null);
@@ -18,6 +18,7 @@ const GatepassPage = () => {
   const [ledgerCheckouts, setLedgerCheckouts] = useState([]);
   const [booksMap, setBooksMap] = useState({});
   const [ledgerTab, setLedgerTab] = useState('transits'); // 'transits' or 'sync'
+  const [timeFilter, setTimeFilter] = useState('all'); // 'all', 'today', 'week', 'month'
 
   useEffect(() => {
     const loadGatepassData = async () => {
@@ -27,6 +28,16 @@ const GatepassPage = () => {
         if (checkoutId) {
           setIsLedgerMode(false);
           const checkoutData = await fetchCheckoutById(checkoutId);
+          
+          if (checkoutData) {
+            const isUserAdmin = user?.role === 'ADMIN';
+            const isOwner = user && checkoutData.memberId === (user.uid || user.id);
+            if (!isUserAdmin && !isOwner) {
+              setError("Access Denied: You do not have the required security credentials to view this transit ledger record.");
+              setLoading(false);
+              return;
+            }
+          }
           setCheckout(checkoutData);
 
           if (checkoutData && checkoutData.bookId) {
@@ -35,8 +46,13 @@ const GatepassPage = () => {
           }
         } else {
           setIsLedgerMode(true);
+          if (!user) {
+            setError("Please sign in to view your secure gatepass ledger.");
+            setLoading(false);
+            return;
+          }
           const [checkoutsRes, booksData] = await Promise.all([
-            fetchCheckouts(),
+            fetchCheckoutsByMember(user.uid || user.id),
             fetchBooks()
           ]);
           setLedgerCheckouts(checkoutsRes || []);
@@ -58,7 +74,7 @@ const GatepassPage = () => {
     };
 
     loadGatepassData();
-  }, [checkoutId]);
+  }, [checkoutId, user]);
 
   const handlePrint = () => {
     window.print();
@@ -94,12 +110,33 @@ const GatepassPage = () => {
 
   // --- RENDERING CONSOLIDATED LEDGER ---
   if (isLedgerMode) {
+    const filterByTime = (itemDate) => {
+      if (!itemDate) return false;
+      const d = new Date(itemDate);
+      const now = new Date();
+      
+      if (timeFilter === 'today') {
+        return d.toDateString() === now.toDateString();
+      }
+      if (timeFilter === 'week') {
+        const diffMs = now - d;
+        return diffMs <= 7 * 24 * 60 * 60 * 1000;
+      }
+      if (timeFilter === 'month') {
+        const diffMs = now - d;
+        return diffMs <= 30 * 24 * 60 * 60 * 1000;
+      }
+      return true; // 'all'
+    };
+
     const activeCheckouts = ledgerCheckouts
       .filter(c => c.status !== 'RETURNED' && c.status !== 'REJECTED')
+      .filter(c => filterByTime(c.checkedOutAt || c.createdAt))
       .sort((a, b) => new Date(b.checkedOutAt || b.createdAt) - new Date(a.checkedOutAt || a.createdAt));
 
     const returnedCheckouts = ledgerCheckouts
       .filter(c => c.status === 'RETURNED')
+      .filter(c => filterByTime(c.returnedAt || c.updatedAt))
       .sort((a, b) => new Date(b.returnedAt || b.updatedAt) - new Date(a.returnedAt || a.updatedAt));
 
     // Dynamic mapping to keep both checkout and return timestamps dynamically in sync for each active book
@@ -179,6 +216,37 @@ const GatepassPage = () => {
           </div>
         </div>
 
+        {/* Segmented Chronological Filter Controls */}
+        {ledgerTab === 'transits' && (
+          <div className="time-filter-segmented-control no-print" style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px', gap: '8px' }}>
+            {[
+              { id: 'all', label: 'All Time' },
+              { id: 'today', label: 'Today' },
+              { id: 'week', label: 'Last 1 Week' },
+              { id: 'month', label: 'Last 1 Month' }
+            ].map(f => (
+              <button
+                key={f.id}
+                onClick={() => setTimeFilter(f.id)}
+                className={`royal-btn-secondary ${timeFilter === f.id ? 'active-time-filter' : ''}`}
+                style={{
+                  padding: '6px 16px',
+                  fontSize: '0.85rem',
+                  borderRadius: '20px',
+                  background: timeFilter === f.id ? 'var(--accent, #d4af37)' : 'transparent',
+                  color: timeFilter === f.id ? '#0f0c08' : 'var(--text-secondary)',
+                  border: `1px solid ${timeFilter === f.id ? 'var(--accent, #d4af37)' : 'var(--glass-border, rgba(212, 175, 55, 0.2))'}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: timeFilter === f.id ? '0 0 12px rgba(212, 175, 55, 0.4)' : 'none'
+                }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {ledgerTab === 'transits' ? (
           <div className="ledger-grid-columns">
             {/* Active Checkouts Column */}
@@ -191,7 +259,7 @@ const GatepassPage = () => {
                 {activeCheckouts.length === 0 ? (
                   <div className="empty-ledger-state">
                     <BookOpen size={24} />
-                    <p>No active transits recorded today.</p>
+                    <p>No active transits recorded for this timeframe.</p>
                   </div>
                 ) : (
                   activeCheckouts.map(c => {
@@ -199,7 +267,7 @@ const GatepassPage = () => {
                     return (
                       <div key={c.id} className="ledger-card-item">
                         <img 
-                          src={b.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} 
+                          src={b.coverImage || b.coverUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} 
                           alt={b.title} 
                           className="ledger-thumb" 
                         />
@@ -207,7 +275,7 @@ const GatepassPage = () => {
                           <h3>{b.title || c.bookId}</h3>
                           <p className="author">by {b.authors || 'Unknown'}</p>
                           <div className="txn-details">
-                            <p><strong>Scholar:</strong> {c.memberName || 'Verified Scholar'}</p>
+                            <p><strong>Scholar:</strong> {c.memberName || user?.displayName || 'Verified Scholar'}</p>
                             <p><strong>Checked Out:</strong> {formattedDate(c.checkedOutAt)}</p>
                           </div>
                           <div className="card-actions no-print">
@@ -241,7 +309,7 @@ const GatepassPage = () => {
                     return (
                       <div key={c.id} className="ledger-card-item returned-item">
                         <img 
-                          src={b.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} 
+                          src={b.coverImage || b.coverUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} 
                           alt={b.title} 
                           className="ledger-thumb" 
                         />
@@ -249,7 +317,7 @@ const GatepassPage = () => {
                           <h3>{b.title || c.bookId}</h3>
                           <p className="author">by {b.authors || 'Unknown'}</p>
                           <div className="txn-details">
-                            <p><strong>Scholar:</strong> {c.memberName || 'Verified Scholar'}</p>
+                            <p><strong>Scholar:</strong> {c.memberName || user?.displayName || 'Verified Scholar'}</p>
                             <p><strong>Restored:</strong> {formattedDate(c.returnedAt)}</p>
                           </div>
                           <div className="card-actions no-print">
@@ -295,7 +363,7 @@ const GatepassPage = () => {
                         <td>
                           <div className="table-book-meta">
                             <img 
-                              src={item.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} 
+                              src={item.coverImage || item.coverUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} 
                               alt={item.title} 
                               className="table-book-thumb" 
                             />
@@ -314,7 +382,7 @@ const GatepassPage = () => {
                           {item.latestCheckout ? (
                             <div className="time-cell">
                               <span className="time-val">{formattedDate(item.latestCheckout.checkedOutAt)}</span>
-                              <span className="member-val">by {item.latestCheckout.memberName}</span>
+                              <span className="member-val">by {item.latestCheckout.memberName || user?.displayName || 'Verified Scholar'}</span>
                             </div>
                           ) : (
                             <span className="not-avail">-</span>
@@ -324,7 +392,7 @@ const GatepassPage = () => {
                           {item.latestReturn ? (
                             <div className="time-cell">
                               <span className="time-val">{formattedDate(item.latestReturn.returnedAt)}</span>
-                              <span className="member-val">by {item.latestReturn.memberName}</span>
+                              <span className="member-val">by {item.latestReturn.memberName || user?.displayName || 'Verified Scholar'}</span>
                             </div>
                           ) : (
                             <span className="not-avail">-</span>
@@ -386,7 +454,7 @@ const GatepassPage = () => {
             {book && (
               <div className="gatepass-book-preview">
                 <img 
-                  src={book.coverImage || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} 
+                  src={book.coverImage || book.coverUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} 
                   alt={book.title} 
                   className="gatepass-book-cover" 
                 />
@@ -408,7 +476,7 @@ const GatepassPage = () => {
                 <User size={16} className="detail-icon" />
                 <div className="detail-info">
                   <span className="detail-label">Scholar Name</span>
-                  <span className="detail-value">{checkout.memberName || "Verified Member"}</span>
+                  <span className="detail-value">{checkout.memberName || user?.displayName || "Verified Member"}</span>
                 </div>
               </div>
 

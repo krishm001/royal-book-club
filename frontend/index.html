@@ -5,6 +5,29 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>The Royal Book Club</title>
+
+    <!-- Synchronous NFC Deep Link Interceptor & History Sanitizer -->
+    <script>
+      (function() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('u')) {
+          const u = params.get('u');
+          sessionStorage.setItem('pending_nfc_u', u);
+          if (params.has('c')) {
+            const c = params.get('c');
+            sessionStorage.setItem('pending_nfc_c', c);
+            params.delete('c');
+          }
+          params.delete('u');
+          let newSearch = params.toString();
+          if (newSearch) {
+            newSearch = '?' + newSearch;
+          }
+          const cleanUrl = window.location.origin + window.location.pathname + newSearch + window.location.hash;
+          window.history.replaceState(null, '', cleanUrl);
+        }
+      })();
+    </script>
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

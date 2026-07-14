@@ -363,10 +363,16 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
   const getActiveCheckoutInstance = () => {
     if (!book || !user) return null;
     const bookIsbn = book.isbn || '';
-    return memberCheckouts.find(
+    const bookMatches = memberCheckouts.filter(
       (c) => c.bookId === bookIsbn && 
              (c.status === 'CHECKED_OUT' || c.status === 'REQUESTED_CHECKOUT' || c.status === 'REQUESTED_RETURN' || c.status === 'RETURNED')
     );
+    if (bookMatches.length === 0) return null;
+    return bookMatches.sort((a, b) => {
+      const aTime = new Date(a.checkedOutAt || a.returnedAt || a.createdAt || 0);
+      const bTime = new Date(b.checkedOutAt || b.returnedAt || b.createdAt || 0);
+      return bTime - aTime;
+    })[0];
   };
 
   const checkoutStatus = getResolvedStatus();
@@ -412,6 +418,29 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
   useEffect(() => {
     loadMemberCheckouts();
   }, [user]);
+
+  useEffect(() => {
+    const handleOnboardingFocus = () => {
+      console.info("Onboarding closed/completed, scrolling checkout action box into viewport focus.");
+      setTimeout(() => {
+        const el = document.getElementById('detail-checkout-action-card');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('glow-highlight');
+          setTimeout(() => {
+            el.classList.remove('glow-highlight');
+          }, 3000);
+        }
+      }, 100);
+    };
+
+    window.addEventListener('onboarding_closed', handleOnboardingFocus);
+    window.addEventListener('onboarding_complete', handleOnboardingFocus);
+    return () => {
+      window.removeEventListener('onboarding_closed', handleOnboardingFocus);
+      window.removeEventListener('onboarding_complete', handleOnboardingFocus);
+    };
+  }, []);
 
   // Deep Link Auto-Checkout or Return Flow Trigger
   useEffect(() => {
@@ -933,7 +962,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         </div>
 
         <div className="book-info-panel royal-card">
-          <div className="detail-checkout-action-box" style={{ marginBottom: '24px', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '20px' }}>
+          <div className="detail-checkout-action-box" id="detail-checkout-action-card" style={{ marginBottom: '24px', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '20px' }}>
             {nfcSession && (
               <div className="nfc-instant-checkout-container" style={{ margin: '0 0 16px 0', padding: '16px', border: '1px dashed var(--accent)', borderRadius: '8px', background: 'rgba(141, 18, 34, 0.05)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

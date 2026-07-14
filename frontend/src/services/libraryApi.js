@@ -113,3 +113,8 @@ export const fetchCheckoutById = async (id) => {
   const response = await api.get(`/api/v1/checkout/${encodeURIComponent(id)}`);
   return response.data;
 };
+
+export const searchBookMetadata = async (query) => {
+  const response = await api.get(`/api/v1/books/search-metadata?q=${encodeURIComponent(query)}`);
+  return response.data;
+};

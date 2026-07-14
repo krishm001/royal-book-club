@@ -93,47 +93,129 @@ function App() {
     localStorage.setItem('royal-theme', theme);
   }, [theme]);
 
+  const [nfcExpiryError, setNfcExpiryError] = useState('');
+
   useEffect(() => {
     const handleUrlDeepLink = async () => {
       const href = window.location.href;
-      let u = null;
       
-      // Parse query params directly or via search/hash structures
-      try {
-        const urlObj = new URL(href.replace('#/', ''));
-        u = urlObj.searchParams.get('u');
-      } catch (e) {
-        // Fallback search parsing
+      // First, try to retrieve the pre-boot intercepted parameters from sessionStorage
+      let u = sessionStorage.getItem('pending_nfc_u');
+      if (u) {
+        sessionStorage.removeItem('pending_nfc_u');
+        console.info("Extracted cached NFC UID from head interceptor:", u);
+      }
+      let c = sessionStorage.getItem('pending_nfc_c');
+      if (c) {
+        sessionStorage.removeItem('pending_nfc_c');
+        console.info("Extracted cached NFC Counter from head interceptor:", c);
       }
       
+      // Fallback: parse query params from the URL if it bypassed the HTML interceptor
+      if (!u) {
+        try {
+          const urlObj = new URL(href.replace('#/', ''));
+          u = urlObj.searchParams.get('u');
+          c = urlObj.searchParams.get('c');
+        } catch (e) {
+          // Fallback search parsing
+        }
+      }
       if (!u) {
         u = new URLSearchParams(window.location.search).get('u');
+        c = new URLSearchParams(window.location.search).get('c');
       }
       if (!u) {
-        const match = href.match(/[?&]u=([^&]+)/);
-        if (match) u = match[1];
+        const matchU = href.match(/[?&]u=([^&]+)/);
+        if (matchU) u = matchU[1];
+        const matchC = href.match(/[?&]c=([^&]+)/);
+        if (matchC) c = matchC[1];
       }
       
       if (u) {
-        console.info("Intercepted NFC deep link UID:", u);
+        console.info("Intercepted NFC deep link UID:", u, "Counter:", c);
         
-        // Synchronously clean the address bar IMMEDIATELY to prevent the browser from caching/remembering the 'u=' query param
+        // Clean the address bar IMMEDIATELY to prevent the browser from caching/remembering parameters
         try {
-          const cleanUrl = `${window.location.origin}/${window.location.hash}`;
+          let cleanUrl = window.location.origin + '/' + window.location.hash.replace(/[?&]u=[^&]+/, '').replace(/[?&]c=[^&]+/, '');
+          cleanUrl = cleanUrl.replace(/[?&]+$/, ''); // Strip trailing empty separators
           window.history.replaceState(null, '', cleanUrl);
         } catch (historyErr) {
-          console.warn("Failed to synchronously clean address bar history:", historyErr);
+          console.warn("Failed to clean address bar history:", historyErr);
+        }
+
+        // Local Storage Offline / Temporal Check
+        if (c) {
+          const parseCounterToNumber = (rawCounter) => {
+            if (!rawCounter || !rawCounter.trim()) return null;
+            let clean = rawCounter.trim().toLowerCase();
+            if (clean.startsWith("0x")) {
+              clean = clean.substring(2);
+            }
+            clean = clean.replace(/^0+/, "");
+            if (!clean) return 0;
+            if (/[a-f]/.test(clean) || rawCounter.trim().toLowerCase().startsWith("0x")) {
+              return parseInt(clean, 16);
+            } else {
+              return parseInt(clean, 10);
+            }
+          };
+
+          const incomingCounter = parseCounterToNumber(c);
+          if (incomingCounter !== null && !isNaN(incomingCounter)) {
+            const storageKey = `nfc_latest_counter_${u}`;
+            const storedVal = localStorage.getItem(storageKey);
+            if (storedVal) {
+              try {
+                const latest = JSON.parse(storedVal);
+                const storedCounter = Number(latest.counter);
+                
+                if (incomingCounter > storedCounter) {
+                  // Newer counter supersedes the old one - update local storage
+                  localStorage.setItem(storageKey, JSON.stringify({
+                    counter: incomingCounter,
+                    firstSeenAt: Date.now()
+                  }));
+                } else if (incomingCounter === storedCounter) {
+                  // Same counter, check elapsed age
+                  const age = Date.now() - Number(latest.firstSeenAt);
+                  if (age > 300000) { // 5 minutes
+                    console.warn("Local NFC tap has expired (> 5 minutes elapsed).");
+                    setNfcExpiryError("NFC Tap session has expired (5-minute security limit exceeded). Please re-tap the physical book.");
+                    return;
+                  }
+                } else {
+                  // Older counter, reject immediately
+                  console.warn(`Local NFC counter reuse attempt blocked. Incoming: ${incomingCounter}, Latest stored: ${storedCounter}`);
+                  setNfcExpiryError("This NFC counter is outdated and has been superseded by a more recent tap. Re-use of previous taps is strictly prohibited.");
+                  return;
+                }
+              } catch (e) {
+                console.error("Failed to parse stored NFC counter JSON, overwriting:", e);
+                localStorage.setItem(storageKey, JSON.stringify({
+                  counter: incomingCounter,
+                  firstSeenAt: Date.now()
+                }));
+              }
+            } else {
+              // Fresh counter, write initial value
+              localStorage.setItem(storageKey, JSON.stringify({
+                counter: incomingCounter,
+                firstSeenAt: Date.now()
+              }));
+            }
+          }
         }
 
         try {
           setDeepLinkResolving(true);
-          const response = await api.get(`/api/v1/books/ntag/${u}`);
+          const response = await api.get(`/api/v1/books/ntag/${u}${c ? `?c=${c}` : ''}`);
           const book = response?.data;
           
           if (book && book.isbn) {
             console.info("Found book from NFC UID:", book.title);
             
-            // Mask the address bar by replacing history state
+            // Mask the address bar by replacing history state with clean book details route
             const cleanUrl = `${window.location.origin}/#/catalog/${book.isbn}`;
             window.history.replaceState(null, '', cleanUrl);
             
@@ -156,7 +238,8 @@ function App() {
           }
         } catch (error) {
           console.error("Failed to resolve book from NFC deep link:", error);
-          window.location.replace(`${window.location.origin}/#/`);
+          const errorMsg = error?.response?.data?.message || "The physical NFC tap has expired or is invalid. Please re-tap the physical book to obtain a fresh security token.";
+          setNfcExpiryError(errorMsg);
         } finally {
           setDeepLinkResolving(false);
         }
@@ -305,6 +388,32 @@ function App() {
   };
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  if (nfcExpiryError) {
+    return (
+      <div className="gatepass-loading-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-gradient, #0f0c08)', color: 'var(--text-primary, #ffffff)', padding: '24px', textAlign: 'center' }}>
+        <div className="nfc-expired-card royal-card" style={{ maxWidth: '500px', width: '100%', padding: '32px', border: '1px solid var(--glass-border, rgba(212, 175, 55, 0.2))', borderRadius: '12px', background: 'var(--surface-elevated, rgba(15, 12, 8, 0.8))', backdropFilter: 'blur(12px)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div className="shield-warning-icon" style={{ width: '70px', height: '70px', borderRadius: '50%', background: 'rgba(214, 40, 40, 0.1)', border: '1px solid rgba(214, 40, 40, 0.3)', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '24px' }}>
+            <span style={{ fontSize: '2.5rem', color: '#d62828' }}>🛡️</span>
+          </div>
+          <h2 style={{ fontFamily: 'Cinzel, serif', color: 'var(--accent, #d4af37)', letterSpacing: '0.05em', marginBottom: '16px', fontSize: '1.5rem' }}>NFC Security Alert</h2>
+          <p style={{ color: 'var(--text-primary, #ffffff)', fontSize: '1rem', lineHeight: '1.6', margin: '0 0 24px 0' }}>
+            {nfcExpiryError}
+          </p>
+          <button 
+            onClick={() => {
+              setNfcExpiryError('');
+              window.location.replace(`${window.location.origin}/#/`);
+            }}
+            className="royal-btn" 
+            style={{ padding: '10px 24px', fontSize: '0.9rem', minWidth: '160px' }}
+          >
+            Acknowledge & Continue
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (deepLinkResolving) {
     return (
@@ -526,8 +635,8 @@ function App() {
             <Route path="/admin/settings" element={<CuratorSettingsPage user={user} />} />
             <Route path="/admin/moderation" element={<CuratorModerationPage user={user} />} />
             <Route path="/profile" element={<ProfilePage user={user} />} />
-            <Route path="/gatepass" element={<GatepassPage />} />
-            <Route path="/gatepass/:checkoutId" element={<GatepassPage />} />
+            <Route path="/gatepass" element={<GatepassPage user={user} />} />
+            <Route path="/gatepass/:checkoutId" element={<GatepassPage user={user} />} />
             <Route path="/privacy" element={<PrivacyNotice />} />
             <Route path="/terms" element={<TermsAndConditions />} />
 
@@ -627,7 +736,10 @@ function App() {
           <OnboardingWizard
             user={user}
             targetState={onboardingTarget}
-            onClose={() => setOnboardingOpen(false)}
+            onClose={() => {
+              setOnboardingOpen(false);
+              window.dispatchEvent(new CustomEvent('onboarding_closed', { detail: onboardingTarget }));
+            }}
             onResume={handleOnboardingResume}
           />
         )}

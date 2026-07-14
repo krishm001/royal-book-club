@@ -501,6 +501,32 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
     loadMemberCheckouts();
   }, [user]);
 
+  useEffect(() => {
+    const handleOnboardingFocus = (e) => {
+      const target = e.detail;
+      if (!target || !target.isbn) return;
+      
+      console.info("Onboarding closed/completed for catalog, scrolling book card into focus:", target.isbn);
+      setTimeout(() => {
+        const el = document.getElementById(`book-card-${target.isbn}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('glow-highlight');
+          setTimeout(() => {
+            el.classList.remove('glow-highlight');
+          }, 3000);
+        }
+      }, 100);
+    };
+
+    window.addEventListener('onboarding_closed', handleOnboardingFocus);
+    window.addEventListener('onboarding_complete', handleOnboardingFocus);
+    return () => {
+      window.removeEventListener('onboarding_closed', handleOnboardingFocus);
+      window.removeEventListener('onboarding_complete', handleOnboardingFocus);
+    };
+  }, []);
+
   const refreshCatalogState = async () => {
     try {
       const data = await fetchBooks();

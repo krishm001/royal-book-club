@@ -9,6 +9,7 @@ import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
 import com.royalbookclub.api.book.dto.BookDto;
 import com.royalbookclub.api.book.model.Book;
+import com.royalbookclub.api.common.exception.BusinessRuleException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -223,6 +224,115 @@ public class BookService {
             log.error("Error querying book by Ntag UID: {}", cleanUid, e);
             throw new RuntimeException("Failed to query book by NTAG UID", e);
         }
+    }
+
+    private long parseCounterToLong(String rawCounter) {
+        if (rawCounter == null || rawCounter.trim().isEmpty()) {
+            throw new BusinessRuleException("NFC Counter parameter is missing or empty.");
+        }
+        String clean = rawCounter.trim().toLowerCase();
+        
+        // Strip 0x prefix if hex
+        if (clean.startsWith("0x")) {
+            clean = clean.substring(2);
+        }
+        
+        // Remove leading zeros but keep at least one digit
+        clean = clean.replaceFirst("^0+(?!$)", "");
+        if (clean.isEmpty()) {
+            return 0L;
+        }
+
+        try {
+            // Check if it looks like a hex string (contains a-f or we stripped 0x)
+            if (clean.matches(".*[a-f].*") || rawCounter.trim().toLowerCase().startsWith("0x")) {
+                return Long.parseLong(clean, 16);
+            } else {
+                return Long.parseLong(clean, 10);
+            }
+        } catch (NumberFormatException e) {
+            // Fallback: try parsing as hex, then decimal as final fallback
+            try {
+                return Long.parseLong(clean, 16);
+            } catch (NumberFormatException e2) {
+                try {
+                    // Strip any remaining non-alphanumeric characters
+                    String stripped = clean.replaceAll("[^0-9a-f]", "");
+                    if (stripped.matches(".*[a-f].*")) {
+                        return Long.parseLong(stripped, 16);
+                    } else {
+                        return Long.parseLong(stripped, 10);
+                    }
+                } catch (Exception ex) {
+                    throw new BusinessRuleException("Invalid NFC counter format: " + rawCounter);
+                }
+            }
+        }
+    }
+
+    /**
+     * Get a book from the catalog by its physical Ntag UID with counter-verification and 5-min safety threshold.
+     *
+     * @param ntagUid The unique serial number of the NFC chip
+     * @param counter The NFC counter parameter (optional)
+     * @return The Book if found, or null
+     */
+    public Book getBookByNtagUid(String ntagUid, String counter) {
+        String cleanUid = ntagUid.trim();
+        if (counter != null && !counter.trim().isEmpty()) {
+            long incomingCounter = parseCounterToLong(counter);
+            log.info("Verifying parsed NFC counter: {} (raw: {}) for UID: {}", incomingCounter, counter, cleanUid);
+            try {
+                DocumentReference counterRef = firestore.collection("nfc_counters").document(cleanUid);
+                DocumentSnapshot counterDoc = counterRef.get().get();
+                if (!counterDoc.exists()) {
+                    // Save first seen record
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("id", cleanUid);
+                    data.put("uid", cleanUid);
+                    data.put("counter", incomingCounter);
+                    data.put("firstSeenAt", new java.util.Date());
+                    counterRef.set(data).get();
+                    log.info("Registered first NFC counter for UID: {}, counter: {}", cleanUid, incomingCounter);
+                } else {
+                    Long storedCounter = counterDoc.getLong("counter");
+                    if (storedCounter == null) {
+                        storedCounter = 0L;
+                    }
+                    
+                    if (incomingCounter > storedCounter) {
+                        // A later counter is seen - update the latest counter and its timestamp
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("counter", incomingCounter);
+                        data.put("firstSeenAt", new java.util.Date());
+                        counterRef.update(data).get();
+                        log.info("Updated NFC counter for UID: {} to newer counter: {}", cleanUid, incomingCounter);
+                    } else if (incomingCounter == storedCounter) {
+                        // Same counter value - check age limits
+                        java.util.Date firstSeenAt = counterDoc.getDate("firstSeenAt");
+                        if (firstSeenAt != null) {
+                            long elapsed = System.currentTimeMillis() - firstSeenAt.getTime();
+                            if (elapsed > 300000) {
+                                log.warn("NFC counter {} for UID {} has expired. Elapsed: {}ms", incomingCounter, cleanUid, elapsed);
+                                throw new BusinessRuleException("NFC Tap session has expired (5-minute security limit exceeded). Please re-tap the physical book.");
+                            }
+                        }
+                    } else {
+                        // Older counter value - rejected immediately
+                        log.warn("NFC counter reuse attempt! Incoming: {}, Stored Latest: {} for UID: {}", incomingCounter, storedCounter, cleanUid);
+                        throw new BusinessRuleException("This NFC counter is outdated and has been superseded by a more recent tap. Re-use of previous taps is strictly prohibited.");
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error("Interrupted while validating NFC counter for UID: {}", cleanUid, e);
+                throw new RuntimeException("Failed to verify NFC safety counter", e);
+            } catch (ExecutionException e) {
+                log.error("Error while validating NFC counter for UID: {}", cleanUid, e);
+                throw new RuntimeException("Failed to verify NFC safety counter", e);
+            }
+        }
+        return getBookByNtagUid(ntagUid);
     }
 
     /**

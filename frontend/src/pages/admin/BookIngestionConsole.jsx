@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw, X, Camera, Cpu, Smartphone, Check, ArrowLeft } from 'lucide-react';
-import { createBook, lookupBookByIsbn, fetchBookByIsbn, fetchBooks } from '../../services/libraryApi';
+import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw, X, Camera, Cpu, Smartphone, Check, ArrowLeft, Search, Compass, BookOpen } from 'lucide-react';
+import { createBook, lookupBookByIsbn, fetchBookByIsbn, fetchBooks, searchBookMetadata } from '../../services/libraryApi';
 import { fetchBookHouses } from '../../services/genreApi';
 import { uploadBookImage } from '../../services/storageApi';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
@@ -27,7 +27,9 @@ const BookIngestionConsole = ({ user }) => {
   const [pages, setPages] = useState(0);
   const [totalCopies, setTotalCopies] = useState(1);
   const [availableCopies, setAvailableCopies] = useState(1);
-  const [bulkProgress, setBulkProgress] = useState(-1);
+  const [existingBooks, setExistingBooks] = useState([]);
+  const [dbSearchQuery, setDbSearchQuery] = useState('');
+  const [isEditingExisting, setIsEditingExisting] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -67,6 +69,109 @@ const BookIngestionConsole = ({ user }) => {
   const [pendingBookDto, setPendingBookDto] = useState(null);
   const [iosWarningModalOpen, setIosWarningModalOpen] = useState(false);
 
+  // Search Metadata Drawer states
+  const [isSearchDrawerOpen, setIsSearchDrawerOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearchingMetadata, setIsSearchingMetadata] = useState(false);
+  const [searchError, setSearchError] = useState('');
+
+  const handleMetadataSearch = async (e) => {
+    if (e) e.preventDefault();
+    if (!searchQuery || !searchQuery.trim()) return;
+    setIsSearchingMetadata(true);
+    setSearchError('');
+    setSearchResults([]);
+    try {
+      const data = await searchBookMetadata(searchQuery.trim());
+      setSearchResults(data || []);
+      if (!data || data.length === 0) {
+        setSearchError('No matching metadata records found.');
+      }
+    } catch (err) {
+      console.error('Metadata search failed:', err);
+      setSearchError('Failed to retrieve search results from Google Books API.');
+    } finally {
+      setIsSearchingMetadata(false);
+    }
+  };
+
+  const handleSelectSearchResult = (book) => {
+    setManualTitle(book.title || '');
+    setManualAuthor(Array.isArray(book.authors) ? book.authors.join(', ') : book.author || book.authors || '');
+    setPublisher(book.publisher || '');
+    setPublishDate(book.publishDate || '');
+    setCoverUrl(book.coverUrl || '');
+    setDescription(book.subtitle || '');
+    setPages(book.pages || 0);
+    setIsbn(book.isbn || '');
+    setTotalCopies(1);
+    setAvailableCopies(1);
+    setTagsInput('');
+    setNtagUid('');
+    setIsSearchDrawerOpen(false);
+    setInfoMessage('Auto-populated form with selected Google Books metadata; complete any remaining fields.');
+  };
+
+  const loadExistingBooks = async () => {
+    try {
+      const res = await fetchBooks();
+      if (Array.isArray(res)) {
+        setExistingBooks(res);
+      }
+    } catch (err) {
+      console.warn("Unable to load existing catalog for admin editing:", err);
+    }
+  };
+
+  const handleSelectExistingBook = (book) => {
+    if (!book) return;
+    setIsEditMode(true);
+    setIsEditingExisting(true);
+    setIsbn(book.isbn || '');
+    setManualTitle(book.title || '');
+    setManualAuthor(Array.isArray(book.authors) ? book.authors.join(', ') : book.author || '');
+    setPublisher(book.publisher || '');
+    setPublishDate(book.publishDate || book.publishYear || '');
+    setCoverUrl(book.coverUrl || '');
+    setDescription(book.description || book.subtitle || '');
+    setPages(book.pages || 0);
+    setTotalCopies(book.totalCopies || 1);
+    setAvailableCopies(book.availableCopies || 1);
+    setBookLanguage(book.language || 'en');
+    setSelectedHouse(book.houseName || (houses.length > 0 ? houses[0] : ''));
+    setNtagUid(book.ntagUid || '');
+    if (book.tags) {
+      setTagsInput(Array.isArray(book.tags) ? book.tags.join(', ') : book.tags);
+    } else {
+      setTagsInput('');
+    }
+    setInfoMessage(`Loaded existing database record for "${book.title}". Editing this form will overwrite its catalog entry on save.`);
+  };
+
+  const handleResetForm = () => {
+    setIsEditMode(false);
+    setIsEditingExisting(false);
+    setIsbn('');
+    setManualTitle('');
+    setManualAuthor('');
+    setPublisher('');
+    setPublishDate('');
+    setCoverUrl('');
+    setDescription('');
+    setPages(0);
+    setTotalCopies(1);
+    setAvailableCopies(1);
+    setBookLanguage('en');
+    setSelectedHouse(houses.length > 0 ? houses[0] : '');
+    setNtagUid('');
+    setTagsInput('');
+    setInfoMessage('');
+    setErrorMessage('');
+    setNfcSuccess(false);
+    setNfcError('');
+  };
+
   // Check if user is admin
   const isAdmin = user && user.role === 'ADMIN';
 
@@ -94,6 +199,7 @@ const BookIngestionConsole = ({ user }) => {
         }
       };
       loadHouses();
+      loadExistingBooks();
     }
   }, [isAdmin]);
 
@@ -683,6 +789,7 @@ const BookIngestionConsole = ({ user }) => {
     setSelectedImageFile(null);
     setImagePreview(null);
     setIsEditMode(false);
+    setIsEditingExisting(false);
     setInfoMessage('');
     setTagsInput('');
     setNtagUid('');
@@ -695,6 +802,7 @@ const BookIngestionConsole = ({ user }) => {
     if (houses.length > 0) {
       setSelectedHouse(houses[0]);
     }
+    loadExistingBooks();
   };
 
   const handleImageSelect = (e) => {
@@ -868,24 +976,6 @@ const BookIngestionConsole = ({ user }) => {
   };
 
 
-
-  const handleBulkUploadSimulate = (e) => {
-    e.preventDefault();
-    if (bulkProgress >= 0) return;
-
-    setBulkProgress(0);
-    const interval = setInterval(() => {
-      setBulkProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => setBulkProgress(-1), 2000);
-          return 100;
-        }
-        return prev + 25;
-      });
-    }, 600);
-  };
-
   return (
     <div className="ingestion-container animate-fade-in">
       {!isAdmin ? (
@@ -916,33 +1006,99 @@ const BookIngestionConsole = ({ user }) => {
               <h3>{t('admin.manualIngestion', 'Single Volume Intake')}</h3>
               <p className="section-p-desc">Register an individual book volume. Query metadata by ISBN or input details manually.</p>
 
-              <div className="isbn-query-wrapper">
-                <label className="royal-input-label">{t('catalog.isbn', 'ISBN Lookup')}</label>
-                <div className="isbn-input-row">
-                  <input
-                    type="text"
-                    placeholder={t('admin.isbnPlaceholder', 'e.g. 9780141439570')}
-                    className="royal-input isbn-input-box"
-                    value={isbn}
-                    onChange={(e) => setIsbn(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => startCamera('isbn')}
-                    className="royal-btn lookup-btn"
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    title="Scan Barcode with Camera"
-                  >
-                    <Camera size={14} />
-                  </button>
-                  <button
-                    onClick={handleIsbnFetch}
-                    className="royal-btn lookup-btn"
-                    disabled={fetchingMetadata}
-                    id="isbn-lookup-btn"
-                  >
-                    {fetchingMetadata ? <RefreshCw className="spin-icon" size={14} /> : t('admin.fetchMetadata', 'Fetch')}
-                  </button>
+              <div className="intake-top-actions">
+                <div className="isbn-query-column">
+                  <label className="royal-input-label">{t('catalog.isbn', 'Query External ISBN API')}</label>
+                  <div className="isbn-input-row">
+                    <input
+                      type="text"
+                      placeholder={t('admin.isbnPlaceholder', 'e.g. 9780141439570')}
+                      className="royal-input isbn-input-box"
+                      value={isbn}
+                      onChange={(e) => setIsbn(e.target.value)}
+                    />
+                    <div className="isbn-btn-group">
+                      <button
+                        type="button"
+                        onClick={() => startCamera('isbn')}
+                        className="royal-btn lookup-btn"
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        title="Scan Barcode with Camera"
+                      >
+                        <Camera size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleIsbnFetch()}
+                        className="royal-btn lookup-btn"
+                        disabled={fetchingMetadata}
+                        id="isbn-lookup-btn"
+                      >
+                        {fetchingMetadata ? <RefreshCw className="spin-icon" size={14} /> : t('admin.fetchMetadata', 'Fetch')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsSearchDrawerOpen(true)}
+                        className="royal-btn lookup-btn search-drawer-trigger-btn"
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                        title="Search Metadata by Title, Author, Keyword"
+                      >
+                        <Compass size={14} />
+                        <span>Search</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="nfc-query-column">
+                  <label className="royal-input-label">{t('admin.nfcUidLabel', 'Assign/Search by NFC')}</label>
+                  <div className="nfc-input-row">
+                    <input
+                      type="text"
+                      className="royal-input nfc-input-box"
+                      value={ntagUid}
+                      onChange={(e) => setNtagUid(e.target.value)}
+                      placeholder="e.g. 04:A3:B2:C1:D0:E9:80"
+                    />
+                    <button
+                      type="button"
+                      onClick={startNfcRead}
+                      className={`royal-btn nfc-top-btn ${isNfcReading ? 'loading-btn' : ''}`}
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      {isNfcReading ? <RefreshCw className="spin-icon" size={14} /> : <Smartphone size={14} />}
+                      <span>{isNfcReading ? 'Reading...' : t('admin.assignNfcBtn', 'Scan NFC')}</span>
+                    </button>
+                  </div>
+                  {isNfcReading && (
+                    <div className="nfc-pulse-overlay royal-card">
+                      <div className="nfc-scanner-pulse">
+                        <Smartphone size={32} className="gold-glow-icon animate-pulse" />
+                        <div className="pulse-ring"></div>
+                      </div>
+                      <p className="pulse-help-text">Tap NTAG213 Tag to register this book volume in the ledger.</p>
+                      <button
+                        type="button"
+                        onClick={() => setIsNfcReading(false)}
+                        className="royal-btn-secondary"
+                        style={{ marginTop: '12px', fontSize: '0.8rem', padding: '6px 14px' }}
+                      >
+                        Cancel Scan
+                      </button>
+                    </div>
+                  )}
+
+                  {nfcSuccess && (
+                    <p className="nfc-success-text" style={{ fontSize: '0.85rem', color: 'var(--success)', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Check size={14} /> NTAG213 serial number bound successfully.
+                    </p>
+                  )}
+
+                  {nfcError && (
+                    <p className="nfc-error-text" style={{ fontSize: '0.85rem', color: '#ff7b72', marginTop: '6px' }}>
+                      {nfcError}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -1250,58 +1406,7 @@ const BookIngestionConsole = ({ user }) => {
                   />
                 </div>
 
-                <div className="input-group nfc-binding-section">
-                  <label className="royal-input-label">{t('admin.nfcUidLabel', 'NTAG213 UID (NFC Registration)')}</label>
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <input
-                      type="text"
-                      className="royal-input"
-                      value={ntagUid}
-                      onChange={(e) => setNtagUid(e.target.value)}
-                      placeholder="e.g. 04:A3:B2:C1:D0:E9:80 (Optional)"
-                      style={{ flex: 1 }}
-                    />
-                    <button
-                      type="button"
-                      onClick={startNfcRead}
-                      className={`royal-btn ${isNfcReading ? 'loading-btn' : ''}`}
-                      style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      {isNfcReading ? <RefreshCw className="spin-icon" size={14} /> : <Smartphone size={14} />}
-                      {isNfcReading ? 'Reading...' : t('admin.assignNfcBtn', 'Scan NFC')}
-                    </button>
-                  </div>
 
-                  {isNfcReading && (
-                    <div className="nfc-pulse-overlay royal-card">
-                      <div className="nfc-scanner-pulse">
-                        <Smartphone size={32} className="gold-glow-icon animate-pulse" />
-                        <div className="pulse-ring"></div>
-                      </div>
-                      <p className="pulse-help-text">Tap NTAG213 Tag to register this book volume in the ledger.</p>
-                      <button
-                        type="button"
-                        onClick={() => setIsNfcReading(false)}
-                        className="royal-btn-secondary"
-                        style={{ marginTop: '12px', fontSize: '0.8rem', padding: '6px 14px' }}
-                      >
-                        Cancel Scan
-                      </button>
-                    </div>
-                  )}
-
-                  {nfcSuccess && (
-                    <p className="nfc-success-text" style={{ fontSize: '0.85rem', color: 'var(--success)', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Check size={14} /> NTAG213 serial number bound successfully.
-                    </p>
-                  )}
-
-                  {nfcError && (
-                    <p className="nfc-error-text" style={{ fontSize: '0.85rem', color: '#ff7b72', marginTop: '6px' }}>
-                      {nfcError}
-                    </p>
-                  )}
-                </div>
 
                 <div className="submit-row">
                   <button type="submit" className="royal-btn submit-book-btn" id="add-volume-btn">
@@ -1323,41 +1428,105 @@ const BookIngestionConsole = ({ user }) => {
               )}
             </div>
 
-            <div className="royal-card bulk-ingest-card">
-              <h3>Asynchronous Bulk Upload</h3>
-              <p className="section-p-desc">Ingest entire catalog archives asynchronously using spreadsheets (.csv or .xlsx formats).</p>
+            <div className="royal-card db-catalog-search-card">
+              <h3>Search & Edit Internal Database</h3>
+              <p className="section-p-desc">
+                Search, retrieve, and update existing catalog volumes directly within the local Royal Book Club database.
+              </p>
 
-              <div className="drag-drop-zone-simulated" onClick={handleBulkUploadSimulate}>
-                <Upload size={32} className="gold-glow-icon upload-logo-sim" />
-                {bulkProgress === -1 ? (
-                  <>
-                    <p className="upload-p">Drag & Drop Catalog Spreadsheet</p>
-                    <span className="upload-sub">or click here to simulate bulk upload</span>
-                  </>
-                ) : bulkProgress < 100 ? (
-                  <div className="progress-bar-wrapper">
-                    <span className="progress-percentage-label">Ingesting... {bulkProgress}%</span>
-                    <div className="progress-outer">
-                      <div className="progress-inner" style={{ width: `${bulkProgress}%` }}></div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bulk-success-wrapper animate-fade-in">
-                    <CheckCircle size={24} className="text-success" />
-                    <p className="bulk-success-title">Spreadsheet Parsing Complete</p>
-                    <span className="bulk-success-sub">Ledger updated with parsed records asynchronously.</span>
-                  </div>
-                )}
+              <div className="db-search-input-group" style={{ marginBottom: '16px' }}>
+                <label className="royal-input-label">Search Existing Books in Database (Title, Author, or ISBN)</label>
+                <div className="db-search-row" style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="Search by Title, Author, or ISBN..."
+                    className="royal-input db-search-input-box"
+                    value={dbSearchQuery}
+                    onChange={(e) => setDbSearchQuery(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                  {dbSearchQuery && (
+                    <button
+                      type="button"
+                      className="royal-btn-secondary clear-db-search-btn"
+                      onClick={() => setDbSearchQuery('')}
+                      style={{ padding: '0 12px' }}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="form-divider"><span>OR BARCODE INTEGRATION</span></div>
+              {dbSearchQuery.trim() ? (
+                <div className="db-search-results-list" style={{ maxHeight: '320px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid rgba(255, 255, 255, 0.05)', padding: '8px', borderRadius: '6px', background: 'rgba(0, 0, 0, 0.15)' }}>
+                  {existingBooks.filter(b => {
+                    const q = dbSearchQuery.toLowerCase().trim();
+                    return (b.title && b.title.toLowerCase().includes(q)) ||
+                           (b.isbn && b.isbn.toLowerCase().includes(q)) ||
+                           (Array.isArray(b.authors) && b.authors.some(a => a.toLowerCase().includes(q))) ||
+                           (b.author && b.author.toLowerCase().includes(q));
+                  }).length > 0 ? (
+                    existingBooks.filter(b => {
+                      const q = dbSearchQuery.toLowerCase().trim();
+                      return (b.title && b.title.toLowerCase().includes(q)) ||
+                             (b.isbn && b.isbn.toLowerCase().includes(q)) ||
+                             (Array.isArray(b.authors) && b.authors.some(a => a.toLowerCase().includes(q))) ||
+                             (b.author && b.author.toLowerCase().includes(q));
+                    }).map((b) => (
+                      <div key={b.isbn} className="db-search-result-item" onClick={() => handleSelectExistingBook(b)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                        <div className="result-item-cover-wrapper" style={{ width: '36px', height: '48px', overflow: 'hidden', borderRadius: '3px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0, 0, 0, 0.2)' }}>
+                          {b.coverUrl ? (
+                            <img src={b.coverUrl} alt={b.title} className="result-item-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <BookOpen size={16} className="fallback-cover-icon" style={{ color: 'var(--accent, #d4af37)' }} />
+                          )}
+                        </div>
+                        <div className="result-item-details" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                          <span className="result-item-title" style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text, #f0f0f5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.title}</span>
+                          <span className="result-item-authors" style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #9a9ab0)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {Array.isArray(b.authors) ? b.authors.join(', ') : b.author || 'Unknown Author'}
+                          </span>
+                          <span className="result-item-isbn" style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: 'var(--accent, #d4af37)' }}>ISBN: {b.isbn}</span>
+                        </div>
+                        <button type="button" className="royal-btn-secondary select-db-book-btn" style={{ fontSize: '0.75rem', padding: '4px 10px' }}>
+                          Edit
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="no-db-results-text" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center', margin: '20px 0' }}>No matching database records found.</p>
+                  )}
+                </div>
+              ) : (
+                <div className="db-search-empty-state" style={{ padding: '24px 12px', border: '1px dashed rgba(255, 255, 255, 0.05)', borderRadius: '6px', textAlign: 'center', background: 'rgba(255, 255, 255, 0.01)' }}>
+                  <Search size={24} style={{ color: 'var(--text-secondary)', opacity: 0.5, marginBottom: '8px' }} />
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Type above to search existing library books in database for updating.</p>
+                </div>
+              )}
+
+              {isEditingExisting && (
+                <div className="editing-indicator-box royal-card animate-fade-in" style={{ border: '1px solid var(--accent, #d4af37)', background: 'rgba(212, 175, 55, 0.05)', marginTop: '16px', padding: '12px' }}>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--accent, #d4af37)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Sparkles size={14} /> <strong>Active Editing Mode</strong>
+                  </p>
+                  <p style={{ margin: '4px 0 10px 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    Populated intake form with database record of "{manualTitle}". Overwrites record on save.
+                  </p>
+                  <button type="button" className="royal-btn-secondary" style={{ width: '100%', fontSize: '0.8rem', padding: '6px 12px' }} onClick={handleResetForm}>
+                    Cancel & Add New Book instead
+                  </button>
+                </div>
+              )}
+
+              <div className="form-divider" style={{ margin: '24px 0 16px 0' }}><span>OR BARCODE INTEGRATION</span></div>
 
               <div className="barcode-scan-section">
-                <div className="barcode-promo-frame">
-                  <Scan size={24} className="gold-glow-icon" />
+                <div className="barcode-promo-frame" style={{ display: 'flex', gap: '12px', padding: '12px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '6px' }}>
+                  <Scan size={24} className="gold-glow-icon" style={{ flexShrink: 0 }} />
                   <div>
-                    <h4>Interactive Barcode Scanner</h4>
-                    <p>Use local scanner modules in Phase 2 to scan printed books instantly using hardware RFID/ISBN scan sweeps.</p>
+                    <h4 style={{ margin: '0 0 4px 0', fontSize: '0.9rem', fontWeight: '600' }}>Interactive Barcode Scanner</h4>
+                    <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.35' }}>Use local scanner modules in Phase 2 to scan printed books instantly using hardware RFID/ISBN scan sweeps.</p>
                   </div>
                 </div>
               </div>
@@ -1585,6 +1754,92 @@ const BookIngestionConsole = ({ user }) => {
               >
                 Acknowledge & Continue
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Search Metadata Drawer */}
+      {isSearchDrawerOpen && (
+        <div className="search-drawer-overlay animate-fade-in" onClick={() => setIsSearchDrawerOpen(false)}>
+          <div className="search-drawer-container" onClick={(e) => e.stopPropagation()}>
+            <div className="search-drawer-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Compass size={20} className="gold-glow-icon" />
+                <h3 className="drawer-title">Search Google Books</h3>
+              </div>
+              <button onClick={() => setIsSearchDrawerOpen(false)} className="close-drawer-btn">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="search-drawer-body">
+              <p className="drawer-help-text">Search millions of volumes by title, author, or keyword to auto-populate the intake console.</p>
+              
+              <form onSubmit={handleMetadataSearch} className="drawer-search-form">
+                <div className="search-input-wrapper">
+                  <input
+                    type="text"
+                    placeholder="Enter title, author, or keyword..."
+                    className="royal-input search-drawer-input"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    autoFocus
+                  />
+                  <button type="submit" className="royal-btn drawer-search-submit" disabled={isSearchingMetadata}>
+                    {isSearchingMetadata ? <RefreshCw className="spin-icon" size={14} /> : <Search size={14} />}
+                  </button>
+                </div>
+              </form>
+
+              {searchError && (
+                <div className="search-error-banner">
+                  <p>{searchError}</p>
+                </div>
+              )}
+
+              <div className="search-results-list">
+                {isSearchingMetadata && (
+                  <div className="drawer-searching-loader">
+                    <RefreshCw className="spin-icon gold-glow-icon" size={24} />
+                    <p>Consulting Google Books archives...</p>
+                  </div>
+                )}
+
+                {!isSearchingMetadata && searchResults.length > 0 && (
+                  <div className="results-scroll-container">
+                    <p className="results-count-text">Found {searchResults.length} matches:</p>
+                    {searchResults.map((book, index) => (
+                      <div 
+                        key={index} 
+                        className="search-result-item royal-card"
+                        onClick={() => handleSelectSearchResult(book)}
+                      >
+                        <div className="result-cover-frame">
+                          {book.coverUrl ? (
+                            <img src={book.coverUrl} alt={book.title} className="result-cover-img" />
+                          ) : (
+                            <div className="result-cover-fallback">
+                              <BookOpen size={16} />
+                            </div>
+                          )}
+                        </div>
+                        <div className="result-metadata-info">
+                          <h4 className="result-title">{book.title}</h4>
+                          {book.authors && book.authors.length > 0 && (
+                            <p className="result-author">by {book.authors.join(', ')}</p>
+                          )}
+                          <div className="result-meta-bottom">
+                            {book.publisher && <span className="result-publisher">{book.publisher}</span>}
+                            {book.publishDate && <span className="result-pub-date">({book.publishDate})</span>}
+                          </div>
+                          {book.isbn && <span className="result-isbn">ISBN: {book.isbn}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
