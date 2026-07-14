@@ -81,18 +81,33 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         try {
           const session = JSON.parse(sessionStr);
           // 5-minute timeout check
-          if (session.isbn === id && (Date.now() - session.timestamp < 300000)) {
-            setNfcSession(session);
-          } else if (session.isbn === id) {
+          if (Date.now() - session.timestamp < 300000) {
+            if (session.isbn === id) {
+              setNfcSession(session);
+            }
+          } else {
             sessionStorage.removeItem('nfc_session');
+            setNfcSession(null);
           }
         } catch (e) {
           console.error("Error reading NFC session from storage", e);
         }
+      } else {
+        setNfcSession(null);
       }
     };
 
     checkNfcSession();
+
+    // Listen to focus and visibility change to check for suspended tabs waking up
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkNfcSession();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', checkNfcSession);
 
     const handleNfcTap = (e) => {
       const session = e.detail;
@@ -103,6 +118,8 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
 
     window.addEventListener('nfc_tap_detected', handleNfcTap);
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', checkNfcSession);
       window.removeEventListener('nfc_tap_detected', handleNfcTap);
     };
   }, [id]);
@@ -143,9 +160,15 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       if (sessionStr) {
         try {
           const session = JSON.parse(sessionStr);
-          session.timestamp = Date.now();
-          sessionStorage.setItem('nfc_session', JSON.stringify(session));
-          setNfcSession(session);
+          // Only allow timestamp reset if the session is still fresh (within 5 minutes of original scan)
+          if (Date.now() - session.timestamp < 300000) {
+            session.timestamp = Date.now();
+            sessionStorage.setItem('nfc_session', JSON.stringify(session));
+            setNfcSession(session);
+          } else {
+            sessionStorage.removeItem('nfc_session');
+            setNfcSession(null);
+          }
         } catch (e) {
           console.error("Failed to reset NFC session timestamp on login:", e);
         }
@@ -160,9 +183,15 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       if (sessionStr) {
         try {
           const session = JSON.parse(sessionStr);
-          session.timestamp = Date.now();
-          sessionStorage.setItem('nfc_session', JSON.stringify(session));
-          setNfcSession(session);
+          // Only allow timestamp reset if the session is still fresh (within 5 minutes of original scan)
+          if (Date.now() - session.timestamp < 300000) {
+            session.timestamp = Date.now();
+            sessionStorage.setItem('nfc_session', JSON.stringify(session));
+            setNfcSession(session);
+          } else {
+            sessionStorage.removeItem('nfc_session');
+            setNfcSession(null);
+          }
         } catch (e) {
           console.error("Failed to reset NFC session timestamp on onboarding event:", e);
         }

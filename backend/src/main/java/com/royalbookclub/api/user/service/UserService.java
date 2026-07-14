@@ -350,12 +350,53 @@ public class UserService {
                 throw new BusinessRuleException("ACTIVE_CHECKOUTS_FOUND:" + activeCount);
             }
 
+            if (activeCount > 0 && force) {
+                log.info("Force delete initiated. Clearing {} active checkouts for user {}.", activeCount, targetUid);
+                try {
+                    QuerySnapshot activeSnap = firestore.collection("checkouts")
+                            .whereEqualTo("memberId", targetUid)
+                            .whereIn("status", java.util.Arrays.asList("CHECKED_OUT", "REQUESTED_CHECKOUT", "REQUESTED_RETURN"))
+                            .get().get();
+                    
+                    for (QueryDocumentSnapshot checkoutDoc : activeSnap.getDocuments()) {
+                        String bookId = checkoutDoc.getString("bookId");
+                        DocumentReference checkoutRef = checkoutDoc.getReference();
+                        
+                        // 1. Return book copy back to inventory
+                        if (bookId != null && !bookId.isBlank()) {
+                            DocumentReference bookRef = firestore.collection("books").document(bookId);
+                            DocumentSnapshot bookDoc = bookRef.get().get();
+                            if (bookDoc.exists()) {
+                                Long available = bookDoc.getLong("availableCopies");
+                                Long total = bookDoc.getLong("totalCopies");
+                                long newAvailable = (available != null ? available : 0) + 1;
+                                if (total != null && newAvailable > total) {
+                                    newAvailable = total;
+                                }
+                                bookRef.update("availableCopies", newAvailable).get();
+                                log.info("Restored copy of book {} for force-deleted user {}.", bookId, targetUid);
+                            }
+                        }
+                        
+                        // 2. Mark checkout as RETURNED
+                        Map<String, Object> checkoutUpdates = new java.util.HashMap<>();
+                        checkoutUpdates.put("status", "RETURNED");
+                        checkoutUpdates.put("returnedAt", new Date());
+                        checkoutUpdates.put("notes", "Automatically returned due to administrative force user deletion.");
+                        checkoutRef.update(checkoutUpdates).get();
+                    }
+                    log.info("Successfully cleared {} active checkouts for force-deleted user {}.", activeCount, targetUid);
+                } catch (Exception e) {
+                    log.error("Failed to clear active checkouts for force-deleted user {}: {}", targetUid, e.getMessage(), e);
+                }
+            }
+
             // 1. Delete from Firebase Authentication credentials
             try {
                 firebaseAuth.deleteUser(targetUid);
                 log.info("Successfully deleted user {} from Firebase Authentication credentials.", targetUid);
-            } catch (com.google.firebase.auth.FirebaseAuthException e) {
-                log.warn("Firebase Auth deletion failed for uid: {}. Message: {}. Proceeding to anonymize Firestore document.", targetUid, e.getMessage());
+            } catch (Exception e) {
+                log.error("Firebase Auth deletion failed for uid: {}. Message: {}. Proceeding to anonymize Firestore document.", targetUid, e.getMessage(), e);
             }
 
             // 2. Soft-delete user document from Firestore (anonymize fields, keeping only firstName and lastName)

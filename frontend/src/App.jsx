@@ -75,7 +75,12 @@ function App() {
         ...prev,
         consentAcceptedAt: consentDate
       }));
-      window.location.hash = '#/profile';
+      
+      const currentHash = window.location.hash;
+      const isCatalogOrDetail = currentHash.startsWith('#/catalog');
+      if (!isCatalogOrDetail) {
+        window.location.hash = '#/profile';
+      }
     } catch (err) {
       console.error("Failed to save consent:", err);
     } finally {
@@ -111,6 +116,15 @@ function App() {
       
       if (u) {
         console.info("Intercepted NFC deep link UID:", u);
+        
+        // Synchronously clean the address bar IMMEDIATELY to prevent the browser from caching/remembering the 'u=' query param
+        try {
+          const cleanUrl = `${window.location.origin}/${window.location.hash}`;
+          window.history.replaceState(null, '', cleanUrl);
+        } catch (historyErr) {
+          console.warn("Failed to synchronously clean address bar history:", historyErr);
+        }
+
         try {
           setDeepLinkResolving(true);
           const response = await api.get(`/api/v1/books/ntag/${u}`);
