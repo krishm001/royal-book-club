@@ -159,8 +159,95 @@ public class IsbnLookupService {
                     }
                     return results;
                 })
+                .flatMap(results -> {
+                    if (results.isEmpty()) {
+                        log.info("Google Books returned empty list. Checking Open Library Search fallback...");
+                        return searchOpenLibrary(query);
+                    }
+                    return Mono.just(results);
+                })
                 .onErrorResume(ex -> {
-                    log.error("Google Books search failed for query: {}. Error: {}", query, ex.getMessage());
+                    log.warn("Google Books search failed (Quota or connection issue). Falling back to Open Library Search. Error: {}", ex.getMessage());
+                    return searchOpenLibrary(query);
+                });
+    }
+
+    /**
+     * Search Open Library API by title, author, or keywords.
+     */
+    public Mono<List<OpenLibraryBookDto>> searchOpenLibrary(String query) {
+        if (query == null || query.isBlank()) {
+            return Mono.just(new ArrayList<>());
+        }
+        
+        log.info("Searching Open Library API for metadata matching query: {}", query);
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/search.json")
+                        .queryParam("q", query.trim())
+                        .queryParam("limit", "10")
+                        .build())
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .map(jsonNode -> {
+                    List<OpenLibraryBookDto> results = new ArrayList<>();
+                    if (jsonNode == null || !jsonNode.has("docs")) {
+                        return results;
+                    }
+                    JsonNode docs = jsonNode.get("docs");
+                    if (docs.isArray()) {
+                        for (JsonNode doc : docs) {
+                            String title = doc.path("title").asText("");
+                            String subtitle = doc.path("subtitle").asText("");
+                            
+                            List<String> authorsList = new ArrayList<>();
+                            if (doc.has("author_name") && doc.get("author_name").isArray()) {
+                                for (JsonNode authorNode : doc.get("author_name")) {
+                                    authorsList.add(authorNode.asText());
+                                }
+                            }
+                            
+                            String publisher = null;
+                            if (doc.has("publisher") && doc.get("publisher").isArray() && !doc.get("publisher").isEmpty()) {
+                                publisher = doc.get("publisher").get(0).asText();
+                            }
+                            
+                            String publishedDate = null;
+                            if (doc.has("first_publish_year")) {
+                                publishedDate = String.valueOf(doc.get("first_publish_year").asInt());
+                            }
+                            
+                            String coverUrl = null;
+                            if (doc.has("cover_i")) {
+                                coverUrl = "https://covers.openlibrary.org/b/id/" + doc.get("cover_i").asInt() + "-L.jpg";
+                            }
+                            
+                            String foundIsbn = null;
+                            if (doc.has("isbn") && doc.get("isbn").isArray() && !doc.get("isbn").isEmpty()) {
+                                foundIsbn = doc.get("isbn").get(0).asText();
+                            }
+                            
+                            Integer pageCount = null;
+                            if (doc.has("number_of_pages_median")) {
+                                pageCount = doc.get("number_of_pages_median").asInt();
+                            }
+                            
+                            results.add(OpenLibraryBookDto.builder()
+                                    .isbn(foundIsbn != null ? foundIsbn : "")
+                                    .title(title)
+                                    .subtitle(subtitle)
+                                    .authors(authorsList)
+                                    .publisher(publisher)
+                                    .publishDate(publishedDate)
+                                    .coverUrl(coverUrl)
+                                    .pages(pageCount)
+                                    .build());
+                        }
+                    }
+                    return results;
+                })
+                .onErrorResume(ex -> {
+                    log.error("Open Library search failed for query: {}. Error: {}", query, ex.getMessage());
                     return Mono.just(new ArrayList<>());
                 });
     }
