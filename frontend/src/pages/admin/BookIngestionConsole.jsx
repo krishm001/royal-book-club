@@ -80,6 +80,7 @@ const BookIngestionConsole = ({ user }) => {
   const [iosWarningModalOpen, setIosWarningModalOpen] = useState(false);
   const [writeCountdown, setWriteCountdown] = useState(10);
   const nfcAbortControllerRef = useRef(null);
+  const [shouldWriteNfc, setShouldWriteNfc] = useState(false);
 
   // Search Metadata Drawer states
   const [isSearchDrawerOpen, setIsSearchDrawerOpen] = useState(false);
@@ -931,36 +932,26 @@ const BookIngestionConsole = ({ user }) => {
       language: bookLanguage
     };
 
-    const isAppleDevice = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    // 1. Immediately save to local/cloud database first in BOTH cases
+    try {
+      await createBook(bookDto);
+      setIngestionSuccess(true);
 
-    if ('NDEFReader' in window) {
-      setPendingBookDto(bookDto);
-      setNfcWriteError('');
-      setNfcWriteSuccess(false);
-      setNfcWriteModalOpen(true);
-      triggerWriteNfcTag(bookDto.isbn, bookDto);
-    } else if (isAppleDevice) {
-      setPendingBookDto(bookDto);
-      setIosWarningModalOpen(true);
-      try {
-        await createBook(bookDto);
-        setIngestionSuccess(true);
+      // 2. If the user checked the physical write option and browser has NDEFReader
+      if (shouldWriteNfc && 'NDEFReader' in window) {
+        setPendingBookDto(bookDto);
+        setNfcWriteError('');
+        setNfcWriteSuccess(false);
+        setNfcWriteModalOpen(true);
+        triggerWriteNfcTag(bookDto.isbn, bookDto);
+      } else {
+        // Otherwise, do not open any popup or wait for physical tap. Complete immediately!
         resetForm();
         setTimeout(() => setIngestionSuccess(false), 3000);
-      } catch (err) {
-        console.error(err);
-        setErrorMessage(isEditMode ? 'Unable to update book record inside direct iOS save.' : 'Unable to create book record inside direct iOS save.');
       }
-    } else {
-      try {
-        await createBook(bookDto);
-        setIngestionSuccess(true);
-        resetForm();
-        setTimeout(() => setIngestionSuccess(false), 3000);
-      } catch (err) {
-        console.error(err);
-        setErrorMessage(isEditMode ? 'Unable to update book record.' : 'Unable to create book record.');
-      }
+    } catch (err) {
+      console.error(err);
+      setErrorMessage(isEditMode ? 'Unable to update book record in the database.' : 'Unable to create book record in the database.');
     }
   };
 
@@ -989,11 +980,7 @@ const BookIngestionConsole = ({ user }) => {
       }, { signal: controller.signal });
       
       setNfcWriteSuccess(true);
-      if (targetDto) {
-        await createBook(targetDto);
-        setIngestionSuccess(true);
-        resetForm();
-      }
+      resetForm();
       setTimeout(() => {
         setNfcWriteModalOpen(false);
         setPendingBookDto(null);
@@ -1015,27 +1002,15 @@ const BookIngestionConsole = ({ user }) => {
     }
   };
 
-  const handleSkipWriteAndSave = async () => {
-    if (!pendingBookDto) return;
-    setNfcWriteLoading(true);
-    setNfcWriteError('');
-    try {
-      await createBook(pendingBookDto);
-      setIngestionSuccess(true);
-      resetForm();
-      setNfcWriteSuccess(true);
-      setTimeout(() => {
-        setNfcWriteModalOpen(false);
-        setPendingBookDto(null);
-        setNfcWriteSuccess(false);
-        setIngestionSuccess(false);
-      }, 2000);
-    } catch (err) {
-      console.error("Direct db save failed:", err);
-      setNfcWriteError(`Direct ledger registration failed: ${err.message}`);
-    } finally {
-      setNfcWriteLoading(false);
-    }
+  const handleSkipWriteAndSave = () => {
+    setNfcWriteSuccess(true);
+    resetForm();
+    setTimeout(() => {
+      setNfcWriteModalOpen(false);
+      setPendingBookDto(null);
+      setNfcWriteSuccess(false);
+      setIngestionSuccess(false);
+    }, 1500);
   };
 
 
@@ -1568,6 +1543,29 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
 
 
+
+                {'NDEFReader' in window && (
+                  <div 
+                    className="nfc-write-checkbox-row" 
+                    onClick={() => setShouldWriteNfc(!shouldWriteNfc)}
+                  >
+                    <input
+                      type="checkbox"
+                      id="should-write-nfc-checkbox"
+                      checked={shouldWriteNfc}
+                      onChange={(e) => setShouldWriteNfc(e.target.checked)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label 
+                      htmlFor="should-write-nfc-checkbox" 
+                      className="nfc-write-label"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Cpu size={16} className="nfc-write-icon" />
+                      Write details to physical NFC tag on save
+                    </label>
+                  </div>
+                )}
 
                 <div className="submit-row">
                   <button type="submit" className="royal-btn submit-book-btn" id="add-volume-btn">
