@@ -78,6 +78,8 @@ const BookIngestionConsole = ({ user }) => {
   const [nfcWriteError, setNfcWriteError] = useState('');
   const [pendingBookDto, setPendingBookDto] = useState(null);
   const [iosWarningModalOpen, setIosWarningModalOpen] = useState(false);
+  const [writeCountdown, setWriteCountdown] = useState(10);
+  const nfcAbortControllerRef = useRef(null);
 
   // Search Metadata Drawer states
   const [isSearchDrawerOpen, setIsSearchDrawerOpen] = useState(false);
@@ -755,6 +757,41 @@ const BookIngestionConsole = ({ user }) => {
     }
   };
 
+  const handleCancelNfcWrite = () => {
+    if (nfcAbortControllerRef.current) {
+      try {
+        nfcAbortControllerRef.current.abort();
+      } catch (err) {
+        console.error("Failed to abort NFC write:", err);
+      }
+      nfcAbortControllerRef.current = null;
+    }
+    setNfcWriteModalOpen(false);
+    setPendingBookDto(null);
+    setNfcWriteSuccess(false);
+    setNfcWriteLoading(false);
+  };
+
+  useEffect(() => {
+    let timer;
+    if (nfcWriteModalOpen && !nfcWriteSuccess) {
+      setWriteCountdown(10);
+      timer = setInterval(() => {
+        setWriteCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            handleCancelNfcWrite();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [nfcWriteModalOpen, nfcWriteSuccess]);
+
   useEffect(() => {
     return () => {
       if (barcodeIntervalRef.current) clearInterval(barcodeIntervalRef.current);
@@ -931,6 +968,12 @@ const BookIngestionConsole = ({ user }) => {
     setNfcWriteLoading(true);
     setNfcWriteError('');
     const targetDto = bookDtoToSave || pendingBookDto;
+
+    // Create a new abort controller for this write operation
+    const controller = new AbortController();
+    nfcAbortControllerRef.current = controller;
+    setWriteCountdown(10);
+
     try {
       const ndef = new window.NDEFReader();
       const tagUidToWrite = targetDto?.ntagUid || ntagUid || '04:A3:B2:C1:D0:E9:80';
@@ -943,7 +986,8 @@ const BookIngestionConsole = ({ user }) => {
             data: `https://bookshelfnet.com/?u=${cleanUidToWrite}x000000`
           }
         ]
-      });
+      }, { signal: controller.signal });
+      
       setNfcWriteSuccess(true);
       if (targetDto) {
         await createBook(targetDto);
@@ -957,9 +1001,16 @@ const BookIngestionConsole = ({ user }) => {
         setIngestionSuccess(false);
       }, 2500);
     } catch (writeErr) {
+      if (writeErr.name === 'AbortError') {
+        console.log("NFC Write operation aborted by user or timeout.");
+        return; // Silent exit for intentional cancellations
+      }
       console.error("Web NFC Write error:", writeErr);
       setNfcWriteError(`Write failed: ${writeErr.message || writeErr}. Hold the tag firmly near the device's NFC chip or tap "Skip & Save Directly".`);
     } finally {
+      if (nfcAbortControllerRef.current === controller) {
+        nfcAbortControllerRef.current = null;
+      }
       setNfcWriteLoading(false);
     }
   };
@@ -1623,10 +1674,7 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
               </h3>
               <button 
-                onClick={() => {
-                  setNfcWriteModalOpen(false);
-                  setPendingBookDto(null);
-                }} 
+                onClick={handleCancelNfcWrite} 
                 className="close-camera-btn"
               >
                 <X size={18} />
@@ -1644,9 +1692,14 @@ const BookIngestionConsole = ({ user }) => {
               </div>
 
               <div className="nfc-write-status">
-                {nfcWriteLoading && (
-                  <p className="status-message loading">
-                    <RefreshCw size={14} className="spin-icon" /> Broad-casting NDEF URL payload...
+                {nfcWriteLoading && !nfcWriteSuccess && !nfcWriteError && (
+                  <p className="status-message loading" style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+                    <span>
+                      <RefreshCw size={14} className="spin-icon" /> Broadcasting NDEF URL payload...
+                    </span>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 'bold' }}>
+                      Please tap your physical tag. Auto-closing in {writeCountdown}s...
+                    </span>
                   </p>
                 )}
                 {nfcWriteSuccess && (
@@ -1661,7 +1714,12 @@ const BookIngestionConsole = ({ user }) => {
                   </div>
                 )}
                 {!nfcWriteLoading && !nfcWriteSuccess && !nfcWriteError && (
-                  <p className="status-message info">Ready to write... Align tag near back of device.</p>
+                  <p className="status-message info" style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center' }}>
+                    <span>Ready to write... Align tag near back of device.</span>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 'bold' }}>
+                      Auto-closing in {writeCountdown}s...
+                    </span>
+                  </p>
                 )}
               </div>
 
@@ -1772,26 +1830,39 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
               </div>
 
-              <div className="nfc-modal-actions">
-                <button 
-                  type="button" 
-                  onClick={() => triggerWriteNfcTag(pendingBookDto.isbn)} 
-                  disabled={nfcWriteLoading || nfcWriteSuccess}
-                  className="royal-btn secondary-btn"
-                >
-                  <RefreshCw size={14} className={nfcWriteLoading ? "spin-icon" : ""} /> Retry Write
-                </button>
+              <div className="nfc-modal-actions" style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => triggerWriteNfcTag(pendingBookDto.isbn)} 
+                    disabled={nfcWriteLoading || nfcWriteSuccess}
+                    className="royal-btn secondary-btn"
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  >
+                    <RefreshCw size={14} className={nfcWriteLoading ? "spin-icon" : ""} />
+                    <span>Restart Write</span>
+                  </button>
+
+                  <button 
+                    type="button" 
+                    onClick={handleCancelNfcWrite} 
+                    className="royal-btn-secondary"
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', borderColor: 'rgba(255, 107, 107, 0.4)', color: '#ff6b6b' }}
+                  >
+                    <X size={14} />
+                    <span>Cancel & Void</span>
+                  </button>
+                </div>
                 
-
-
                 <button 
                   type="button" 
                   onClick={handleSkipWriteAndSave} 
                   disabled={nfcWriteLoading || nfcWriteSuccess}
                   className="royal-btn-secondary"
-                  style={{ width: '100%', marginTop: '8px' }}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                 >
-                  Skip Tag & Save Ledger Directly
+                  <Check size={14} />
+                  <span>Skip Tag & Save Ledger Directly</span>
                 </button>
               </div>
             </div>

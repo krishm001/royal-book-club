@@ -1257,9 +1257,15 @@
 }
 
 @media (max-width: 768px) {
-  .isbn-input-row {
+  .isbn-input-row, .nfc-input-row {
     flex-direction: column;
     gap: 10px;
+    width: 100%;
+  }
+  
+  .isbn-input-box, .nfc-input-box {
+    min-width: 0;
+    width: 100%;
   }
   
   .isbn-btn-group {
@@ -1270,6 +1276,11 @@
   
   .isbn-btn-group .royal-btn {
     flex: 1;
+    justify-content: center;
+  }
+
+  .nfc-top-btn {
+    width: 100%;
     justify-content: center;
   }
   
