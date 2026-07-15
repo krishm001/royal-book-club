@@ -11,11 +11,21 @@
       (function() {
         const params = new URLSearchParams(window.location.search);
         if (params.has('u')) {
-          const u = params.get('u');
+          let u = params.get('u');
+          let c = params.get('c') || '';
+          if (u && u.indexOf('x') !== -1) {
+            const parts = u.split('x');
+            u = parts[0];
+            c = parts[1];
+          }
+          if (u) {
+            u = u.toLowerCase().replace(/:/g, '');
+          }
           sessionStorage.setItem('pending_nfc_u', u);
-          if (params.has('c')) {
-            const c = params.get('c');
+          if (c) {
             sessionStorage.setItem('pending_nfc_c', c);
+          }
+          if (params.has('c')) {
             params.delete('c');
           }
           params.delete('u');

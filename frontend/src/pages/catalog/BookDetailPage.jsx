@@ -152,58 +152,6 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     return () => clearInterval(timer);
   }, [nfcSession]);
 
-  // Monitor onboarding / login status changes to reset the countdown
-  const prevUserRef = React.useRef(user);
-  useEffect(() => {
-    if (user && !prevUserRef.current && nfcSession) {
-      const sessionStr = sessionStorage.getItem('nfc_session');
-      if (sessionStr) {
-        try {
-          const session = JSON.parse(sessionStr);
-          // Only allow timestamp reset if the session is still fresh (within 5 minutes of original scan)
-          if (Date.now() - session.timestamp < 300000) {
-            session.timestamp = Date.now();
-            sessionStorage.setItem('nfc_session', JSON.stringify(session));
-            setNfcSession(session);
-          } else {
-            sessionStorage.removeItem('nfc_session');
-            setNfcSession(null);
-          }
-        } catch (e) {
-          console.error("Failed to reset NFC session timestamp on login:", e);
-        }
-      }
-    }
-    prevUserRef.current = user;
-  }, [user, nfcSession]);
-
-  useEffect(() => {
-    const handleOnboardingComplete = () => {
-      const sessionStr = sessionStorage.getItem('nfc_session');
-      if (sessionStr) {
-        try {
-          const session = JSON.parse(sessionStr);
-          // Only allow timestamp reset if the session is still fresh (within 5 minutes of original scan)
-          if (Date.now() - session.timestamp < 300000) {
-            session.timestamp = Date.now();
-            sessionStorage.setItem('nfc_session', JSON.stringify(session));
-            setNfcSession(session);
-          } else {
-            sessionStorage.removeItem('nfc_session');
-            setNfcSession(null);
-          }
-        } catch (e) {
-          console.error("Failed to reset NFC session timestamp on onboarding event:", e);
-        }
-      }
-    };
-
-    window.addEventListener('onboarding_complete', handleOnboardingComplete);
-    return () => {
-      window.removeEventListener('onboarding_complete', handleOnboardingComplete);
-    };
-  }, []);
-
   // Progressive profile gating checker
   const checkGatingPasses = async (actionType) => {
     if (!user || user.isAnonymous) {
@@ -964,34 +912,52 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         <div className="book-info-panel royal-card">
           <div className="detail-checkout-action-box" id="detail-checkout-action-card" style={{ marginBottom: '24px', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '20px' }}>
             {nfcSession && (
-              <div className="nfc-instant-checkout-container" style={{ margin: '0 0 16px 0', padding: '16px', border: '1px dashed var(--accent)', borderRadius: '8px', background: 'rgba(141, 18, 34, 0.05)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Sparkles size={16} className="gold-glow" style={{ color: 'var(--accent)' }} />
-                  <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>NFC Physical Sync Active</span>
-                  <div className="nfc-countdown-clock" style={{ marginLeft: 'auto', background: 'rgba(212, 175, 55, 0.15)', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '3px 8px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Clock size={12} className="animate-pulse" />
-                    <span>{Math.floor(timeLeft / 60).toString().padStart(2, '0')}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+              nfcSession.verificationStatus === 'VALID' ? (
+                <div className="nfc-instant-checkout-container" style={{ margin: '0 0 16px 0', padding: '16px', border: '1px dashed var(--accent)', borderRadius: '8px', background: 'rgba(141, 18, 34, 0.05)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sparkles size={16} className="gold-glow" style={{ color: 'var(--accent)' }} />
+                    <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>NFC Physical Sync Active</span>
+                    <div className="nfc-countdown-clock" style={{ marginLeft: 'auto', background: 'rgba(212, 175, 55, 0.15)', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '3px 8px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Clock size={12} className="animate-pulse" />
+                      <span>{Math.floor(timeLeft / 60).toString().padStart(2, '0')}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+                    </div>
                   </div>
+                  <p style={{ fontSize: '0.8rem', margin: 0, color: 'var(--text-secondary)' }}>You are holding the physical volume. Bypassing standard scans.</p>
+                  {checkoutStatus === 'available' ? (
+                    <button 
+                      onClick={() => handleInstantNfcAction('checkout')} 
+                      className="royal-btn checkout-cta-btn pulse-button"
+                      style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 'bold' }}
+                    >
+                      <Smartphone size={16} /> Instant NFC Checkout
+                    </button>
+                  ) : checkoutStatus === 'checked-out' ? (
+                    <button 
+                      onClick={() => handleInstantNfcAction('return')} 
+                      className="royal-btn checkout-cta-btn pulse-button"
+                      style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 'bold' }}
+                    >
+                      <Smartphone size={16} /> Instant NFC Return
+                    </button>
+                  ) : null}
                 </div>
-                <p style={{ fontSize: '0.8rem', margin: 0, color: 'var(--text-secondary)' }}>You are holding the physical volume. Bypassing standard scans.</p>
-                {checkoutStatus === 'available' ? (
-                  <button 
-                    onClick={() => handleInstantNfcAction('checkout')} 
-                    className="royal-btn checkout-cta-btn pulse-button"
-                    style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 'bold' }}
-                  >
-                    <Smartphone size={16} /> Instant NFC Checkout
-                  </button>
-                ) : checkoutStatus === 'checked-out' ? (
-                  <button 
-                    onClick={() => handleInstantNfcAction('return')} 
-                    className="royal-btn checkout-cta-btn pulse-button"
-                    style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 'bold' }}
-                  >
-                    <Smartphone size={16} /> Instant NFC Return
-                  </button>
-                ) : null}
-              </div>
+              ) : (
+                <div className="nfc-instant-checkout-container" style={{ margin: '0 0 16px 0', padding: '16px', border: '1px dashed #d97706', borderRadius: '8px', background: 'rgba(217, 119, 6, 0.05)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <AlertTriangle size={16} style={{ color: '#d97706' }} />
+                    <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#d97706' }}>NFC Verification Warning</span>
+                  </div>
+                  <p style={{ fontSize: '0.82rem', margin: 0, color: 'var(--text-primary)', lineHeight: '1.4' }}>
+                    {nfcSession.verificationStatus === 'REUSED' 
+                      ? "This physical NFC sequence has been used previously. Instant checkout is disabled to prevent reuse."
+                      : "The security token for this physical tap has expired. Instant checkout is disabled."
+                    }
+                  </p>
+                  <p style={{ fontSize: '0.78rem', margin: 0, color: 'var(--text-secondary)' }}>
+                    Please proceed with <strong>Regular Manual Checkout</strong> below.
+                  </p>
+                </div>
+              )
             )}
             {checkoutStatus === 'available' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

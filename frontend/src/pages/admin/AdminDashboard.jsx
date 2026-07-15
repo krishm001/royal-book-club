@@ -230,10 +230,22 @@ const AdminDashboard = ({ user }) => {
           <div className="panel-icon-wrapper">
             <Shield size={28} className="gold-glow-icon" />
           </div>
-          <h3>{t('admin.contentModeration')}</h3>
-          <p>{t('admin.moderationDesc')}</p>
+          <h3>{t('admin.contentModeration', 'Content Moderation')}</h3>
+          <p>{t('admin.moderationDesc', 'Manage flagged user contributions and reviews.')}</p>
           <Link to="/admin/moderation" className="royal-btn action-panel-btn">
-            {t('admin.manageModeration')}
+            {t('admin.manageModeration', 'Manage Moderation')}
+          </Link>
+        </div>
+
+        {/* NFC Sequence Counter Diagnostics & Reset Panel */}
+        <div className="royal-card action-panel-card">
+          <div className="panel-icon-wrapper">
+            <RefreshCw size={28} className="gold-glow-icon" />
+          </div>
+          <h3>{t('admin.physicalNfcDiagnostics', 'NFC Sequence Diagnostics')}</h3>
+          <p>{t('admin.nfcDiagnosticsDesc', 'Audit physical tag registers, monitor hardware sequences, and execute bulk resets.')}</p>
+          <Link to="/admin/nfc" className="royal-btn action-panel-btn">
+            {t('admin.launchDiagnostics', 'Launch Diagnostics')}
           </Link>
         </div>
 

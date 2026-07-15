@@ -80,7 +80,9 @@ public class BookService {
             ApiFuture<DocumentSnapshot> future = docRef.get();
             DocumentSnapshot document = future.get();
             if (document.exists()) {
-                return Optional.of(mapToBook(document));
+                Book book = mapToBook(document);
+                populateNfcResetTimestamp(book);
+                return Optional.of(book);
             }
             return Optional.empty();
         } catch (InterruptedException e) {
@@ -233,7 +235,9 @@ public class BookService {
                     .get();
             List<QueryDocumentSnapshot> documents = future.get().getDocuments();
             if (!documents.isEmpty()) {
-                return mapToBook(documents.get(0));
+                Book book = mapToBook(documents.get(0));
+                populateNfcResetTimestamp(book);
+                return book;
             }
             return null;
         } catch (InterruptedException e) {
@@ -298,61 +302,76 @@ public class BookService {
      * @return The Book if found, or null
      */
     public Book getBookByNtagUid(String ntagUid, String counter) {
-        String cleanUid = ntagUid.trim().toLowerCase().replace(":", "");
-        if (counter != null && !counter.trim().isEmpty()) {
+        Book book = getBookByNtagUid(ntagUid);
+        if (book == null) {
+            return null;
+        }
+
+        String cleanUid = book.getNtagUid().trim().toLowerCase().replace(":", "");
+        if (counter == null || counter.trim().isEmpty()) {
+            book.setNfcVerificationStatus("NONE");
+            return book;
+        }
+
+        try {
             long incomingCounter = parseCounterToLong(counter);
-            log.info("Verifying parsed NFC counter: {} (raw: {}) for UID: {}", incomingCounter, counter, cleanUid);
-            try {
-                DocumentReference counterRef = firestore.collection("nfc_counters").document(cleanUid);
-                DocumentSnapshot counterDoc = counterRef.get().get();
-                if (!counterDoc.exists()) {
-                    // Save first seen record
+            DocumentReference counterRef = firestore.collection("nfc_counters").document(cleanUid);
+            DocumentSnapshot counterDoc = counterRef.get().get();
+
+            if (!counterDoc.exists()) {
+                // Save first seen record
+                Map<String, Object> data = new HashMap<>();
+                data.put("id", cleanUid);
+                data.put("uid", cleanUid);
+                data.put("counter", incomingCounter);
+                data.put("firstSeenAt", new java.util.Date());
+                counterRef.set(data).get();
+                log.info("Registered first NFC counter for UID: {}, counter: {}", cleanUid, incomingCounter);
+                book.setNfcVerificationStatus("VALID");
+            } else {
+                Long storedCounter = counterDoc.getLong("counter");
+                if (storedCounter == null) {
+                    storedCounter = 0L;
+                }
+
+                if (incomingCounter > storedCounter) {
+                    // A later counter is seen - update the latest counter and its timestamp
                     Map<String, Object> data = new HashMap<>();
-                    data.put("id", cleanUid);
-                    data.put("uid", cleanUid);
                     data.put("counter", incomingCounter);
                     data.put("firstSeenAt", new java.util.Date());
-                    counterRef.set(data).get();
-                    log.info("Registered first NFC counter for UID: {}, counter: {}", cleanUid, incomingCounter);
-                } else {
-                    Long storedCounter = counterDoc.getLong("counter");
-                    if (storedCounter == null) {
-                        storedCounter = 0L;
-                    }
-                    
-                    if (incomingCounter > storedCounter) {
-                        // A later counter is seen - update the latest counter and its timestamp
-                        Map<String, Object> data = new HashMap<>();
-                        data.put("counter", incomingCounter);
-                        data.put("firstSeenAt", new java.util.Date());
-                        counterRef.update(data).get();
-                        log.info("Updated NFC counter for UID: {} to newer counter: {}", cleanUid, incomingCounter);
-                    } else if (incomingCounter == storedCounter) {
-                        // Same counter value - check age limits
-                        java.util.Date firstSeenAt = counterDoc.getDate("firstSeenAt");
-                        if (firstSeenAt != null) {
-                            long elapsed = System.currentTimeMillis() - firstSeenAt.getTime();
-                            if (elapsed > 300000) {
-                                log.warn("NFC counter {} for UID {} has expired. Elapsed: {}ms", incomingCounter, cleanUid, elapsed);
-                                throw new BusinessRuleException("NFC Tap session has expired (5-minute security limit exceeded). Please re-tap the physical book.");
-                            }
+                    counterRef.update(data).get();
+                    log.info("Updated NFC counter for UID: {} to newer counter: {}", cleanUid, incomingCounter);
+                    book.setNfcVerificationStatus("VALID");
+                } else if (incomingCounter == storedCounter) {
+                    // Same counter value - check age limits
+                    java.util.Date firstSeenAt = counterDoc.getDate("firstSeenAt");
+                    if (firstSeenAt != null) {
+                        long elapsed = System.currentTimeMillis() - firstSeenAt.getTime();
+                        if (elapsed > 300000) {
+                            log.warn("NFC counter {} for UID {} has expired. Elapsed: {}ms", incomingCounter, cleanUid, elapsed);
+                            book.setNfcVerificationStatus("EXPIRED");
+                        } else {
+                            book.setNfcVerificationStatus("VALID");
                         }
                     } else {
-                        // Older counter value - rejected immediately
-                        log.warn("NFC counter reuse attempt! Incoming: {}, Stored Latest: {} for UID: {}", incomingCounter, storedCounter, cleanUid);
-                        throw new BusinessRuleException("This NFC counter is outdated and has been superseded by a more recent tap. Re-use of previous taps is strictly prohibited.");
+                        book.setNfcVerificationStatus("VALID");
                     }
+                } else {
+                    // Older counter value - demote
+                    log.warn("NFC counter reuse attempt! Incoming: {}, Stored Latest: {} for UID: {}", incomingCounter, storedCounter, cleanUid);
+                    book.setNfcVerificationStatus("REUSED");
                 }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.error("Interrupted while validating NFC counter for UID: {}", cleanUid, e);
-                throw new RuntimeException("Failed to verify NFC safety counter", e);
-            } catch (ExecutionException e) {
-                log.error("Error while validating NFC counter for UID: {}", cleanUid, e);
-                throw new RuntimeException("Failed to verify NFC safety counter", e);
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Interrupted while validating NFC counter for UID: {}", cleanUid, e);
+            book.setNfcVerificationStatus("NONE");
+        } catch (ExecutionException e) {
+            log.error("Error while validating NFC counter for UID: {}", cleanUid, e);
+            book.setNfcVerificationStatus("NONE");
         }
-        return getBookByNtagUid(ntagUid);
+
+        return book;
     }
 
     /**
@@ -445,5 +464,23 @@ public class BookService {
                 .createdAt(createdTimestamp != null ? Instant.ofEpochSecond(createdTimestamp.getSeconds(), createdTimestamp.getNanos()) : null)
                 .updatedAt(updatedTimestamp != null ? Instant.ofEpochSecond(updatedTimestamp.getSeconds(), updatedTimestamp.getNanos()) : null)
                 .build();
+    }
+
+    private void populateNfcResetTimestamp(Book book) {
+        if (book == null || book.getNtagUid() == null || book.getNtagUid().isBlank()) {
+            return;
+        }
+        String cleanUid = book.getNtagUid().trim().toLowerCase().replace(":", "");
+        try {
+            DocumentSnapshot counterDoc = firestore.collection("nfc_counters").document(cleanUid).get().get();
+            if (counterDoc.exists()) {
+                java.util.Date lastResetAt = counterDoc.getDate("lastResetAt");
+                if (lastResetAt != null) {
+                    book.setNfcCounterResetAt(lastResetAt.toInstant());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to populate NFC counter reset timestamp for UID: {}", cleanUid, e);
+        }
     }
 }

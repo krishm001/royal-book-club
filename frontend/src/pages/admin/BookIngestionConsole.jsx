@@ -12,6 +12,16 @@ const SafeHtml5Qrcode = Html5Qrcode;
 const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
 
 const BookIngestionConsole = ({ user }) => {
+  const formatUidWithColons = (val) => {
+    if (!val) return '';
+    const clean = val.replace(/[^0-9a-fA-F]/g, '').substring(0, 14).toUpperCase();
+    const chunks = [];
+    for (let i = 0; i < clean.length; i += 2) {
+      chunks.push(clean.substring(i, i + 2));
+    }
+    return chunks.join(':');
+  };
+
   const [isbn, setIsbn] = useState('');
   const [fetchingMetadata, setFetchingMetadata] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -140,7 +150,7 @@ const BookIngestionConsole = ({ user }) => {
     setAvailableCopies(book.availableCopies || 1);
     setBookLanguage(book.language || 'en');
     setSelectedHouse(book.houseName || (houses.length > 0 ? houses[0] : ''));
-    setNtagUid(book.ntagUid || '');
+    setNtagUid(formatUidWithColons(book.ntagUid || ''));
     if (book.tags) {
       setTagsInput(Array.isArray(book.tags) ? book.tags.join(', ') : book.tags);
     } else {
@@ -227,7 +237,7 @@ const BookIngestionConsole = ({ user }) => {
         // Populate new fields
         setSelectedHouse(existingBook.genre || (houses.length > 0 ? houses[0] : ''));
         setTagsInput(Array.isArray(existingBook.tags) ? existingBook.tags.join(', ') : '');
-        setNtagUid(existingBook.ntagUid || '');
+        setNtagUid(formatUidWithColons(existingBook.ntagUid || ''));
         setBookLanguage(existingBook.language || 'en');
         
         setIsEditMode(true);
@@ -672,7 +682,7 @@ const BookIngestionConsole = ({ user }) => {
         setTotalCopies(matchedBook.totalCopies || 1);
         setAvailableCopies(matchedBook.availableCopies || 1);
         setTagsInput(Array.isArray(matchedBook.tags) ? matchedBook.tags.join(', ') : '');
-        setNtagUid(matchedBook.ntagUid || cleanScanned);
+        setNtagUid(formatUidWithColons(matchedBook.ntagUid || cleanScanned));
         setBookLanguage(matchedBook.language || 'en');
         if (matchedBook.genre) {
           setSelectedHouse(matchedBook.genre);
@@ -682,15 +692,15 @@ const BookIngestionConsole = ({ user }) => {
         setIsNfcReading(false);
         setInfoMessage(`Existing book "${matchedBook.title}" loaded from NFC tap.`);
       } else {
-        setNtagUid(cleanScanned);
+        setNtagUid(formatUidWithColons(cleanScanned));
         setNfcSuccess(true);
         setIsNfcReading(false);
-        setInfoMessage(`Unregistered NTAG213 Tag (${cleanScanned}) detected.`);
+        setInfoMessage(`Unregistered NTAG213 Tag (${formatUidWithColons(cleanScanned)}) detected.`);
       }
     } catch (err) {
       console.error("Error matching NTAG tap:", err);
       const fallbackClean = (serialNumber || '').toLowerCase().replace(/:/g, '');
-      setNtagUid(fallbackClean);
+      setNtagUid(formatUidWithColons(fallbackClean));
       setNfcSuccess(true);
       setIsNfcReading(false);
       setInfoMessage(`Tag detected: ${fallbackClean}`);
@@ -880,7 +890,7 @@ const BookIngestionConsole = ({ user }) => {
       availableCopies: Number(availableCopies) || 1,
       genre: selectedHouse,
       tags: deduplicatedTags,
-      ntagUid: ntagUid ? ntagUid.trim() : null,
+      ntagUid: ntagUid ? ntagUid.trim().toLowerCase().replace(/:/g, '') : null,
       language: bookLanguage
     };
 
@@ -924,12 +934,13 @@ const BookIngestionConsole = ({ user }) => {
     try {
       const ndef = new window.NDEFReader();
       const tagUidToWrite = targetDto?.ntagUid || ntagUid || '04:A3:B2:C1:D0:E9:80';
+      const cleanUidToWrite = tagUidToWrite.trim().toLowerCase().replace(/:/g, '');
       
       await ndef.write({
         records: [
           {
             recordType: "url",
-            data: `${window.location.origin}/?u=${tagUidToWrite}&c=000000`
+            data: `https://bookshelfnet.com/?u=${cleanUidToWrite}x000000`
           }
         ]
       });
@@ -1002,7 +1013,105 @@ const BookIngestionConsole = ({ user }) => {
             </p>
           </header>
 
-          <div className="ingestion-grid">
+          {/* Streamlined, sleek internal database search bar */}
+          <div className="royal-card db-catalog-search-card-top" style={{ maxWidth: '800px', margin: '0 auto 24px auto', padding: '16px 20px', border: '1px solid rgba(212, 175, 55, 0.2)', background: 'rgba(141, 18, 34, 0.03)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Search size={18} style={{ color: 'var(--accent)' }} />
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                  Search & Edit Local Ledger Database
+                </h3>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                Search and retrieve existing physical and digital volumes from the local database to update their catalog metadata or program their tag.
+              </p>
+              
+              <div className="db-search-input-group" style={{ marginTop: '8px' }}>
+                <div className="db-search-row" style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="Search by Title, Author, or ISBN..."
+                    className="royal-input db-search-input-box"
+                    value={dbSearchQuery}
+                    onChange={(e) => setDbSearchQuery(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                  {dbSearchQuery && (
+                    <button
+                      type="button"
+                      className="royal-btn-secondary clear-db-search-btn"
+                      onClick={() => setDbSearchQuery('')}
+                      style={{ padding: '0 16px' }}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {dbSearchQuery.trim() ? (
+                <div className="db-search-results-list" style={{ marginTop: '12px', maxHeight: '320px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid rgba(212, 175, 55, 0.1)', padding: '8px', borderRadius: '6px', background: 'rgba(0, 0, 0, 0.2)' }}>
+                  {existingBooks.filter(b => {
+                    const q = dbSearchQuery.toLowerCase().trim();
+                    return (b.title && b.title.toLowerCase().includes(q)) ||
+                           (b.isbn && b.isbn.toLowerCase().includes(q)) ||
+                           (Array.isArray(b.authors) && b.authors.some(a => a.toLowerCase().includes(q))) ||
+                           (b.author && b.author.toLowerCase().includes(q));
+                  }).length > 0 ? (
+                    existingBooks.filter(b => {
+                      const q = dbSearchQuery.toLowerCase().trim();
+                      return (b.title && b.title.toLowerCase().includes(q)) ||
+                             (b.isbn && b.isbn.toLowerCase().includes(q)) ||
+                             (Array.isArray(b.authors) && b.authors.some(a => a.toLowerCase().includes(q))) ||
+                             (b.author && b.author.toLowerCase().includes(q));
+                    }).map((b) => (
+                      <div key={b.isbn} className="db-search-result-item" onClick={() => { handleSelectExistingBook(b); setDbSearchQuery(''); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                        <div className="result-item-cover-wrapper" style={{ width: '36px', height: '48px', overflow: 'hidden', borderRadius: '3px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0, 0, 0, 0.2)' }}>
+                          {b.coverUrl ? (
+                            <img src={b.coverUrl} alt={b.title} className="result-item-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <BookOpen size={16} className="fallback-cover-icon" style={{ color: 'var(--accent, #d4af37)' }} />
+                          )}
+                        </div>
+                        <div className="result-item-details" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                          <span className="result-item-title" style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text, #f0f0f5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.title}</span>
+                          <span className="result-item-authors" style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #9a9ab0)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {Array.isArray(b.authors) ? b.authors.join(', ') : b.author || 'Unknown Author'}
+                          </span>
+                          <span className="result-item-isbn" style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: 'var(--accent, #d4af37)' }}>ISBN: {b.isbn}</span>
+                        </div>
+                        <button type="button" className="royal-btn-secondary select-db-book-btn" style={{ fontSize: '0.75rem', padding: '4px 10px' }}>
+                          Edit
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="no-db-results-text" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center', margin: '20px 0' }}>No matching database records found.</p>
+                  )}
+                </div>
+              ) : null}
+
+              {isEditingExisting && (
+                <div className="editing-indicator-box royal-card animate-fade-in" style={{ border: '1px solid var(--accent, #d4af37)', background: 'rgba(212, 175, 55, 0.05)', marginTop: '12px', padding: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--accent, #d4af37)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Sparkles size={14} /> <strong>Active Editing Mode: "{manualTitle}"</strong>
+                      </p>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                        Overwrites current record on save.
+                      </p>
+                    </div>
+                    <button type="button" className="royal-btn-secondary" style={{ fontSize: '0.8rem', padding: '6px 12px' }} onClick={handleResetForm}>
+                      Cancel & Add New Instead
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="ingestion-grid" style={{ display: 'block', maxWidth: '800px', margin: '0 auto' }}>
             <div className="royal-card form-intake-card">
               <h3>{t('admin.manualIngestion', 'Single Volume Intake')}</h3>
               <p className="section-p-desc">Register an individual book volume. Query metadata by ISBN or input details manually.</p>
@@ -1058,7 +1167,7 @@ const BookIngestionConsole = ({ user }) => {
                       type="text"
                       className="royal-input nfc-input-box"
                       value={ntagUid}
-                      onChange={(e) => setNtagUid(e.target.value)}
+                      onChange={(e) => setNtagUid(formatUidWithColons(e.target.value))}
                       placeholder="e.g. 04:A3:B2:C1:D0:E9:80"
                     />
                     <button
@@ -1428,110 +1537,6 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
               )}
             </div>
-
-            <div className="royal-card db-catalog-search-card">
-              <h3>Search & Edit Internal Database</h3>
-              <p className="section-p-desc">
-                Search, retrieve, and update existing catalog volumes directly within the local Royal Book Club database.
-              </p>
-
-              <div className="db-search-input-group" style={{ marginBottom: '16px' }}>
-                <label className="royal-input-label">Search Existing Books in Database (Title, Author, or ISBN)</label>
-                <div className="db-search-row" style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="text"
-                    placeholder="Search by Title, Author, or ISBN..."
-                    className="royal-input db-search-input-box"
-                    value={dbSearchQuery}
-                    onChange={(e) => setDbSearchQuery(e.target.value)}
-                    style={{ flex: 1 }}
-                  />
-                  {dbSearchQuery && (
-                    <button
-                      type="button"
-                      className="royal-btn-secondary clear-db-search-btn"
-                      onClick={() => setDbSearchQuery('')}
-                      style={{ padding: '0 12px' }}
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {dbSearchQuery.trim() ? (
-                <div className="db-search-results-list" style={{ maxHeight: '320px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid rgba(255, 255, 255, 0.05)', padding: '8px', borderRadius: '6px', background: 'rgba(0, 0, 0, 0.15)' }}>
-                  {existingBooks.filter(b => {
-                    const q = dbSearchQuery.toLowerCase().trim();
-                    return (b.title && b.title.toLowerCase().includes(q)) ||
-                           (b.isbn && b.isbn.toLowerCase().includes(q)) ||
-                           (Array.isArray(b.authors) && b.authors.some(a => a.toLowerCase().includes(q))) ||
-                           (b.author && b.author.toLowerCase().includes(q));
-                  }).length > 0 ? (
-                    existingBooks.filter(b => {
-                      const q = dbSearchQuery.toLowerCase().trim();
-                      return (b.title && b.title.toLowerCase().includes(q)) ||
-                             (b.isbn && b.isbn.toLowerCase().includes(q)) ||
-                             (Array.isArray(b.authors) && b.authors.some(a => a.toLowerCase().includes(q))) ||
-                             (b.author && b.author.toLowerCase().includes(q));
-                    }).map((b) => (
-                      <div key={b.isbn} className="db-search-result-item" onClick={() => handleSelectExistingBook(b)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s' }}>
-                        <div className="result-item-cover-wrapper" style={{ width: '36px', height: '48px', overflow: 'hidden', borderRadius: '3px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0, 0, 0, 0.2)' }}>
-                          {b.coverUrl ? (
-                            <img src={b.coverUrl} alt={b.title} className="result-item-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          ) : (
-                            <BookOpen size={16} className="fallback-cover-icon" style={{ color: 'var(--accent, #d4af37)' }} />
-                          )}
-                        </div>
-                        <div className="result-item-details" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                          <span className="result-item-title" style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text, #f0f0f5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.title}</span>
-                          <span className="result-item-authors" style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #9a9ab0)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {Array.isArray(b.authors) ? b.authors.join(', ') : b.author || 'Unknown Author'}
-                          </span>
-                          <span className="result-item-isbn" style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: 'var(--accent, #d4af37)' }}>ISBN: {b.isbn}</span>
-                        </div>
-                        <button type="button" className="royal-btn-secondary select-db-book-btn" style={{ fontSize: '0.75rem', padding: '4px 10px' }}>
-                          Edit
-                        </button>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="no-db-results-text" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center', margin: '20px 0' }}>No matching database records found.</p>
-                  )}
-                </div>
-              ) : (
-                <div className="db-search-empty-state" style={{ padding: '24px 12px', border: '1px dashed rgba(255, 255, 255, 0.05)', borderRadius: '6px', textAlign: 'center', background: 'rgba(255, 255, 255, 0.01)' }}>
-                  <Search size={24} style={{ color: 'var(--text-secondary)', opacity: 0.5, marginBottom: '8px' }} />
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Type above to search existing library books in database for updating.</p>
-                </div>
-              )}
-
-              {isEditingExisting && (
-                <div className="editing-indicator-box royal-card animate-fade-in" style={{ border: '1px solid var(--accent, #d4af37)', background: 'rgba(212, 175, 55, 0.05)', marginTop: '16px', padding: '12px' }}>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--accent, #d4af37)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Sparkles size={14} /> <strong>Active Editing Mode</strong>
-                  </p>
-                  <p style={{ margin: '4px 0 10px 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    Populated intake form with database record of "{manualTitle}". Overwrites record on save.
-                  </p>
-                  <button type="button" className="royal-btn-secondary" style={{ width: '100%', fontSize: '0.8rem', padding: '6px 12px' }} onClick={handleResetForm}>
-                    Cancel & Add New Book instead
-                  </button>
-                </div>
-              )}
-
-              <div className="form-divider" style={{ margin: '24px 0 16px 0' }}><span>OR BARCODE INTEGRATION</span></div>
-
-              <div className="barcode-scan-section">
-                <div className="barcode-promo-frame" style={{ display: 'flex', gap: '12px', padding: '12px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '6px' }}>
-                  <Scan size={24} className="gold-glow-icon" style={{ flexShrink: 0 }} />
-                  <div>
-                    <h4 style={{ margin: '0 0 4px 0', fontSize: '0.9rem', fontWeight: '600' }}>Interactive Barcode Scanner</h4>
-                    <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.35' }}>Use local scanner modules in Phase 2 to scan printed books instantly using hardware RFID/ISBN scan sweeps.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </>
       )}
@@ -1674,13 +1679,13 @@ const BookIngestionConsole = ({ user }) => {
                     <span className="book-mini-author">by {pendingBookDto.author}</span>
                     <span className="book-mini-isbn">ISBN: {pendingBookDto.isbn}</span>
                     {pendingBookDto.ntagUid && (
-                      <span className="book-mini-tag-uid">Tag NFC UID: {pendingBookDto.ntagUid}</span>
+                      <span className="book-mini-tag-uid">Tag NFC UID: {formatUidWithColons(pendingBookDto.ntagUid)}</span>
                     )}
                   </div>
                 </div>
                 <div className="nfc-target-url-badge">
                   <span>Writes Target NDEF URL:</span>
-                  <code style={{ fontSize: '0.8rem', wordBreak: 'break-all' }}>{`${window.location.origin}/?u=${pendingBookDto.ntagUid || ntagUid || '04:A3:B2:C1:D0:E9:80'}&c=000000`}</code>
+                  <code style={{ fontSize: '0.8rem', wordBreak: 'break-all' }}>{`https://bookshelfnet.com/?u=${(pendingBookDto.ntagUid || ntagUid || '04:A3:B2:C1:D0:E9:80').toLowerCase().replace(/:/g, '')}x000000`}</code>
                 </div>
 
                 {/* NTAG213 Advanced Hardware Configuration Tool */}
@@ -1703,7 +1708,7 @@ const BookIngestionConsole = ({ user }) => {
                   
                   {(() => {
                     const tagUid = pendingBookDto.ntagUid || ntagUid || '04:A3:B2:C1:D0:E9:80';
-                    const fullUrl = `${window.location.origin}/?u=${tagUid}&c=000000`;
+                    const fullUrl = `https://bookshelfnet.com/?u=${tagUid.trim().toLowerCase().replace(/:/g, '')}x000000`;
                     
                     let cleanUrl = fullUrl;
                     let prefixCode = "03h (https://)";
@@ -1720,9 +1725,9 @@ const BookIngestionConsole = ({ user }) => {
                       prefixCode = "00h (raw)";
                     }
                     
-                    const cIndex = cleanUrl.indexOf("&c=");
-                    if (cIndex === -1) return null;
-                    const zerosIndex = cIndex + 3; // Index of first '0' of '000000' relative to cleanUrl.
+                    const separatorIndex = cleanUrl.indexOf("x000000");
+                    if (separatorIndex === -1) return null;
+                    const zerosIndex = separatorIndex + 1; // Index of first '0' of '000000' relative to cleanUrl.
                     const absoluteOffset = 23 + zerosIndex; // 23 byte offset from Page 0 in standard NDEF.
                     const mirrorPage = Math.floor(absoluteOffset / 4);
                     const mirrorByte = absoluteOffset % 4;
@@ -1822,10 +1827,10 @@ const BookIngestionConsole = ({ user }) => {
                 </p>
                 <div className="ios-badge-explanation">
                   <p>
-                    <strong>Database Status:</strong> Digital registration is completely successful! The book catalog details and physical chip UID (<code>{pendingBookDto.ntagUid || "N/A"}</code>) are permanently registered in the royal ledger.
+                    <strong>Database Status:</strong> Digital registration is completely successful! The book catalog details and physical chip UID (<code>{formatUidWithColons(pendingBookDto.ntagUid) || "N/A"}</code>) are permanently registered in the royal ledger.
                   </p>
                   <p>
-                    <strong>NTAG Memory Action:</strong> Writing the secure checkout instant deep-link URL (<code>{`/?u=${pendingBookDto.ntagUid || "uid"}&c=000000`}</code>) with hardware counter mirror support will need to be completed later from an Android or NFC-compatible workstation.
+                    <strong>NTAG Memory Action:</strong> Writing the secure checkout instant deep-link URL (<code>{`https://bookshelfnet.com/?u=${(pendingBookDto.ntagUid || "uid").toLowerCase().replace(/:/g, '')}x000000`}</code>) with hardware counter mirror support will need to be completed later from an Android or NFC-compatible workstation.
                   </p>
                 </div>
               </div>

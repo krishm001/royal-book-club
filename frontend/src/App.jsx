@@ -20,6 +20,7 @@ import CuratorHeroPage from './pages/admin/CuratorHeroPage';
 import CuratorCheckoutsPage from './pages/admin/CuratorCheckoutsPage';
 import CuratorSettingsPage from './pages/admin/CuratorSettingsPage';
 import CuratorModerationPage from './pages/admin/CuratorModerationPage';
+import NfcCounterDashboard from './pages/admin/NfcCounterDashboard';
 import PrivacyNotice from './pages/PrivacyNotice';
 import TermsAndConditions from './pages/TermsAndConditions';
 import SignIn from './pages/auth/SignIn';
@@ -145,23 +146,25 @@ function App() {
           console.warn("Failed to clean address bar history:", historyErr);
         }
 
-        // Local Storage Offline / Temporal Check
-        if (c) {
-          const parseCounterToNumber = (rawCounter) => {
-            if (!rawCounter || !rawCounter.trim()) return null;
-            let clean = rawCounter.trim().toLowerCase();
-            if (clean.startsWith("0x")) {
-              clean = clean.substring(2);
-            }
-            clean = clean.replace(/^0+/, "");
-            if (!clean) return 0;
-            if (/[a-f]/.test(clean) || rawCounter.trim().toLowerCase().startsWith("0x")) {
-              return parseInt(clean, 16);
-            } else {
-              return parseInt(clean, 10);
-            }
-          };
+        // Helper to parse counter formats
+        const parseCounterToNumber = (rawCounter) => {
+          if (!rawCounter || !rawCounter.trim()) return null;
+          let clean = rawCounter.trim().toLowerCase();
+          if (clean.startsWith("0x")) {
+            clean = clean.substring(2);
+          }
+          clean = clean.replace(/^0+/, "");
+          if (!clean) return 0;
+          if (/[a-f]/.test(clean) || rawCounter.trim().toLowerCase().startsWith("0x")) {
+            return parseInt(clean, 16);
+          } else {
+            return parseInt(clean, 10);
+          }
+        };
 
+        // Local Cache Safety Pre-Check (Epic 4 & 2 Demotion and Self-Healing Optimization)
+        let isLocalBlock = false;
+        if (c) {
           const incomingCounter = parseCounterToNumber(c);
           if (incomingCounter !== null && !isNaN(incomingCounter)) {
             const storageKey = `nfc_latest_counter_${u}`;
@@ -171,41 +174,24 @@ function App() {
                 const latest = JSON.parse(storedVal);
                 const storedCounter = Number(latest.counter);
                 
-                if (incomingCounter > storedCounter) {
-                  // Newer counter supersedes the old one - update local storage
-                  localStorage.setItem(storageKey, JSON.stringify({
-                    counter: incomingCounter,
-                    firstSeenAt: Date.now()
-                  }));
-                } else if (incomingCounter === storedCounter) {
-                  // Same counter, check elapsed age
+                if (incomingCounter === storedCounter) {
+                  // Same counter - local check of 5 minutes
                   const age = Date.now() - Number(latest.firstSeenAt);
-                  if (age > 300000) { // 5 minutes
-                    console.warn("Local NFC tap has expired (> 5 minutes elapsed).");
-                    setNfcExpiryError("NFC Tap session has expired (5-minute security limit exceeded). Please re-tap the physical book.");
-                    return;
+                  if (age > 300000) {
+                    console.warn("Local NFC tap has expired (> 5 minutes). Redirecting silently to homepage.");
+                    window.location.replace(`${window.location.origin}/#/`);
+                    isLocalBlock = true;
                   }
-                } else {
-                  // Older counter, reject immediately
-                  console.warn(`Local NFC counter reuse attempt blocked. Incoming: ${incomingCounter}, Latest stored: ${storedCounter}`);
-                  setNfcExpiryError("This NFC counter is outdated and has been superseded by a more recent tap. Re-use of previous taps is strictly prohibited.");
-                  return;
                 }
               } catch (e) {
-                console.error("Failed to parse stored NFC counter JSON, overwriting:", e);
-                localStorage.setItem(storageKey, JSON.stringify({
-                  counter: incomingCounter,
-                  firstSeenAt: Date.now()
-                }));
+                console.error("Failed to parse stored NFC counter:", e);
               }
-            } else {
-              // Fresh counter, write initial value
-              localStorage.setItem(storageKey, JSON.stringify({
-                counter: incomingCounter,
-                firstSeenAt: Date.now()
-              }));
             }
           }
+        }
+
+        if (isLocalBlock) {
+          return;
         }
 
         try {
@@ -214,18 +200,69 @@ function App() {
           const book = response?.data;
           
           if (book && book.isbn) {
-            console.info("Found book from NFC UID:", book.title);
+            console.info("Found book from NFC UID:", book.title, "Verification status:", book.nfcVerificationStatus);
             
             // Mask the address bar by replacing history state with clean book details route
             const cleanUrl = `${window.location.origin}/#/catalog/${book.isbn}`;
             window.history.replaceState(null, '', cleanUrl);
             
             if (c) {
-              // Save NFC session state in sessionStorage with 5-minute timeout
+              if (book.nfcVerificationStatus === "EXPIRED") {
+                console.warn("NFC Tap counter is EXPIRED. Redirecting silently to homepage.");
+                window.location.replace(`${window.location.origin}/#/`);
+                return;
+              }
+
+              const storageKey = `nfc_latest_counter_${u}`;
+              const incomingCounter = parseCounterToNumber(c);
+
+              // 1. Self-Healing Synchronization Check (Epic 4):
+              // If backend has a reset timestamp, and our local cache's firstSeenAt is older than that, clear local cache.
+              if (book.nfcCounterResetAt) {
+                const storedVal = localStorage.getItem(storageKey);
+                if (storedVal) {
+                  try {
+                    const cached = JSON.parse(storedVal);
+                    const resetTime = new Date(book.nfcCounterResetAt).getTime();
+                    if (cached.firstSeenAt && cached.firstSeenAt < resetTime) {
+                      console.info("Self-healing: clearing obsolete client cache matching reset timestamp:", book.nfcCounterResetAt);
+                      localStorage.removeItem(storageKey);
+                    }
+                  } catch (err) {
+                    console.warn("Failed to parse local cache during self-healing reset check:", err);
+                  }
+                }
+              }
+
+              // 2. Cache successful/VALID counters
+              if (book.nfcVerificationStatus === "VALID" && incomingCounter !== null && !isNaN(incomingCounter)) {
+                localStorage.setItem(storageKey, JSON.stringify({
+                  counter: incomingCounter,
+                  firstSeenAt: Date.now()
+                }));
+              }
+
+              // 3. Resume Safety Countdown Timer (Epic 5):
+              // If an active session already exists and hasn't expired, preserve the original timestamp to resume the countdown.
+              const existingSessionStr = sessionStorage.getItem('nfc_session');
+              let originalTimestamp = Date.now();
+              if (existingSessionStr) {
+                try {
+                  const existing = JSON.parse(existingSessionStr);
+                  if (existing.ntagUid === u && (Date.now() - existing.timestamp < 300000)) {
+                    originalTimestamp = existing.timestamp;
+                  }
+                } catch (e) {
+                  // ignore
+                }
+              }
+              
+              // Save NFC session state in sessionStorage with 5-minute timeout and verificationStatus
               const sessionData = {
                 ntagUid: u,
                 isbn: book.isbn,
-                timestamp: Date.now()
+                timestamp: originalTimestamp,
+                verificationStatus: book.nfcVerificationStatus || 'VALID'
               };
               sessionStorage.setItem('nfc_session', JSON.stringify(sessionData));
               
@@ -235,8 +272,8 @@ function App() {
               // Dispatch custom event for real-time reactivity
               window.dispatchEvent(new CustomEvent('nfc_tap_detected', { detail: sessionData }));
             } else {
-              // c is not present: DO NOT allow instant checkout. Just open the book details page.
-              window.location.replace(`${window.location.origin}/#/catalog/${book.isbn}`);
+              // c is not present: just take the user to homepage silently for easy landing
+              window.location.replace(`${window.location.origin}/#/`);
             }
           } else {
             // Strip parameter if invalid
@@ -244,13 +281,8 @@ function App() {
           }
         } catch (error) {
           console.error("Failed to resolve book from NFC deep link:", error);
-          if (c) {
-            const errorMsg = error?.response?.data?.message || "The physical NFC tap has expired or is invalid. Please re-tap the physical book to obtain a fresh security token.";
-            setNfcExpiryError(errorMsg);
-          } else {
-            // If c is not present, just open the home page silently
-            window.location.replace(`${window.location.origin}/#/`);
-          }
+          // Just take the user to homepage silently for any error (e.g. invalid/not existing UID, or expired counter)
+          window.location.replace(`${window.location.origin}/#/`);
         } finally {
           setDeepLinkResolving(false);
         }
@@ -645,6 +677,7 @@ function App() {
             <Route path="/admin/book-requests" element={<CuratorCheckoutsPage user={user} />} />
             <Route path="/admin/settings" element={<CuratorSettingsPage user={user} />} />
             <Route path="/admin/moderation" element={<CuratorModerationPage user={user} />} />
+            <Route path="/admin/nfc" element={<NfcCounterDashboard user={user} />} />
             <Route path="/profile" element={<ProfilePage user={user} />} />
             <Route path="/gatepass" element={<GatepassPage user={user} />} />
             <Route path="/gatepass/:checkoutId" element={<GatepassPage user={user} />} />

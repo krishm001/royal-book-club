@@ -43,5 +43,11 @@ public class Book {
     
     @Builder.Default
     private String language = "en";
+
+    @com.google.cloud.firestore.annotation.Exclude
+    private String nfcVerificationStatus;
+
+    @com.google.cloud.firestore.annotation.Exclude
+    private Instant nfcCounterResetAt;
 }
 
