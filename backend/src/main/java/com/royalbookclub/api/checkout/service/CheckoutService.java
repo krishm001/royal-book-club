@@ -603,7 +603,7 @@ public class CheckoutService {
     public Checkout verifiedCheckout(CheckoutRequestDto request) {
         String cleanIsbn = request.getBookId().trim().replace("-", "");
         String memberId = request.getMemberId().trim();
-        String tagUid = request.getNtagUid();
+        String tagUid = request.getNtagUid() != null ? request.getNtagUid().trim().toLowerCase().replace(":", "") : null;
 
         // Profile details validation
         verifyUserProfileRequirements(memberId);
@@ -631,7 +631,9 @@ public class CheckoutService {
                     throw new IllegalStateException("Book does not have an NTAG213 tag bound to it in the system.");
                 }
 
-                if (!bookNtagUid.equalsIgnoreCase(tagUid.trim())) {
+                String normBookUid = bookNtagUid.trim().toLowerCase().replace(":", "");
+                String normTagUid = tagUid.trim().toLowerCase().replace(":", "");
+                if (!normBookUid.equals(normTagUid)) {
                     throw new IllegalArgumentException("Scanned NFC Tag UID does not match the bound tag for this book.");
                 }
 
@@ -698,7 +700,7 @@ public class CheckoutService {
     public Checkout verifiedReturn(ReturnRequestDto request) {
         String cleanIsbn = request.getBookId().trim().replace("-", "");
         String memberId = request.getMemberId().trim();
-        String tagUid = request.getNtagUid();
+        String tagUid = request.getNtagUid() != null ? request.getNtagUid().trim().toLowerCase().replace(":", "") : null;
         String checkoutId = request.getCheckoutId() != null ? request.getCheckoutId().trim() : null;
 
         if (tagUid == null || tagUid.isBlank()) {
@@ -752,7 +754,9 @@ public class CheckoutService {
                     throw new IllegalStateException("Book does not have an NTAG213 tag bound to it in the system.");
                 }
 
-                if (!bookNtagUid.equalsIgnoreCase(tagUid.trim())) {
+                String normBookUid = bookNtagUid.trim().toLowerCase().replace(":", "");
+                String normTagUid = tagUid.trim().toLowerCase().replace(":", "");
+                if (!normBookUid.equals(normTagUid)) {
                     throw new IllegalArgumentException("Scanned NFC Tag UID does not match the bound tag for this book.");
                 }
 

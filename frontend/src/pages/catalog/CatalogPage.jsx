@@ -664,9 +664,9 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
         if (cleanScanned === cleanBookTag) {
           try {
             if (actionType === 'checkout') {
-              await verifiedCheckout({ bookId: targetBook.isbn, memberId: user.uid || user.id, ntagUid: serialNumber });
+              await verifiedCheckout({ bookId: targetBook.isbn, memberId: user.uid || user.id, ntagUid: cleanScanned });
             } else {
-              await verifiedReturn({ bookId: targetBook.isbn, memberId: user.uid || user.id, ntagUid: serialNumber });
+              await verifiedReturn({ bookId: targetBook.isbn, memberId: user.uid || user.id, ntagUid: cleanScanned });
             }
             setNfcSuccess(true);
             setNfcReading(false);

@@ -672,7 +672,7 @@ const BookIngestionConsole = ({ user }) => {
         setTotalCopies(matchedBook.totalCopies || 1);
         setAvailableCopies(matchedBook.availableCopies || 1);
         setTagsInput(Array.isArray(matchedBook.tags) ? matchedBook.tags.join(', ') : '');
-        setNtagUid(matchedBook.ntagUid || serialNumber);
+        setNtagUid(matchedBook.ntagUid || cleanScanned);
         setBookLanguage(matchedBook.language || 'en');
         if (matchedBook.genre) {
           setSelectedHouse(matchedBook.genre);
@@ -682,17 +682,18 @@ const BookIngestionConsole = ({ user }) => {
         setIsNfcReading(false);
         setInfoMessage(`Existing book "${matchedBook.title}" loaded from NFC tap.`);
       } else {
-        setNtagUid(serialNumber);
+        setNtagUid(cleanScanned);
         setNfcSuccess(true);
         setIsNfcReading(false);
-        setInfoMessage(`Unregistered NTAG213 Tag (${serialNumber}) detected.`);
+        setInfoMessage(`Unregistered NTAG213 Tag (${cleanScanned}) detected.`);
       }
     } catch (err) {
       console.error("Error matching NTAG tap:", err);
-      setNtagUid(serialNumber);
+      const fallbackClean = (serialNumber || '').toLowerCase().replace(/:/g, '');
+      setNtagUid(fallbackClean);
       setNfcSuccess(true);
       setIsNfcReading(false);
-      setInfoMessage(`Tag detected: ${serialNumber}`);
+      setInfoMessage(`Tag detected: ${fallbackClean}`);
     }
   };
 

@@ -133,6 +133,7 @@ function App() {
       }
       
       if (u) {
+        u = u.trim().toLowerCase().replace(/:/g, '');
         console.info("Intercepted NFC deep link UID:", u, "Counter:", c);
         
         // Clean the address bar IMMEDIATELY to prevent the browser from caching/remembering parameters

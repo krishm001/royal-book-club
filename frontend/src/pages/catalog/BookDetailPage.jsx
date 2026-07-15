@@ -787,13 +787,13 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         if (cleanScanned === cleanBookTag) {
           try {
             if (actionType === 'checkout') {
-              await verifiedCheckout({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: serialNumber });
+              await verifiedCheckout({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: cleanScanned });
             } else {
               const coords = await getCoordinates();
               await verifiedReturn({
                 bookId: book.isbn,
                 memberId: user.uid || user.id,
-                ntagUid: serialNumber,
+                ntagUid: cleanScanned,
                 returnLatitude: coords.latitude,
                 returnLongitude: coords.longitude,
                 nfcOrBarcode: 'NFC'

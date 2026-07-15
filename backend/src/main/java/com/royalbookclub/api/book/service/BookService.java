@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -197,6 +198,20 @@ public class BookService {
         }
     }
 
+    private String formatWithColons(String cleanUid) {
+        if (cleanUid == null || cleanUid.length() != 14) {
+            return cleanUid;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < cleanUid.length(); i += 2) {
+            if (i > 0) {
+                sb.append(":");
+            }
+            sb.append(cleanUid.substring(i, i + 2));
+        }
+        return sb.toString();
+    }
+
     /**
      * Get a book from the catalog by its physical Ntag UID.
      *
@@ -204,11 +219,16 @@ public class BookService {
      * @return The Book if found, or null
      */
     public Book getBookByNtagUid(String ntagUid) {
-        String cleanUid = ntagUid.trim();
-        log.info("Querying book from Firestore by Ntag UID: {}", cleanUid);
+        String cleanUid = ntagUid.trim().toLowerCase().replace(":", "");
+        String colonLower = formatWithColons(cleanUid);
+        String colonUpper = colonLower.toUpperCase();
+        String cleanUpper = cleanUid.toUpperCase();
+        
+        List<String> candidates = Arrays.asList(cleanUid, cleanUpper, colonLower, colonUpper, ntagUid.trim());
+        log.info("Querying book from Firestore by Ntag UID candidates: {}", candidates);
         try {
             ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME)
-                    .whereEqualTo("ntagUid", cleanUid)
+                    .whereIn("ntagUid", candidates)
                     .limit(1)
                     .get();
             List<QueryDocumentSnapshot> documents = future.get().getDocuments();
@@ -278,7 +298,7 @@ public class BookService {
      * @return The Book if found, or null
      */
     public Book getBookByNtagUid(String ntagUid, String counter) {
-        String cleanUid = ntagUid.trim();
+        String cleanUid = ntagUid.trim().toLowerCase().replace(":", "");
         if (counter != null && !counter.trim().isEmpty()) {
             long incomingCounter = parseCounterToLong(counter);
             log.info("Verifying parsed NFC counter: {} (raw: {}) for UID: {}", incomingCounter, counter, cleanUid);
@@ -344,7 +364,7 @@ public class BookService {
      */
     public Book bindNtagUid(String isbn, String ntagUid) {
         String cleanIsbn = isbn.trim().replace("-", "");
-        String cleanUid = ntagUid.trim();
+        String cleanUid = ntagUid.trim().toLowerCase().replace(":", "");
         log.info("Binding Ntag UID '{}' to book with ISBN: {}", cleanUid, cleanIsbn);
 
         try {
