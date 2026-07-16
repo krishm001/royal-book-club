@@ -1308,38 +1308,52 @@
     grid-template-columns: 1fr;
     gap: 16px;
   }
-}
 
-@media (max-width: 900px) {
   .isbn-input-row, .nfc-input-row {
     flex-direction: column;
     gap: 10px;
-    width: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
   
   .isbn-input-box, .nfc-input-box {
-    min-width: 0;
-    width: 100%;
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
   
   .isbn-btn-group {
     display: flex;
-    width: 100%;
+    flex-wrap: wrap; /* Prevent button overflow on ultra-narrow layouts */
+    width: 100% !important;
     gap: 8px;
   }
   
   .isbn-btn-group .royal-btn {
     flex: 1;
+    min-width: 70px;
     justify-content: center;
   }
 
   .nfc-top-btn {
-    width: 100%;
+    width: 100% !important;
     justify-content: center;
   }
   
   .search-drawer-container {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .royal-card {
+    padding: 16px !important;
+  }
+  
+  .ingestion-container {
+    padding: 12px 10px !important;
   }
 }
 
