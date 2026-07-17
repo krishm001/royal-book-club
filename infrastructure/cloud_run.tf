@@ -44,6 +44,10 @@ resource "google_cloud_run_v2_service" "backend_service" {
         name  = "GOOGLE_CLOUD_PROJECT"
         value = var.project_id
       }
+      env {
+        name  = "CLOUDFLARE_SECRET"
+        value = random_password.cloudflare_secret.result
+      }
 
       resources {
         limits = {

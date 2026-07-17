@@ -1,5 +1,6 @@
 package com.royalbookclub.api.config;
 
+import com.royalbookclub.api.auth.filter.CloudflareSecretFilter;
 import com.royalbookclub.api.auth.filter.FirebaseTokenFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
@@ -23,9 +24,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final FirebaseTokenFilter firebaseTokenFilter;
+    private final CloudflareSecretFilter cloudflareSecretFilter;
 
-    public SecurityConfig(FirebaseTokenFilter firebaseTokenFilter) {
+    public SecurityConfig(FirebaseTokenFilter firebaseTokenFilter, CloudflareSecretFilter cloudflareSecretFilter) {
         this.firebaseTokenFilter = firebaseTokenFilter;
+        this.cloudflareSecretFilter = cloudflareSecretFilter;
     }
 
     /**
@@ -72,7 +75,8 @@ public class SecurityConfig {
                         // Any other request must be authenticated
                         .anyRequest().authenticated()
                 )
-                // Add the Firebase verification filter before UsernamePasswordAuthenticationFilter
+                // Add the Cloudflare origin verification filter at the top, and Firebase token filter before auth
+                .addFilterBefore(cloudflareSecretFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(firebaseTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

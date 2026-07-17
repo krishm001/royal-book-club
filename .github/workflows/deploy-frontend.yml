@@ -43,11 +43,11 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
 
-      - name: Deploy to Target GitHub Pages Repo
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
         with:
-          token: ${{ secrets.DEPLOY_PAT }} # Personal Access Token with repo scope to write to krishm001.github.io
-          repository-name: krishm001/krishm001.github.io
-          branch: main # User pages serve from default branch
-          folder: frontend/dist
-          clean: true # Keep target repo updated with fresh assets
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: royal-book-club
+          directory: frontend/dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
