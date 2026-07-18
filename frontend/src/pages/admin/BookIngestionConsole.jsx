@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw, X, Camera, Cpu, Smartphone, Check, ArrowLeft, Search, Compass, BookOpen } from 'lucide-react';
-import { createBook, lookupBookByIsbn, fetchBookByIsbn, fetchBooks, searchBookMetadata } from '../../services/libraryApi';
-import { fetchBookHouses } from '../../services/genreApi';
+import { createBook, lookupBookByIsbn, fetchBookByIsbn, fetchBooks, searchBookMetadata, fetchBookByNtagUid } from '../../services/libraryApi';
+import { fetchBookHouses, createBookHouse } from '../../services/genreApi';
 import { uploadBookImage } from '../../services/storageApi';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -53,6 +53,11 @@ const BookIngestionConsole = ({ user }) => {
   const [tagsInput, setTagsInput] = useState('');
   const [editingTagIndex, setEditingTagIndex] = useState(null);
   const [editingTagValue, setEditingTagValue] = useState('');
+  const [customGenre, setCustomGenre] = useState('');
+  const [subjectPromptOpen, setSubjectPromptOpen] = useState(false);
+  const [promptSubjects, setPromptSubjects] = useState([]);
+  const [cachedMetadata, setCachedMetadata] = useState(null);
+  const [isFieldFetching, setIsFieldFetching] = useState(false);
 
   // NTAG213 and Camera Hardware states
   const [ntagUid, setNtagUid] = useState('');
@@ -158,7 +163,7 @@ const BookIngestionConsole = ({ user }) => {
     setTotalCopies(book.totalCopies || 1);
     setAvailableCopies(book.availableCopies || 1);
     setBookLanguage(book.language || 'en');
-    setSelectedHouse(book.houseName || (houses.length > 0 ? houses[0] : ''));
+    setSelectedHouse(book.genre || book.houseName || (houses.length > 0 ? houses[0] : ''));
     setNtagUid(formatUidWithColons(book.ntagUid || ''));
     if (book.tags) {
       setTagsInput(Array.isArray(book.tags) ? book.tags.join(', ') : book.tags);
@@ -229,6 +234,7 @@ const BookIngestionConsole = ({ user }) => {
         setErrorMessage('Could not find metadata for this ISBN on external registries.');
         return;
       }
+      setCachedMetadata(metadata);
       setManualTitle(metadata.title || '');
       setManualAuthor(Array.isArray(metadata.authors) ? metadata.authors.map((author) => typeof author === 'object' && author ? author.name : author).join(', ') : metadata.authors || '');
       setPublisher(metadata.publishers?.[0] || metadata.publisher || '');
@@ -242,9 +248,155 @@ const BookIngestionConsole = ({ user }) => {
       setTagsInput('');
       setNtagUid('');
       setInfoMessage('Lookup returned metadata from external registry; complete any missing payload fields.');
+
+      if (metadata.subjects && metadata.subjects.length > 0) {
+        await handleSubjectsFetch(metadata.subjects);
+      }
     } catch (lookupError) {
       console.error("External lookup error:", lookupError);
       setErrorMessage(`Could not fetch book metadata from the backend lookup service: ${lookupError.message}`);
+    }
+  };
+
+  const handleSubjectsFetch = async (fetchedSubjects) => {
+    if (!fetchedSubjects || fetchedSubjects.length === 0) return;
+    
+    const existingGenresLower = houses.map(h => h.toLowerCase().trim());
+    let matchedGenre = null;
+    const tagsToAdd = [];
+    
+    for (const subject of fetchedSubjects) {
+      const cleanSubj = subject.trim();
+      const lowerSubj = cleanSubj.toLowerCase();
+      
+      const idx = existingGenresLower.indexOf(lowerSubj);
+      if (idx !== -1) {
+        if (!matchedGenre) {
+          matchedGenre = houses[idx];
+        }
+      } else {
+        tagsToAdd.push(cleanSubj);
+      }
+    }
+    
+    if (tagsToAdd.length > 0) {
+      setTagsInput(prev => {
+        const existing = prev ? prev.split(',').map(s => s.trim()).filter(Boolean) : [];
+        const combined = Array.from(new Set([...existing, ...tagsToAdd]));
+        return combined.join(', ');
+      });
+    }
+    
+    if (matchedGenre) {
+      setSelectedHouse(matchedGenre);
+      setInfoMessage(`Pre-existing genre "${matchedGenre}" selected based on book subjects.`);
+    } else {
+      const filteredSubjects = fetchedSubjects.map(s => s.trim()).filter(s => s.length > 0 && s.length < 50);
+      if (filteredSubjects.length > 0) {
+        setPromptSubjects(filteredSubjects);
+        setSubjectPromptOpen(true);
+      }
+    }
+  };
+
+  const handleCreateGenreFromSubject = async (subjectName) => {
+    try {
+      const payload = { 
+        id: subjectName.toLowerCase().replace(/\s+/g, '-'), 
+        name: subjectName,
+        translations: {
+          hi: { name: subjectName },
+          kn: { name: subjectName }
+        }
+      };
+      const res = await createBookHouse(payload);
+      if (res && res.success) {
+        setHouses(prev => [...prev, res.data.name]);
+        setSelectedHouse(res.data.name);
+        setInfoMessage(`Created and selected new genre "${res.data.name}" from subjects.`);
+      } else {
+        setErrorMessage('Failed to create new genre on the server.');
+      }
+    } catch (err) {
+      console.error('Failed to create genre from subject:', err);
+      setErrorMessage('Failed to create genre from subject.');
+    } finally {
+      setSubjectPromptOpen(false);
+    }
+  };
+
+  const fetchFieldMetadata = async () => {
+    if (!isbn || !isbn.trim()) {
+      setErrorMessage('Please enter an ISBN first to fetch field metadata.');
+      return null;
+    }
+    const cleanIsbn = isbn.trim();
+    if (cachedMetadata && cachedMetadata.isbn === cleanIsbn) {
+      return cachedMetadata;
+    }
+    
+    setIsFieldFetching(true);
+    setErrorMessage('');
+    try {
+      const metadata = await lookupBookByIsbn(cleanIsbn);
+      if (metadata && (metadata.title || metadata.authors)) {
+        setCachedMetadata(metadata);
+        return metadata;
+      } else {
+        setErrorMessage('Could not find metadata for this ISBN on external registries.');
+        return null;
+      }
+    } catch (err) {
+      console.error('Field metadata fetch failed:', err);
+      setErrorMessage('Failed to fetch external metadata for this ISBN.');
+      return null;
+    } finally {
+      setIsFieldFetching(false);
+    }
+  };
+
+  const handleFetchField = async (fieldName) => {
+    const metadata = await fetchFieldMetadata();
+    if (!metadata) return;
+
+    switch (fieldName) {
+      case 'title':
+        setManualTitle(metadata.title || '');
+        setInfoMessage('Fetched title successfully!');
+        break;
+      case 'author':
+        setManualAuthor(Array.isArray(metadata.authors) ? metadata.authors.map((a) => typeof a === 'object' && a ? a.name : a).join(', ') : metadata.authors || '');
+        setInfoMessage('Fetched author successfully!');
+        break;
+      case 'publisher':
+        setPublisher(metadata.publisher || '');
+        setInfoMessage('Fetched publisher successfully!');
+        break;
+      case 'publishDate':
+        setPublishDate(metadata.publishDate || metadata.publish_date || '');
+        setInfoMessage('Fetched publication date successfully!');
+        break;
+      case 'coverUrl':
+        setCoverUrl(metadata.coverUrl || '');
+        setInfoMessage('Fetched cover URL successfully!');
+        break;
+      case 'description':
+        setDescription(metadata.description || metadata.subtitle || '');
+        setInfoMessage('Fetched description successfully!');
+        break;
+      case 'pages':
+        setPages(metadata.pages || 0);
+        setInfoMessage('Fetched pages successfully!');
+        break;
+      case 'genreTags':
+        if (metadata.subjects && metadata.subjects.length > 0) {
+          await handleSubjectsFetch(metadata.subjects);
+        } else {
+          setInfoMessage('No subjects found on the external registry for this volume.');
+        }
+        break;
+      default:
+        break;
     }
   };
 
@@ -672,18 +824,26 @@ const BookIngestionConsole = ({ user }) => {
     setErrorMessage('');
     setInfoMessage('Analyzing tag contents...');
     try {
-      const allBooks = await fetchBooks();
-      let matchedBook = null;
-      
       const cleanScanned = (serialNumber || '').toLowerCase().replace(/:/g, '');
-      matchedBook = allBooks.find(b => {
-        const cleanBookTag = (b.ntagUid || '').toLowerCase().replace(/:/g, '');
-        return cleanBookTag && cleanBookTag === cleanScanned;
-      });
+      
+      let matchedBook = null;
+      try {
+        matchedBook = await fetchBookByNtagUid(cleanScanned);
+      } catch (err) {
+        console.warn("Ntag direct backend lookup failed, checking local catalog fallback:", err);
+      }
 
-      if (!matchedBook && urlIsbn) {
-        const cleanUrlIsbn = urlIsbn.trim().replace(/[-\s]/g, '');
-        matchedBook = allBooks.find(b => (b.isbn || '').trim().replace(/[-\s]/g, '') === cleanUrlIsbn);
+      if (!matchedBook) {
+        const allBooks = await fetchBooks();
+        matchedBook = allBooks.find(b => {
+          const cleanBookTag = (b.ntagUid || '').toLowerCase().replace(/:/g, '');
+          return cleanBookTag && cleanBookTag === cleanScanned;
+        });
+
+        if (!matchedBook && urlIsbn) {
+          const cleanUrlIsbn = urlIsbn.trim().replace(/[-\s]/g, '');
+          matchedBook = allBooks.find(b => (b.isbn || '').trim().replace(/[-\s]/g, '') === cleanUrlIsbn);
+        }
       }
 
       if (matchedBook) {
@@ -704,6 +864,7 @@ const BookIngestionConsole = ({ user }) => {
           setSelectedHouse(matchedBook.genre);
         }
         setIsEditMode(true);
+        setIsEditingExisting(true);
         setNfcSuccess(true);
         setIsNfcReading(false);
         setInfoMessage(`Existing book "${matchedBook.title}" loaded from NFC tap.`);
@@ -711,7 +872,7 @@ const BookIngestionConsole = ({ user }) => {
         setNtagUid(formatUidWithColons(cleanScanned));
         setNfcSuccess(true);
         setIsNfcReading(false);
-        setInfoMessage(`Unregistered NTAG213 Tag (${formatUidWithColons(cleanScanned)}) detected.`);
+        setInfoMessage(`Tag ID "${formatUidWithColons(cleanScanned)}" read successfully. Complete the metadata details to pair and ingest this book.`);
       }
     } catch (err) {
       console.error("Error matching NTAG tap:", err);
@@ -918,6 +1079,39 @@ const BookIngestionConsole = ({ user }) => {
 
     setErrorMessage('');
 
+    let finalGenre = selectedHouse;
+    if (selectedHouse === 'Other') {
+      if (!customGenre.trim()) {
+        setErrorMessage('Please specify the custom genre/house name.');
+        return;
+      }
+      try {
+        const payload = { 
+          id: customGenre.trim().toLowerCase().replace(/\s+/g, '-'), 
+          name: customGenre.trim(),
+          translations: {
+            hi: { name: customGenre.trim() },
+            kn: { name: customGenre.trim() }
+          }
+        };
+        const res = await createBookHouse(payload);
+        if (res && res.success) {
+          const newGenreName = res.data.name;
+          setHouses(prev => [...prev, newGenreName]);
+          setSelectedHouse(newGenreName);
+          setCustomGenre('');
+          finalGenre = newGenreName;
+        } else {
+          setErrorMessage('Failed to establish custom genre on server.');
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to create custom genre:', err);
+        setErrorMessage('Failed to create custom genre on server.');
+        return;
+      }
+    }
+
     const authors = manualAuthor.split(',').map((name) => name.trim()).filter(Boolean);
     
     // Trim and deduplicate tags
@@ -939,7 +1133,7 @@ const BookIngestionConsole = ({ user }) => {
       pages: Number(pages) || 0,
       totalCopies: Number(totalCopies) || 1,
       availableCopies: Number(availableCopies) || 1,
-      genre: selectedHouse,
+      genre: finalGenre,
       tags: deduplicatedTags,
       ntagUid: ntagUid ? ntagUid.trim().toLowerCase().replace(/:/g, '') : null,
       language: bookLanguage
@@ -1260,7 +1454,21 @@ const BookIngestionConsole = ({ user }) => {
                   </div>
                 )}
                 <div className="input-group">
-                  <label className="royal-input-label">{t('admin.titleLabel', 'Volume Title')}</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <label className="royal-input-label" style={{ margin: 0 }}>{t('admin.titleLabel', 'Volume Title')}</label>
+                    <button
+                      type="button"
+                      onClick={() => handleFetchField('title')}
+                      className="royal-field-fetch-btn"
+                      title="Fetch Title selectively from Open Library"
+                      style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', transition: 'all 0.2s', opacity: 0.8 }}
+                      onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+                    >
+                      <Sparkles size={11} className="gold-glow-icon" />
+                      <span>Fetch Title</span>
+                    </button>
+                  </div>
                   <input
                     type="text"
                     placeholder="The Picture of Dorian Gray"
@@ -1272,7 +1480,21 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
 
                 <div className="input-group">
-                  <label className="royal-input-label">{t('admin.authorLabel', 'Author Name(s)')}</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <label className="royal-input-label" style={{ margin: 0 }}>{t('admin.authorLabel', 'Author Name(s)')}</label>
+                    <button
+                      type="button"
+                      onClick={() => handleFetchField('author')}
+                      className="royal-field-fetch-btn"
+                      title="Fetch Author selectively from Open Library"
+                      style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', transition: 'all 0.2s', opacity: 0.8 }}
+                      onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+                    >
+                      <Sparkles size={11} className="gold-glow-icon" />
+                      <span>Fetch Author</span>
+                    </button>
+                  </div>
                   <input
                     type="text"
                     placeholder="Oscar Wilde, Mary Shelley"
@@ -1284,7 +1506,21 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
 
                 <div className="input-group">
-                  <label className="royal-input-label">{t('admin.publisherLabel', 'Publisher')}</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <label className="royal-input-label" style={{ margin: 0 }}>{t('admin.publisherLabel', 'Publisher')}</label>
+                    <button
+                      type="button"
+                      onClick={() => handleFetchField('publisher')}
+                      className="royal-field-fetch-btn"
+                      title="Fetch Publisher selectively from Open Library"
+                      style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', transition: 'all 0.2s', opacity: 0.8 }}
+                      onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+                    >
+                      <Sparkles size={11} className="gold-glow-icon" />
+                      <span>Fetch Publisher</span>
+                    </button>
+                  </div>
                   <input
                     type="text"
                     className="royal-input"
@@ -1294,7 +1530,21 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
 
                 <div className="input-group">
-                  <label className="royal-input-label">{t('admin.publishDateLabel', 'Publish Date')}</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <label className="royal-input-label" style={{ margin: 0 }}>{t('admin.publishDateLabel', 'Publish Date')}</label>
+                    <button
+                      type="button"
+                      onClick={() => handleFetchField('publishDate')}
+                      className="royal-field-fetch-btn"
+                      title="Fetch Publish Date selectively from Open Library"
+                      style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', transition: 'all 0.2s', opacity: 0.8 }}
+                      onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+                    >
+                      <Sparkles size={11} className="gold-glow-icon" />
+                      <span>Fetch Publish Date</span>
+                    </button>
+                  </div>
                   <input
                     type="text"
                     className="royal-input"
@@ -1305,7 +1555,21 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
 
                 <div className="input-group">
-                  <label className="royal-input-label">{t('admin.houseLabel', 'Assign Salon House')}</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <label className="royal-input-label" style={{ margin: 0 }}>{t('admin.houseLabel', 'Assign Salon House')}</label>
+                    <button
+                      type="button"
+                      onClick={() => handleFetchField('genreTags')}
+                      className="royal-field-fetch-btn"
+                      title="Fetch Genre & Tags selectively from Open Library"
+                      style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', transition: 'all 0.2s', opacity: 0.8 }}
+                      onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+                    >
+                      <Sparkles size={11} className="gold-glow-icon" />
+                      <span>Fetch Genre & Tags</span>
+                    </button>
+                  </div>
                   <select
                     className="royal-select"
                     value={selectedHouse}
@@ -1317,8 +1581,23 @@ const BookIngestionConsole = ({ user }) => {
                         {house}
                       </option>
                     ))}
+                    <option value="Other">Other...</option>
                   </select>
                 </div>
+
+                {selectedHouse === 'Other' && (
+                  <div className="input-group animate-fade-in" style={{ marginTop: '8px' }}>
+                    <label className="royal-input-label" style={{ color: 'var(--accent)' }}>Specify Custom Genre/House Name</label>
+                    <input
+                      type="text"
+                      className="royal-input"
+                      placeholder="e.g. Classic Philosophy"
+                      value={customGenre}
+                      onChange={(e) => setCustomGenre(e.target.value)}
+                      required
+                    />
+                  </div>
+                )}
 
                 <div className="input-group">
                   <label className="royal-input-label">{t('admin.languageLabel', 'Volume Language')}</label>
@@ -1404,7 +1683,21 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
 
                 <div className="input-group">
-                  <label className="royal-input-label">{t('admin.coverLabel', 'Cover Image')}</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <label className="royal-input-label" style={{ margin: 0 }}>{t('admin.coverLabel', 'Cover Image')}</label>
+                    <button
+                      type="button"
+                      onClick={() => handleFetchField('cover')}
+                      className="royal-field-fetch-btn"
+                      title="Fetch Cover selectively from Open Library"
+                      style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', transition: 'all 0.2s', opacity: 0.8 }}
+                      onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+                    >
+                      <Sparkles size={11} className="gold-glow-icon" />
+                      <span>Fetch Cover</span>
+                    </button>
+                  </div>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
@@ -1511,7 +1804,21 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
 
                 <div className="input-group">
-                  <label className="royal-input-label">{t('common.details', 'Description')}</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <label className="royal-input-label" style={{ margin: 0 }}>{t('common.details', 'Description')}</label>
+                    <button
+                      type="button"
+                      onClick={() => handleFetchField('description')}
+                      className="royal-field-fetch-btn"
+                      title="Fetch Description selectively from Open Library"
+                      style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', transition: 'all 0.2s', opacity: 0.8 }}
+                      onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+                    >
+                      <Sparkles size={11} className="gold-glow-icon" />
+                      <span>Fetch Description</span>
+                    </button>
+                  </div>
                   <textarea
                     className="royal-textarea"
                     value={description}
@@ -1522,7 +1829,21 @@ const BookIngestionConsole = ({ user }) => {
 
                 <div className="form-grid-two">
                   <div className="input-group">
-                    <label className="royal-input-label">{t('admin.pagesLabel', 'Pages')}</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <label className="royal-input-label" style={{ margin: 0 }}>{t('admin.pagesLabel', 'Pages')}</label>
+                      <button
+                        type="button"
+                        onClick={() => handleFetchField('pages')}
+                        className="royal-field-fetch-btn"
+                        title="Fetch Pages selectively from Open Library"
+                        style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', transition: 'all 0.2s', opacity: 0.8 }}
+                        onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+                      >
+                        <Sparkles size={11} className="gold-glow-icon" />
+                        <span>Fetch Pages</span>
+                      </button>
+                    </div>
                     <input
                       type="number"
                       className="royal-input"
@@ -2011,6 +2332,50 @@ const BookIngestionConsole = ({ user }) => {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Subject-to-Genre Creation Prompt Modal (Epic 3) */}
+      {subjectPromptOpen && (
+        <div className="camera-modal-overlay" style={{ zIndex: 1100 }}>
+          <div className="royal-card camera-modal-card" style={{ maxWidth: '500px', width: '90%', padding: '24px' }}>
+            <div className="camera-modal-header" style={{ marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '1.25rem', color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={18} className="gold-glow-icon" />
+                <span>Establish Book House / Genre</span>
+              </h3>
+              <button onClick={() => setSubjectPromptOpen(false)} className="close-camera-btn">
+                <X size={18} />
+              </button>
+            </div>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.5' }}>
+              We found unmatched subjects from the Open Library API. Click on any subject below to dynamically establish and select it as a new Royal Book House / Genre:
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', maxHeight: '200px', overflowY: 'auto', padding: '6px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '20px' }}>
+              {promptSubjects.map((subj, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleCreateGenreFromSubject(subj)}
+                  className="royal-btn-secondary"
+                  style={{ fontSize: '0.85rem', padding: '6px 12px', border: '1px solid var(--accent)', color: 'var(--accent)', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s', background: 'rgba(212, 165, 116, 0.05)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 165, 116, 0.15)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(212, 165, 116, 0.05)'; }}
+                >
+                  + Create "{subj}"
+                </button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setSubjectPromptOpen(false)}
+                className="royal-btn"
+                style={{ fontSize: '0.85rem', padding: '8px 16px' }}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

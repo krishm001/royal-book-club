@@ -24,4 +24,5 @@ public class OpenLibraryBookDto {
     private String coverUrl;
     private Integer pages;
     private String description;
+    private List<String> subjects;
 }

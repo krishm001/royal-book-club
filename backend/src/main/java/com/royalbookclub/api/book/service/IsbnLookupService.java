@@ -71,6 +71,8 @@ public class IsbnLookupService {
                         mergedDescription = mergedSubtitle;
                     }
                     
+                    List<String> mergedSubjects = (ol.getSubjects() != null && !ol.getSubjects().isEmpty()) ? ol.getSubjects() : gb.getSubjects();
+                    
                     log.info("Merged dual-API metadata completed for ISBN: {} -> Title: {}", cleanIsbn, mergedTitle);
                     return OpenLibraryBookDto.builder()
                             .isbn(cleanIsbn)
@@ -82,6 +84,7 @@ public class IsbnLookupService {
                             .coverUrl(mergedCoverUrl)
                             .pages(mergedPages)
                             .description(mergedDescription)
+                            .subjects(mergedSubjects)
                             .build();
                 });
     }
@@ -157,7 +160,13 @@ public class IsbnLookupService {
                                     }
                                 }
                             }
-                            
+                            List<String> subjectsList = new ArrayList<>();
+                            if (volumeInfo.has("categories") && volumeInfo.get("categories").isArray()) {
+                                for (JsonNode catNode : volumeInfo.get("categories")) {
+                                    subjectsList.add(catNode.asText());
+                                }
+                            }
+
                             results.add(OpenLibraryBookDto.builder()
                                     .isbn(foundIsbn != null ? foundIsbn : "")
                                     .title(title)
@@ -168,6 +177,7 @@ public class IsbnLookupService {
                                     .coverUrl(coverUrl)
                                     .pages(pageCount)
                                     .description(description)
+                                    .subjects(subjectsList)
                                     .build());
                         }
                     }
@@ -200,7 +210,7 @@ public class IsbnLookupService {
                         .path("/search.json")
                         .queryParam("q", query.trim())
                         .queryParam("limit", "10")
-                        .queryParam("fields", "title,subtitle,author_name,publisher,first_publish_year,isbn,cover_i,number_of_pages_median")
+                        .queryParam("fields", "title,subtitle,author_name,publisher,first_publish_year,isbn,cover_i,number_of_pages_median,subject")
                         .build())
                 .retrieve()
                 .bodyToMono(JsonNode.class)
@@ -246,6 +256,13 @@ public class IsbnLookupService {
                             if (doc.has("number_of_pages_median")) {
                                 pageCount = doc.get("number_of_pages_median").asInt();
                             }
+
+                            List<String> subjectsList = new ArrayList<>();
+                            if (doc.has("subject") && doc.get("subject").isArray()) {
+                                for (JsonNode subjNode : doc.get("subject")) {
+                                    subjectsList.add(subjNode.asText());
+                                }
+                            }
                             
                             results.add(OpenLibraryBookDto.builder()
                                     .isbn(foundIsbn != null ? foundIsbn : "")
@@ -256,6 +273,7 @@ public class IsbnLookupService {
                                     .publishDate(publishedDate)
                                     .coverUrl(coverUrl)
                                     .pages(pageCount)
+                                    .subjects(subjectsList)
                                     .build());
                         }
                     }
@@ -331,6 +349,13 @@ public class IsbnLookupService {
                             coverUrl = coverUrl.replace("http://", "https://");
                         }
                     }
+
+                    List<String> subjectsList = new ArrayList<>();
+                    if (volumeInfo.has("categories") && volumeInfo.get("categories").isArray()) {
+                        for (JsonNode catNode : volumeInfo.get("categories")) {
+                            subjectsList.add(catNode.asText());
+                        }
+                    }
                     
                     return OpenLibraryBookDto.builder()
                             .isbn(cleanIsbn)
@@ -342,6 +367,7 @@ public class IsbnLookupService {
                             .coverUrl(coverUrl)
                             .pages(pageCount)
                             .description(description)
+                            .subjects(subjectsList)
                             .build();
                 })
                 .onErrorResume(ex -> {
@@ -460,6 +486,22 @@ public class IsbnLookupService {
         }
         
         Integer pages = bookNode.has("number_of_pages") ? bookNode.get("number_of_pages").asInt() : null;
+
+        List<String> subjectsList = new ArrayList<>();
+        if (bookNode.has("subjects")) {
+            JsonNode subjectsNode = bookNode.get("subjects");
+            if (subjectsNode.isArray()) {
+                for (JsonNode subjectNode : subjectsNode) {
+                    String subjectName = subjectNode.path("name").asText(null);
+                    if (subjectName == null || subjectName.isBlank()) {
+                        subjectName = subjectNode.asText(null);
+                    }
+                    if (subjectName != null && !subjectName.isBlank()) {
+                        subjectsList.add(subjectName);
+                    }
+                }
+            }
+        }
         
         return OpenLibraryBookDto.builder()
                 .isbn(isbn)
@@ -470,6 +512,7 @@ public class IsbnLookupService {
                 .publishDate(publishDate)
                 .coverUrl(coverUrl)
                 .pages(pages)
+                .subjects(subjectsList)
                 .build();
     }
 }
