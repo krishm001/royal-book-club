@@ -313,11 +313,11 @@ const CuratorGenresPage = ({ user }) => {
                 onChange={(e) => setNewBookHouse(e.target.value)}
                 required
               />
-              <button type="submit" disabled={isSubmittingBook} className="royal-btn add-genre-submit-btn" style={{ whiteSpace: 'nowrap' }}>
-                <Plus size={16} /> {t('admin.establishHouse', 'Establish House')}
+              <button type="submit" disabled={isSubmittingBook} className="royal-btn add-genre-submit-btn" style={{ whiteSpace: 'nowrap', padding: '10px 14px' }} title={t('admin.establishHouse', 'Establish House')}>
+                <Plus size={18} />
               </button>
             </div>
-            <div className="translation-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '10px', width: '100%', alignItems: 'center' }}>
+            <div className="translation-row">
               <input
                 type="text"
                 placeholder="Hindi override"
@@ -410,11 +410,11 @@ const CuratorGenresPage = ({ user }) => {
                 onChange={(e) => setNewBlogHouse(e.target.value)}
                 required
               />
-              <button type="submit" disabled={isSubmittingBlog} className="royal-btn add-genre-submit-btn" style={{ whiteSpace: 'nowrap' }}>
-                <Plus size={16} /> {t('admin.establishHouse', 'Establish House')}
+              <button type="submit" disabled={isSubmittingBlog} className="royal-btn add-genre-submit-btn" style={{ whiteSpace: 'nowrap', padding: '10px 14px' }} title={t('admin.establishHouse', 'Establish House')}>
+                <Plus size={18} />
               </button>
             </div>
-            <div className="translation-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '10px', width: '100%', alignItems: 'center' }}>
+            <div className="translation-row">
               <input
                 type="text"
                 placeholder="Hindi override"

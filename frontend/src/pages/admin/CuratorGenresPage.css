@@ -201,3 +201,24 @@
     justify-content: center;
   }
 }
+
+/* Responsive Translation Rows */
+.translation-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  width: 100%;
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .translation-row {
+    grid-template-columns: 1fr !important;
+    gap: 8px;
+  }
+  .translation-row .royal-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

@@ -263,15 +263,23 @@ const BookIngestionConsole = ({ user }) => {
     
     const normalizeString = (str) => {
       if (!str) return '';
-      return str.toLowerCase().replace(/[\s\-_]/g, '');
+      return str.toLowerCase().replace(/[\p{P}\p{Z}\p{S}]/gu, '');
     };
+
+    // Flatten any elements containing internal commas so that they are treated as separate individual tags
+    const flattenedSubjects = Array.from(new Set(
+      fetchedSubjects
+        .flatMap(s => (s || '').split(','))
+        .map(s => s.trim())
+        .filter(Boolean)
+    ));
 
     const currentTags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(Boolean) : [];
     const promptList = [];
     const tagsToAdd = [];
     let matchedGenreForSelection = null;
 
-    for (const subject of fetchedSubjects) {
+    for (const subject of flattenedSubjects) {
       const cleanSubj = subject.trim();
       if (!cleanSubj) continue;
 
