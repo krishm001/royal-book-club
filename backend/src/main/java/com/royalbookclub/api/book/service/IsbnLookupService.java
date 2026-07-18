@@ -122,6 +122,7 @@ public class IsbnLookupService {
                             
                             String title = volumeInfo.path("title").asText(null);
                             String subtitle = volumeInfo.path("subtitle").asText(null);
+                            String description = volumeInfo.path("description").asText(null);
                             
                             List<String> authorsList = new ArrayList<>();
                             if (volumeInfo.has("authors")) {
@@ -166,6 +167,7 @@ public class IsbnLookupService {
                                     .publishDate(publishedDate)
                                     .coverUrl(coverUrl)
                                     .pages(pageCount)
+                                    .description(description)
                                     .build());
                         }
                     }
@@ -198,6 +200,7 @@ public class IsbnLookupService {
                         .path("/search.json")
                         .queryParam("q", query.trim())
                         .queryParam("limit", "10")
+                        .queryParam("fields", "title,subtitle,author_name,publisher,first_publish_year,isbn,cover_i,number_of_pages_median")
                         .build())
                 .retrieve()
                 .bodyToMono(JsonNode.class)
@@ -358,16 +361,51 @@ public class IsbnLookupService {
                         .build())
                 .retrieve()
                 .bodyToMono(JsonNode.class)
-                .map(jsonNode -> {
+                .flatMap(jsonNode -> {
                     if (jsonNode == null || !jsonNode.has(bibkey)) {
-                        return "";
+                        return Mono.just("");
                     }
                     JsonNode bookNode = jsonNode.get(bibkey);
                     JsonNode detailsNode = bookNode.path("details");
                     if (detailsNode.isMissingNode()) {
-                        return "";
+                        return Mono.just("");
                     }
                     JsonNode descNode = detailsNode.path("description");
+                    if (descNode.isTextual() && !descNode.asText().isBlank()) {
+                        return Mono.just(descNode.asText());
+                    } else if (descNode.isObject() && descNode.has("value") && !descNode.path("value").asText().isBlank()) {
+                        return Mono.just(descNode.path("value").asText());
+                    }
+
+                    // Fallback to checking the "works" array for a key
+                    JsonNode worksNode = detailsNode.path("works");
+                    if (worksNode.isArray() && !worksNode.isEmpty()) {
+                        String workKey = worksNode.get(0).path("key").asText("");
+                        if (!workKey.isBlank()) {
+                            return fetchOpenLibraryWorkDescription(workKey);
+                        }
+                    }
+
+                    return Mono.just("");
+                })
+                .onErrorResume(ex -> {
+                    log.error("Open Library details description fetch failed for ISBN: {}. Error: {}", cleanIsbn, ex.getMessage());
+                    return Mono.just("");
+                });
+    }
+
+    private Mono<String> fetchOpenLibraryWorkDescription(String workKey) {
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path(workKey + ".json")
+                        .build())
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .map(jsonNode -> {
+                    if (jsonNode == null) {
+                        return "";
+                    }
+                    JsonNode descNode = jsonNode.path("description");
                     if (descNode.isTextual()) {
                         return descNode.asText("");
                     } else if (descNode.isObject() && descNode.has("value")) {
@@ -376,7 +414,7 @@ public class IsbnLookupService {
                     return "";
                 })
                 .onErrorResume(ex -> {
-                    log.error("Open Library details description fetch failed for ISBN: {}. Error: {}", cleanIsbn, ex.getMessage());
+                    log.error("Open Library work description fetch failed for workKey: {}. Error: {}", workKey, ex.getMessage());
                     return Mono.just("");
                 });
     }

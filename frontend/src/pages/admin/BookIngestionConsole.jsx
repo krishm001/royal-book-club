@@ -110,20 +110,26 @@ const BookIngestionConsole = ({ user }) => {
   };
 
   const handleSelectSearchResult = (book) => {
-    setManualTitle(book.title || '');
-    setManualAuthor(Array.isArray(book.authors) ? book.authors.join(', ') : book.author || book.authors || '');
-    setPublisher(book.publisher || '');
-    setPublishDate(book.publishDate || '');
-    setCoverUrl(book.coverUrl || '');
-    setDescription(book.subtitle || '');
-    setPages(book.pages || 0);
-    setIsbn(book.isbn || '');
-    setTotalCopies(1);
-    setAvailableCopies(1);
-    setTagsInput('');
-    setNtagUid('');
-    setIsSearchDrawerOpen(false);
-    setInfoMessage('Auto-populated form with selected Google Books metadata; complete any remaining fields.');
+    try {
+      setErrorMessage('');
+      setManualTitle(book.title || '');
+      setManualAuthor(Array.isArray(book.authors) ? book.authors.join(', ') : book.author || book.authors || '');
+      setPublisher(book.publisher || '');
+      setPublishDate(book.publishDate || '');
+      setCoverUrl(book.coverUrl || '');
+      setDescription(book.description || book.subtitle || '');
+      setPages(book.pages || 0);
+      setIsbn(book.isbn || '');
+      setTotalCopies(1);
+      setAvailableCopies(1);
+      setTagsInput('');
+      setNtagUid('');
+      setIsSearchDrawerOpen(false);
+      setInfoMessage('Auto-populated form with selected Google Books metadata; complete any remaining fields.');
+    } catch (err) {
+      console.error("Error inside handleSelectSearchResult:", err);
+      setErrorMessage(`Failed to parse selected book card: ${err.message}`);
+    }
   };
 
   const loadExistingBooks = async () => {
@@ -216,6 +222,32 @@ const BookIngestionConsole = ({ user }) => {
     }
   }, [isAdmin]);
 
+  const fetchExternalMetadata = async (targetIsbn) => {
+    try {
+      const metadata = await lookupBookByIsbn(targetIsbn);
+      if (!metadata || (!metadata.title && !metadata.authors)) {
+        setErrorMessage('Could not find metadata for this ISBN on external registries.');
+        return;
+      }
+      setManualTitle(metadata.title || '');
+      setManualAuthor(Array.isArray(metadata.authors) ? metadata.authors.map((author) => typeof author === 'object' && author ? author.name : author).join(', ') : metadata.authors || '');
+      setPublisher(metadata.publishers?.[0] || metadata.publisher || '');
+      setPublishDate(metadata.publish_date || metadata.publishDate || '');
+      setCoverUrl(metadata.coverUrl || metadata.cover?.large || '');
+      setDescription(metadata.description || metadata.subtitle || '');
+      setPages(metadata.pages || metadata.number_of_pages || 0);
+
+      setTotalCopies(1);
+      setAvailableCopies(1);
+      setTagsInput('');
+      setNtagUid('');
+      setInfoMessage('Lookup returned metadata from external registry; complete any missing payload fields.');
+    } catch (lookupError) {
+      console.error("External lookup error:", lookupError);
+      setErrorMessage(`Could not fetch book metadata from the backend lookup service: ${lookupError.message}`);
+    }
+  };
+
   const handleIsbnFetch = async (forcedIsbn) => {
     const targetIsbn = typeof forcedIsbn === 'string' ? forcedIsbn : isbn;
     if (!targetIsbn || !targetIsbn.trim()) return;
@@ -245,32 +277,12 @@ const BookIngestionConsole = ({ user }) => {
         
         setIsEditMode(true);
         setInfoMessage('Existing book found in catalog. Edit the fields and save the updated details.');
+      } else {
+        await fetchExternalMetadata(targetIsbn.trim());
       }
     } catch (catalogError) {
-      if (catalogError?.response?.status === 404) {
-        try {
-          const metadata = await lookupBookByIsbn(targetIsbn.trim());
-          setManualTitle(metadata.title || '');
-          setManualAuthor(Array.isArray(metadata.authors) ? metadata.authors.map((author) => typeof author === 'object' && author ? author.name : author).join(', ') : metadata.authors || '');
-          setPublisher(metadata.publishers?.[0] || metadata.publisher || '');
-          setPublishDate(metadata.publish_date || metadata.publishDate || '');
-          setCoverUrl(metadata.coverUrl || metadata.cover?.large || '');
-          setDescription(metadata.description || metadata.subtitle || '');
-          setPages(metadata.pages || metadata.number_of_pages || 0);
-
-          setTotalCopies(1);
-          setAvailableCopies(1);
-          setTagsInput('');
-          setNtagUid('');
-          setInfoMessage('Lookup returned metadata from Open Library; complete any missing payload fields.');
-        } catch (lookupError) {
-          console.error(lookupError);
-          setErrorMessage('Could not fetch book metadata from the backend lookup service.');
-        }
-      } else {
-        console.error(catalogError);
-        setErrorMessage('Could not fetch book details from catalog lookup.');
-      }
+      console.warn("Catalog lookup failed, falling back to external ISBN fetch:", catalogError);
+      await fetchExternalMetadata(targetIsbn.trim());
     } finally {
       setFetchingMetadata(false);
     }
