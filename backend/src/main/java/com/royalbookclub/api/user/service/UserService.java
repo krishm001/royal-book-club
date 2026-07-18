@@ -61,6 +61,13 @@ public class UserService {
                     user.setId(document.getId());
                     boolean needsUpdate = false;
                     
+                    if (user.getDeleted() != null && user.getDeleted()) {
+                        user.setDeleted(false);
+                        user.setEmail(email);
+                        needsUpdate = true;
+                        log.info("Reactivating existing soft-deleted user profile for uid: {}, restoring email: {}", uid, email);
+                    }
+                    
                     String fName = sanitizeName(user.getFirstName());
                     String lName = sanitizeName(user.getLastName());
                     
@@ -399,21 +406,23 @@ public class UserService {
                 log.error("Firebase Auth deletion failed for uid: {}. Message: {}. Proceeding to anonymize Firestore document.", targetUid, e.getMessage(), e);
             }
 
-            // 2. Soft-delete user document from Firestore (anonymize fields, keeping only firstName and lastName)
-            Map<String, Object> updates = new java.util.HashMap<>();
-            updates.put("email", null);
-            updates.put("phone", null);
-            updates.put("rfidToken", null);
-            updates.put("houseNo", null);
-            updates.put("street", null);
-            updates.put("city", null);
-            updates.put("pinCode", null);
-            updates.put("consentAcceptedAt", null);
-            updates.put("deleted", true);
-            updates.put("updatedAt", new Date());
-
-            docRef.update(updates).get();
-            log.info("Successfully anonymized user {} in Firestore, preserving only name.", targetUid);
+            // 2. Anonymize user document in Firestore to retain name for references while wiping PII
+            if (existingUser != null) {
+                existingUser.setDeleted(true);
+                existingUser.setEmail("deleted_" + targetUid + "@anonymized.royalbookclub.com");
+                existingUser.setPhone(null);
+                existingUser.setHouseNo(null);
+                existingUser.setStreet(null);
+                existingUser.setCity(null);
+                existingUser.setPinCode(null);
+                existingUser.setConsentAcceptedAt(null);
+                existingUser.setLanguage("en");
+                existingUser.setRfidToken(null);
+                existingUser.setUpdatedAt(new Date());
+                
+                docRef.set(existingUser).get();
+                log.info("Successfully anonymized and soft-deleted user {} from Firestore database.", targetUid);
+            }
 
             // 3. Write an audit entry
             DocumentReference auditRef = firestore.collection("admin_actions").document();

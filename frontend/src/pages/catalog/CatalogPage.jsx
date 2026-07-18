@@ -462,7 +462,10 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
           setCreatedCheckoutId(res.id || res.data?.id);
         }
       } else {
-        await verifiedReturn({ bookId: p2dBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
+        const res = await verifiedReturn({ bookId: p2dBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
+        if (res) {
+          setCreatedCheckoutId(res.id || res.data?.id);
+        }
       }
       setP2dSuccess(true);
       await refreshCatalogState();
@@ -696,7 +699,10 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                 setCreatedCheckoutId(res.id || res.data?.id);
               }
             } else {
-              await verifiedReturn({ bookId: targetBook.isbn, memberId: user.uid || user.id, ntagUid: cleanScanned });
+              const res = await verifiedReturn({ bookId: targetBook.isbn, memberId: user.uid || user.id, ntagUid: cleanScanned });
+              if (res) {
+                setCreatedCheckoutId(res.id || res.data?.id);
+              }
             }
             setNfcSuccess(true);
             setNfcReading(false);
@@ -894,7 +900,10 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
             setCreatedCheckoutId(res.id || res.data?.id);
           }
         } else {
-          await verifiedReturn({ bookId: currentBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid });
+          const res = await verifiedReturn({ bookId: currentBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid });
+          if (res) {
+            setCreatedCheckoutId(res.id || res.data?.id);
+          }
         }
         setNfcSuccess(true);
         await refreshCatalogState();
@@ -935,7 +944,10 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
           setCreatedCheckoutId(res.id || res.data?.id);
         }
       } else {
-        await requestReturn({ bookId: selectedBook.isbn, memberId: user.uid || user.id, memberName: user?.displayName, memberEmail: user?.email });
+        const res = await requestReturn({ bookId: selectedBook.isbn, memberId: user.uid || user.id, memberName: user?.displayName, memberEmail: user?.email });
+        if (res) {
+          setCreatedCheckoutId(res.id || res.data?.id);
+        }
       }
       setFallbackSuccess(true);
       setFallbackLoading(false);
@@ -1186,8 +1198,8 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                   <h4 style={{ color: 'rgba(255, 255, 255, 0.95)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.verifConfirmed')}</h4>
                   <p style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.8rem', margin: '0 0 20px 0' }}>{t('catalog.ledgerUpdated')}</p>
 
-                  {/* Rating control if checkout */}
-                  {nfcActionType === 'checkout' && (
+                  {/* Rating control */}
+                  {createdCheckoutId && (
                     <div style={{ width: '100%', marginBottom: '20px', padding: '15px', background: 'rgba(212, 175, 55, 0.04)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '6px' }}>
                       <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
                         {ratingSubmitted ? "Thank you for your feedback!" : "How was your experience today?"}
@@ -1260,8 +1272,8 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                   <h4 style={{ color: 'rgba(255, 255, 255, 0.95)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.scribeRequestSaved')}</h4>
                   <p style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.8rem', margin: '0 0 20px 0' }}>{t('catalog.requestSubmittedDesc')}</p>
 
-                  {/* Rating control if checkout */}
-                  {nfcActionType === 'checkout' && (
+                  {/* Rating control */}
+                  {createdCheckoutId && (
                     <div style={{ width: '100%', marginBottom: '20px', padding: '15px', background: 'rgba(212, 175, 55, 0.04)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '6px' }}>
                       <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
                         {ratingSubmitted ? "Thank you for your feedback!" : "How was your experience today?"}
@@ -1589,8 +1601,8 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                     {t('catalog.nfcUid')}: <code>{p2dBook.ntagUid || 'P2D-VERIFIED'}</code>
                   </p>
 
-                  {/* Rating control if checkout */}
-                  {p2dActionType === 'checkout' && (
+                  {/* Rating control */}
+                  {createdCheckoutId && (
                     <div style={{ width: '100%', marginBottom: '20px', padding: '15px', background: 'rgba(212, 175, 55, 0.04)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '6px' }}>
                       <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
                         {ratingSubmitted ? "Thank you for your feedback!" : "How was your experience today?"}

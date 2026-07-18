@@ -574,10 +574,10 @@ const HomePage = ({ user, onSignIn, theme }) => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '30px' }}>
             
             {/* Carousel Box */}
-            <div className="royal-card review-carousel-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '30px', position: 'relative', background: 'rgba(26, 21, 16, 0.95)', border: '1px solid var(--glass-border)' }}>
+            <div className="royal-card review-carousel-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '30px', position: 'relative', background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)' }}>
               <div>
-                <Quote size={40} style={{ color: 'rgba(212, 175, 55, 0.12)', position: 'absolute', top: '24px', left: '24px' }} />
-                <h3 style={{ margin: '0 0 20px 0', fontFamily: 'var(--font-display)', color: 'var(--accent)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.02em', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '10px' }}>
+                <Quote size={40} style={{ color: 'var(--accent)', opacity: 0.12, position: 'absolute', top: '24px', left: '24px' }} />
+                <h3 style={{ margin: '0 0 20px 0', fontFamily: 'var(--font-display)', color: 'var(--accent)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.02em', borderBottom: '1px solid var(--glass-border)', paddingBottom: '10px' }}>
                   Curated Perspectives
                 </h3>
 
@@ -589,11 +589,11 @@ const HomePage = ({ user, onSignIn, theme }) => {
                           key={s}
                           size={16}
                           fill={s <= approvedReviews[currentReviewIndex].rating ? "var(--accent)" : "none"}
-                          stroke={s <= approvedReviews[currentReviewIndex].rating ? "var(--accent)" : "rgba(255,255,255,0.2)"}
+                          stroke={s <= approvedReviews[currentReviewIndex].rating ? "var(--accent)" : (theme === 'academic' ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)")}
                         />
                       ))}
                     </div>
-                    <blockquote style={{ margin: '0 0 16px 0', fontStyle: 'italic', fontSize: '0.95rem', color: 'rgba(255,255,255,0.85)', lineHeight: '1.6' }}>
+                    <blockquote style={{ margin: '0 0 16px 0', fontStyle: 'italic', fontSize: '0.95rem', color: 'var(--text-primary)', lineHeight: '1.6' }}>
                       "{approvedReviews[currentReviewIndex].comment}"
                     </blockquote>
                     <cite style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -601,7 +601,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
                     </cite>
                   </div>
                 ) : (
-                  <div style={{ minHeight: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>
+                  <div style={{ minHeight: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', textAlign: 'center' }}>
                     <p style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>No curations have been certified yet.</p>
                     <p style={{ margin: 0, fontSize: '0.8rem' }}>Be the first to leave a testimonial using the form!</p>
                   </div>
@@ -612,13 +612,13 @@ const HomePage = ({ user, onSignIn, theme }) => {
                 <div style={{ display: 'flex', gap: '10px', marginTop: '20px', alignSelf: 'flex-end' }}>
                   <button
                     onClick={() => setCurrentReviewIndex(prev => (prev - 1 + approvedReviews.length) % approvedReviews.length)}
-                    style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(212,175,55,0.3)', color: 'var(--accent)', cursor: 'pointer', padding: '6px 10px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ background: 'var(--surface)', border: '1px solid var(--glass-border-hover)', color: 'var(--accent)', cursor: 'pointer', padding: '6px 10px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     <ChevronLeft size={16} />
                   </button>
                   <button
                     onClick={() => setCurrentReviewIndex(prev => (prev + 1) % approvedReviews.length)}
-                    style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(212,175,55,0.3)', color: 'var(--accent)', cursor: 'pointer', padding: '6px 10px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ background: 'var(--surface)', border: '1px solid var(--glass-border-hover)', color: 'var(--accent)', cursor: 'pointer', padding: '6px 10px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     <ChevronRight size={16} />
                   </button>
@@ -627,15 +627,15 @@ const HomePage = ({ user, onSignIn, theme }) => {
             </div>
 
             {/* Testimonial Form Box */}
-            <div className="royal-card review-form-card" style={{ padding: '30px', background: 'rgba(26, 21, 16, 0.95)', border: '1px solid var(--glass-border)' }}>
-              <h3 style={{ margin: '0 0 20px 0', fontFamily: 'var(--font-display)', color: 'var(--accent)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.02em', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '10px' }}>
+            <div className="royal-card review-form-card" style={{ padding: '30px', background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)' }}>
+              <h3 style={{ margin: '0 0 20px 0', fontFamily: 'var(--font-display)', color: 'var(--accent)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.02em', borderBottom: '1px solid var(--glass-border)', paddingBottom: '10px' }}>
                 Inscribe Your Testimonial
               </h3>
 
               {user ? (
                 <form onSubmit={handleReviewSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       Rating
                     </label>
                     <div style={{ display: 'flex', gap: '6px' }}>
@@ -651,7 +651,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
                           <Star
                             size={22}
                             fill={starVal <= reviewRating ? "var(--accent)" : "none"}
-                            stroke={starVal <= reviewRating ? "var(--accent)" : "rgba(255,255,255,0.3)"}
+                            stroke={starVal <= reviewRating ? "var(--accent)" : (theme === 'academic' ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.3)")}
                           />
                         </button>
                       ))}
@@ -659,7 +659,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       Commentary
                     </label>
                     <textarea
@@ -671,10 +671,10 @@ const HomePage = ({ user, onSignIn, theme }) => {
                       style={{
                         width: '100%',
                         padding: '12px',
-                        background: 'rgba(0,0,0,0.3)',
-                        border: '1px solid rgba(212,175,55,0.25)',
+                        background: 'var(--surface)',
+                        border: '1px solid var(--glass-border)',
                         borderRadius: '4px',
-                        color: '#fff',
+                        color: 'var(--text-primary)',
                         fontSize: '0.9rem',
                         fontFamily: 'inherit',
                         lineHeight: '1.5',
@@ -682,9 +682,9 @@ const HomePage = ({ user, onSignIn, theme }) => {
                         outline: 'none',
                       }}
                       onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
-                      onBlur={(e) => e.target.style.borderColor = 'rgba(212,175,55,0.25)'}
+                      onBlur={(e) => e.target.style.borderColor = 'var(--glass-border)'}
                     />
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px', opacity: 0.8 }}>
                       {reviewComment.length}/500
                     </div>
                   </div>
@@ -720,9 +720,9 @@ const HomePage = ({ user, onSignIn, theme }) => {
                   </button>
                 </form>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '180px', textAlign: 'center', padding: '20px', background: 'rgba(212,175,55,0.02)', border: '1px dashed rgba(212,175,55,0.2)', borderRadius: '6px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '180px', textAlign: 'center', padding: '20px', background: 'var(--surface)', border: '1px dashed var(--glass-border-hover)', borderRadius: '6px' }}>
                   <Sparkles size={28} className="gold-glow-icon" style={{ marginBottom: '12px' }} />
-                  <p style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5' }}>
+                  <p style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
                     Only registered members can submit testimonies. Sign in to contribute your evaluation to the chronicle.
                   </p>
                   <button onClick={onSignIn} className="royal-btn" style={{ padding: '8px 20px', fontSize: '0.8rem' }}>

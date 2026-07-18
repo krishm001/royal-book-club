@@ -419,23 +419,33 @@ const GatepassPage = ({ user }) => {
 
   // --- RENDERING SINGLE GATEPASS ---
   const isReturned = checkout.status === 'RETURNED' || checkout.status === 'REQUESTED_RETURN';
+  const isPendingApproval = checkout.status === 'REQUESTED_CHECKOUT';
 
   return (
-    <div className="gatepass-outer-wrapper">
+    <div className="gatepass-outer-wrapper animate-fade-in">
       <div className="gatepass-actions-header no-print">
         <Link to="/profile" className="back-link">
           <ArrowLeft size={16} /> Back to Profile Ledger
         </Link>
-        <button onClick={handlePrint} className="royal-btn print-action-btn">
-          <Printer size={16} /> Print Gatepass
-        </button>
+        {!isPendingApproval && (
+          <button onClick={handlePrint} className="royal-btn print-action-btn">
+            <Printer size={16} /> Print Gatepass
+          </button>
+        )}
       </div>
 
       <div className="gatepass-card-container printable-gatepass">
         {/* Holographic header decorative element */}
-        <div className="gatepass-hologram-seal">
-          <Sparkles className="seal-icon" />
-          <span>VERIFIED SECURE</span>
+        <div 
+          className="gatepass-hologram-seal" 
+          style={isPendingApproval ? {
+            borderColor: 'rgba(212, 175, 55, 0.4)',
+            background: 'rgba(212, 175, 55, 0.05)',
+            color: '#d4af37'
+          } : {}}
+        >
+          {isPendingApproval ? <Clock size={12} className="seal-icon" style={{ animation: 'spin 12s linear infinite' }} /> : <Sparkles className="seal-icon" />}
+          <span>{isPendingApproval ? "PENDING CLEARANCE" : "VERIFIED SECURE"}</span>
         </div>
 
         <div className="gatepass-card-inner">
@@ -491,17 +501,17 @@ const GatepassPage = ({ user }) => {
               <div className="detail-item">
                 <Calendar size={16} className="detail-icon" />
                 <div className="detail-info">
-                  <span className="detail-label">Checkout Date</span>
-                  <span className="detail-value">{formattedDate(checkout.checkedOutAt)}</span>
+                  <span className="detail-label">{isPendingApproval ? "Request Date" : "Checkout Date"}</span>
+                  <span className="detail-value">{formattedDate(isPendingApproval ? checkout.requestedAt : checkout.checkedOutAt)}</span>
                 </div>
               </div>
 
               <div className="detail-item">
                 <Calendar size={16} className="detail-icon" />
                 <div className="detail-info">
-                  <span className="detail-label">{isReturned ? "Returned Date" : "Due Date"}</span>
-                  <span className={`detail-value ${!isReturned ? 'due-alert' : ''}`}>
-                    {isReturned ? formattedDate(checkout.returnedAt) : formattedDate(checkout.dueDate)}
+                  <span className="detail-label">Due Date</span>
+                  <span className={`detail-value ${!isReturned && !isPendingApproval ? 'due-alert' : ''}`} style={isPendingApproval ? { color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' } : {}}>
+                    {isPendingApproval ? "Pending Approval" : (isReturned ? formattedDate(checkout.returnedAt) : formattedDate(checkout.dueDate))}
                   </span>
                 </div>
               </div>
@@ -510,27 +520,45 @@ const GatepassPage = ({ user }) => {
             <div className="gatepass-divider"></div>
 
             <div className="gatepass-security-status">
-              <div className={`status-stamp ${isReturned ? 'returned-stamp' : 'approved-stamp'}`}>
-                <CheckCircle size={20} />
-                <span>{checkout.status === 'RETURNED' ? "RETURNED & CLOSED" : checkout.status === 'REQUESTED_RETURN' ? "PENDING RETURN VERIFICATION" : "APPROVED LEAVE REALM"}</span>
+              <div className={`status-stamp ${isReturned ? 'returned-stamp' : isPendingApproval ? 'pending-stamp' : 'approved-stamp'}`}>
+                {isPendingApproval ? <Clock size={20} style={{ animation: 'pulse 2s infinite' }} /> : <CheckCircle size={20} />}
+                <span>{checkout.status === 'RETURNED' ? "RETURNED & CLOSED" : checkout.status === 'REQUESTED_RETURN' ? "PENDING RETURN VERIFICATION" : isPendingApproval ? "PENDING ADMIN APPROVAL" : "APPROVED LEAVE REALM"}</span>
               </div>
             </div>
 
-            <div className="gatepass-barcode-container">
-              <div className="barcode-bars">
-                {Array.from({ length: 35 }).map((_, idx) => (
-                  <div 
-                    key={idx} 
-                    className="barcode-bar" 
-                    style={{ 
-                      width: `${(idx % 3 === 0 ? 3 : idx % 2 === 0 ? 1 : 2)}px`,
-                      marginRight: `${(idx % 4 === 0 ? 2 : 1)}px` 
-                    }}
-                  />
-                ))}
+            {isPendingApproval ? (
+              <div className="gatepass-pending-overlay" style={{
+                background: 'rgba(212, 175, 55, 0.03)',
+                border: '1px dashed rgba(212, 175, 55, 0.25)',
+                borderRadius: '8px',
+                padding: '24px 20px',
+                textAlign: 'center',
+                margin: '20px 0',
+                boxShadow: 'inset 0 0 15px rgba(212, 175, 55, 0.02)'
+              }}>
+                <Clock size={32} style={{ color: 'var(--accent, #d4af37)', margin: '0 auto 12px', opacity: 0.8 }} />
+                <h4 style={{ color: 'var(--accent, #d4af37)', margin: '0 0 6px 0', fontSize: '0.95rem', fontWeight: 'bold', letterSpacing: '0.05em' }}>GATEPASS NOT GENERATED</h4>
+                <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.8rem', margin: 0, lineHeight: '1.5', maxWidth: '380px', marginLeft: 'auto', marginRight: 'auto' }}>
+                  This digital transit gatepass is currently inactive. The official checkout barcode and security leave clearance will be generated automatically once your request is approved by an administrator.
+                </p>
               </div>
-              <span className="barcode-text">*{checkoutId}*</span>
-            </div>
+            ) : (
+              <div className="gatepass-barcode-container">
+                <div className="barcode-bars">
+                  {Array.from({ length: 35 }).map((_, idx) => (
+                    <div 
+                      key={idx} 
+                      className="barcode-bar" 
+                      style={{ 
+                        width: `${(idx % 3 === 0 ? 3 : idx % 2 === 0 ? 1 : 2)}px`,
+                        marginRight: `${(idx % 4 === 0 ? 2 : 1)}px` 
+                      }}
+                    />
+                  ))}
+                </div>
+                <span className="barcode-text">*{checkoutId}*</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

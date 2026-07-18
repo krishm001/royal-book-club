@@ -257,6 +257,13 @@
   border: 1px solid #107c41;
 }
 
+.pending-stamp {
+  background: rgba(212, 175, 55, 0.05);
+  color: var(--accent, #d4af37);
+  border: 1px dashed var(--accent, #d4af37);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.1);
+}
+
 .gatepass-barcode-container {
   display: flex;
   flex-direction: column;

@@ -7,7 +7,8 @@ import {
   FacebookAuthProvider, 
   TwitterAuthProvider, 
   OAuthProvider, 
-  sendEmailVerification 
+  sendEmailVerification,
+  signOut
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import api from '../api/apiClient';
@@ -31,6 +32,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import '../pages/member/ProfilePage.css'; // Load the exact profile ledger styles directly
 import './OnboardingWizard.css';
+import CovenantViewerModal from './CovenantViewerModal';
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -78,7 +80,8 @@ export default function OnboardingWizard({
   onClose, 
   onResume, 
   targetState, 
-  user: initialUser 
+  user: initialUser,
+  setUser
 }) {
   const { t } = useLanguage();
   const [step, setStep] = useState(1);
@@ -110,6 +113,15 @@ export default function OnboardingWizard({
 
   // Covenant Consent Checkbox
   const [covenantAccepted, setCovenantAccepted] = useState(false);
+  const [covenantViewer, setCovenantViewer] = useState(null); // null, 'terms', or 'privacy'
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
+  const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
+
+  useEffect(() => {
+    if (hasAcceptedTerms && hasAcceptedPrivacy) {
+      setCovenantAccepted(true);
+    }
+  }, [hasAcceptedTerms, hasAcceptedPrivacy]);
 
   // Verify Email Status State
   const [emailVerifySent, setEmailVerifySent] = useState(false);
@@ -407,11 +419,9 @@ export default function OnboardingWizard({
       }
       
       await api.post('/api/v1/auth/register', {
-        id: userCred.user.uid,
+        uid: userCred.user.uid,
         email: email,
-        firstName: firstName,
-        lastName: lastName,
-        role: 'MEMBER'
+        displayName: `${firstName || ''} ${lastName || ''}`.trim()
       });
     } catch (err) {
       setError(err.message || 'Registration failed');
@@ -439,6 +449,9 @@ export default function OnboardingWizard({
     try {
       // Save current full URL including hash router parameters for post-login seamless routing
       sessionStorage.setItem('linkedin_redirect_target', window.location.href);
+      if (targetState) {
+        sessionStorage.setItem('pending_onboarding_target', JSON.stringify(targetState));
+      }
       const redirectUri = window.location.origin;
       const res = await api.get(`/api/v1/auth/linkedin/url?redirectUri=${encodeURIComponent(redirectUri)}`);
       if (res.data) {
@@ -454,8 +467,8 @@ export default function OnboardingWizard({
 
 
   // Save Terms and Covenant acceptance
-  const handleAcceptCovenant = async () => {
-    if (!covenantAccepted) return;
+  const handleAcceptCovenant = async (forceAccepted = false) => {
+    if (!covenantAccepted && !forceAccepted) return;
     setError(null);
     setLoading(true);
     try {
@@ -463,6 +476,13 @@ export default function OnboardingWizard({
       await api.put('/api/v1/users/profile', {
         consentAcceptedAt: consentDate
       });
+
+      if (setUser) {
+        setUser(prev => ({
+          ...prev,
+          consentAcceptedAt: consentDate
+        }));
+      }
 
       const updatedUser = {
         phone,
@@ -506,6 +526,13 @@ export default function OnboardingWizard({
       };
 
       await api.put('/api/v1/users/profile', updatePayload);
+      
+      if (setUser) {
+        setUser(prev => ({
+          ...prev,
+          displayName: `${firstName || ''} ${lastName || ''}`.trim() || prev.displayName
+        }));
+      }
       
       if (onResume) {
         onResume(targetState);
@@ -682,9 +709,9 @@ export default function OnboardingWizard({
                   }}>
                     <span>
                       {t('auth.consentPart1', 'I hereby acknowledge that I have read and agree to the')}
-                      {' '}<Link to="/terms" target="_blank" style={{ color: 'var(--accent)', fontWeight: '600', textDecoration: 'underline' }}>{t('common.termsAndConditions', 'Terms and Conditions')}</Link>{' '}
+                      {' '}<a href="#/terms" onClick={(e) => { e.preventDefault(); setCovenantViewer('terms'); }} style={{ color: 'var(--accent)', fontWeight: '600', textDecoration: 'underline', cursor: 'pointer' }}>{t('common.termsAndConditions', 'Terms and Conditions')}</a>{' '}
                       {t('auth.consentPart2', 'and')}
-                      {' '}<Link to="/privacy" target="_blank" style={{ color: 'var(--accent)', fontWeight: '600', textDecoration: 'underline' }}>{t('common.privacyNotice', 'Privacy Notice')}</Link>{' '}
+                      {' '}<a href="#/privacy" onClick={(e) => { e.preventDefault(); setCovenantViewer('privacy'); }} style={{ color: 'var(--accent)', fontWeight: '600', textDecoration: 'underline', cursor: 'pointer' }}>{t('common.privacyNotice', 'Privacy Notice')}</a>{' '}
                       {t('auth.consentPart3', 'governing the usage of the Royal Library circulation platform.')}
                     </span>
                   </div>
@@ -1017,6 +1044,29 @@ export default function OnboardingWizard({
 
         </div>
       </div>
+      {covenantViewer && (
+        <CovenantViewerModal
+          type={covenantViewer}
+          onAccept={() => {
+            if (covenantViewer === 'terms') {
+              setHasAcceptedTerms(true);
+            } else if (covenantViewer === 'privacy') {
+              setHasAcceptedPrivacy(true);
+            }
+            setCovenantViewer(null);
+          }}
+          onDecline={async () => {
+            setCovenantViewer(null);
+            try {
+              await signOut(auth);
+            } catch (err) {
+              console.error("Sign out failed on decline:", err);
+            }
+            onClose();
+          }}
+          onClose={() => setCovenantViewer(null)}
+        />
+      )}
     </div>
   );
 }

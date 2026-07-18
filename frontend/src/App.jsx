@@ -32,6 +32,7 @@ import './App.css';
 import { fetchHeroConfig } from './services/heroApi';
 import { useLanguage } from './i18n/LanguageContext';
 import OnboardingWizard from './components/OnboardingWizard';
+import CovenantViewerModal from './components/CovenantViewerModal';
 
 function App() {
   const { language, setLanguage, t, getLocalized } = useLanguage();
@@ -48,6 +49,15 @@ function App() {
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingTarget, setOnboardingTarget] = useState(null);
   const [deepLinkResolving, setDeepLinkResolving] = useState(false);
+  const [covenantViewer, setCovenantViewer] = useState(null); // null, 'terms', or 'privacy'
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
+  const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
+
+  useEffect(() => {
+    if (hasAcceptedTerms && hasAcceptedPrivacy) {
+      setConsentChecked(true);
+    }
+  }, [hasAcceptedTerms, hasAcceptedPrivacy]);
 
   const triggerOnboarding = (target) => {
     setOnboardingTarget(target);
@@ -110,6 +120,11 @@ function App() {
         console.info("[INIT] Auth code:", code);
         console.info("[INIT] Current full URL:", window.location.href);
         console.info("[INIT] sessionStorage redirect target:", sessionStorage.getItem('linkedin_redirect_target'));
+        
+        // Clean the URL search parameters immediately to prevent stale re-submissions on page reloads/refreshes
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+
         setLoading(true);
 
         try {
@@ -121,11 +136,7 @@ function App() {
           
           const customToken = res.data?.customToken;
           if (customToken) {
-            console.info("[EXCHANGE] Successfully retrieved custom token! Cleaning URL search query...");
-            
-            // Clean the URL search parameters to make it beautiful
-            const cleanUrl = window.location.origin + window.location.pathname;
-            window.history.replaceState({}, document.title, cleanUrl);
+            console.info("[EXCHANGE] Successfully retrieved custom token!");
 
             console.info("[FIREBASE] Importing auth modules & executing signInWithCustomToken...");
             const { signInWithCustomToken } = await import('firebase/auth');
@@ -490,6 +501,23 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+  // Auto-resume Onboarding Wizard after full-page social redirect authentication loops (e.g., LinkedIn)
+  useEffect(() => {
+    if (user && !user.isAnonymous) {
+      const pendingTargetStr = sessionStorage.getItem('pending_onboarding_target');
+      if (pendingTargetStr) {
+        try {
+          const pendingTarget = JSON.parse(pendingTargetStr);
+          console.info("[AUTO-RESUME] Found pending onboarding state on auth load:", pendingTarget);
+          triggerOnboarding(pendingTarget);
+        } catch (e) {
+          console.error("[AUTO-RESUME] Failed to parse pending onboarding target", e);
+        }
+        sessionStorage.removeItem('pending_onboarding_target');
+      }
+    }
+  }, [user]);
+
   const handleSignIn = async () => {
     // keep anonymous fallback
     try {
@@ -801,7 +829,7 @@ function App() {
         </footer>
 
         {/* Premium Google Sign up Consent Overlay */}
-        {user && !user.isAnonymous && !user.consentAcceptedAt && (
+        {user && !user.isAnonymous && !user.consentAcceptedAt && !onboardingOpen && (
           <div className="consent-overlay">
             <div className="consent-modal animate-scale-up">
               <div className="consent-modal-header">
@@ -821,7 +849,7 @@ function App() {
                     <li><strong>Future Upgrades:</strong> A member profile photo is a future requirement, currently not active.</li>
                   </ul>
                   <p className="consent-links-text">
-                    Please read our full, detailed <Link to="/privacy" target="_blank" rel="noopener noreferrer">Privacy Notice</Link> and <Link to="/terms" target="_blank" rel="noopener noreferrer">Terms & Conditions</Link>.
+                    Please read our full, detailed <a href="#/privacy" onClick={(e) => { e.preventDefault(); setCovenantViewer('privacy'); }} style={{ color: 'var(--accent)', textDecoration: 'underline', fontWeight: '600', cursor: 'pointer' }}>Privacy Notice</a> and <a href="#/terms" onClick={(e) => { e.preventDefault(); setCovenantViewer('terms'); }} style={{ color: 'var(--accent)', textDecoration: 'underline', fontWeight: '600', cursor: 'pointer' }}>Terms & Conditions</a>.
                   </p>
                 </div>
                 <div className="consent-checkbox-field">
@@ -832,7 +860,7 @@ function App() {
                       onChange={(e) => setConsentChecked(e.target.checked)}
                     />
                     <span>
-                      I agree to the <Link to="/terms" target="_blank" rel="noopener noreferrer">Terms & Conditions</Link> and have read the <Link to="/privacy" target="_blank" rel="noopener noreferrer">Privacy Notice</Link>. I provide my explicit consent to royalbookclub.com to process my email and account information for book club activities.
+                      I agree to the <a href="#/terms" onClick={(e) => { e.preventDefault(); setCovenantViewer('terms'); }} style={{ color: 'var(--accent)', textDecoration: 'underline', fontWeight: '600', cursor: 'pointer' }}>Terms & Conditions</a> and have read the <a href="#/privacy" onClick={(e) => { e.preventDefault(); setCovenantViewer('privacy'); }} style={{ color: 'var(--accent)', textDecoration: 'underline', fontWeight: '600', cursor: 'pointer' }}>Privacy Notice</a>. I provide my explicit consent to royalbookclub.com to process my email and account information for book club activities.
                     </span>
                   </label>
                 </div>
@@ -859,12 +887,32 @@ function App() {
         {onboardingOpen && (
           <OnboardingWizard
             user={user}
+            setUser={setUser}
             targetState={onboardingTarget}
             onClose={() => {
               setOnboardingOpen(false);
               window.dispatchEvent(new CustomEvent('onboarding_closed', { detail: onboardingTarget }));
             }}
             onResume={handleOnboardingResume}
+          />
+        )}
+        {/* Full Covenant Viewer Sub-Popup Modal */}
+        {covenantViewer && (
+          <CovenantViewerModal
+            type={covenantViewer}
+            onAccept={() => {
+              if (covenantViewer === 'terms') {
+                setHasAcceptedTerms(true);
+              } else if (covenantViewer === 'privacy') {
+                setHasAcceptedPrivacy(true);
+              }
+              setCovenantViewer(null);
+            }}
+            onDecline={() => {
+              setCovenantViewer(null);
+              handleSignOut();
+            }}
+            onClose={() => setCovenantViewer(null)}
           />
         )}
       </div>

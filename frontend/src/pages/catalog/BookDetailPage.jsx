@@ -817,10 +817,13 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     setFallbackLoading(true);
     try {
       if (nfcActionType === 'checkout') {
-        await requestCheckout({ bookId: book.isbn, memberId: user.uid || user.id, memberName: user?.displayName, memberEmail: user?.email });
+        const res = await requestCheckout({ bookId: book.isbn, memberId: user.uid || user.id, memberName: user?.displayName, memberEmail: user?.email });
+        if (res) {
+          setCreatedCheckoutId(res.id || res.data?.id);
+        }
       } else {
         const coords = await getCoordinates();
-        await requestReturn({
+        const res = await requestReturn({
           bookId: book.isbn,
           memberId: user.uid || user.id,
           memberName: user?.displayName,
@@ -829,14 +832,13 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
           returnLongitude: coords.longitude,
           nfcOrBarcode: 'NONE'
         });
+        if (res) {
+          setCreatedCheckoutId(res.id || res.data?.id);
+        }
       }
       setFallbackSuccess(true);
       setFallbackLoading(false);
       await refreshState();
-      setTimeout(() => {
-        setNfcModalOpen(false);
-        setFallbackSuccess(false);
-      }, 2500);
     } catch (err) {
       console.error('Fallback request failed:', err);
       window.alert(t('catalog.unableToSubmitRequest') + (err.response?.data?.message || err.message));
@@ -1395,6 +1397,40 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                 <CheckCircle size={48} className="gold-glow-icon" style={{ color: 'var(--accent)', marginBottom: '12px' }} />
                 <h4 style={{ color: 'rgba(255, 255, 255, 0.95)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.scribeRequestSaved')}</h4>
                 <p style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.requestSubmittedDesc')}</p>
+                
+                {/* Interactive Rating Control */}
+                {createdCheckoutId && (
+                  <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(212, 175, 55, 0.04)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '6px' }}>
+                    <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
+                      {ratingSubmitted ? "Thank you for your feedback!" : "How was your experience today?"}
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                      {[1, 2, 3, 4, 5].map((starValue) => (
+                        <button
+                          key={starValue}
+                          type="button"
+                          onClick={() => handleRateExperience(starValue)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '4px',
+                            transition: 'transform 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                        >
+                          <Star
+                            size={24}
+                            fill={starValue <= checkoutRating ? "var(--accent)" : "none"}
+                            stroke={starValue <= checkoutRating ? "var(--accent)" : "rgba(255,255,255,0.3)"}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
                   <button
                     onClick={() => handleCloseNfcModal()}

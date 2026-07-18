@@ -1,0 +1,190 @@
+.covenant-viewer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(10, 8, 12, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 20000; /* Must display on top of both consent overlays (9999) and onboarding (1000) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.covenant-viewer-modal {
+  background: var(--surface-elevated);
+  border: 1px solid var(--accent);
+  border-radius: var(--border-radius-md, 8px);
+  max-width: 680px;
+  width: 100%;
+  max-height: 85vh;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), var(--glow-shadow-intense);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.covenant-viewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.covenant-viewer-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.covenant-viewer-title-group h2 {
+  font-family: var(--font-heading, 'Cinzel', serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 0;
+  letter-spacing: 0.03em;
+}
+
+.covenant-close-btn {
+  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.covenant-close-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: rotate(90deg);
+}
+
+.covenant-viewer-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  background: var(--surface);
+}
+
+.covenant-text-body {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.covenant-meta {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-bottom: 20px;
+  border-bottom: 1px dashed var(--glass-border);
+  padding-bottom: 8px;
+}
+
+.covenant-text-body h3 {
+  font-family: var(--font-heading, 'Cinzel', serif);
+  color: var(--accent);
+  font-size: 1.1rem;
+  margin: 24px 0 12px 0;
+}
+
+.covenant-text-body ul {
+  padding-left: 20px;
+  margin: 12px 0;
+}
+
+.covenant-text-body li {
+  margin-bottom: 8px;
+}
+
+.covenant-text-body p {
+  margin-bottom: 16px;
+}
+
+.covenant-viewer-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--glass-border);
+  background: var(--surface-elevated);
+}
+
+.covenant-decline-btn {
+  background: transparent;
+  border: 1px solid var(--text-secondary);
+  color: var(--text-secondary);
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.covenant-decline-btn:hover {
+  background: rgba(248, 113, 113, 0.08);
+  border-color: #f87171;
+  color: #f87171;
+  box-shadow: 0 0 12px rgba(248, 113, 113, 0.15);
+}
+
+.covenant-accept-btn {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: var(--surface);
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: all 0.2s ease;
+  box-shadow: var(--glow-shadow);
+}
+
+/* Light theme / Academic theme override adjustments if needed */
+[data-theme="academic"] .covenant-accept-btn {
+  color: #ffffff; /* Contrast guarantee on maroon buttons */
+}
+
+.covenant-accept-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--glow-shadow-intense);
+}
+
+.covenant-accept-btn:active {
+  transform: translateY(1px);
+}
+
+/* Scrollbar Styling for Covenant modal */
+.covenant-viewer-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.covenant-viewer-scrollable::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+.covenant-viewer-scrollable::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 3px;
+}
+
+.covenant-viewer-scrollable::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}

@@ -96,6 +96,13 @@ public class LinkedInAuthService {
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(tokenRequest))
                 .retrieve()
+                .onStatus(status -> status.isError(), response -> 
+                    response.bodyToMono(String.class)
+                        .flatMap(errorBody -> {
+                            log.error("LinkedIn Access Token Exchange failed with status {}. Response body: {}", response.statusCode(), errorBody);
+                            return Mono.error(new IllegalStateException("LinkedIn OAuth exchange failed: " + errorBody));
+                        })
+                )
                 .bodyToMono(Map.class)
                 .flatMap(tokenResponse -> {
                     String accessToken = (String) tokenResponse.get("access_token");
