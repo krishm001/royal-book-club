@@ -261,42 +261,86 @@ const BookIngestionConsole = ({ user }) => {
   const handleSubjectsFetch = async (fetchedSubjects) => {
     if (!fetchedSubjects || fetchedSubjects.length === 0) return;
     
-    const existingGenresLower = houses.map(h => h.toLowerCase().trim());
-    let matchedGenre = null;
+    const normalizeString = (str) => {
+      if (!str) return '';
+      return str.toLowerCase().replace(/[\s\-_]/g, '');
+    };
+
+    const currentTags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(Boolean) : [];
+    const promptList = [];
     const tagsToAdd = [];
-    
+    let matchedGenreForSelection = null;
+
     for (const subject of fetchedSubjects) {
       const cleanSubj = subject.trim();
-      const lowerSubj = cleanSubj.toLowerCase();
-      
-      const idx = existingGenresLower.indexOf(lowerSubj);
-      if (idx !== -1) {
-        if (!matchedGenre) {
-          matchedGenre = houses[idx];
+      if (!cleanSubj) continue;
+
+      const exactGenreMatch = houses.find(h => h === cleanSubj);
+      const caseInsensitiveGenreMatch = houses.find(h => h.toLowerCase() === cleanSubj.toLowerCase());
+      const closeGenreMatch = houses.find(h => normalizeString(h) === normalizeString(cleanSubj));
+      const matchedGenre = exactGenreMatch || caseInsensitiveGenreMatch || closeGenreMatch;
+
+      if (matchedGenre) {
+        if (!matchedGenreForSelection) {
+          matchedGenreForSelection = matchedGenre;
         }
-      } else {
+        promptList.push({
+          name: cleanSubj,
+          status: 'matched-genre',
+          matchedName: matchedGenre
+        });
+        continue;
+      }
+
+      const exactTagMatch = currentTags.find(t => t === cleanSubj);
+      const caseInsensitiveTagMatch = currentTags.find(t => t.toLowerCase() === cleanSubj.toLowerCase());
+      const closeTagMatch = currentTags.find(t => normalizeString(t) === normalizeString(cleanSubj));
+      const matchedTag = exactTagMatch || caseInsensitiveTagMatch || closeTagMatch;
+
+      if (matchedTag) {
+        promptList.push({
+          name: cleanSubj,
+          status: 'matched-tag',
+          matchedName: matchedTag
+        });
+        continue;
+      }
+
+      // No match found across genres and existing tags
+      promptList.push({
+        name: cleanSubj,
+        status: 'no-match'
+      });
+      
+      // Ensure we don't add duplicate tags in the same batch
+      const exactTagToAddMatch = tagsToAdd.find(t => t === cleanSubj);
+      const closeTagToAddMatch = tagsToAdd.find(t => normalizeString(t) === normalizeString(cleanSubj));
+      if (!exactTagToAddMatch && !closeTagToAddMatch) {
         tagsToAdd.push(cleanSubj);
       }
     }
-    
+
+    // Automatically append any truly unmatched tags to form tagsInput
     if (tagsToAdd.length > 0) {
       setTagsInput(prev => {
         const existing = prev ? prev.split(',').map(s => s.trim()).filter(Boolean) : [];
-        const combined = Array.from(new Set([...existing, ...tagsToAdd]));
+        // Ensure no duplicate matching with incoming tagsToAdd
+        const filteredNewTags = tagsToAdd.filter(newTag => {
+          const isDup = existing.some(exTag => normalizeString(exTag) === normalizeString(newTag));
+          return !isDup;
+        });
+        const combined = Array.from(new Set([...existing, ...filteredNewTags]));
         return combined.join(', ');
       });
     }
-    
-    if (matchedGenre) {
-      setSelectedHouse(matchedGenre);
-      setInfoMessage(`Pre-existing genre "${matchedGenre}" selected based on book subjects.`);
-    } else {
-      const filteredSubjects = fetchedSubjects.map(s => s.trim()).filter(s => s.length > 0 && s.length < 50);
-      if (filteredSubjects.length > 0) {
-        setPromptSubjects(filteredSubjects);
-        setSubjectPromptOpen(true);
-      }
+
+    if (matchedGenreForSelection) {
+      setSelectedHouse(matchedGenreForSelection);
+      setInfoMessage(`Genre "${matchedGenreForSelection}" automatically selected based on matched subject.`);
     }
+
+    setPromptSubjects(promptList);
+    setSubjectPromptOpen(true);
   };
 
   const handleCreateGenreFromSubject = async (subjectName) => {
@@ -2339,32 +2383,63 @@ const BookIngestionConsole = ({ user }) => {
       {/* Subject-to-Genre Creation Prompt Modal (Epic 3) */}
       {subjectPromptOpen && (
         <div className="camera-modal-overlay" style={{ zIndex: 1100 }}>
-          <div className="royal-card camera-modal-card" style={{ maxWidth: '500px', width: '90%', padding: '24px' }}>
+          <div className="royal-card camera-modal-card" style={{ maxWidth: '550px', width: '95%', padding: '24px' }}>
             <div className="camera-modal-header" style={{ marginBottom: '16px' }}>
               <h3 style={{ fontSize: '1.25rem', color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Sparkles size={18} className="gold-glow-icon" />
-                <span>Establish Book House / Genre</span>
+                <span>Registry Subjects Analysis</span>
               </h3>
               <button onClick={() => setSubjectPromptOpen(false)} className="close-camera-btn">
                 <X size={18} />
               </button>
             </div>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.5' }}>
-              We found unmatched subjects from the Open Library API. Click on any subject below to dynamically establish and select it as a new Royal Book House / Genre:
+              The Open Library API returned the following subject tags. We have automatically matched close-matches (ignoring case, spaces, and hyphens) against pre-existing genres and tags:
             </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', maxHeight: '200px', overflowY: 'auto', padding: '6px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '300px', overflowY: 'auto', padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '20px', scrollbarWidth: 'thin' }}>
               {promptSubjects.map((subj, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleCreateGenreFromSubject(subj)}
-                  className="royal-btn-secondary"
-                  style={{ fontSize: '0.85rem', padding: '6px 12px', border: '1px solid var(--accent)', color: 'var(--accent)', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s', background: 'rgba(212, 165, 116, 0.05)' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 165, 116, 0.15)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(212, 165, 116, 0.05)'; }}
+                <div 
+                  key={idx} 
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '6px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', gap: '12px' }}
                 >
-                  + Create "{subj}"
-                </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, textAlign: 'left' }}>
+                    <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-primary)' }}>
+                      "{subj.name}"
+                    </span>
+                    {subj.status === 'matched-genre' && (
+                      <span style={{ fontSize: '0.8rem', color: 'rgba(212,175,55,0.9)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span>Matches existing Genre: <strong>{subj.matchedName}</strong> (Selected)</span>
+                      </span>
+                    )}
+                    {subj.status === 'matched-tag' && (
+                      <span style={{ fontSize: '0.8rem', color: '#90caf9', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span>Matches existing Tag: <strong>{subj.matchedName}</strong> (Already Added)</span>
+                      </span>
+                    )}
+                    {subj.status === 'no-match' && (
+                      <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
+                        No match found. Appended to manual tags list.
+                      </span>
+                    )}
+                  </div>
+
+                  {subj.status === 'no-match' ? (
+                    <button
+                      type="button"
+                      onClick={() => handleCreateGenreFromSubject(subj.name)}
+                      className="royal-btn-secondary"
+                      style={{ fontSize: '0.8rem', padding: '5px 10px', border: '1px solid var(--accent)', color: 'var(--accent)', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap', background: 'rgba(212, 165, 116, 0.05)' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 165, 116, 0.15)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(212, 165, 116, 0.05)'; }}
+                    >
+                      + Create Genre
+                    </button>
+                  ) : (
+                    <span style={{ fontSize: '1.1rem' }}>
+                      {subj.status === 'matched-genre' ? '✅' : '🏷️'}
+                    </span>
+                  )}
+                </div>
               ))}
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -2374,7 +2449,7 @@ const BookIngestionConsole = ({ user }) => {
                 className="royal-btn"
                 style={{ fontSize: '0.85rem', padding: '8px 16px' }}
               >
-                Close
+                Acknowledge & Close
               </button>
             </div>
           </div>
