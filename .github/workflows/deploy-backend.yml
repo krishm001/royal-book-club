@@ -73,5 +73,5 @@ jobs:
             --min-instances=0 \
             --max-instances=3 \
             --allow-unauthenticated \
-            --set-env-vars="SPRING_PROFILES_ACTIVE=prod,GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }}" \
+            --update-env-vars="SPRING_PROFILES_ACTIVE=prod,GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }}" \
             --quiet
