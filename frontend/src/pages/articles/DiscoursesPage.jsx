@@ -38,9 +38,12 @@ import { fetchBlogHouses } from '../../services/genreApi';
 import { uploadBookImage } from '../../services/storageApi';
 import RichTextEditor from '../../components/shared/RichTextEditor';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { useParams, useNavigate } from 'react-router-dom';
 import './DiscoursesPage.css';
 
 const DiscoursesPage = ({ user }) => {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const { t, getLocalized } = useLanguage();
   const [activeTab, setActiveTab] = useState('CHRONICLE'); // 'CHRONICLE' or 'DEBATE'
   const [searchQuery, setSearchQuery] = useState('');
@@ -114,6 +117,48 @@ const DiscoursesPage = ({ user }) => {
     loadHouses();
   }, [activeTab]);
 
+  // Handle URL deep-linking and state sync
+  useEffect(() => {
+    if (id) {
+      const loadDeepLinkedDiscourse = async () => {
+        try {
+          setLoadingDetail(true);
+          const res = await fetchDiscourseById(id);
+          if (res && res.success) {
+            const disc = res.data.discourse;
+            const responses = res.data.responses || [];
+            if (disc.type === 'CHRONICLE') {
+              setActiveTab('CHRONICLE');
+              setSelectedChronicle(disc);
+              setChronicleDetail(disc);
+              setChronicleComments(responses);
+              setExpandedDebate(null);
+              setDebateReplies([]);
+            } else if (disc.type === 'DEBATE') {
+              setActiveTab('DEBATE');
+              setExpandedDebate(disc);
+              setDebateReplies(responses);
+              setSelectedChronicle(null);
+              setChronicleDetail(null);
+              setChronicleComments([]);
+            }
+          }
+        } catch (err) {
+          console.error('Error fetching deep-linked discourse:', err);
+        } finally {
+          setLoadingDetail(false);
+        }
+      };
+      loadDeepLinkedDiscourse();
+    } else {
+      setSelectedChronicle(null);
+      setChronicleDetail(null);
+      setChronicleComments([]);
+      setExpandedDebate(null);
+      setDebateReplies([]);
+    }
+  }, [id]);
+
   const loadDiscourses = async () => {
     try {
       setLoading(true);
@@ -143,25 +188,11 @@ const DiscoursesPage = ({ user }) => {
   };
 
   const handleOpenChronicle = async (chronicle) => {
-    setSelectedChronicle(chronicle);
-    setLoadingDetail(true);
-    try {
-      const res = await fetchDiscourseById(chronicle.id);
-      if (res && res.success) {
-        setChronicleDetail(res.data.discourse);
-        setChronicleComments(res.data.responses || []);
-      }
-    } catch (err) {
-      console.error('Error loading chronicle details:', err);
-    } finally {
-      setLoadingDetail(false);
-    }
+    navigate(`/discourses/${chronicle.id}`);
   };
 
   const handleCloseChronicle = () => {
-    setSelectedChronicle(null);
-    setChronicleDetail(null);
-    setChronicleComments([]);
+    navigate('/discourses');
     setCommentText('');
   };
 
@@ -344,19 +375,9 @@ const DiscoursesPage = ({ user }) => {
   // Debates
   const handleOpenDebate = async (debate) => {
     if (expandedDebate?.id === debate.id) {
-      setExpandedDebate(null);
-      setDebateReplies([]);
-      return;
-    }
-    setExpandedDebate(debate);
-    setDebateReplies([]);
-    try {
-      const res = await fetchDiscourseById(debate.id);
-      if (res && res.success) {
-        setDebateReplies(res.data.responses || []);
-      }
-    } catch (err) {
-      console.error('Error fetching debate replies:', err);
+      navigate('/discourses');
+    } else {
+      navigate(`/discourses/${debate.id}`);
     }
   };
 

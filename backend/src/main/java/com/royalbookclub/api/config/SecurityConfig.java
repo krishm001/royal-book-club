@@ -59,18 +59,22 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/api-docs/**",
-                                "/actuator/**"
+                                "/actuator/**",
+                                "/robots.txt",
+                                "/sitemap.xml"
                         ).permitAll()
                         // Public authentication & catalog endpoints
                         .requestMatchers(
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/signup",
                                 "/api/v1/auth/register",
+                                "/api/v1/auth/linkedin/**",
                                 "/api/v1/public/**",
                                 "/api/v1/books/**",
                                 "/api/v1/events/**",
                                 "/api/v1/genres/**",
-                                "/api/v1/discourses/**"
+                                "/api/v1/discourses/**",
+                                "/api/v1/site-reviews"
                         ).permitAll()
                         // Any other request must be authenticated
                         .anyRequest().authenticated()

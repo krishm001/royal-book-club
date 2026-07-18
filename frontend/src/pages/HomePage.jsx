@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Calendar, BookText, Sparkles, ChevronRight, Award, Trophy, Users, ShieldAlert, Clock, MapPin, CheckCircle2 } from 'lucide-react';
+import { BookOpen, Calendar, BookText, Sparkles, ChevronRight, Award, Trophy, Users, ShieldAlert, Clock, MapPin, CheckCircle2, Star, MessageSquare, Send, Quote, ChevronLeft } from 'lucide-react';
 import PollWidget from '../components/shared/PollWidget';
-import { fetchBooks } from '../services/libraryApi';
+import { fetchBooks, fetchApprovedSiteReviews, submitSiteReview } from '../services/libraryApi';
 import { fetchHeroConfig } from '../services/heroApi';
 import { fetchEvents, rsvpToEvent } from '../services/eventApi';
 import { fetchDiscourses } from '../services/discourseApi';
@@ -58,6 +58,24 @@ const HomePage = ({ user, onSignIn, theme }) => {
   });
   const [currentAssemblyImageIndex, setCurrentAssemblyImageIndex] = useState(0);
 
+  // Site Review states
+  const [approvedReviews, setApprovedReviews] = useState([]);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewSuccessMsg, setReviewSuccessMsg] = useState('');
+  const [reviewErrorMsg, setReviewErrorMsg] = useState('');
+  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
+
+  // Auto-rotate testimonials every 6 seconds if there are multiple
+  useEffect(() => {
+    if (approvedReviews.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentReviewIndex(prev => (prev + 1) % approvedReviews.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [approvedReviews]);
+
   useEffect(() => {
     const loadAllData = async () => {
       let books = [];
@@ -112,6 +130,17 @@ const HomePage = ({ user, onSignIn, theme }) => {
         }
       } catch (err) {
         console.warn('Unable to load chronicles for home feed', err);
+      }
+
+      try {
+        const reviewsRes = await fetchApprovedSiteReviews();
+        if (reviewsRes?.success && Array.isArray(reviewsRes.data)) {
+          // Shuffle published testimonials and select any random 5 at a time
+          const shuffled = [...reviewsRes.data].sort(() => 0.5 - Math.random());
+          setApprovedReviews(shuffled.slice(0, 5));
+        }
+      } catch (err) {
+        console.warn('Unable to load approved site reviews', err);
       }
 
       // Initialize the showcase item
@@ -266,6 +295,39 @@ const HomePage = ({ user, onSignIn, theme }) => {
       alert(err.response?.data?.message || 'An error occurred while requesting invitation.');
     } finally {
       setIsRsvpingShowcase(false);
+    }
+  };
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!reviewComment.trim()) {
+      setReviewErrorMsg("Please enter your comments.");
+      return;
+    }
+    setSubmittingReview(true);
+    setReviewSuccessMsg('');
+    setReviewErrorMsg('');
+    try {
+      const payload = {
+        rating: reviewRating,
+        comment: reviewComment,
+        memberName: user?.displayName || user?.name || 'Sovereign Member',
+        memberEmail: user?.email || '',
+        memberId: user?.uid || user?.id || ''
+      };
+      const res = await submitSiteReview(payload);
+      if (res?.success) {
+        setReviewSuccessMsg("Your site review has been submitted. By default, submissions are queued for admin approval before showing on the home page. Thank you!");
+        setReviewComment('');
+        setReviewRating(5);
+      } else {
+        setReviewErrorMsg(res?.message || "Failed to submit review.");
+      }
+    } catch (err) {
+      console.error('Site review submission error:', err);
+      setReviewErrorMsg(err.response?.data?.message || err.message || "Unable to process request.");
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -495,6 +557,181 @@ const HomePage = ({ user, onSignIn, theme }) => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials and Site Reviews */}
+      <section className="site-reviews-section" style={{ marginTop: '40px', padding: '20px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
+          <MessageSquare size={22} className="gold-glow-icon" />
+          <h2 className="glow-text" style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.75rem', fontWeight: 600, color: 'var(--accent)', letterSpacing: '0.05em' }}>
+            Sovereign Testimonials
+          </h2>
+        </div>
+
+        <div className="site-reviews-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '30px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '30px' }}>
+            
+            {/* Carousel Box */}
+            <div className="royal-card review-carousel-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '30px', position: 'relative', background: 'rgba(26, 21, 16, 0.95)', border: '1px solid var(--glass-border)' }}>
+              <div>
+                <Quote size={40} style={{ color: 'rgba(212, 175, 55, 0.12)', position: 'absolute', top: '24px', left: '24px' }} />
+                <h3 style={{ margin: '0 0 20px 0', fontFamily: 'var(--font-display)', color: 'var(--accent)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.02em', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '10px' }}>
+                  Curated Perspectives
+                </h3>
+
+                {approvedReviews.length > 0 ? (
+                  <div className="testimonial-slide animate-fade-in" key={currentReviewIndex} style={{ minHeight: '160px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', gap: '4px', marginBottom: '12px' }}>
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          size={16}
+                          fill={s <= approvedReviews[currentReviewIndex].rating ? "var(--accent)" : "none"}
+                          stroke={s <= approvedReviews[currentReviewIndex].rating ? "var(--accent)" : "rgba(255,255,255,0.2)"}
+                        />
+                      ))}
+                    </div>
+                    <blockquote style={{ margin: '0 0 16px 0', fontStyle: 'italic', fontSize: '0.95rem', color: 'rgba(255,255,255,0.85)', lineHeight: '1.6' }}>
+                      "{approvedReviews[currentReviewIndex].comment}"
+                    </blockquote>
+                    <cite style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      — {approvedReviews[currentReviewIndex].memberName}
+                    </cite>
+                  </div>
+                ) : (
+                  <div style={{ minHeight: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>
+                    <p style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>No curations have been certified yet.</p>
+                    <p style={{ margin: 0, fontSize: '0.8rem' }}>Be the first to leave a testimonial using the form!</p>
+                  </div>
+                )}
+              </div>
+
+              {approvedReviews.length > 1 && (
+                <div style={{ display: 'flex', gap: '10px', marginTop: '20px', alignSelf: 'flex-end' }}>
+                  <button
+                    onClick={() => setCurrentReviewIndex(prev => (prev - 1 + approvedReviews.length) % approvedReviews.length)}
+                    style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(212,175,55,0.3)', color: 'var(--accent)', cursor: 'pointer', padding: '6px 10px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button
+                    onClick={() => setCurrentReviewIndex(prev => (prev + 1) % approvedReviews.length)}
+                    style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(212,175,55,0.3)', color: 'var(--accent)', cursor: 'pointer', padding: '6px 10px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Testimonial Form Box */}
+            <div className="royal-card review-form-card" style={{ padding: '30px', background: 'rgba(26, 21, 16, 0.95)', border: '1px solid var(--glass-border)' }}>
+              <h3 style={{ margin: '0 0 20px 0', fontFamily: 'var(--font-display)', color: 'var(--accent)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.02em', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '10px' }}>
+                Inscribe Your Testimonial
+              </h3>
+
+              {user ? (
+                <form onSubmit={handleReviewSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Rating
+                    </label>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      {[1, 2, 3, 4, 5].map((starVal) => (
+                        <button
+                          key={starVal}
+                          type="button"
+                          onClick={() => setReviewRating(starVal)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', transition: 'transform 0.1s ease' }}
+                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.15)'}
+                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                          <Star
+                            size={22}
+                            fill={starVal <= reviewRating ? "var(--accent)" : "none"}
+                            stroke={starVal <= reviewRating ? "var(--accent)" : "rgba(255,255,255,0.3)"}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Commentary
+                    </label>
+                    <textarea
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      placeholder="Share your experience of the Royal Book Club..."
+                      rows={3}
+                      maxLength={500}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: 'rgba(0,0,0,0.3)',
+                        border: '1px solid rgba(212,175,55,0.25)',
+                        borderRadius: '4px',
+                        color: '#fff',
+                        fontSize: '0.9rem',
+                        fontFamily: 'inherit',
+                        lineHeight: '1.5',
+                        resize: 'none',
+                        outline: 'none',
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
+                      onBlur={(e) => e.target.style.borderColor = 'rgba(212,175,55,0.25)'}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>
+                      {reviewComment.length}/500
+                    </div>
+                  </div>
+
+                  {reviewSuccessMsg && (
+                    <div style={{ padding: '10px 12px', background: 'rgba(74, 222, 128, 0.08)', border: '1px solid rgba(74, 222, 128, 0.25)', color: '#4ade80', borderRadius: '4px', fontSize: '0.8rem', lineHeight: '1.4' }}>
+                      {reviewSuccessMsg}
+                    </div>
+                  )}
+
+                  {reviewErrorMsg && (
+                    <div style={{ padding: '10px 12px', background: 'rgba(248, 113, 113, 0.08)', border: '1px solid rgba(248, 113, 113, 0.25)', color: '#f87171', borderRadius: '4px', fontSize: '0.8rem', lineHeight: '1.4' }}>
+                      {reviewErrorMsg}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="royal-btn"
+                    disabled={submittingReview}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      padding: '10px',
+                      fontSize: '0.85rem',
+                      alignSelf: 'flex-start',
+                      minWidth: '150px',
+                    }}
+                  >
+                    <Send size={14} /> {submittingReview ? "Submitting..." : "Submit Testimonial"}
+                  </button>
+                </form>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '180px', textAlign: 'center', padding: '20px', background: 'rgba(212,175,55,0.02)', border: '1px dashed rgba(212,175,55,0.2)', borderRadius: '6px' }}>
+                  <Sparkles size={28} className="gold-glow-icon" style={{ marginBottom: '12px' }} />
+                  <p style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5' }}>
+                    Only registered members can submit testimonies. Sign in to contribute your evaluation to the chronicle.
+                  </p>
+                  <button onClick={onSignIn} className="royal-btn" style={{ padding: '8px 20px', fontSize: '0.8rem' }}>
+                    Sign In
+                  </button>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       </section>

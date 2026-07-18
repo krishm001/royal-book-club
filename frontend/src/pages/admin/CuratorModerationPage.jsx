@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Shield, Sparkles, ArrowLeft, Loader2, CheckCircle, AlertTriangle, 
   Trash2, ThumbsUp, ThumbsDown, BookOpen, MessageSquare, Edit3, 
-  Eye, RefreshCw, AlertCircle, Clock
+  Eye, RefreshCw, AlertCircle, Clock, Star, BarChart2, BookMarked
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -10,17 +10,26 @@ import {
   getBlockedContents, clearBlockedContents, getPendingReviews, 
   approveReview, rejectReview 
 } from '../../services/moderationApi';
+import {
+  fetchPendingSiteReviews, approveSiteReview, rejectSiteReview, fetchRatingStatistics,
+  publishSiteReview, unpublishSiteReview, disapproveSiteReview
+} from '../../services/libraryApi';
 import './CuratorModerationPage.css';
 
 const CuratorModerationPage = ({ user }) => {
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'blocked'
+  const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'blocked' | 'site-reviews' | 'approved-testimonials' | 'statistics'
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null); // stores id of item being processed
   const [message, setMessage] = useState(null);
   const [pendingReviews, setPendingReviews] = useState([]);
   const [blockedLogs, setBlockedLogs] = useState([]);
+  const [siteReviews, setSiteReviews] = useState([]);
+  const [ratingStats, setRatingStats] = useState(null);
   const [expandedItems, setExpandedItems] = useState({}); // track expanded state for long content
+
+  const pendingSiteReviews = siteReviews.filter(item => !item.approved);
+  const approvedSiteReviews = siteReviews.filter(item => item.approved);
 
   const isAdmin = user && user.role === 'ADMIN';
 
@@ -36,12 +45,26 @@ const CuratorModerationPage = ({ user }) => {
         } else {
           setMessage({ type: 'error', text: res?.message || t('admin.errorPendingReviews', 'Failed to fetch pending review requests.') });
         }
-      } else {
+      } else if (activeTab === 'blocked') {
         const res = await getBlockedContents();
         if (res?.success) {
           setBlockedLogs(res.data || []);
         } else {
           setMessage({ type: 'error', text: res?.message || t('admin.errorBlockedLogs', 'Failed to fetch blocked content logs.') });
+        }
+      } else if (activeTab === 'site-reviews' || activeTab === 'approved-testimonials') {
+        const res = await fetchPendingSiteReviews();
+        if (res?.success) {
+          setSiteReviews(res.data || []);
+        } else {
+          setMessage({ type: 'error', text: res?.message || 'Failed to fetch site testimonials.' });
+        }
+      } else if (activeTab === 'statistics') {
+        const res = await fetchRatingStatistics();
+        if (res?.success) {
+          setRatingStats(res.data || null);
+        } else {
+          setMessage({ type: 'error', text: res?.message || 'Failed to fetch rating statistics.' });
         }
       }
     } catch (err) {
@@ -92,6 +115,104 @@ const CuratorModerationPage = ({ user }) => {
     } catch (err) {
       console.error('Reject action failed', err);
       setMessage({ type: 'error', text: `${t('admin.errorRejectAction', 'Reject action failed:')} ${err.message}` });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleApproveSiteReview = async (id) => {
+    try {
+      setActionLoading(id);
+      setMessage(null);
+      const res = await approveSiteReview(id);
+      if (res?.success) {
+        setSiteReviews(prev => prev.map(item => item.id === id ? { ...item, approved: true, published: false } : item));
+        setMessage({ type: 'success', text: 'Site testimonial has been approved and moved to the Approved tab (hidden by default).' });
+      } else {
+        setMessage({ type: 'error', text: res?.message || 'Failed to approve site review.' });
+      }
+    } catch (err) {
+      console.error('Approve site review failed', err);
+      setMessage({ type: 'error', text: `Approve failed: ${err.message}` });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handlePublishSiteReview = async (id) => {
+    try {
+      setActionLoading(id);
+      setMessage(null);
+      const res = await publishSiteReview(id);
+      if (res?.success) {
+        setSiteReviews(prev => prev.map(item => item.id === id ? { ...item, approved: true, published: true } : item));
+        setMessage({ type: 'success', text: 'Site testimonial has been approved and published to the homepage!' });
+      } else {
+        setMessage({ type: 'error', text: res?.message || 'Failed to publish site review.' });
+      }
+    } catch (err) {
+      console.error('Publish site review failed', err);
+      setMessage({ type: 'error', text: `Publish failed: ${err.message}` });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleUnpublishSiteReview = async (id) => {
+    try {
+      setActionLoading(id);
+      setMessage(null);
+      const res = await unpublishSiteReview(id);
+      if (res?.success) {
+        setSiteReviews(prev => prev.map(item => item.id === id ? { ...item, published: false } : item));
+        setMessage({ type: 'success', text: 'Site testimonial has been unpublished and is now hidden from the main page.' });
+      } else {
+        setMessage({ type: 'error', text: res?.message || 'Failed to unpublish site review.' });
+      }
+    } catch (err) {
+      console.error('Unpublish site review failed', err);
+      setMessage({ type: 'error', text: `Unpublish failed: ${err.message}` });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDisapproveSiteReview = async (id) => {
+    try {
+      setActionLoading(id);
+      setMessage(null);
+      const res = await disapproveSiteReview(id);
+      if (res?.success) {
+        setSiteReviews(prev => prev.map(item => item.id === id ? { ...item, approved: false, published: false } : item));
+        setMessage({ type: 'success', text: 'Site testimonial approval has been revoked. It is now back in the pending queue.' });
+      } else {
+        setMessage({ type: 'error', text: res?.message || 'Failed to disapprove site review.' });
+      }
+    } catch (err) {
+      console.error('Disapprove site review failed', err);
+      setMessage({ type: 'error', text: `Disapprove failed: ${err.message}` });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRejectSiteReview = async (id) => {
+    if (!window.confirm('Are you sure you want to delete and permanently purge this site review?')) {
+      return;
+    }
+    try {
+      setActionLoading(id);
+      setMessage(null);
+      const res = await rejectSiteReview(id);
+      if (res?.success) {
+        setSiteReviews(prev => prev.filter(item => item.id !== id));
+        setMessage({ type: 'success', text: 'Site review has been successfully purged.' });
+      } else {
+        setMessage({ type: 'error', text: res?.message || 'Failed to delete site review.' });
+      }
+    } catch (err) {
+      console.error('Delete site review failed', err);
+      setMessage({ type: 'error', text: `Purge failed: ${err.message}` });
     } finally {
       setActionLoading(null);
     }
@@ -183,20 +304,41 @@ const CuratorModerationPage = ({ user }) => {
         </header>
 
         {/* Tab Navigation */}
-        <div className="moderation-tabs-row">
+        <div className="moderation-tabs-row" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button 
              className={`moderation-tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
             onClick={() => setActiveTab('pending')}
           >
             <Clock size={16} />
-            <span>{t('admin.pendingReviewQueue', 'Pending Review Queue')} ({pendingReviews.length})</span>
+            <span>{t('admin.pendingReviewQueue', 'Content Moderation')} ({pendingReviews.length})</span>
           </button>
           <button 
             className={`moderation-tab-btn ${activeTab === 'blocked' ? 'active' : ''}`}
             onClick={() => setActiveTab('blocked')}
           >
             <AlertCircle size={16} />
-            <span>{t('admin.blockedLogsFeed', 'Blocked Logs Feed')} ({blockedLogs.length})</span>
+            <span>{t('admin.blockedLogsFeed', 'Spam/Blocked Ledger')} ({blockedLogs.length})</span>
+          </button>
+          <button 
+            className={`moderation-tab-btn ${activeTab === 'site-reviews' ? 'active' : ''}`}
+            onClick={() => setActiveTab('site-reviews')}
+          >
+            <MessageSquare size={16} />
+            <span>Site Testimonials ({pendingSiteReviews.length})</span>
+          </button>
+          <button 
+            className={`moderation-tab-btn ${activeTab === 'approved-testimonials' ? 'active' : ''}`}
+            onClick={() => setActiveTab('approved-testimonials')}
+          >
+            <CheckCircle size={16} />
+            <span>Approved Testimonials ({approvedSiteReviews.length})</span>
+          </button>
+          <button 
+            className={`moderation-tab-btn ${activeTab === 'statistics' ? 'active' : ''}`}
+            onClick={() => setActiveTab('statistics')}
+          >
+            <BarChart2 size={16} />
+            <span>Evaluation Statistics</span>
           </button>
           <button className="moderation-refresh-btn icon-only" onClick={loadData} title={t('admin.refreshLiveData', 'Refresh Live Data')} disabled={loading}>
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -310,7 +452,7 @@ const CuratorModerationPage = ({ user }) => {
               </div>
             )}
           </div>
-        ) : (
+        ) : activeTab === 'blocked' ? (
           /* Blocked Logs Section */
           <div className="moderation-content-panel">
             <div className="blocked-ledger-actions-row">
@@ -389,6 +531,324 @@ const CuratorModerationPage = ({ user }) => {
                     })}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        ) : activeTab === 'site-reviews' ? (
+          /* Site Reviews Section */
+          <div className="moderation-content-panel">
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '24px', maxWidth: '800px', lineHeight: '1.6' }}>
+              These site reviews and testimonials have been submitted by members. By default, reviews are withheld from public exhibition pending curator approval to protect against vulgarity, commercial spam, or malicious postings.
+            </p>
+
+            {pendingSiteReviews.length === 0 ? (
+              <div className="royal-card moderation-empty-card">
+                <Sparkles className="empty-icon gold-glow" size={48} />
+                <h3>No Testimonials Pending Review</h3>
+                <p>The site testimonials queue is completely clear. All submitted feedback has been processed.</p>
+              </div>
+            ) : (
+              <div className="pending-reviews-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
+                {pendingSiteReviews.map((item) => (
+                  <div className="royal-card pending-review-card animate-fade-in" key={item.id} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '24px', border: '1px solid var(--border-color, rgba(212,175,55,0.15))' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color, rgba(212,175,55,0.1))', paddingBottom: '10px' }}>
+                        <div style={{ display: 'flex', gap: '3px' }}>
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star
+                              key={s}
+                              size={14}
+                              fill={s <= item.rating ? "var(--accent)" : "none"}
+                              stroke={s <= item.rating ? "var(--accent)" : "var(--border-color)"}
+                            />
+                          ))}
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                          {item.submittedAt ? new Date(item.submittedAt).toLocaleDateString() : 'Recent'}
+                        </span>
+                      </div>
+                      
+                      <p style={{ fontSize: '0.95rem', color: 'var(--text-primary)', fontStyle: 'italic', marginBottom: '20px', lineHeight: '1.6' }}>
+                        "{item.comment}"
+                      </p>
+                    </div>
+
+                    <div>
+                      <div style={{ borderTop: '1px solid var(--border-color, rgba(255,255,255,0.05))', paddingTop: '12px', marginBottom: '16px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                        <div><strong>Author:</strong> {item.memberName}</div>
+                        <div><strong>Email:</strong> {item.memberEmail || 'N/A'}</div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button 
+                            className="royal-btn-secondary"
+                            disabled={actionLoading !== null}
+                            onClick={() => handleApproveSiteReview(item.id)}
+                            style={{ flex: 1, padding: '7px 8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                            title="Approve but keep hidden from the home page"
+                          >
+                            {actionLoading === item.id ? <Loader2 size={12} className="animate-spin" /> : <ThumbsUp size={12} />} Approve Only
+                          </button>
+                          <button 
+                            className="royal-btn"
+                            disabled={actionLoading !== null}
+                            onClick={() => handlePublishSiteReview(item.id)}
+                            style={{ flex: 1, padding: '8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', background: 'var(--accent-gradient)', color: 'var(--surface)' }}
+                            title="Approve and immediately publish to the home page"
+                          >
+                            {actionLoading === item.id ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Approve & Publish
+                          </button>
+                        </div>
+                        <button 
+                          className="royal-btn-secondary"
+                          disabled={actionLoading !== null}
+                          onClick={() => handleRejectSiteReview(item.id)}
+                          style={{ padding: '7px 8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', background: 'transparent', border: '1px solid #dc2626', color: '#dc2626', fontWeight: '600' }}
+                        >
+                          {actionLoading === item.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Delete Testimonial
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : activeTab === 'approved-testimonials' ? (
+          /* Approved Testimonials Section */
+          <div className="moderation-content-panel">
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '24px', maxWidth: '800px', lineHeight: '1.6' }}>
+              These site testimonials have been approved by curators. You can control which of these are actively published and rotated on the main home page carousel (up to 5 random published testimonials are displayed at a time).
+            </p>
+
+            {approvedSiteReviews.length === 0 ? (
+              <div className="royal-card moderation-empty-card">
+                <CheckCircle className="empty-icon gold-glow" size={48} />
+                <h3>No Approved Testimonials</h3>
+                <p>There are no approved testimonials yet. Go to the "Site Testimonials" tab to approve new submissions.</p>
+              </div>
+            ) : (
+              <div className="approved-reviews-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
+                {approvedSiteReviews.map((item) => (
+                  <div className="royal-card pending-review-card animate-fade-in" key={item.id} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '24px', border: '1px solid var(--border-color, rgba(212,175,55,0.15))' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color, rgba(212,175,55,0.1))', paddingBottom: '10px' }}>
+                        <div style={{ display: 'flex', gap: '3px' }}>
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star
+                              key={s}
+                              size={14}
+                              fill={s <= item.rating ? "var(--accent)" : "none"}
+                              stroke={s <= item.rating ? "var(--accent)" : "var(--border-color)"}
+                            />
+                          ))}
+                        </div>
+                        {item.published ? (
+                          <span style={{ 
+                            fontSize: '0.7rem', 
+                            padding: '3px 8px', 
+                            borderRadius: '12px', 
+                            background: 'rgba(16,185,129,0.15)', 
+                            border: '1px solid #10b981', 
+                            color: '#10b981', 
+                            fontWeight: '600',
+                            letterSpacing: '0.5px'
+                          }}>
+                            Published
+                          </span>
+                        ) : (
+                          <span style={{ 
+                            fontSize: '0.7rem', 
+                            padding: '3px 8px', 
+                            borderRadius: '12px', 
+                            background: 'rgba(156,163,175,0.15)', 
+                            border: '1px solid var(--text-secondary)', 
+                            color: 'var(--text-secondary)', 
+                            fontWeight: '600',
+                            letterSpacing: '0.5px'
+                          }}>
+                            Hidden
+                          </span>
+                        )}
+                      </div>
+                      
+                      <p style={{ fontSize: '0.95rem', color: 'var(--text-primary)', fontStyle: 'italic', marginBottom: '20px', lineHeight: '1.6' }}>
+                        "{item.comment}"
+                      </p>
+                    </div>
+
+                    <div>
+                      <div style={{ borderTop: '1px solid var(--border-color, rgba(255,255,255,0.05))', paddingTop: '12px', marginBottom: '16px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                        <div><strong>Author:</strong> {item.memberName}</div>
+                        <div><strong>Email:</strong> {item.memberEmail || 'N/A'}</div>
+                        <div style={{ marginTop: '4px', fontSize: '0.75rem' }}>
+                          <strong>Date:</strong> {item.submittedAt ? new Date(item.submittedAt).toLocaleDateString() : 'Recent'}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          {item.published ? (
+                            <button 
+                              className="royal-btn-secondary"
+                              disabled={actionLoading !== null}
+                              onClick={() => handleUnpublishSiteReview(item.id)}
+                              style={{ flex: 1, padding: '7px 8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                            >
+                              {actionLoading === item.id ? <Loader2 size={12} className="animate-spin" /> : <Eye size={12} />} Hide From Main
+                            </button>
+                          ) : (
+                            <button 
+                              className="royal-btn"
+                              disabled={actionLoading !== null}
+                              onClick={() => handlePublishSiteReview(item.id)}
+                              style={{ flex: 1, padding: '8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', background: 'var(--accent-gradient)', color: 'var(--surface)' }}
+                            >
+                              {actionLoading === item.id ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Publish to Main
+                            </button>
+                          )}
+                          <button 
+                            className="royal-btn-secondary"
+                            disabled={actionLoading !== null}
+                            onClick={() => handleDisapproveSiteReview(item.id)}
+                            style={{ flex: 1, padding: '7px 8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                            title="Revoke approval and return to Pending Site Testimonials"
+                          >
+                            {actionLoading === item.id ? <Loader2 size={12} className="animate-spin" /> : <ThumbsDown size={12} />} Disapprove
+                          </button>
+                        </div>
+                        <button 
+                          className="royal-btn-secondary"
+                          disabled={actionLoading !== null}
+                          onClick={() => handleRejectSiteReview(item.id)}
+                          style={{ padding: '7px 8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', background: 'transparent', border: '1px solid #dc2626', color: '#dc2626', fontWeight: '600' }}
+                        >
+                          {actionLoading === item.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Permanent Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Statistics Section */
+          <div className="moderation-content-panel">
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '30px', maxWidth: '800px', lineHeight: '1.6' }}>
+              Examine rating distribution counts and evaluation diagnostics for both the overall platform and specific physical checkout experiences.
+            </p>
+
+            {ratingStats ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '30px' }}>
+                
+                {/* Platform Testimonial Stats */}
+                <div className="royal-card" style={{ padding: '30px', border: '1px solid var(--border-color, rgba(212,175,55,0.2))' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', borderBottom: '1px solid var(--border-color, rgba(212,175,55,0.15))', paddingBottom: '12px' }}>
+                    <MessageSquare size={18} className="gold-glow-icon" />
+                    <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', color: 'var(--accent)', fontSize: '1.25rem', fontWeight: 600 }}>
+                      Site Review Statistics
+                    </h3>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '24px' }}>
+                    <span className="gold-gradient-text" style={{ fontSize: '3rem', fontWeight: 'bold', fontFamily: 'var(--font-display)' }}>
+                      {ratingStats.averageSiteRating ? ratingStats.averageSiteRating.toFixed(1) : '0.0'}
+                    </span>
+                    <div>
+                      <div style={{ display: 'flex', gap: '2px', marginBottom: '4px' }}>
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            size={16}
+                            fill={s <= Math.round(ratingStats.averageSiteRating || 0) ? "var(--accent)" : "none"}
+                            stroke={s <= Math.round(ratingStats.averageSiteRating || 0) ? "var(--accent)" : "var(--border-color)"}
+                          />
+                        ))}
+                      </div>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        Based on {ratingStats.totalSiteReviews || 0} reviews
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {[5, 4, 3, 2, 1].map((stars) => {
+                      const count = ratingStats.siteRatingCounts?.[stars] || ratingStats.siteRatingCounts?.[stars.toString()] || 0;
+                      const percentage = ratingStats.totalSiteReviews > 0 ? (count / ratingStats.totalSiteReviews) * 100 : 0;
+                      return (
+                        <div key={stars} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ width: '45px', fontSize: '0.8rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            {stars} <Star size={12} fill="var(--accent)" stroke="var(--accent)" />
+                          </span>
+                          <div style={{ flex: 1, height: '8px', background: 'var(--accent-light, rgba(128,128,128,0.1))', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: `${percentage}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent-light), var(--accent))', borderRadius: '4px', transition: 'width 0.5s ease' }} />
+                          </div>
+                          <span style={{ width: '30px', textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                            {count}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Checkout Experience Stats */}
+                <div className="royal-card" style={{ padding: '30px', border: '1px solid var(--border-color, rgba(212,175,55,0.2))' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', borderBottom: '1px solid var(--border-color, rgba(212,175,55,0.15))', paddingBottom: '12px' }}>
+                    <BookMarked size={18} className="gold-glow-icon" />
+                    <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', color: 'var(--accent)', fontSize: '1.25rem', fontWeight: 600 }}>
+                      Checkout Experience Ratings
+                    </h3>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '24px' }}>
+                    <span className="gold-gradient-text" style={{ fontSize: '3rem', fontWeight: 'bold', fontFamily: 'var(--font-display)' }}>
+                      {ratingStats.averageCheckoutRating ? ratingStats.averageCheckoutRating.toFixed(1) : '0.0'}
+                    </span>
+                    <div>
+                      <div style={{ display: 'flex', gap: '2px', marginBottom: '4px' }}>
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            size={16}
+                            fill={s <= Math.round(ratingStats.averageCheckoutRating || 0) ? "var(--accent)" : "none"}
+                            stroke={s <= Math.round(ratingStats.averageCheckoutRating || 0) ? "var(--accent)" : "var(--border-color)"}
+                          />
+                        ))}
+                      </div>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        Based on {ratingStats.totalCheckoutRatings || 0} evaluations
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {[5, 4, 3, 2, 1].map((stars) => {
+                      const count = ratingStats.checkoutRatingCounts?.[stars] || ratingStats.checkoutRatingCounts?.[stars.toString()] || 0;
+                      const percentage = ratingStats.totalCheckoutRatings > 0 ? (count / ratingStats.totalCheckoutRatings) * 100 : 0;
+                      return (
+                        <div key={stars} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ width: '45px', fontSize: '0.8rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            {stars} <Star size={12} fill="var(--accent)" stroke="var(--accent)" />
+                          </span>
+                          <div style={{ flex: 1, height: '8px', background: 'var(--accent-light, rgba(128,128,128,0.1))', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: `${percentage}%`, height: '100%', background: 'linear-gradient(90deg, #b8860b, var(--accent))', borderRadius: '4px', transition: 'width 0.5s ease' }} />
+                          </div>
+                          <span style={{ width: '30px', textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                            {count}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+              </div>
+            ) : (
+              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)', background: 'var(--accent-light, rgba(128,128,128,0.03))', border: '1px dashed var(--border-color)', borderRadius: '8px' }}>
+                No rating statistics could be aggregated. Verify transactions have been completed.
               </div>
             )}
           </div>

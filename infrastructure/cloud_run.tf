@@ -18,6 +18,14 @@ resource "google_project_iam_member" "logging_access" {
   member  = "serviceAccount:${google_service_account.backend_sa.email}"
 }
 
+# Grant Service Account Token Creator role on itself to allow Firebase Custom Token signing via Application Default Credentials
+resource "google_service_account_iam_member" "backend_token_creator" {
+  service_account_id = google_service_account.backend_sa.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:${google_service_account.backend_sa.email}"
+}
+
+
 # Cloud Run V2 service configuration
 resource "google_cloud_run_v2_service" "backend_service" {
   name     = var.service_name
@@ -47,6 +55,18 @@ resource "google_cloud_run_v2_service" "backend_service" {
       env {
         name  = "CLOUDFLARE_SECRET"
         value = random_password.cloudflare_secret.result
+      }
+      env {
+        name  = "LINKEDIN_CLIENT_ID"
+        value = var.linkedin_client_id
+      }
+      env {
+        name  = "LINKEDIN_CLIENT_SECRET"
+        value = var.linkedin_client_secret
+      }
+      env {
+        name  = "LINKEDIN_REDIRECT_URI"
+        value = var.linkedin_redirect_uri
       }
 
       resources {

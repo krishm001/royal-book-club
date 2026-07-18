@@ -5,6 +5,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useLanguage } from '../../i18n/LanguageContext';
 import './Auth.css';
 
+import api from '../../api/apiClient';
+
 const googleProvider = new GoogleAuthProvider();
 const facebookProvider = new FacebookAuthProvider();
 facebookProvider.addScope('email');
@@ -28,6 +30,22 @@ export default function SignIn() {
       }, 100);
     }
   }, []);
+
+  const handleLinkedInSignIn = async () => {
+    setError(null);
+    try {
+      // Save current full URL including hash router parameters for post-login seamless routing
+      sessionStorage.setItem('linkedin_redirect_target', window.location.href);
+      const redirectUri = window.location.origin;
+      const res = await api.get(`/api/v1/auth/linkedin/url?redirectUri=${encodeURIComponent(redirectUri)}`);
+      if (res.data) {
+        window.location.href = res.data;
+      }
+    } catch (err) {
+      console.error("LinkedIn login init failed:", err);
+      setError("Failed to initialize LinkedIn Login");
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -62,9 +80,10 @@ export default function SignIn() {
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: '16px', height: '16px' }} />
             Google
           </button>
-          <button type="button" className="onboarding-social-btn" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }} title="LinkedIn login is currently unconfigured">
-            <span style={{ color: '#0077b5', fontWeight: 'bold' }}>in</span> LinkedIn (Unavailable)
+          <button type="button" className="onboarding-social-btn" onClick={handleLinkedInSignIn}>
+            <span style={{ color: '#0077b5', fontWeight: 'bold' }}>in</span> LinkedIn
           </button>
+
           <button type="button" className="onboarding-social-btn" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }} title="Meta login is currently unconfigured">
             <span style={{ color: '#1877f2', fontWeight: 'bold' }}>f</span> Meta (Unavailable)
           </button>

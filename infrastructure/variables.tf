@@ -27,3 +27,20 @@ variable "service_name" {
   description = "The Cloud Run service name"
   default     = "royal-book-club-api"
 }
+
+variable "linkedin_client_id" {
+  type        = string
+  description = "The LinkedIn OAuth Client ID"
+  sensitive   = true
+}
+
+variable "linkedin_client_secret" {
+  type        = string
+  description = "The LinkedIn OAuth Client Secret"
+  sensitive   = true
+}
+
+variable "linkedin_redirect_uri" {
+  type        = string
+  description = "The LinkedIn OAuth Redirect URI"
+}

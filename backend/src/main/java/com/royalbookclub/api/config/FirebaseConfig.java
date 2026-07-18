@@ -25,6 +25,9 @@ public class FirebaseConfig {
     @Value("${firebase.credentials-path:}")
     private String credentialsPath;
 
+    @Value("${firebase.credentials-json:}")
+    private String credentialsJson;
+
     @Value("${firebase.project-id:royal-book-club}")
     private String projectId;
 
@@ -40,7 +43,13 @@ public class FirebaseConfig {
             FirebaseOptions.Builder builder = FirebaseOptions.builder()
                     .setProjectId(projectId);
 
-            if (credentialsPath != null && !credentialsPath.isBlank()) {
+            if (credentialsJson != null && !credentialsJson.isBlank()) {
+                log.info("Initializing Firebase App using inline credentials JSON string");
+                byte[] jsonBytes = credentialsJson.trim().startsWith("{")
+                        ? credentialsJson.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+                        : java.util.Base64.getDecoder().decode(credentialsJson.trim());
+                builder.setCredentials(GoogleCredentials.fromStream(new java.io.ByteArrayInputStream(jsonBytes)));
+            } else if (credentialsPath != null && !credentialsPath.isBlank()) {
                 log.info("Initializing Firebase App using credentials file: {}", credentialsPath);
                 builder.setCredentials(GoogleCredentials.fromStream(new FileInputStream(credentialsPath)));
             } else {

@@ -19,6 +19,7 @@ spring:
 # Firebase configuration
 firebase:
   credentials-path: ${FIREBASE_CREDENTIALS_PATH:}
+  credentials-json: ${FIREBASE_CREDENTIALS_JSON:}
   project-id: ${FIREBASE_PROJECT_ID:royal-book-club}
 
 # Open Library API
@@ -65,4 +66,11 @@ logging:
 gcp:
   moderation:
     use-real: ${USE_REAL_MODERATION:false}
+
+# LinkedIn OAuth Configuration
+linkedin:
+  client-id: ${LINKEDIN_CLIENT_ID:mock-client-id}
+  client-secret: ${LINKEDIN_CLIENT_SECRET:mock-client-secret}
+  redirect-uri: ${LINKEDIN_REDIRECT_URI:https://royalbookclub.com}
+
 

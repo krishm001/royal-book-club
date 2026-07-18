@@ -251,12 +251,13 @@ const BookIngestionConsole = ({ user }) => {
         try {
           const metadata = await lookupBookByIsbn(targetIsbn.trim());
           setManualTitle(metadata.title || '');
-          setManualAuthor(Array.isArray(metadata.authors) ? metadata.authors.map((author) => author.name).join(', ') : metadata.authors || '');
+          setManualAuthor(Array.isArray(metadata.authors) ? metadata.authors.map((author) => typeof author === 'object' && author ? author.name : author).join(', ') : metadata.authors || '');
           setPublisher(metadata.publishers?.[0] || metadata.publisher || '');
-          setPublishDate(metadata.publish_date || '');
+          setPublishDate(metadata.publish_date || metadata.publishDate || '');
           setCoverUrl(metadata.coverUrl || metadata.cover?.large || '');
           setDescription(metadata.description || metadata.subtitle || '');
-          setPages(metadata.number_of_pages || 0);
+          setPages(metadata.pages || metadata.number_of_pages || 0);
+
           setTotalCopies(1);
           setAvailableCopies(1);
           setTagsInput('');

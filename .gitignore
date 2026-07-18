@@ -46,3 +46,9 @@ tmp/
 temp/
 logs/
 *.log
+
+# --- Credentials & Secrets ---
+*-service-account.json
+*service-account.json
+firebase-service-account.json
+

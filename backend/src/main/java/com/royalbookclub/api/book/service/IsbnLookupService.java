@@ -42,11 +42,13 @@ public class IsbnLookupService {
 
         Mono<OpenLibraryBookDto> olMono = lookupOpenLibraryIsbnOnly(cleanIsbn);
         Mono<OpenLibraryBookDto> gbMono = lookupGoogleBooksIsbn(cleanIsbn);
+        Mono<String> olDescMono = lookupOpenLibraryDescription(cleanIsbn);
 
-        return Mono.zip(olMono, gbMono)
+        return Mono.zip(olMono, gbMono, olDescMono)
                 .map(tuple -> {
                     OpenLibraryBookDto ol = tuple.getT1();
                     OpenLibraryBookDto gb = tuple.getT2();
+                    String olDesc = tuple.getT3();
                     
                     // Merge logic: prefer Open Library for some values, fallback to Google Books, and vice versa
                     String mergedTitle = (ol.getTitle() != null && !ol.getTitle().isBlank()) ? ol.getTitle() : gb.getTitle();
@@ -61,6 +63,14 @@ public class IsbnLookupService {
                     String mergedCoverUrl = (ol.getCoverUrl() != null && !ol.getCoverUrl().isBlank()) ? ol.getCoverUrl() : gb.getCoverUrl();
                     Integer mergedPages = ol.getPages() != null ? ol.getPages() : gb.getPages();
                     
+                    String mergedDescription = (olDesc != null && !olDesc.isBlank()) ? olDesc : gb.getDescription();
+                    if (mergedDescription == null || mergedDescription.isBlank()) {
+                        mergedDescription = ol.getDescription();
+                    }
+                    if (mergedDescription == null || mergedDescription.isBlank()) {
+                        mergedDescription = mergedSubtitle;
+                    }
+                    
                     log.info("Merged dual-API metadata completed for ISBN: {} -> Title: {}", cleanIsbn, mergedTitle);
                     return OpenLibraryBookDto.builder()
                             .isbn(cleanIsbn)
@@ -71,9 +81,11 @@ public class IsbnLookupService {
                             .publishDate(mergedPublishDate)
                             .coverUrl(mergedCoverUrl)
                             .pages(mergedPages)
+                            .description(mergedDescription)
                             .build();
                 });
     }
+
 
     /**
      * Search Google Books API by title, author, or keywords.
@@ -291,8 +303,9 @@ public class IsbnLookupService {
                     
                     String title = volumeInfo.path("title").asText(null);
                     String subtitle = volumeInfo.path("subtitle").asText(null);
+                    String description = volumeInfo.path("description").asText(null);
                     if (subtitle == null || subtitle.isBlank()) {
-                        subtitle = volumeInfo.path("description").asText(null);
+                        subtitle = description;
                     }
                     
                     List<String> authorsList = new ArrayList<>();
@@ -325,6 +338,7 @@ public class IsbnLookupService {
                             .publishDate(publishedDate)
                             .coverUrl(coverUrl)
                             .pages(pageCount)
+                            .description(description)
                             .build();
                 })
                 .onErrorResume(ex -> {
@@ -332,6 +346,41 @@ public class IsbnLookupService {
                     return Mono.just(OpenLibraryBookDto.builder().isbn(cleanIsbn).build());
                 });
     }
+
+    private Mono<String> lookupOpenLibraryDescription(String cleanIsbn) {
+        String bibkey = "ISBN:" + cleanIsbn;
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/books")
+                        .queryParam("bibkeys", bibkey)
+                        .queryParam("format", "json")
+                        .queryParam("jscmd", "details")
+                        .build())
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .map(jsonNode -> {
+                    if (jsonNode == null || !jsonNode.has(bibkey)) {
+                        return "";
+                    }
+                    JsonNode bookNode = jsonNode.get(bibkey);
+                    JsonNode detailsNode = bookNode.path("details");
+                    if (detailsNode.isMissingNode()) {
+                        return "";
+                    }
+                    JsonNode descNode = detailsNode.path("description");
+                    if (descNode.isTextual()) {
+                        return descNode.asText("");
+                    } else if (descNode.isObject() && descNode.has("value")) {
+                        return descNode.path("value").asText("");
+                    }
+                    return "";
+                })
+                .onErrorResume(ex -> {
+                    log.error("Open Library details description fetch failed for ISBN: {}. Error: {}", cleanIsbn, ex.getMessage());
+                    return Mono.just("");
+                });
+    }
+
 
     private OpenLibraryBookDto parseOpenLibraryResponse(String isbn, String bibkey, JsonNode responseNode) {
         if (responseNode == null || !responseNode.has(bibkey)) {

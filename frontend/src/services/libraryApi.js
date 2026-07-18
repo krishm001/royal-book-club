@@ -118,3 +118,55 @@ export const searchBookMetadata = async (query) => {
   const response = await api.get(`/api/v1/books/search-metadata?q=${encodeURIComponent(query)}`);
   return response.data;
 };
+
+export const rateCheckout = async (id, rating) => {
+  const response = await api.post(`/api/v1/checkout/${encodeURIComponent(id)}/rate?rating=${rating}`);
+  return response.data;
+};
+
+/* Site Reviews & Admin Curation API */
+export const fetchApprovedSiteReviews = async () => {
+  const response = await api.get('/api/v1/site-reviews');
+  return response.data;
+};
+
+export const submitSiteReview = async (reviewData) => {
+  const response = await api.post('/api/v1/site-reviews', reviewData);
+  return response.data;
+};
+
+export const fetchPendingSiteReviews = async () => {
+  const response = await api.get('/api/v1/admin/site-reviews');
+  return response.data;
+};
+
+export const approveSiteReview = async (id) => {
+  const response = await api.post(`/api/v1/admin/site-reviews/${encodeURIComponent(id)}/approve`);
+  return response.data;
+};
+
+export const rejectSiteReview = async (id) => {
+  const response = await api.delete(`/api/v1/admin/site-reviews/${encodeURIComponent(id)}`);
+  return response.data;
+};
+
+export const publishSiteReview = async (id) => {
+  const response = await api.post(`/api/v1/admin/site-reviews/${encodeURIComponent(id)}/publish`);
+  return response.data;
+};
+
+export const unpublishSiteReview = async (id) => {
+  const response = await api.post(`/api/v1/admin/site-reviews/${encodeURIComponent(id)}/unpublish`);
+  return response.data;
+};
+
+export const disapproveSiteReview = async (id) => {
+  const response = await api.post(`/api/v1/admin/site-reviews/${encodeURIComponent(id)}/disapprove`);
+  return response.data;
+};
+
+export const fetchRatingStatistics = async () => {
+  const response = await api.get('/api/v1/admin/rating-statistics');
+  return response.data;
+};
+

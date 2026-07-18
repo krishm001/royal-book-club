@@ -23,4 +23,5 @@ public class OpenLibraryBookDto {
     private String publishDate;
     private String coverUrl;
     private Integer pages;
+    private String description;
 }

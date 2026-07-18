@@ -33,5 +33,6 @@ public class Checkout {
     private Double returnLongitude;
     private Boolean locationVerified;
     private String nfcOrBarcode;
+    private Integer experienceRating; // 1 to 5 stars user experience rating
 }
 

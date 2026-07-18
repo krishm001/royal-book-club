@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, SlidersHorizontal, BookOpen, Sparkles, X, Smartphone, RefreshCw, AlertTriangle, CheckCircle, Scan, Camera, Check, Clock, ShoppingBag, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Search, SlidersHorizontal, BookOpen, Sparkles, X, Smartphone, RefreshCw, AlertTriangle, CheckCircle, Scan, Camera, Check, Clock, ShoppingBag, Loader2, Star, Shield } from 'lucide-react';
 import BookCard from '../../components/shared/BookCard';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { fetchBooks, fetchCheckoutsByMember, verifiedCheckout, verifiedReturn, requestCheckout, requestReturn } from '../../services/libraryApi';
+import { fetchBooks, fetchCheckoutsByMember, verifiedCheckout, verifiedReturn, requestCheckout, requestReturn, rateCheckout } from '../../services/libraryApi';
 import { fetchBookHouses } from '../../services/genreApi';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import api from '../../api/apiClient';
@@ -46,6 +47,30 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
   const [fallbackModalOpen, setFallbackModalOpen] = useState(false);
   const [fallbackLoading, setFallbackLoading] = useState(false);
   const [fallbackSuccess, setFallbackSuccess] = useState(false);
+
+  const [createdCheckoutId, setCreatedCheckoutId] = useState(null);
+  const [checkoutRating, setCheckoutRating] = useState(0);
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+
+  const resetRatingAndCheckoutId = () => {
+    setCreatedCheckoutId(null);
+    setCheckoutRating(0);
+    setRatingSubmitted(false);
+  };
+
+  const handleRateExperience = async (ratingValue) => {
+    if (!createdCheckoutId) {
+      console.warn("No created checkout ID found to rate");
+      return;
+    }
+    try {
+      setCheckoutRating(ratingValue);
+      await rateCheckout(createdCheckoutId, ratingValue);
+      setRatingSubmitted(true);
+    } catch (err) {
+      console.error("Failed to submit experience rating:", err);
+    }
+  };
 
   // Card-level preferences state
   const [cardScannerOpen, setCardScannerOpen] = useState(false);
@@ -410,6 +435,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
   };
 
   const openP2dOverlay = (book) => {
+    resetRatingAndCheckoutId();
     setP2dBook(book);
     setP2dError('');
     setP2dSuccess(false);
@@ -431,16 +457,15 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
     try {
       const targetUid = p2dBook.ntagUid || '04:A3:B2:C1:D0:E9:80';
       if (p2dActionType === 'checkout') {
-        await verifiedCheckout({ bookId: p2dBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
+        const res = await verifiedCheckout({ bookId: p2dBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
+        if (res) {
+          setCreatedCheckoutId(res.id || res.data?.id);
+        }
       } else {
         await verifiedReturn({ bookId: p2dBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
       }
       setP2dSuccess(true);
       await refreshCatalogState();
-      setTimeout(() => {
-        setP2dModalOpen(false);
-        setP2dBook(null);
-      }, 2500);
     } catch (txError) {
       console.error('P2D direct transaction error:', txError);
       setP2dError(`Ledger rejected transaction: ${txError.response?.data?.message || txError.message}`);
@@ -601,6 +626,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
     const passes = await checkGatingPasses('checkout', book?.isbn);
     if (!passes) return;
 
+    resetRatingAndCheckoutId();
     setSelectedBook(book);
     setNfcActionType('checkout');
     setNfcError('');
@@ -621,6 +647,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
       if (triggerOnboarding) triggerOnboarding({ actionType: 'return', isbn: book?.isbn });
       return;
     }
+    resetRatingAndCheckoutId();
     setSelectedBook(book);
     setNfcActionType('return');
     setNfcError('');
@@ -664,17 +691,16 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
         if (cleanScanned === cleanBookTag) {
           try {
             if (actionType === 'checkout') {
-              await verifiedCheckout({ bookId: targetBook.isbn, memberId: user.uid || user.id, ntagUid: cleanScanned });
+              const res = await verifiedCheckout({ bookId: targetBook.isbn, memberId: user.uid || user.id, ntagUid: cleanScanned });
+              if (res) {
+                setCreatedCheckoutId(res.id || res.data?.id);
+              }
             } else {
               await verifiedReturn({ bookId: targetBook.isbn, memberId: user.uid || user.id, ntagUid: cleanScanned });
             }
             setNfcSuccess(true);
             setNfcReading(false);
             await refreshCatalogState();
-            setTimeout(() => {
-              setNfcModalOpen(false);
-              setSelectedBook(null);
-            }, 2000);
           } catch (txError) {
             console.error('NFC verified transaction database error:', txError);
             setNfcError(`Database rejected verification: ${txError.response?.data?.message || txError.message}`);
@@ -863,16 +889,15 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
       try {
         const targetUid = currentBook.ntagUid || '04:A3:B2:C1:D0:E9:80';
         if (nfcActionType === 'checkout') {
-          await verifiedCheckout({ bookId: currentBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid });
+          const res = await verifiedCheckout({ bookId: currentBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid });
+          if (res) {
+            setCreatedCheckoutId(res.id || res.data?.id);
+          }
         } else {
           await verifiedReturn({ bookId: currentBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid });
         }
         setNfcSuccess(true);
         await refreshCatalogState();
-        setTimeout(() => {
-          setNfcModalOpen(false);
-          setSelectedBook(null);
-        }, 2000);
       } catch (txError) {
         console.error('Verified card barcode database error:', txError);
         setNfcError(`Database rejected verification: ${txError.response?.data?.message || txError.message}`);
@@ -905,18 +930,16 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
     setFallbackLoading(true);
     try {
       if (nfcActionType === 'checkout') {
-        await requestCheckout({ bookId: selectedBook.isbn, memberId: user.uid || user.id, memberName: user?.displayName, memberEmail: user?.email });
+        const res = await requestCheckout({ bookId: selectedBook.isbn, memberId: user.uid || user.id, memberName: user?.displayName, memberEmail: user?.email });
+        if (res) {
+          setCreatedCheckoutId(res.id || res.data?.id);
+        }
       } else {
         await requestReturn({ bookId: selectedBook.isbn, memberId: user.uid || user.id, memberName: user?.displayName, memberEmail: user?.email });
       }
       setFallbackSuccess(true);
       setFallbackLoading(false);
       await refreshCatalogState();
-      setTimeout(() => {
-        setNfcModalOpen(false);
-        setFallbackSuccess(false);
-        setSelectedBook(null);
-      }, 2500);
     } catch (err) {
       console.error('Fallback request failed:', err);
       window.alert(t('catalog.unableToSubmitRequest') + (err.response?.data?.message || err.message));
@@ -1157,18 +1180,153 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
               </button>
             </div>
 
-            <div className="nfc-modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginTop: '16px' }}>
               {nfcSuccess ? (
-                <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0' }}>
-                  <CheckCircle size={48} className="text-success gold-glow-icon" style={{ marginBottom: '12px' }} />
+                <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <CheckCircle size={48} className="text-success gold-glow-icon" style={{ marginBottom: '12px', color: 'var(--accent)' }} />
                   <h4 style={{ color: 'rgba(255, 255, 255, 0.95)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.verifConfirmed')}</h4>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.ledgerUpdated')}</p>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.8rem', margin: '0 0 20px 0' }}>{t('catalog.ledgerUpdated')}</p>
+
+                  {/* Rating control if checkout */}
+                  {nfcActionType === 'checkout' && (
+                    <div style={{ width: '100%', marginBottom: '20px', padding: '15px', background: 'rgba(212, 175, 55, 0.04)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '6px' }}>
+                      <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
+                        {ratingSubmitted ? "Thank you for your feedback!" : "How was your experience today?"}
+                      </p>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                        {[1, 2, 3, 4, 5].map((starValue) => (
+                          <button
+                            key={starValue}
+                            type="button"
+                            onClick={() => handleRateExperience(starValue)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              padding: '4px',
+                              transition: 'transform 0.15s ease',
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                          >
+                            <Star
+                              size={24}
+                              fill={starValue <= checkoutRating ? "var(--accent)" : "none"}
+                              stroke={starValue <= checkoutRating ? "var(--accent)" : "rgba(255,255,255,0.3)"}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', width: '100%', marginTop: '10px' }}>
+                    {nfcActionType === 'checkout' && createdCheckoutId && (
+                      <Link
+                        to={`/gatepass/${createdCheckoutId}`}
+                        className="royal-btn"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 16px',
+                          fontSize: '0.85rem',
+                          textDecoration: 'none',
+                          background: 'var(--accent)',
+                          color: '#1a1510',
+                          borderRadius: '4px',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        <Shield size={14} /> View Gatepass
+                      </Link>
+                    )}
+                    <button
+                      onClick={handleCloseCardModal}
+                      className="royal-btn-secondary"
+                      style={{
+                        padding: '8px 16px',
+                        fontSize: '0.85rem',
+                        borderRadius: '4px',
+                      }}
+                    >
+                      Done
+                    </button>
+                  </div>
                 </div>
               ) : fallbackSuccess ? (
-                <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0' }}>
+                <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <CheckCircle size={48} className="gold-glow-icon" style={{ color: 'var(--accent)', marginBottom: '12px' }} />
                   <h4 style={{ color: 'rgba(255, 255, 255, 0.95)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.scribeRequestSaved')}</h4>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.requestSubmittedDesc')}</p>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.8rem', margin: '0 0 20px 0' }}>{t('catalog.requestSubmittedDesc')}</p>
+
+                  {/* Rating control if checkout */}
+                  {nfcActionType === 'checkout' && (
+                    <div style={{ width: '100%', marginBottom: '20px', padding: '15px', background: 'rgba(212, 175, 55, 0.04)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '6px' }}>
+                      <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
+                        {ratingSubmitted ? "Thank you for your feedback!" : "How was your experience today?"}
+                      </p>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                        {[1, 2, 3, 4, 5].map((starValue) => (
+                          <button
+                            key={starValue}
+                            type="button"
+                            onClick={() => handleRateExperience(starValue)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              padding: '4px',
+                              transition: 'transform 0.15s ease',
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                          >
+                            <Star
+                              size={24}
+                              fill={starValue <= checkoutRating ? "var(--accent)" : "none"}
+                              stroke={starValue <= checkoutRating ? "var(--accent)" : "rgba(255,255,255,0.3)"}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', width: '100%', marginTop: '10px' }}>
+                    {nfcActionType === 'checkout' && createdCheckoutId && (
+                      <Link
+                        to={`/gatepass/${createdCheckoutId}`}
+                        className="royal-btn"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 16px',
+                          fontSize: '0.85rem',
+                          textDecoration: 'none',
+                          background: 'var(--accent)',
+                          color: '#1a1510',
+                          borderRadius: '4px',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        <Shield size={14} /> View Gatepass
+                      </Link>
+                    )}
+                    <button
+                      onClick={handleCloseCardModal}
+                      className="royal-btn-secondary"
+                      style={{
+                        padding: '8px 16px',
+                        fontSize: '0.85rem',
+                        borderRadius: '4px',
+                      }}
+                    >
+                      Done
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -1289,8 +1447,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
               )}
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Fallback Request Ledger Submission Modal Overlay */}
       {fallbackModalOpen && selectedBook && (
@@ -1414,7 +1571,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
 
             <div className="nfc-modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
               {p2dSuccess ? (
-                <div className="p2d-success-view animate-fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div className="p2d-success-view animate-fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
                   <div className="gold-check-animation-wrapper" style={{ margin: '10px 0 20px' }}>
                     <div className="gold-circle-pulse">
                       <Check className="gold-check-icon animate-scale-up" size={48} />
@@ -1428,9 +1585,80 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                       ? `"${p2dBook.title}" ${t('catalog.borrowedByMe').toLowerCase()}`
                       : `"${p2dBook.title}" ${t('catalog.returned').toLowerCase()}`}
                   </p>
-                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', margin: 0 }}>
+                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', margin: '0 0 20px 0' }}>
                     {t('catalog.nfcUid')}: <code>{p2dBook.ntagUid || 'P2D-VERIFIED'}</code>
                   </p>
+
+                  {/* Rating control if checkout */}
+                  {p2dActionType === 'checkout' && (
+                    <div style={{ width: '100%', marginBottom: '20px', padding: '15px', background: 'rgba(212, 175, 55, 0.04)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '6px' }}>
+                      <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
+                        {ratingSubmitted ? "Thank you for your feedback!" : "How was your experience today?"}
+                      </p>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                        {[1, 2, 3, 4, 5].map((starValue) => (
+                          <button
+                            key={starValue}
+                            type="button"
+                            onClick={() => handleRateExperience(starValue)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              padding: '4px',
+                              transition: 'transform 0.15s ease',
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                          >
+                            <Star
+                              size={24}
+                              fill={starValue <= checkoutRating ? "var(--accent)" : "none"}
+                              stroke={starValue <= checkoutRating ? "var(--accent)" : "rgba(255,255,255,0.3)"}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', width: '100%', marginTop: '10px' }}>
+                    {p2dActionType === 'checkout' && createdCheckoutId && (
+                      <Link
+                        to={`/gatepass/${createdCheckoutId}`}
+                        className="royal-btn"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 16px',
+                          fontSize: '0.85rem',
+                          textDecoration: 'none',
+                          background: 'var(--accent)',
+                          color: '#1a1510',
+                          borderRadius: '4px',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        <Shield size={14} /> View Gatepass
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => {
+                        setP2dModalOpen(false);
+                        setP2dBook(null);
+                      }}
+                      className="royal-btn-secondary"
+                      style={{
+                        padding: '8px 16px',
+                        fontSize: '0.85rem',
+                        borderRadius: '4px',
+                      }}
+                    >
+                      Done
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>

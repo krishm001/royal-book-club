@@ -140,6 +140,18 @@ public class CheckoutController {
     }
 
     /**
+     * Submit an experience rating for a checkout transaction.
+     */
+    @PostMapping("/{id}/rate")
+    @Operation(summary = "Rate checkout experience", description = "Submits a 1-5 star user experience rating for a checkout transaction.")
+    public ResponseEntity<Void> rateCheckout(@PathVariable String id, @RequestParam Integer rating) {
+        log.info("REST request to submit experience rating: {} for checkout transaction: {}", rating, id);
+        checkoutService.rateCheckout(id, rating);
+        return ResponseEntity.ok().build();
+    }
+
+
+    /**
      * Clear / Force Return an active book checkout against a member.
      */
     @PostMapping("/clear/{id}")

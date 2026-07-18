@@ -94,6 +94,80 @@ function App() {
     localStorage.setItem('royal-theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    const handleLinkedInCallback = async () => {
+      const searchParams = new URLSearchParams(window.location.search);
+      const code = searchParams.get('code');
+      if (code) {
+        if (window.linkedin_callback_in_progress === code) {
+          console.info("[INIT] Duplicate LinkedIn OAuth callback detected (React StrictMode). Discarding duplicate execution.");
+          return;
+        }
+        window.linkedin_callback_in_progress = code;
+
+        console.group("%c🔑 LinkedIn OAuth Callback Debugger", "color: #d4af37; font-weight: bold; font-size: 14px;");
+        console.info("[INIT] LinkedIn auth code detected in URL query string.");
+        console.info("[INIT] Auth code:", code);
+        console.info("[INIT] Current full URL:", window.location.href);
+        console.info("[INIT] sessionStorage redirect target:", sessionStorage.getItem('linkedin_redirect_target'));
+        setLoading(true);
+
+        try {
+          const redirectUri = window.location.origin;
+          console.info(`[EXCHANGE] Initiating POST to /api/v1/auth/linkedin/callback with redirectUri: ${redirectUri}`);
+          const res = await api.post(`/api/v1/auth/linkedin/callback?code=${code}&redirectUri=${encodeURIComponent(redirectUri)}`);
+          console.info("[EXCHANGE] Response status:", res.status);
+          console.info("[EXCHANGE] Response payload:", res.data);
+          
+          const customToken = res.data?.customToken;
+          if (customToken) {
+            console.info("[EXCHANGE] Successfully retrieved custom token! Cleaning URL search query...");
+            
+            // Clean the URL search parameters to make it beautiful
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+
+            console.info("[FIREBASE] Importing auth modules & executing signInWithCustomToken...");
+            const { signInWithCustomToken } = await import('firebase/auth');
+            const userCredential = await signInWithCustomToken(auth, customToken);
+            console.info("[FIREBASE] Sign-in with custom token completed successfully. Logged-in user UID:", userCredential.user.uid);
+
+            const redirectTarget = sessionStorage.getItem('linkedin_redirect_target');
+            if (redirectTarget) {
+              console.info("[REDIRECT] Found pre-login redirect target in storage:", redirectTarget);
+              sessionStorage.removeItem('linkedin_redirect_target');
+              if (redirectTarget.includes('#/auth/signin') || redirectTarget.includes('#/auth/signup') || redirectTarget.includes('#/auth/reset')) {
+                console.info("[REDIRECT] Pre-login page was auth-specific. Resetting location to root path.");
+                window.location.href = window.location.origin + '/#/';
+              } else {
+                console.info("[REDIRECT] Redirecting window.location to original pre-login target...");
+                window.location.href = redirectTarget;
+              }
+            } else {
+              console.info("[REDIRECT] No redirect target in storage. Defaulting to root path.");
+              window.location.href = window.location.origin + '/#/';
+            }
+          } else {
+            console.error("[ERROR] Response payload did not contain customToken!", res.data);
+            setLoading(false);
+          }
+        } catch (error) {
+          console.error("[FATAL] LinkedIn OAuth code exchange failed!");
+          console.error("[FATAL] Error payload:", error);
+          if (error.response) {
+            console.error("[FATAL] HTTP Status code:", error.response.status);
+            console.error("[FATAL] HTTP Response data:", error.response.data);
+          }
+          setLoading(false);
+        } finally {
+          console.groupEnd();
+        }
+      }
+    };
+    handleLinkedInCallback();
+  }, []);
+
+
   const [nfcExpiryError, setNfcExpiryError] = useState('');
 
   useEffect(() => {
@@ -207,8 +281,8 @@ function App() {
             window.history.replaceState(null, '', cleanUrl);
             
             if (c) {
-              if (book.nfcVerificationStatus === "EXPIRED") {
-                console.warn("NFC Tap counter is EXPIRED. Redirecting silently to homepage.");
+              if (book.nfcVerificationStatus === "EXPIRED" || book.nfcVerificationStatus === "REUSED") {
+                console.warn(`NFC Tap status is ${book.nfcVerificationStatus}. Redirecting silently to homepage.`);
                 window.location.replace(`${window.location.origin}/#/`);
                 return;
               }
@@ -404,7 +478,12 @@ function App() {
         })();
       } else {
         setUser(null);
-        setLoading(false);
+        // If we are currently resolving a LinkedIn callback in the URL query,
+        // do not set loading to false to prevent flashing unauthenticated states.
+        const hasCode = new URLSearchParams(window.location.search).has('code');
+        if (!hasCode) {
+          setLoading(false);
+        }
       }
     });
 
@@ -667,6 +746,7 @@ function App() {
             <Route path="/events" element={<EventsPage user={user} />} />
             <Route path="/events/:id" element={<EventDetailPage user={user} />} />
             <Route path="/discourses" element={<DiscoursesPage user={user} />} />
+            <Route path="/discourses/:id" element={<DiscoursesPage user={user} />} />
             <Route path="/admin" element={<AdminDashboard user={user} />} />
             <Route path="/admin/books" element={<BookIngestionConsole user={user} />} />
             <Route path="/admin/users" element={<UserManagementPage user={user} />} />

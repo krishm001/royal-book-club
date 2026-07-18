@@ -891,3 +891,34 @@
 .consent-scroll-box::-webkit-scrollbar-thumb:hover {
   background: var(--accent);
 }
+
+@media (max-width: 580px) {
+  .consent-modal {
+    max-height: 90vh;
+    padding: 15px;
+    gap: 12px;
+  }
+  .consent-modal-header {
+    padding-bottom: 10px;
+    gap: 10px;
+  }
+  .consent-modal-header h2 {
+    font-size: 1.25rem;
+  }
+  .consent-scroll-box {
+    max-height: 100px;
+    padding: 10px 15px;
+  }
+  .consent-checkbox-field {
+    padding: 10px;
+  }
+  .consent-modal-actions {
+    padding-top: 10px;
+    gap: 10px;
+  }
+  .consent-modal-actions button {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+  }
+}
+

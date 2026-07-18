@@ -9,6 +9,7 @@ import com.royalbookclub.api.config.service.CheckoutSettingsService;
 import com.royalbookclub.api.user.service.UserService;
 import com.royalbookclub.api.user.model.User;
 import com.royalbookclub.api.common.exception.BusinessRuleException;
+import com.royalbookclub.api.common.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -969,4 +970,25 @@ public class CheckoutService {
 
         return R * c;
     }
+
+    public void rateCheckout(String checkoutId, Integer rating) {
+        if (rating < 1 || rating > 5) {
+            throw new IllegalArgumentException("Rating must be between 1 and 5");
+        }
+        try {
+            var docRef = firestore.collection(COLLECTION_NAME).document(checkoutId);
+            var snapshot = docRef.get().get();
+            if (!snapshot.exists()) {
+                throw new ResourceNotFoundException("Checkout transaction not found with ID: " + checkoutId);
+            }
+            docRef.update("experienceRating", rating).get();
+            log.info("Successfully updated checkout {} with experience rating: {}", checkoutId, rating);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Failed to rate checkout transaction", e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException("Failed to rate checkout transaction", e);
+        }
+    }
 }
+
