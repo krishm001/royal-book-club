@@ -868,7 +868,10 @@ const BookIngestionConsole = ({ user }) => {
     setErrorMessage('');
     setInfoMessage('Analyzing tag contents...');
     try {
-      const cleanScanned = (serialNumber || '').toLowerCase().replace(/:/g, '');
+      let cleanScanned = (serialNumber || '').toLowerCase().replace(/:/g, '');
+      if (cleanScanned.indexOf('x') !== -1) {
+        cleanScanned = cleanScanned.split('x')[0];
+      }
       
       let matchedBook = null;
       try {
