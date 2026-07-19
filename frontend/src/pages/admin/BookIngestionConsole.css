@@ -780,7 +780,7 @@
 #qr-reader video {
   width: 100% !important;
   height: 100% !important;
-  object-fit: contain !important;
+  object-fit: cover !important; /* Fills and covers the container fully, eliminating black letterbox/pillarbox margins */
 }
 
 #qr-reader {

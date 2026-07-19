@@ -2446,18 +2446,7 @@ const BookIngestionConsole = ({ user }) => {
                     />
                   )}
                   
-                  {cameraMode === 'isbn' ? (
-                    <div className="isbn-scanning-laser-guide">
-                      <div className="scanning-focus-box">
-                        <div className="scanning-laser"></div>
-                        <div className="scanning-bracket top-left"></div>
-                        <div className="scanning-bracket top-right"></div>
-                        <div className="scanning-bracket bottom-left"></div>
-                        <div className="scanning-bracket bottom-right"></div>
-                      </div>
-                      <span className="scanning-help-text">Align barcode inside the frame</span>
-                    </div>
-                  ) : (
+                  {cameraMode === 'isbn' ? null : (
                     <div className="cover-capture-guide">
                       <div className="cover-frame-outline"></div>
                     </div>
@@ -2526,17 +2515,13 @@ const BookIngestionConsole = ({ user }) => {
                   </div>
                 )}
  
-                <div className="camera-controls-bar">
-                  {cameraMode === 'cover' ? (
+                {cameraMode === 'cover' && (
+                  <div className="camera-controls-bar">
                     <button onClick={captureCoverPhoto} className="royal-btn capture-action-btn">
                       <Camera size={16} /> Snap Cover Photo
                     </button>
-                  ) : (
-                    <button onClick={handleSimulateIsbnScan} className="royal-btn capture-action-btn simulation-badge">
-                      <Sparkles size={16} /> Simulate Barcode Detection
-                    </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
