@@ -25,10 +25,14 @@ public class SecurityConfig {
 
     private final FirebaseTokenFilter firebaseTokenFilter;
     private final CloudflareSecretFilter cloudflareSecretFilter;
+    private final com.royalbookclub.api.auth.filter.UserAgentBlockFilter userAgentBlockFilter;
 
-    public SecurityConfig(FirebaseTokenFilter firebaseTokenFilter, CloudflareSecretFilter cloudflareSecretFilter) {
+    public SecurityConfig(FirebaseTokenFilter firebaseTokenFilter,
+                          CloudflareSecretFilter cloudflareSecretFilter,
+                          com.royalbookclub.api.auth.filter.UserAgentBlockFilter userAgentBlockFilter) {
         this.firebaseTokenFilter = firebaseTokenFilter;
         this.cloudflareSecretFilter = cloudflareSecretFilter;
+        this.userAgentBlockFilter = userAgentBlockFilter;
     }
 
     /**
@@ -79,8 +83,9 @@ public class SecurityConfig {
                         // Any other request must be authenticated
                         .anyRequest().authenticated()
                 )
-                // Add the Cloudflare origin verification filter at the top, and Firebase token filter before auth
+                // Add the Cloudflare origin verification, User-Agent blocking, and Firebase token filters
                 .addFilterBefore(cloudflareSecretFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(userAgentBlockFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(firebaseTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

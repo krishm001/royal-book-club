@@ -28,8 +28,28 @@ public class SeoController {
     @GetMapping(value = "/robots.txt", produces = MediaType.TEXT_PLAIN_VALUE)
     @Operation(summary = "Get robots.txt", description = "Retrieves robots.txt file with sitemap links.")
     public ResponseEntity<String> getRobotsTxt() {
-        String robots = "User-agent: *\n" +
-                "Allow: /\n" +
+        String robots = "# Robots.txt configuration for royalbookclub.com\n" +
+                "# Maximizes SEO indexing for standard search engines while blocking AI models and scrapers.\n\n" +
+                "User-agent: Amazonbot\n" +
+                "Disallow: /\n\n" +
+                "User-agent: Applebot-Extended\n" +
+                "Disallow: /\n\n" +
+                "User-agent: Bytespider\n" +
+                "Disallow: /\n\n" +
+                "User-agent: CCBot\n" +
+                "Disallow: /\n\n" +
+                "User-agent: ClaudeBot\n" +
+                "Disallow: /\n\n" +
+                "User-agent: CloudflareBrowserRenderingCrawler\n" +
+                "Disallow: /\n\n" +
+                "User-agent: Google-Extended\n" +
+                "Disallow: /\n\n" +
+                "User-agent: GPTBot\n" +
+                "Disallow: /\n\n" +
+                "User-agent: meta-externalagent\n" +
+                "Disallow: /\n\n" +
+                "User-agent: *\n" +
+                "Allow: /\n\n" +
                 "Sitemap: https://royalbookclub.com/sitemap.xml\n";
         return ResponseEntity.ok(robots);
     }

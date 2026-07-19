@@ -42,7 +42,14 @@ export default function CovenantViewerModal({ type, onAccept, onDecline, onClose
         <li>You may delete your account and request data erasure at any time by contacting us.</li>
       </ul>
 
-      <h3>6. Governing Law</h3>
+      <h3>6. Intellectual Property Protection & Anti-Scraping Policy</h3>
+      <p>All content present on this Website, including but not limited to scholastic book catalogs, reviews, literary critiques, discussion threads, custom graphics, and layout, is protected under intellectual property and copyright laws of India.</p>
+      <ul>
+        <li>Automated harvesting, data mining, scraping, or crawling of this website by any AI training models, large language models (LLMs), machine learning systems, or unauthorized automated agents is strictly prohibited without our prior written consent.</li>
+        <li>Violating this policy constitutes a material breach of these Terms, and we reserve the right to block offending IP addresses, terminate accounts without warning, and pursue legal remedies under the Information Technology Act, 2000, and other applicable laws of India.</li>
+      </ul>
+
+      <h3>7. Governing Law</h3>
       <p>These Terms are governed by and construed in accordance with the laws of <strong>India</strong>. Any disputes arising out of your use of this website shall be handled through mutual discussion, or failing that, under the jurisdiction of local courts where our team leads operate.</p>
     </div>
   );
