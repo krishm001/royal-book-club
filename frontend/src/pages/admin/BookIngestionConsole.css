@@ -442,12 +442,7 @@
 }
 
 .cover-frame-outline {
-  width: 82%;
-  height: 84%;
-  border: 2px dashed var(--accent);
-  border-radius: var(--border-radius-sm);
-  box-shadow: none; /* Removed greyed-out vignette overlay for maximum full picture visibility */
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: none; /* Completely removed all guide frames, outlines, borders, and margins for a pure 100% edge-to-edge camera feed */
 }
 
 .camera-modal-body {
