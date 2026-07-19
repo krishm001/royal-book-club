@@ -326,7 +326,7 @@
 }
 
 .camera-stream-wrapper.isbn-mode {
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 4 / 3;
 }
 
 .camera-stream-wrapper.cover-mode {
@@ -835,7 +835,7 @@
   }
 
   .camera-stream-wrapper.isbn-mode {
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 4 / 3;
   }
 
   .camera-controls-bar {

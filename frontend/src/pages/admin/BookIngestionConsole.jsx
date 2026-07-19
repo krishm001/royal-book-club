@@ -958,11 +958,9 @@ const BookIngestionConsole = ({ user }) => {
               {
                 fps: 25,
                 qrbox: (w, h) => {
-                  const boxWidth = isIOS 
-                    ? Math.floor(Math.min(w * 0.85, 340))
-                    : Math.floor(Math.min(w * 0.85, 400));
-                  const boxHeight = isIOS ? 160 : Math.floor(Math.min(h * 0.35, 150));
-                  return { width: boxWidth, height: boxHeight };
+                  const idealW = Math.min(w * 0.9, 350);
+                  const idealH = Math.min(h * 0.8, 250);
+                  return { width: idealW, height: idealH };
                 },
                 videoConstraints: isIOS ? cameraConfig : {
                   facingMode: "environment"
