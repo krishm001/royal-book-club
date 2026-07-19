@@ -1780,15 +1780,16 @@ const BookIngestionConsole = ({ user }) => {
                         left: 0,
                         right: 0,
                         zIndex: 100,
-                        background: 'rgba(26, 21, 16, 0.98)',
-                        border: '1px solid var(--accent)',
-                        boxShadow: '0 8px 30px rgba(0,0,0,0.8)',
+                        background: 'var(--surface-elevated, var(--glass-bg, rgba(26, 21, 16, 0.98)))',
+                        border: '1px solid var(--glass-border, rgba(212, 175, 55, 0.3))',
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.6)',
                         borderRadius: '6px',
                         marginTop: '4px',
                         maxHeight: '220px',
                         overflowY: 'auto',
                         scrollbarWidth: 'thin',
-                        padding: '6px'
+                        padding: '6px',
+                        backdropFilter: 'blur(12px)'
                       }}
                     >
                       {houses.filter(h => (h || '').toLowerCase().includes(genreSearchQuery.toLowerCase())).length > 0 ? (
