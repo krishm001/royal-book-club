@@ -86,6 +86,8 @@ const BookIngestionConsole = ({ user }) => {
   const [zoomCapabilities, setZoomCapabilities] = useState(null);
   const [isHardwareZoomActive, setIsHardwareZoomActive] = useState(false);
   const [isFitMode, setIsFitMode] = useState(false); // false = cover (fill), true = contain (fit)
+  const [cameraDevices, setCameraDevices] = useState([]);
+  const [selectedCameraId, setSelectedCameraId] = useState('');
 
   const videoRef = useRef(null);
   const barcodeIntervalRef = useRef(null);
@@ -609,6 +611,7 @@ const BookIngestionConsole = ({ user }) => {
   };
 
   // Camera & Scanner Handlers
+  // Camera & Scanner Handlers
   const startCamera = async (mode) => {
     setCameraError('');
     setCameraMode(mode);
@@ -616,6 +619,28 @@ const BookIngestionConsole = ({ user }) => {
 
     if (mode === 'cover') {
       try {
+        // Enumerate video devices first to see if multiple sensors (ultra-wide/front/telephoto) are available
+        let devices = [];
+        try {
+          devices = await navigator.mediaDevices.enumerateDevices();
+          const videoDevices = devices.filter(d => d.kind === 'videoinput');
+          setCameraDevices(videoDevices);
+          
+          const backCameras = videoDevices.filter(d => 
+            d.label.toLowerCase().includes('back') || 
+            d.label.toLowerCase().includes('rear') || 
+            d.label.toLowerCase().includes('environment')
+          );
+          
+          if (backCameras.length > 0) {
+            setSelectedCameraId(backCameras[0].deviceId);
+          } else if (videoDevices.length > 0) {
+            setSelectedCameraId(videoDevices[videoDevices.length - 1].deviceId);
+          }
+        } catch (enumErr) {
+          console.warn("Failed to enumerate camera devices:", enumErr);
+        }
+
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { 
             facingMode: 'environment',
@@ -661,11 +686,74 @@ const BookIngestionConsole = ({ user }) => {
     }
   };
 
+  const switchCamera = async () => {
+    if (cameraDevices.length <= 1) return;
+    
+    // Stop current stream first
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+    }
+    
+    // Find next device to use
+    const currentIndex = cameraDevices.findIndex(d => d.deviceId === selectedCameraId);
+    const nextIndex = (currentIndex + 1) % cameraDevices.length;
+    const nextDevice = cameraDevices[nextIndex];
+    setSelectedCameraId(nextDevice.deviceId);
+    
+    console.log(`Switching camera to: ${nextDevice.label} (ID: ${nextDevice.deviceId})`);
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          deviceId: { exact: nextDevice.deviceId },
+          width: { ideal: 1080 },
+          height: { ideal: 1440 },
+          aspectRatio: { ideal: 0.75 },
+          frameRate: { ideal: 30 }
+        }
+      });
+      setCameraStream(stream);
+      
+      const track = stream.getVideoTracks()[0];
+      setActiveVideoTrack(track);
+      
+      if (track && typeof track.getCapabilities === 'function') {
+        try {
+          const capabilities = track.getCapabilities();
+          if (capabilities && capabilities.zoom) {
+            setZoomCapabilities({
+              min: capabilities.zoom.min || 1.0,
+              max: capabilities.zoom.max || 3.0,
+              step: capabilities.zoom.step || 0.1
+            });
+          } else {
+            setZoomCapabilities(null);
+          }
+        } catch (capErr) {
+          setZoomCapabilities(null);
+        }
+      } else {
+        setZoomCapabilities(null);
+      }
+      
+      // Reset zoom to 1.0 on camera switch
+      setZoomValue(1.0);
+      setIsHardwareZoomActive(false);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error("Failed to switch camera source stream:", err);
+      setCameraError(`Failed to load selected camera: ${err.message || err}`);
+    }
+  };
+
   const handleZoomChange = async (newVal) => {
     const val = parseFloat(newVal);
     setZoomValue(val);
     
-    if (activeVideoTrack && zoomCapabilities) {
+    if (val >= 1.0 && activeVideoTrack && zoomCapabilities) {
       try {
         await activeVideoTrack.applyConstraints({
           advanced: [{ zoom: val }]
@@ -677,6 +765,16 @@ const BookIngestionConsole = ({ user }) => {
       }
     } else {
       setIsHardwareZoomActive(false);
+      // Reset hardware zoom constraint if zoomValue is less than 1.0 (digital zoom-out mode)
+      if (activeVideoTrack && zoomCapabilities) {
+        try {
+          await activeVideoTrack.applyConstraints({
+            advanced: [{ zoom: 1.0 }]
+          });
+        } catch (err) {
+          console.warn("Failed to reset hardware track constraint:", err);
+        }
+      }
     }
   };
 
@@ -705,6 +803,8 @@ const BookIngestionConsole = ({ user }) => {
     setZoomCapabilities(null);
     setIsHardwareZoomActive(false);
     setZoomValue(1.0);
+    setCameraDevices([]);
+    setSelectedCameraId('');
 
     try {
       const videos = document.querySelectorAll('#qr-reader video');
@@ -974,36 +1074,54 @@ const BookIngestionConsole = ({ user }) => {
     const streamAspect = vWidth / vHeight;
     const targetAspect = 3 / 4; // Portrait 3:4 aspect ratio
     
-    // Create high-resolution 3:4 canvas for beautiful premium cover crops
+    // Create canvas
     const canvas = document.createElement('canvas');
-    canvas.width = 900;
-    canvas.height = 1200;
-    const ctx = canvas.getContext('2d');
-    
-    let sx, sy, sWidth, sHeight;
-    
-    if (streamAspect > targetAspect) {
-      // Source stream is wider than target aspect ratio (typical landscape/webcam streams)
-      // Crop extra sides off horizontally
-      sHeight = vHeight;
-      sWidth = vHeight * targetAspect;
-    } else {
-      // Source stream is taller than target aspect ratio (uncommon portrait streams)
-      // Crop extra top/bottom vertically
-      sWidth = vWidth;
-      sHeight = vWidth / targetAspect;
-    }
-    
-    // Apply digital zoom scaling if hardware zoom is not active
+    let sx, sy, cropWidth, cropHeight;
     const finalZoom = !isHardwareZoomActive ? zoomValue : 1.0;
-    const cropWidth = sWidth / finalZoom;
-    const cropHeight = sHeight / finalZoom;
-    
-    sx = (vWidth - cropWidth) / 2;
-    sy = (vHeight - cropHeight) / 2;
-    
-    console.log(`Cropping live capture stream (${vWidth}x${vHeight}) to 3:4 aspect ratio with zoom factor ${finalZoom}: sx=${sx}, sy=${sy}, width=${cropWidth}, height=${cropHeight}`);
-    
+
+    if (isFitMode) {
+      // In Fit Frame mode, capture the complete uncropped camera stream sensor to maximize field of view
+      canvas.width = vWidth;
+      canvas.height = vHeight;
+      cropWidth = vWidth;
+      cropHeight = vHeight;
+      sx = 0;
+      sy = 0;
+      console.log(`Capturing uncropped Fit Frame stream (${vWidth}x${vHeight}) directly.`);
+    } else {
+      // In Fill Frame mode, crop to standard high-resolution 3:4 portrait
+      canvas.width = 900;
+      canvas.height = 1200;
+      
+      let baseWidth, baseHeight;
+      if (streamAspect > targetAspect) {
+        baseHeight = vHeight;
+        baseWidth = vHeight * targetAspect;
+      } else {
+        baseWidth = vWidth;
+        baseHeight = vWidth / targetAspect;
+      }
+      
+      cropWidth = baseWidth / finalZoom;
+      cropHeight = baseHeight / finalZoom;
+      
+      // Clamp bounds-safety for digital zoom-out (< 1.0) while maintaining standard 3:4 aspect ratio
+      if (cropWidth > vWidth) {
+        cropWidth = vWidth;
+        cropHeight = vWidth / targetAspect;
+      }
+      if (cropHeight > vHeight) {
+        cropHeight = vHeight;
+        cropWidth = vHeight * targetAspect;
+      }
+      
+      sx = (vWidth - cropWidth) / 2;
+      sy = (vHeight - cropHeight) / 2;
+      
+      console.log(`Cropping live capture stream (${vWidth}x${vHeight}) to 3:4 aspect ratio with zoom factor ${finalZoom}: sx=${sx}, sy=${sy}, width=${cropWidth}, height=${cropHeight}`);
+    }
+
+    const ctx = canvas.getContext('2d');
     ctx.drawImage(
       videoRef.current,
       sx, sy, cropWidth, cropHeight, // Source crop rectangle
@@ -2321,29 +2439,43 @@ const BookIngestionConsole = ({ user }) => {
 
                 {cameraMode === 'cover' && (
                   <div className="camera-advanced-controls">
-                    {/* Fit/Fill Toggle */}
-                    <button 
-                      onClick={() => setIsFitMode(!isFitMode)} 
-                      className={`control-toggle-btn ${isFitMode ? 'active' : ''}`}
-                      title={isFitMode ? "Switch to Fill Screen (Crop)" : "Switch to Fit Screen (Full Lens)"}
-                    >
-                      <Sliders size={13} />
-                      <span>{isFitMode ? "Fit Frame (Full)" : "Fill Frame (Crop)"}</span>
-                    </button>
+                    <div className="camera-controls-row">
+                      {/* Fit/Fill Toggle */}
+                      <button 
+                        onClick={() => setIsFitMode(!isFitMode)} 
+                        className={`control-toggle-btn ${isFitMode ? 'active' : ''}`}
+                        title={isFitMode ? "Switch to Fill Screen (Crop)" : "Switch to Fit Screen (Full Lens)"}
+                      >
+                        <Sliders size={13} />
+                        <span>{isFitMode ? "Fit Frame (Full)" : "Fill Frame (Crop)"}</span>
+                      </button>
+
+                      {/* Switch Camera Sensor Toggle */}
+                      {cameraDevices.length > 1 && (
+                        <button 
+                          onClick={switchCamera} 
+                          className="control-toggle-btn switch-camera-btn"
+                          title="Switch Camera Sensor (Ultra-wide / Main)"
+                        >
+                          <RefreshCw size={13} />
+                          <span>Switch Sensor</span>
+                        </button>
+                      )}
+                    </div>
 
                     {/* Zoom Slider */}
                     <div className="camera-zoom-slider-group">
                       <button 
-                        onClick={() => handleZoomChange(Math.max(1.0, zoomValue - 0.2))} 
+                        onClick={() => handleZoomChange(Math.max(0.5, zoomValue - 0.1))} 
                         className="zoom-increment-btn"
                         title="Zoom Out"
-                        disabled={zoomValue <= 1.0}
+                        disabled={zoomValue <= 0.5}
                       >
                         <Minus size={13} />
                       </button>
                       <input 
                         type="range" 
-                        min="1.0" 
+                        min="0.5" 
                         max={zoomCapabilities ? zoomCapabilities.max : "3.0"} 
                         step="0.1" 
                         value={zoomValue} 
@@ -2351,7 +2483,7 @@ const BookIngestionConsole = ({ user }) => {
                         className="zoom-range-input"
                       />
                       <button 
-                        onClick={() => handleZoomChange(Math.min(zoomCapabilities ? zoomCapabilities.max : 3.0, zoomValue + 0.2))} 
+                        onClick={() => handleZoomChange(Math.min(zoomCapabilities ? zoomCapabilities.max : 3.0, zoomValue + 0.1))} 
                         className="zoom-increment-btn"
                         title="Zoom In"
                         disabled={zoomValue >= (zoomCapabilities ? zoomCapabilities.max : 3.0)}

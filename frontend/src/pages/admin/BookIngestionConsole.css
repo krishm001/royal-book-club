@@ -482,6 +482,34 @@
   }
 }
 
+.camera-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  width: 100%;
+}
+
+.switch-camera-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+}
+
+.switch-camera-btn:hover {
+  background: rgba(212, 165, 116, 0.1);
+  border-color: rgba(212, 165, 116, 0.3);
+  color: var(--accent);
+}
+
+.switch-camera-btn svg {
+  transition: transform 0.4s ease-in-out;
+}
+
+.switch-camera-btn:hover svg {
+  transform: rotate(180deg);
+}
+
 .control-toggle-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
