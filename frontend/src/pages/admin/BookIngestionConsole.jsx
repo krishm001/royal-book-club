@@ -621,6 +621,7 @@ const BookIngestionConsole = ({ user }) => {
       try {
         // Enumerate video devices first to see if multiple sensors (ultra-wide/front/telephoto) are available
         let devices = [];
+        let targetCameraId = null;
         try {
           devices = await navigator.mediaDevices.enumerateDevices();
           const videoDevices = devices.filter(d => d.kind === 'videoinput');
@@ -632,24 +633,50 @@ const BookIngestionConsole = ({ user }) => {
             d.label.toLowerCase().includes('environment')
           );
           
-          if (backCameras.length > 0) {
-            setSelectedCameraId(backCameras[0].deviceId);
+          if (backCameras.length > 1) {
+            // Default to the second back camera (index 1) for the wider view by default
+            targetCameraId = backCameras[1].deviceId;
+          } else if (backCameras.length === 1) {
+            targetCameraId = backCameras[0].deviceId;
           } else if (videoDevices.length > 0) {
-            setSelectedCameraId(videoDevices[videoDevices.length - 1].deviceId);
+            targetCameraId = videoDevices[videoDevices.length - 1].deviceId;
+          }
+          
+          if (targetCameraId) {
+            setSelectedCameraId(targetCameraId);
           }
         } catch (enumErr) {
           console.warn("Failed to enumerate camera devices:", enumErr);
         }
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { 
-            facingMode: 'environment',
+        let stream;
+        try {
+          const videoConstraints = targetCameraId ? {
+            deviceId: { exact: targetCameraId },
             width: { ideal: 1080 },
             height: { ideal: 1440 }, // Native vertical 3:4 aspect ratio
             aspectRatio: { ideal: 0.75 },
             frameRate: { ideal: 30 }
-          }
-        });
+          } : {
+            facingMode: 'environment',
+            width: { ideal: 1080 },
+            height: { ideal: 1440 },
+            aspectRatio: { ideal: 0.75 },
+            frameRate: { ideal: 30 }
+          };
+          stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
+        } catch (streamErr) {
+          console.warn("Failed to get stream with exact deviceId, falling back to facingMode environment:", streamErr);
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { 
+              facingMode: 'environment',
+              width: { ideal: 1080 },
+              height: { ideal: 1440 },
+              aspectRatio: { ideal: 0.75 },
+              frameRate: { ideal: 30 }
+            }
+          });
+        }
         setCameraStream(stream);
 
         const track = stream.getVideoTracks()[0];
@@ -2401,96 +2428,101 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
               </div>
             ) : (
-              <div className={`camera-stream-wrapper ${cameraMode === 'cover' ? 'cover-mode' : 'isbn-mode'} ${isFitMode ? 'contain-mode' : 'cover-mode'}`}>
-                {cameraMode === 'isbn' ? (
-                  <div id="qr-reader" className="scanner-focus-ring-container" onClick={(e) => handleScannerClick(e, html5QrCodeRef.current)} style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} />
-                ) : (
-                  <video 
-                    ref={videoRef} 
-                    autoPlay 
-                    playsInline 
-                    muted 
-                    className={`camera-video ${isFitMode ? 'contain-mode' : 'cover-mode'}`}
-                    style={{
-                      transform: !isHardwareZoomActive && zoomValue > 1.0 ? `scale(${zoomValue})` : 'none',
-                      transformOrigin: 'center',
-                      transition: 'transform 0.1s ease-out'
-                    }}
-                  />
-                )}
-                
-                {cameraMode === 'isbn' ? (
-                  <div className="isbn-scanning-laser-guide">
-                    <div className="scanning-focus-box">
-                      <div className="scanning-laser"></div>
-                      <div className="scanning-bracket top-left"></div>
-                      <div className="scanning-bracket top-right"></div>
-                      <div className="scanning-bracket bottom-left"></div>
-                      <div className="scanning-bracket bottom-right"></div>
+              <div className="camera-modal-body">
+                <div className={`camera-stream-wrapper ${cameraMode === 'cover' ? 'cover-mode' : 'isbn-mode'} ${isFitMode ? 'contain-mode' : 'cover-mode'}`}>
+                  {cameraMode === 'isbn' ? (
+                    <div id="qr-reader" className="scanner-focus-ring-container" onClick={(e) => handleScannerClick(e, html5QrCodeRef.current)} style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} />
+                  ) : (
+                    <video 
+                      ref={videoRef} 
+                      autoPlay 
+                      playsInline 
+                      muted 
+                      className={`camera-video ${isFitMode ? 'contain-mode' : 'cover-mode'}`}
+                      style={{
+                        transform: !isHardwareZoomActive && zoomValue > 1.0 ? `scale(${zoomValue})` : 'none',
+                        transformOrigin: 'center',
+                        transition: 'transform 0.1s ease-out'
+                      }}
+                    />
+                  )}
+                  
+                  {cameraMode === 'isbn' ? (
+                    <div className="isbn-scanning-laser-guide">
+                      <div className="scanning-focus-box">
+                        <div className="scanning-laser"></div>
+                        <div className="scanning-bracket top-left"></div>
+                        <div className="scanning-bracket top-right"></div>
+                        <div className="scanning-bracket bottom-left"></div>
+                        <div className="scanning-bracket bottom-right"></div>
+                      </div>
+                      <span className="scanning-help-text">Align barcode inside the frame</span>
                     </div>
-                    <span className="scanning-help-text">Align barcode inside the frame</span>
-                  </div>
-                ) : (
-                  <div className="cover-capture-guide">
-                    <div className="cover-frame-outline"></div>
-                    <span className="scanning-help-text">Position cover inside the gold boundaries</span>
-                  </div>
-                )}
+                  ) : (
+                    <div className="cover-capture-guide">
+                      <div className="cover-frame-outline"></div>
+                    </div>
+                  )}
+                </div>
 
                 {cameraMode === 'cover' && (
-                  <div className="camera-advanced-controls">
-                    <div className="camera-controls-row">
-                      {/* Fit/Fill Toggle */}
-                      <button 
-                        onClick={() => setIsFitMode(!isFitMode)} 
-                        className={`control-toggle-btn ${isFitMode ? 'active' : ''}`}
-                        title={isFitMode ? "Switch to Fill Screen (Crop)" : "Switch to Fit Screen (Full Lens)"}
-                      >
-                        <Sliders size={13} />
-                        <span>{isFitMode ? "Fit Frame (Full)" : "Fill Frame (Crop)"}</span>
-                      </button>
-
-                      {/* Switch Camera Sensor Toggle */}
-                      {cameraDevices.length > 1 && (
+                  <div className="camera-under-view-controls">
+                    <span className="camera-help-text-below">Position cover inside the gold boundaries</span>
+                    
+                    <div className="camera-advanced-controls">
+                      <div className="camera-controls-row">
+                        {/* Fit/Fill Toggle */}
                         <button 
-                          onClick={switchCamera} 
-                          className="control-toggle-btn switch-camera-btn"
-                          title="Switch Camera Sensor (Ultra-wide / Main)"
+                          onClick={() => setIsFitMode(!isFitMode)} 
+                          className={`control-toggle-btn ${isFitMode ? 'active' : ''}`}
+                          title={isFitMode ? "Switch to Fill Screen (Crop)" : "Switch to Fit Screen (Full Lens)"}
                         >
-                          <RefreshCw size={13} />
-                          <span>Switch Sensor</span>
+                          <Sliders size={13} />
+                          <span>{isFitMode ? "Fit Frame (Full)" : "Fill Frame (Crop)"}</span>
                         </button>
-                      )}
-                    </div>
 
-                    {/* Zoom Slider */}
-                    <div className="camera-zoom-slider-group">
-                      <button 
-                        onClick={() => handleZoomChange(Math.max(0.5, zoomValue - 0.1))} 
-                        className="zoom-increment-btn"
-                        title="Zoom Out"
-                        disabled={zoomValue <= 0.5}
-                      >
-                        <Minus size={13} />
-                      </button>
-                      <input 
-                        type="range" 
-                        min="0.5" 
-                        max={zoomCapabilities ? zoomCapabilities.max : "3.0"} 
-                        step="0.1" 
-                        value={zoomValue} 
-                        onChange={(e) => handleZoomChange(e.target.value)}
-                        className="zoom-range-input"
-                      />
-                      <button 
-                        onClick={() => handleZoomChange(Math.min(zoomCapabilities ? zoomCapabilities.max : 3.0, zoomValue + 0.1))} 
-                        className="zoom-increment-btn"
-                        title="Zoom In"
-                        disabled={zoomValue >= (zoomCapabilities ? zoomCapabilities.max : 3.0)}
-                      >
-                        <Plus size={13} />
-                      </button>
-                      <span className="zoom-value-label">{zoomValue.toFixed(1)}x</span>
+                        {/* Switch Camera Sensor Toggle */}
+                        {cameraDevices.length > 1 && (
+                          <button 
+                            onClick={switchCamera} 
+                            className="control-toggle-btn switch-camera-btn"
+                            title="Switch Camera Sensor (Ultra-wide / Main)"
+                          >
+                            <RefreshCw size={13} />
+                            <span>Switch Sensor</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Zoom Slider */}
+                      <div className="camera-zoom-slider-group">
+                        <button 
+                          onClick={() => handleZoomChange(Math.max(0.5, zoomValue - 0.1))} 
+                          className="zoom-increment-btn"
+                          title="Zoom Out"
+                          disabled={zoomValue <= 0.5}
+                        >
+                          <Minus size={13} />
+                        </button>
+                        <input 
+                          type="range" 
+                          min="0.5" 
+                          max={zoomCapabilities ? zoomCapabilities.max : "3.0"} 
+                          step="0.1" 
+                          value={zoomValue} 
+                          onChange={(e) => handleZoomChange(e.target.value)}
+                          className="zoom-range-input"
+                        />
+                        <button 
+                          onClick={() => handleZoomChange(Math.min(zoomCapabilities ? zoomCapabilities.max : 3.0, zoomValue + 0.1))} 
+                          className="zoom-increment-btn"
+                          title="Zoom In"
+                          disabled={zoomValue >= (zoomCapabilities ? zoomCapabilities.max : 3.0)}
+                        >
+                          <Plus size={13} />
+                        </button>
+                        <span className="zoom-value-label">{zoomValue.toFixed(1)}x</span>
+                      </div>
                     </div>
                   </div>
                 )}

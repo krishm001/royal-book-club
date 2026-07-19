@@ -450,12 +450,39 @@
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.camera-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.camera-under-view-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.camera-help-text-below {
+  background: rgba(10, 10, 12, 0.5);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  border: 1px solid var(--glass-border);
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
 /* Advanced Camera Controls Panel (Zoom, Fit/Fill) */
 .camera-advanced-controls {
-  position: absolute;
-  bottom: 84px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
+  bottom: auto;
+  left: auto;
+  transform: none;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -463,12 +490,12 @@
   background: rgba(15, 15, 20, 0.85);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  padding: 10px 16px;
+  padding: 12px 16px;
   border-radius: var(--border-radius-md);
   border: 1px solid var(--glass-border);
   z-index: 10;
-  width: 90%;
-  max-width: 320px;
+  width: 100%;
+  max-width: 340px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   transition: all 0.3s ease;
 }
@@ -476,7 +503,7 @@
 /* On screens where height is constrained */
 @media (max-height: 700px) {
   .camera-advanced-controls {
-    bottom: 74px;
+    bottom: auto;
     padding: 8px 12px;
     gap: 6px;
   }
@@ -491,15 +518,15 @@
 }
 
 .switch-camera-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e2e2e9; /* Clear, high-contrast light-gray text that is completely theme-independent */
 }
 
 .switch-camera-btn:hover {
-  background: rgba(212, 165, 116, 0.1);
-  border-color: rgba(212, 165, 116, 0.3);
-  color: var(--accent);
+  background: rgba(212, 165, 116, 0.15);
+  border-color: rgba(212, 165, 116, 0.4);
+  color: #f3d9b1; /* Gorgeous high-contrast soft gold on hover */
 }
 
 .switch-camera-btn svg {
@@ -511,11 +538,11 @@
 }
 
 .control-toggle-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e2e2e9; /* High-contrast white/light-gray text that is completely theme-independent */
   border-radius: 16px;
-  padding: 5px 12px;
+  padding: 6px 14px;
   font-size: 0.75rem;
   font-weight: 600;
   display: flex;
@@ -527,9 +554,9 @@
 }
 
 .control-toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .control-toggle-btn.active {
@@ -636,13 +663,17 @@
 }
 
 .camera-controls-bar {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
+  bottom: auto;
+  left: auto;
+  transform: none;
   display: flex;
   gap: 12px;
   z-index: 10;
+  justify-content: center;
+  width: 100%;
+  margin-top: 4px;
+  margin-bottom: 8px;
 }
 
 .capture-action-btn {
@@ -813,7 +844,7 @@
   }
 
   .camera-controls-bar {
-    bottom: 16px;
+    bottom: auto;
   }
 }
 
