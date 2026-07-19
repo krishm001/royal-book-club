@@ -2176,7 +2176,7 @@ const BookIngestionConsole = ({ user }) => {
                   </div>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
                         <input
                           type="file"
                           accept="image/jpeg,image/png,image/webp"
@@ -2185,7 +2185,7 @@ const BookIngestionConsole = ({ user }) => {
                           id="image-file-input"
                           ref={fileInputRef}
                         />
-                        <label htmlFor="image-file-input" style={{ flex: 1 }}>
+                        <label htmlFor="image-file-input" style={{ flex: '1 1 calc(50% - 4px)' }}>
                           <button
                             type="button"
                             onClick={() => document.getElementById('image-file-input')?.click()}
@@ -2199,7 +2199,7 @@ const BookIngestionConsole = ({ user }) => {
                           type="button"
                           onClick={() => startCamera('cover')}
                           className="royal-btn"
-                          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flex: '1 1 calc(50% - 4px)' }}
                         >
                           <Camera size={14} /> Snap Photo
                         </button>
@@ -2209,8 +2209,9 @@ const BookIngestionConsole = ({ user }) => {
                             onClick={handleImageUpload}
                             className="royal-btn"
                             disabled={uploadingImage}
+                            style={{ flex: '1 1 100%', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                           >
-                            {uploadingImage ? 'Uploading...' : 'Confirm Upload'}
+                            <Upload size={14} /> {uploadingImage ? 'Uploading...' : 'Confirm Upload'}
                           </button>
                         )}
                       </div>
