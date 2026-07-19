@@ -77,6 +77,13 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
   const [cardScannerError, setCardScannerError] = useState('');
   const [activeTab, setActiveTab] = useState('NDEFReader' in window ? 'nfc' : 'barcode');
 
+  useEffect(() => {
+    if (selectedBook) {
+      const defaultTab = ('NDEFReader' in window && selectedBook.ntagUid) ? 'nfc' : 'barcode';
+      setActiveTab(defaultTab);
+    }
+  }, [selectedBook]);
+
   const topHtml5QrCodeRef = useRef(null);
   const cardHtml5QrCodeRef = useRef(null);
   const topScannerTimeoutRef = useRef(null);
@@ -635,7 +642,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
     setNfcError('');
     setNfcSuccess(false);
     setFallbackSuccess(false);
-    const defaultTab = 'NDEFReader' in window ? 'nfc' : 'barcode';
+    const defaultTab = ('NDEFReader' in window && book?.ntagUid) ? 'nfc' : 'barcode';
     setActiveTab(defaultTab);
     setNfcModalOpen(true);
     if (defaultTab === 'nfc') {
@@ -656,7 +663,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
     setNfcError('');
     setNfcSuccess(false);
     setFallbackSuccess(false);
-    const defaultTab = 'NDEFReader' in window ? 'nfc' : 'barcode';
+    const defaultTab = ('NDEFReader' in window && book?.ntagUid) ? 'nfc' : 'barcode';
     setActiveTab(defaultTab);
     setNfcModalOpen(true);
     if (defaultTab === 'nfc') {
@@ -1167,9 +1174,11 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
 
             <div className="verification-tabs-header">
               <button
-                className={`verification-tab-btn ${activeTab === 'nfc' ? 'active' : ''}`}
+                className={`verification-tab-btn ${activeTab === 'nfc' ? 'active' : ''} ${!selectedBook?.ntagUid ? 'tab-disabled' : ''}`}
                 onClick={() => handleCardTabChange('nfc')}
-                disabled={nfcSuccess || fallbackSuccess}
+                disabled={nfcSuccess || fallbackSuccess || !selectedBook?.ntagUid}
+                title={!selectedBook?.ntagUid ? "NFC checkout not available (no physical tag registered for this book)" : ""}
+                style={!selectedBook?.ntagUid ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
               >
                 <Smartphone size={14} />
                 <span>{t('catalog.nfcTap')}</span>

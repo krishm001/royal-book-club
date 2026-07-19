@@ -38,6 +38,48 @@ const BookCard = ({
     >
       <Link to={`/catalog/${encodeURIComponent(bookId)}`} className="book-card-link">
         <div className="book-cover-container">
+          {book.ntagUid && (
+            <div 
+              className="book-nfc-badge" 
+              title={`NFC Pass Assigned: ${book.ntagUid}`}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                zIndex: 10,
+                background: 'var(--genre-tag-bg)',
+                backdropFilter: 'blur(4px)',
+                border: '1px solid var(--genre-tag-border)',
+                color: 'var(--genre-tag-color)',
+                width: '26px',
+                height: '26px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.6)',
+                pointerEvents: 'auto',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                <line x1="12" y1="20" x2="12.01" y2="20" strokeWidth="3" />
+              </svg>
+            </div>
+          )}
           <img
             src={coverUrl}
             alt={`Cover of ${book.title}`}

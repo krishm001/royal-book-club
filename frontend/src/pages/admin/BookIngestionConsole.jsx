@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw, X, Camera, Cpu, Smartphone, Check, ArrowLeft, Search, Compass, BookOpen } from 'lucide-react';
+import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw, X, Camera, Cpu, Smartphone, Check, ArrowLeft, Search, Compass, BookOpen, ChevronDown, Plus } from 'lucide-react';
 import { createBook, lookupBookByIsbn, fetchBookByIsbn, fetchBooks, searchBookMetadata, fetchBookByNtagUid } from '../../services/libraryApi';
 import { fetchBookHouses, createBookHouse } from '../../services/genreApi';
 import { uploadBookImage } from '../../services/storageApi';
@@ -58,6 +58,15 @@ const BookIngestionConsole = ({ user }) => {
   const [promptSubjects, setPromptSubjects] = useState([]);
   const [cachedMetadata, setCachedMetadata] = useState(null);
   const [isFieldFetching, setIsFieldFetching] = useState(false);
+
+  // Epic 1 Auto-Suggest Searchable Genre Dropdown
+  const [genreSearchQuery, setGenreSearchQuery] = useState('');
+  const [genreDropdownOpen, setGenreDropdownOpen] = useState(false);
+  const genreDropdownRef = useRef(null);
+
+  // Epic 2 Interactive "Email To-List" Tag Pills Input
+  const [tagTypedValue, setTagTypedValue] = useState('');
+  const tagInputRef = useRef(null);
 
   // NTAG213 and Camera Hardware states
   const [ntagUid, setNtagUid] = useState('');
@@ -163,7 +172,9 @@ const BookIngestionConsole = ({ user }) => {
     setTotalCopies(book.totalCopies || 1);
     setAvailableCopies(book.availableCopies || 1);
     setBookLanguage(book.language || 'en');
-    setSelectedHouse(book.genre || book.houseName || (houses.length > 0 ? houses[0] : ''));
+    const defaultHouse = book.genre || book.houseName || (houses.length > 0 ? houses[0] : '');
+    setSelectedHouse(defaultHouse);
+    setGenreSearchQuery(defaultHouse);
     setNtagUid(formatUidWithColons(book.ntagUid || ''));
     if (book.tags) {
       setTagsInput(Array.isArray(book.tags) ? book.tags.join(', ') : book.tags);
@@ -187,7 +198,9 @@ const BookIngestionConsole = ({ user }) => {
     setTotalCopies(1);
     setAvailableCopies(1);
     setBookLanguage('en');
-    setSelectedHouse(houses.length > 0 ? houses[0] : '');
+    const defaultHouse = houses.length > 0 ? houses[0] : '';
+    setSelectedHouse(defaultHouse);
+    setGenreSearchQuery(defaultHouse);
     setNtagUid('');
     setTagsInput('');
     setInfoMessage('');
@@ -200,6 +213,18 @@ const BookIngestionConsole = ({ user }) => {
   const isAdmin = user && user.role === 'ADMIN';
 
   useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (genreDropdownRef.current && !genreDropdownRef.current.contains(event.target)) {
+        setGenreDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
     if (isAdmin) {
       const loadHouses = async () => {
         try {
@@ -209,17 +234,20 @@ const BookIngestionConsole = ({ user }) => {
             setHouses(names);
             if (names.length > 0) {
               setSelectedHouse(names[0]);
+              setGenreSearchQuery(names[0]);
             }
           } else {
             const defaults = ['Classic Gothic', 'Gothic Fiction', 'Epic Poetry', 'Philosophical Non-Fiction', 'Poetry', 'Modern Classic'];
             setHouses(defaults);
             setSelectedHouse(defaults[0]);
+            setGenreSearchQuery(defaults[0]);
           }
         } catch (err) {
           console.warn('Unable to load book houses', err);
           const defaults = ['Classic Gothic', 'Gothic Fiction', 'Epic Poetry', 'Philosophical Non-Fiction', 'Poetry', 'Modern Classic'];
           setHouses(defaults);
           setSelectedHouse(defaults[0]);
+          setGenreSearchQuery(defaults[0]);
         }
       };
       loadHouses();
@@ -344,6 +372,7 @@ const BookIngestionConsole = ({ user }) => {
 
     if (matchedGenreForSelection) {
       setSelectedHouse(matchedGenreForSelection);
+      setGenreSearchQuery(matchedGenreForSelection);
       setInfoMessage(`Genre "${matchedGenreForSelection}" automatically selected based on matched subject.`);
     }
 
@@ -365,6 +394,7 @@ const BookIngestionConsole = ({ user }) => {
       if (res && res.success) {
         setHouses(prev => [...prev, res.data.name]);
         setSelectedHouse(res.data.name);
+        setGenreSearchQuery(res.data.name);
         setInfoMessage(`Created and selected new genre "${res.data.name}" from subjects.`);
       } else {
         setErrorMessage('Failed to create new genre on the server.');
@@ -374,6 +404,83 @@ const BookIngestionConsole = ({ user }) => {
       setErrorMessage('Failed to create genre from subject.');
     } finally {
       setSubjectPromptOpen(false);
+    }
+  };
+
+  const handleCreateGenreSearchDropdown = async (name) => {
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+    try {
+      const payload = { 
+        id: trimmedName.toLowerCase().replace(/\s+/g, '-'), 
+        name: trimmedName,
+        translations: {
+          hi: { name: trimmedName },
+          kn: { name: trimmedName }
+        }
+      };
+      const res = await createBookHouse(payload);
+      if (res && res.success) {
+        const newGenreName = res.data.name;
+        setHouses(prev => [...prev, newGenreName]);
+        setSelectedHouse(newGenreName);
+        setGenreSearchQuery(newGenreName);
+        setInfoMessage(`Created and selected new genre "${newGenreName}".`);
+      } else {
+        setErrorMessage('Failed to establish custom genre on server.');
+      }
+    } catch (err) {
+      console.error('Failed to create custom genre from search:', err);
+      setErrorMessage('Failed to create custom genre on server.');
+    } finally {
+      setGenreDropdownOpen(false);
+    }
+  };
+
+  const currentTagsArray = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+  const handleDeleteTag = (tagToDelete) => {
+    const updated = currentTagsArray.filter(t => t !== tagToDelete);
+    setTagsInput(updated.join(', '));
+  };
+
+  const handleTagInputChange = (e) => {
+    const val = e.target.value;
+    if (val.endsWith(',')) {
+      const newTag = val.slice(0, -1).trim();
+      if (newTag) {
+        addTagPill(newTag);
+      }
+      setTagTypedValue('');
+    } else {
+      setTagTypedValue(val);
+    }
+  };
+
+  const handleTagInputKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const newTag = tagTypedValue.trim();
+      if (newTag) {
+        addTagPill(newTag);
+      }
+      setTagTypedValue('');
+    } else if (e.key === 'Backspace' && !tagTypedValue) {
+      if (currentTagsArray.length > 0) {
+        handleDeleteTag(currentTagsArray[currentTagsArray.length - 1]);
+      }
+    }
+  };
+
+  const addTagPill = (newTag) => {
+    const normalizeString = (str) => {
+      if (!str) return '';
+      return str.toLowerCase().replace(/[\p{P}\p{Z}\p{S}]/gu, '');
+    };
+    const isDup = currentTagsArray.some(t => normalizeString(t) === normalizeString(newTag));
+    if (!isDup) {
+      const updated = [...currentTagsArray, newTag];
+      setTagsInput(updated.join(', '));
     }
   };
 
@@ -474,7 +581,9 @@ const BookIngestionConsole = ({ user }) => {
         setAvailableCopies(existingBook.availableCopies || existingBook.totalCopies || 1);
         
         // Populate new fields
-        setSelectedHouse(existingBook.genre || (houses.length > 0 ? houses[0] : ''));
+        const matchedGenre = existingBook.genre || (houses.length > 0 ? houses[0] : '');
+        setSelectedHouse(matchedGenre);
+        setGenreSearchQuery(matchedGenre);
         setTagsInput(Array.isArray(existingBook.tags) ? existingBook.tags.join(', ') : '');
         setNtagUid(formatUidWithColons(existingBook.ntagUid || ''));
         setBookLanguage(existingBook.language || 'en');
@@ -917,6 +1026,7 @@ const BookIngestionConsole = ({ user }) => {
         setBookLanguage(matchedBook.language || 'en');
         if (matchedBook.genre) {
           setSelectedHouse(matchedBook.genre);
+          setGenreSearchQuery(matchedBook.genre);
         }
         setIsEditMode(true);
         setIsEditingExisting(true);
@@ -1079,6 +1189,7 @@ const BookIngestionConsole = ({ user }) => {
     }
     if (houses.length > 0) {
       setSelectedHouse(houses[0]);
+      setGenreSearchQuery(houses[0]);
     }
     loadExistingBooks();
   };
@@ -1154,6 +1265,7 @@ const BookIngestionConsole = ({ user }) => {
           const newGenreName = res.data.name;
           setHouses(prev => [...prev, newGenreName]);
           setSelectedHouse(newGenreName);
+          setGenreSearchQuery(newGenreName);
           setCustomGenre('');
           finalGenre = newGenreName;
         } else {
@@ -1609,7 +1721,7 @@ const BookIngestionConsole = ({ user }) => {
                   />
                 </div>
 
-                <div className="input-group">
+                <div className="input-group" style={{ position: 'relative' }} ref={genreDropdownRef}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                     <label className="royal-input-label" style={{ margin: 0 }}>{t('admin.houseLabel', 'Assign Salon House')}</label>
                     <button
@@ -1625,34 +1737,117 @@ const BookIngestionConsole = ({ user }) => {
                       <span>Fetch Genre & Tags</span>
                     </button>
                   </div>
-                  <select
-                    className="royal-select"
-                    value={selectedHouse}
-                    onChange={(e) => setSelectedHouse(e.target.value)}
-                    required
-                  >
-                    {houses.map((house) => (
-                      <option key={house} value={house}>
-                        {house}
-                      </option>
-                    ))}
-                    <option value="Other">Other...</option>
-                  </select>
-                </div>
-
-                {selectedHouse === 'Other' && (
-                  <div className="input-group animate-fade-in" style={{ marginTop: '8px' }}>
-                    <label className="royal-input-label" style={{ color: 'var(--accent)' }}>Specify Custom Genre/House Name</label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                     <input
                       type="text"
                       className="royal-input"
-                      placeholder="e.g. Classic Philosophy"
-                      value={customGenre}
-                      onChange={(e) => setCustomGenre(e.target.value)}
-                      required
+                      placeholder="Type to search or establish genre..."
+                      value={genreSearchQuery}
+                      onChange={(e) => {
+                        setGenreSearchQuery(e.target.value);
+                        setGenreDropdownOpen(true);
+                      }}
+                      onFocus={() => setGenreDropdownOpen(true)}
+                      style={{ paddingRight: '36px', width: '100%' }}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setGenreDropdownOpen(!genreDropdownOpen)}
+                      style={{
+                        position: 'absolute',
+                        right: '4px',
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--accent)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '32px',
+                        height: '32px',
+                        opacity: 0.8
+                      }}
+                    >
+                      <ChevronDown size={16} style={{ transform: genreDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                    </button>
                   </div>
-                )}
+                  {genreDropdownOpen && (
+                    <div
+                      className="royal-dropdown-list"
+                      style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        zIndex: 100,
+                        background: 'rgba(26, 21, 16, 0.98)',
+                        border: '1px solid var(--accent)',
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.8)',
+                        borderRadius: '6px',
+                        marginTop: '4px',
+                        maxHeight: '220px',
+                        overflowY: 'auto',
+                        scrollbarWidth: 'thin',
+                        padding: '6px'
+                      }}
+                    >
+                      {houses.filter(h => (h || '').toLowerCase().includes(genreSearchQuery.toLowerCase())).length > 0 ? (
+                        houses.filter(h => (h || '').toLowerCase().includes(genreSearchQuery.toLowerCase())).map((house) => (
+                          <div
+                            key={house}
+                            onClick={() => {
+                              setSelectedHouse(house);
+                              setGenreSearchQuery(house);
+                              setGenreDropdownOpen(false);
+                            }}
+                            style={{
+                              padding: '8px 12px',
+                              fontSize: '0.9rem',
+                              color: 'var(--text-primary)',
+                              cursor: 'pointer',
+                              borderRadius: '4px',
+                              textAlign: 'left',
+                              transition: 'background 0.2s',
+                              background: selectedHouse === house ? 'rgba(212, 175, 55, 0.1)' : 'transparent',
+                              borderLeft: selectedHouse === house ? '3px solid var(--accent)' : '3px solid transparent'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 175, 55, 0.15)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = selectedHouse === house ? 'rgba(212, 175, 55, 0.1)' : 'transparent'; }}
+                          >
+                            {house}
+                          </div>
+                        ))
+                      ) : (
+                        <div style={{ padding: '8px 12px', fontSize: '0.85rem', color: 'var(--text-secondary)', textAlign: 'left' }}>
+                          No matching genres found
+                        </div>
+                      )}
+                      {genreSearchQuery.trim() && !houses.some(h => (h || '').toLowerCase().trim() === genreSearchQuery.toLowerCase().trim()) && (
+                        <div
+                          onClick={() => handleCreateGenreSearchDropdown(genreSearchQuery)}
+                          style={{
+                            padding: '10px 12px',
+                            fontSize: '0.85rem',
+                            color: 'var(--accent)',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            borderTop: '1px solid rgba(212, 175, 55, 0.15)',
+                            textAlign: 'left',
+                            marginTop: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 175, 55, 0.1)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        >
+                          <Plus size={14} />
+                          <span>Establish House: "{genreSearchQuery.trim()}"</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 <div className="input-group">
                   <label className="royal-input-label">{t('admin.languageLabel', 'Volume Language')}</label>
@@ -1670,71 +1865,92 @@ const BookIngestionConsole = ({ user }) => {
 
                 <div className="input-group">
                   <label className="royal-input-label">{t('admin.tagsLabel', 'Acquisition Labels / Tags')}</label>
-                  <input
-                    type="text"
-                    className="royal-input"
-                    value={tagsInput}
-                    onChange={(e) => setTagsInput(e.target.value)}
-                    placeholder="e.g. aesthetic, victorian, philosophy"
-                  />
-                  <div className="interactive-tags-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
-                    {tagsInput.split(',').map(t => t.trim()).filter(Boolean).map((tag, idx) => (
-                      editingTagIndex === idx ? (
-                        <input
-                          key={idx}
-                          type="text"
-                          value={editingTagValue}
-                          onChange={(e) => setEditingTagValue(e.target.value)}
-                          onBlur={() => handleSaveTagEdit(idx)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                               handleSaveTagEdit(idx);
-                            } else if (e.key === 'Escape') {
-                              setEditingTagIndex(null);
-                            }
+                  <div
+                    onClick={() => tagInputRef.current && tagInputRef.current.focus()}
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '8px',
+                      padding: '8px 12px',
+                      background: 'rgba(26, 21, 16, 0.4)',
+                      border: '1px solid rgba(212, 175, 55, 0.25)',
+                      borderRadius: '6px',
+                      minHeight: '42px',
+                      cursor: 'text',
+                      alignItems: 'center',
+                      transition: 'border-color 0.2s',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.5)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.25)'; }}
+                  >
+                    {currentTagsArray.map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="tag-pill-interactive"
+                        style={{
+                          background: 'rgba(212, 175, 55, 0.1)',
+                          border: '1px solid rgba(212, 175, 55, 0.35)',
+                          color: 'var(--accent)',
+                          padding: '4px 10px',
+                          borderRadius: '12px',
+                          fontSize: '0.8rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          userSelect: 'none',
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <span>{tag}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteTag(tag);
                           }}
-                          autoFocus
-                          className="royal-input"
-                          style={{ width: '100px', padding: '2px 6px', fontSize: '0.8rem', height: 'auto', display: 'inline-block' }}
-                        />
-                      ) : (
-                        <span
-                          key={idx}
-                          className="tag-pill-interactive"
-                          onClick={() => handleStartTagEdit(idx, tag)}
                           style={{
-                            background: 'rgba(210, 165, 116, 0.1)',
-                            border: '1px solid rgba(210, 165, 116, 0.25)',
-                            color: 'var(--accent)',
-                            padding: '4px 10px',
-                            borderRadius: '12px',
-                            fontSize: '0.8rem',
+                            background: 'none',
+                            border: 'none',
+                            color: 'rgba(255,255,255,0.4)',
+                            padding: 0,
                             cursor: 'pointer',
-                            display: 'inline-flex',
+                            fontSize: '12px',
+                            display: 'flex',
                             alignItems: 'center',
-                            gap: '6px',
-                            userSelect: 'none',
-                            transition: 'all 0.2s ease',
+                            justifyContent: 'center',
+                            width: '12px',
+                            height: '12px',
+                            lineHeight: 1
                           }}
-                          title="Click to edit"
+                          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; }}
                         >
-                          <span>{tag}</span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveTag(idx);
-                            }}
-                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', padding: 0, cursor: 'pointer', fontSize: '10px' }}
-                          >
-                            ×
-                          </button>
-                        </span>
-                      )
+                          ×
+                        </button>
+                      </span>
                     ))}
+                    <input
+                      ref={tagInputRef}
+                      type="text"
+                      value={tagTypedValue}
+                      onChange={handleTagInputChange}
+                      onKeyDown={handleTagInputKeyDown}
+                      placeholder={currentTagsArray.length === 0 ? "Type tag & press comma (,) or Enter..." : ""}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        outline: 'none',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.9rem',
+                        flexGrow: 1,
+                        padding: 0,
+                        minWidth: '120px'
+                      }}
+                    />
                   </div>
-                  <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>Provide free text tags separated by commas. Click any tag pill above to edit inline. Trimming and deduplication will be applied automatically.</span>
+                  <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px', display: 'block' }}>
+                    Type a tag and press comma (`,`) or `Enter` to commit. Hitting `Backspace` on empty input deletes the last tag.
+                  </span>
                 </div>
 
                 <div className="input-group">

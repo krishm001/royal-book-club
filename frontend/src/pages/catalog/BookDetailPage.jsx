@@ -49,6 +49,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
   const [nfcSession, setNfcSession] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [gatingSettings, setGatingSettings] = useState(null);
+  const [showAllTags, setShowAllTags] = useState(false);
 
   // Custom Instant Confirmation modal states
   const [instantConfirmOpen, setInstantConfirmOpen] = useState(false);
@@ -293,6 +294,13 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
 
   // Preference-hierarchy tab & scanner states
   const [activeTab, setActiveTab] = useState('NDEFReader' in window ? 'nfc' : 'barcode');
+
+  useEffect(() => {
+    if (book) {
+      const defaultTab = ('NDEFReader' in window && book.ntagUid) ? 'nfc' : 'barcode';
+      setActiveTab(defaultTab);
+    }
+  }, [book]);
   const [detailScannerOpen, setDetailScannerOpen] = useState(false);
   const [detailScannerError, setDetailScannerError] = useState('');
   const detailHtml5QrCodeRef = React.useRef(null);
@@ -431,7 +439,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         setNfcSuccess(false);
         setFallbackSuccess(false);
         
-        const defaultTab = 'NDEFReader' in window ? 'nfc' : 'barcode';
+        const defaultTab = ('NDEFReader' in window && book?.ntagUid) ? 'nfc' : 'barcode';
         setActiveTab(defaultTab);
         setNfcModalOpen(true);
 
@@ -448,7 +456,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         setNfcSuccess(false);
         setFallbackSuccess(false);
         
-        const defaultTab = 'NDEFReader' in window ? 'nfc' : 'barcode';
+        const defaultTab = ('NDEFReader' in window && book?.ntagUid) ? 'nfc' : 'barcode';
         setActiveTab(defaultTab);
         setNfcModalOpen(true);
 
@@ -472,7 +480,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     setNfcSuccess(false);
     setFallbackSuccess(false);
 
-    const defaultTab = 'NDEFReader' in window ? 'nfc' : 'barcode';
+    const defaultTab = ('NDEFReader' in window && book?.ntagUid) ? 'nfc' : 'barcode';
     setActiveTab(defaultTab);
     setNfcModalOpen(true);
 
@@ -493,7 +501,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     setNfcSuccess(false);
     setFallbackSuccess(false);
 
-    const defaultTab = 'NDEFReader' in window ? 'nfc' : 'barcode';
+    const defaultTab = ('NDEFReader' in window && book?.ntagUid) ? 'nfc' : 'barcode';
     setActiveTab(defaultTab);
     setNfcModalOpen(true);
 
@@ -1133,12 +1141,35 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
           {book.tags && Array.isArray(book.tags) && book.tags.length > 0 && (
             <div style={{ marginTop: '1.5rem' }}>
               <h4 style={{ fontSize: '0.9rem', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>{t('catalog.acquisitionLabels')}</h4>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {book.tags.map((tag, idx) => (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                {(showAllTags ? book.tags : book.tags.slice(0, 10)).map((tag, idx) => (
                   <span key={idx} style={{ background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.15)', color: 'var(--accent)', borderRadius: '4px', padding: '3px 8px', fontSize: '0.75rem', fontWeight: '500' }}>
                     #{tag}
                   </span>
                 ))}
+                {book.tags.length > 10 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllTags(!showAllTags)}
+                    style={{
+                      background: 'rgba(212, 175, 55, 0.15)',
+                      border: '1px solid var(--accent)',
+                      color: 'var(--accent)',
+                      borderRadius: '4px',
+                      padding: '3px 10px',
+                      fontSize: '0.7rem',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 175, 55, 0.25)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(212, 175, 55, 0.15)'; }}
+                  >
+                    {showAllTags ? t('common.showLess', 'Show Less') : `+ ${book.tags.length - 10} More`}
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -1294,9 +1325,11 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
 
           <div className="verification-tabs-header">
             <button
-              className={`verification-tab-btn ${activeTab === 'nfc' ? 'active' : ''}`}
+              className={`verification-tab-btn ${activeTab === 'nfc' ? 'active' : ''} ${!book?.ntagUid ? 'tab-disabled' : ''}`}
               onClick={() => handleTabChange('nfc')}
-              disabled={nfcSuccess || fallbackSuccess}
+              disabled={nfcSuccess || fallbackSuccess || !book?.ntagUid}
+              title={!book?.ntagUid ? "NFC checkout not available (no physical tag registered for this book)" : ""}
+              style={!book?.ntagUid ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
             >
               <Smartphone size={14} />
               <span>{t('catalog.nfcTap')}</span>
