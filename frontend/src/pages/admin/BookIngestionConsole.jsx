@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw, X, Camera, Cpu, Smartphone, Check, ArrowLeft, Search, Compass, BookOpen, ChevronDown, Plus } from 'lucide-react';
+import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw, X, Camera, Cpu, Smartphone, Check, ArrowLeft, Search, Compass, BookOpen, ChevronDown, Plus, Minus, Sliders } from 'lucide-react';
 import { createBook, lookupBookByIsbn, fetchBookByIsbn, fetchBooks, searchBookMetadata, fetchBookByNtagUid } from '../../services/libraryApi';
 import { fetchBookHouses, createBookHouse } from '../../services/genreApi';
 import { uploadBookImage } from '../../services/storageApi';
@@ -79,6 +79,13 @@ const BookIngestionConsole = ({ user }) => {
   const [cameraMode, setCameraMode] = useState('isbn'); // 'isbn' or 'cover'
   const [cameraError, setCameraError] = useState('');
   const [cameraStream, setCameraStream] = useState(null);
+
+  // Advanced camera control states
+  const [zoomValue, setZoomValue] = useState(1.0);
+  const [activeVideoTrack, setActiveVideoTrack] = useState(null);
+  const [zoomCapabilities, setZoomCapabilities] = useState(null);
+  const [isHardwareZoomActive, setIsHardwareZoomActive] = useState(false);
+  const [isFitMode, setIsFitMode] = useState(false); // false = cover (fill), true = contain (fit)
 
   const videoRef = useRef(null);
   const barcodeIntervalRef = useRef(null);
@@ -612,12 +619,36 @@ const BookIngestionConsole = ({ user }) => {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { 
             facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
+            width: { ideal: 1080 },
+            height: { ideal: 1440 }, // Native vertical 3:4 aspect ratio
+            aspectRatio: { ideal: 0.75 },
             frameRate: { ideal: 30 }
           }
         });
         setCameraStream(stream);
+
+        const track = stream.getVideoTracks()[0];
+        setActiveVideoTrack(track);
+        if (track && typeof track.getCapabilities === 'function') {
+          try {
+            const capabilities = track.getCapabilities();
+            if (capabilities && capabilities.zoom) {
+              setZoomCapabilities({
+                min: capabilities.zoom.min || 1.0,
+                max: capabilities.zoom.max || 3.0,
+                step: capabilities.zoom.step || 0.1
+              });
+            } else {
+              setZoomCapabilities(null);
+            }
+          } catch (capErr) {
+            console.warn("Could not retrieve track capabilities:", capErr);
+            setZoomCapabilities(null);
+          }
+        } else {
+          setZoomCapabilities(null);
+        }
+
         setTimeout(() => {
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
@@ -627,6 +658,25 @@ const BookIngestionConsole = ({ user }) => {
         console.error('Camera access error:', err);
         setCameraError('Camera access denied or unavailable. Please upload a file manually.');
       }
+    }
+  };
+
+  const handleZoomChange = async (newVal) => {
+    const val = parseFloat(newVal);
+    setZoomValue(val);
+    
+    if (activeVideoTrack && zoomCapabilities) {
+      try {
+        await activeVideoTrack.applyConstraints({
+          advanced: [{ zoom: val }]
+        });
+        setIsHardwareZoomActive(true);
+      } catch (err) {
+        console.warn("Failed to apply hardware zoom constraint, using digital zoom fallback:", err);
+        setIsHardwareZoomActive(false);
+      }
+    } else {
+      setIsHardwareZoomActive(false);
     }
   };
 
@@ -650,6 +700,11 @@ const BookIngestionConsole = ({ user }) => {
       }
       setCameraStream(null);
     }
+
+    setActiveVideoTrack(null);
+    setZoomCapabilities(null);
+    setIsHardwareZoomActive(false);
+    setZoomValue(1.0);
 
     try {
       const videos = document.querySelectorAll('#qr-reader video');
@@ -932,22 +987,26 @@ const BookIngestionConsole = ({ user }) => {
       // Crop extra sides off horizontally
       sHeight = vHeight;
       sWidth = vHeight * targetAspect;
-      sx = (vWidth - sWidth) / 2;
-      sy = 0;
     } else {
       // Source stream is taller than target aspect ratio (uncommon portrait streams)
       // Crop extra top/bottom vertically
       sWidth = vWidth;
       sHeight = vWidth / targetAspect;
-      sx = 0;
-      sy = (vHeight - sHeight) / 2;
     }
     
-    console.log(`Cropping live capture stream (${vWidth}x${vHeight}) to 3:4 aspect ratio: sx=${sx}, sy=${sy}, width=${sWidth}, height=${sHeight}`);
+    // Apply digital zoom scaling if hardware zoom is not active
+    const finalZoom = !isHardwareZoomActive ? zoomValue : 1.0;
+    const cropWidth = sWidth / finalZoom;
+    const cropHeight = sHeight / finalZoom;
+    
+    sx = (vWidth - cropWidth) / 2;
+    sy = (vHeight - cropHeight) / 2;
+    
+    console.log(`Cropping live capture stream (${vWidth}x${vHeight}) to 3:4 aspect ratio with zoom factor ${finalZoom}: sx=${sx}, sy=${sy}, width=${cropWidth}, height=${cropHeight}`);
     
     ctx.drawImage(
       videoRef.current,
-      sx, sy, sWidth, sHeight, // Source crop rectangle
+      sx, sy, cropWidth, cropHeight, // Source crop rectangle
       0, 0, canvas.width, canvas.height // Destination rectangle
     );
     
@@ -2224,11 +2283,22 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
               </div>
             ) : (
-              <div className={`camera-stream-wrapper ${cameraMode === 'cover' ? 'cover-mode' : 'isbn-mode'}`}>
+              <div className={`camera-stream-wrapper ${cameraMode === 'cover' ? 'cover-mode' : 'isbn-mode'} ${isFitMode ? 'contain-mode' : 'cover-mode'}`}>
                 {cameraMode === 'isbn' ? (
                   <div id="qr-reader" className="scanner-focus-ring-container" onClick={(e) => handleScannerClick(e, html5QrCodeRef.current)} style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} />
                 ) : (
-                  <video ref={videoRef} autoPlay playsInline muted className="camera-video" />
+                  <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    playsInline 
+                    muted 
+                    className={`camera-video ${isFitMode ? 'contain-mode' : 'cover-mode'}`}
+                    style={{
+                      transform: !isHardwareZoomActive && zoomValue > 1.0 ? `scale(${zoomValue})` : 'none',
+                      transformOrigin: 'center',
+                      transition: 'transform 0.1s ease-out'
+                    }}
+                  />
                 )}
                 
                 {cameraMode === 'isbn' ? (
@@ -2246,6 +2316,50 @@ const BookIngestionConsole = ({ user }) => {
                   <div className="cover-capture-guide">
                     <div className="cover-frame-outline"></div>
                     <span className="scanning-help-text">Position cover inside the gold boundaries</span>
+                  </div>
+                )}
+
+                {cameraMode === 'cover' && (
+                  <div className="camera-advanced-controls">
+                    {/* Fit/Fill Toggle */}
+                    <button 
+                      onClick={() => setIsFitMode(!isFitMode)} 
+                      className={`control-toggle-btn ${isFitMode ? 'active' : ''}`}
+                      title={isFitMode ? "Switch to Fill Screen (Crop)" : "Switch to Fit Screen (Full Lens)"}
+                    >
+                      <Sliders size={13} />
+                      <span>{isFitMode ? "Fit Frame (Full)" : "Fill Frame (Crop)"}</span>
+                    </button>
+
+                    {/* Zoom Slider */}
+                    <div className="camera-zoom-slider-group">
+                      <button 
+                        onClick={() => handleZoomChange(Math.max(1.0, zoomValue - 0.2))} 
+                        className="zoom-increment-btn"
+                        title="Zoom Out"
+                        disabled={zoomValue <= 1.0}
+                      >
+                        <Minus size={13} />
+                      </button>
+                      <input 
+                        type="range" 
+                        min="1.0" 
+                        max={zoomCapabilities ? zoomCapabilities.max : "3.0"} 
+                        step="0.1" 
+                        value={zoomValue} 
+                        onChange={(e) => handleZoomChange(e.target.value)}
+                        className="zoom-range-input"
+                      />
+                      <button 
+                        onClick={() => handleZoomChange(Math.min(zoomCapabilities ? zoomCapabilities.max : 3.0, zoomValue + 0.2))} 
+                        className="zoom-increment-btn"
+                        title="Zoom In"
+                        disabled={zoomValue >= (zoomCapabilities ? zoomCapabilities.max : 3.0)}
+                      >
+                        <Plus size={13} />
+                      </button>
+                      <span className="zoom-value-label">{zoomValue.toFixed(1)}x</span>
+                    </div>
                   </div>
                 )}
  

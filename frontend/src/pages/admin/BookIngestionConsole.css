@@ -281,7 +281,7 @@
 }
 
 .camera-modal-card.cover-mode {
-  max-width: 500px;
+  max-width: 550px;
 }
 
 .camera-modal-header {
@@ -331,7 +331,7 @@
 
 .camera-stream-wrapper.cover-mode {
   aspect-ratio: 3 / 4;
-  max-height: 62vh;
+  max-height: 66vh;
 }
 
 .camera-video {
@@ -345,6 +345,16 @@
 
 .camera-stream-wrapper.cover-mode .camera-video {
   object-fit: cover; /* Centers and covers the stream visually */
+  transition: transform 0.1s ease-out, object-fit 0.3s ease;
+}
+
+.camera-video.contain-mode {
+  object-fit: contain !important;
+  background-color: #0c0c10;
+}
+
+.camera-video.cover-mode {
+  object-fit: cover !important;
 }
 
 /* laser scan overlays */
@@ -432,11 +442,157 @@
 }
 
 .cover-frame-outline {
-  width: 75%;
-  height: 80%;
+  width: 82%;
+  height: 84%;
   border: 2px dashed var(--accent);
   border-radius: var(--border-radius-sm);
   box-shadow: 0 0 0 2000px rgba(10, 10, 12, 0.5); /* Gorgeous premium vignette focusing book cover */
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Advanced Camera Controls Panel (Zoom, Fit/Fill) */
+.camera-advanced-controls {
+  position: absolute;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: rgba(15, 15, 20, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 10px 16px;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--glass-border);
+  z-index: 10;
+  width: 90%;
+  max-width: 320px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s ease;
+}
+
+/* On screens where height is constrained */
+@media (max-height: 700px) {
+  .camera-advanced-controls {
+    bottom: 74px;
+    padding: 8px 12px;
+    gap: 6px;
+  }
+}
+
+.control-toggle-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  border-radius: 16px;
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: fit-content;
+}
+
+.control-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.control-toggle-btn.active {
+  background: rgba(212, 165, 116, 0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 10px rgba(212, 165, 116, 0.1);
+}
+
+.camera-zoom-slider-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.zoom-increment-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.zoom-increment-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.zoom-increment-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.zoom-range-input {
+  flex-grow: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.1);
+  height: 4px;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.zoom-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  transition: transform 0.1s ease;
+}
+
+.zoom-range-input::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.zoom-range-input::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  transition: transform 0.1s ease;
+}
+
+.zoom-range-input::-moz-range-thumb:hover {
+  transform: scale(1.2);
+}
+
+.zoom-value-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 28px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .scanning-help-text {
