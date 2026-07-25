@@ -72,6 +72,32 @@ resource "cloudflare_record" "www_cname" {
   proxied = true
 }
 
+# Redirect www to non-www (apex) at the edge for optimal SEO, cookies, and CORS/CSP consistency
+resource "cloudflare_ruleset" "redirect_www_to_apex" {
+  count       = var.cloudflare_zone_id != "" ? 1 : 0
+  zone_id     = var.cloudflare_zone_id
+  name        = "redirect-www-to-apex"
+  description = "Redirect www.royalbookclub.com to royalbookclub.com"
+  kind        = "zone"
+  phase       = "http_request_dynamic_redirect"
+
+  rules {
+    action = "redirect"
+    action_parameters {
+      from_value {
+        status_code = 301
+        target_url {
+          expression = "concat(\"https://royalbookclub.com\", http.request.uri.path)"
+        }
+        preserve_query_string = true
+      }
+    }
+    expression  = "(http.host eq \"www.royalbookclub.com\")"
+    description = "Redirect www to apex domain"
+    enabled     = true
+  }
+}
+
 # Output the generated secret and Pages info for secure configuration
 output "cloudflare_pages_url" {
   value       = cloudflare_pages_project.frontend.subdomain
