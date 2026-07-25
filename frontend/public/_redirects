@@ -1,0 +1,2 @@
+# Redirect www to non-www (apex) at the edge for optimal SEO, cookies, and CORS/CSP consistency
+https://www.royalbookclub.com/* https://royalbookclub.com/:splat 301
