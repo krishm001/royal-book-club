@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, BookOpen, Users, PlusCircle, Award, Settings, Layers, Calendar, RefreshCw } from 'lucide-react';
+import { Shield, BookOpen, Users, PlusCircle, Award, Settings, Layers, Calendar, RefreshCw, ClipboardCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { listAdminRequests } from '../../services/adminRequestApi';
 import { fetchCheckouts } from '../../services/libraryApi';
@@ -249,6 +249,17 @@ const AdminDashboard = ({ user }) => {
           </Link>
         </div>
 
+        {/* Physical Shelf Audit Panel */}
+        <div className="royal-card action-panel-card">
+          <div className="panel-icon-wrapper">
+            <ClipboardCheck size={28} className="gold-glow-icon" />
+          </div>
+          <h3>{t('admin.shelfAuditTitle', 'Physical Shelf Audit')}</h3>
+          <p>{t('admin.shelfAuditDesc', 'Perform volume checks, audit barcode logs, and run catalog reconciliation.')}</p>
+          <Link to="/admin/audit" className="royal-btn action-panel-btn">
+            {t('admin.launchAudit', 'Launch Shelf Audit')}
+          </Link>
+        </div>
 
         {/* Admin Requests Panel */}
         {pendingRequestsCount > 0 && (

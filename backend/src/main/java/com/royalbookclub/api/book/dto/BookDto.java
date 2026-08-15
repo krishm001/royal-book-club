@@ -51,5 +51,11 @@ public class BookDto {
     private String ntagUid;
     
     @Builder.Default
+    private List<String> ntagUids = new java.util.ArrayList<>();
+
+    @Builder.Default
+    private List<com.royalbookclub.api.book.model.BookCopy> copies = new java.util.ArrayList<>();
+    
+    @Builder.Default
     private String language = "en";
 }

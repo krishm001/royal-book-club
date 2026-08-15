@@ -9,6 +9,7 @@ import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
 import com.royalbookclub.api.book.dto.BookDto;
 import com.royalbookclub.api.book.model.Book;
+import com.royalbookclub.api.book.model.BookCopy;
 import com.royalbookclub.api.common.exception.BusinessRuleException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,24 @@ public class BookService {
         this.firestore = firestore;
     }
 
+    private Map<String, Integer> getPendingReturnsMap() {
+        Map<String, Integer> pendingReturns = new HashMap<>();
+        try {
+            QuerySnapshot snap = firestore.collection("checkouts")
+                    .whereEqualTo("status", "REQUESTED_RETURN")
+                    .get().get();
+            for (DocumentSnapshot doc : snap.getDocuments()) {
+                String bookId = doc.getString("bookId");
+                if (bookId != null && !bookId.isBlank()) {
+                    pendingReturns.put(bookId, pendingReturns.getOrDefault(bookId, 0) + 1);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch pending return counts for catalog availability calculation: {}", e.getMessage());
+        }
+        return pendingReturns;
+    }
+
     /**
      * Retrieve all books in the library catalog.
      *
@@ -49,8 +68,20 @@ public class BookService {
             ApiFuture<QuerySnapshot> query = firestore.collection(COLLECTION_NAME).get();
             QuerySnapshot querySnapshot = query.get();
             List<Book> books = new ArrayList<>();
+            Map<String, Integer> pendingReturns = getPendingReturnsMap();
             for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                books.add(mapToBook(doc));
+                Book book = mapToBook(doc);
+                int pendingCount = pendingReturns.getOrDefault(book.getIsbn(), 0);
+                if (pendingCount > 0) {
+                    int currentAvailable = book.getAvailableCopies() != null ? book.getAvailableCopies() : 0;
+                    int total = book.getTotalCopies() != null ? book.getTotalCopies() : 0;
+                    int newAvailable = currentAvailable + pendingCount;
+                    if (newAvailable > total) {
+                        newAvailable = total;
+                    }
+                    book.setAvailableCopies(newAvailable);
+                }
+                books.add(book);
             }
             return books;
         } catch (InterruptedException e) {
@@ -82,6 +113,27 @@ public class BookService {
             if (document.exists()) {
                 Book book = mapToBook(document);
                 populateNfcResetTimestamp(book);
+
+                // Add pending returns count to availableCopies
+                try {
+                    QuerySnapshot pendingSnap = firestore.collection("checkouts")
+                            .whereEqualTo("bookId", cleanIsbn)
+                            .whereEqualTo("status", "REQUESTED_RETURN")
+                            .get().get();
+                    int pendingCount = pendingSnap.size();
+                    if (pendingCount > 0) {
+                        int currentAvailable = book.getAvailableCopies() != null ? book.getAvailableCopies() : 0;
+                        int total = book.getTotalCopies() != null ? book.getTotalCopies() : 0;
+                        int newAvailable = currentAvailable + pendingCount;
+                        if (newAvailable > total) {
+                            newAvailable = total;
+                        }
+                        book.setAvailableCopies(newAvailable);
+                    }
+                } catch (Exception ex) {
+                    log.warn("Failed to load pending return count for single book isbn {}: {}", cleanIsbn, ex.getMessage());
+                }
+
                 return Optional.of(book);
             }
             return Optional.empty();
@@ -115,6 +167,7 @@ public class BookService {
             if (document.exists()) {
                 // Update operation
                 Book existing = mapToBook(document);
+                List<BookCopy> copies = synchronizeCopies(existing.getCopies(), bookDto);
                 
                 // Adjust availableCopies if totalCopies changed
                 int diff = bookDto.getTotalCopies() - existing.getTotalCopies();
@@ -135,12 +188,15 @@ public class BookService {
                         .totalCopies(bookDto.getTotalCopies())
                         .availableCopies(bookDto.getAvailableCopies() != null ? bookDto.getAvailableCopies() : newAvailable)
                         .ntagUid(bookDto.getNtagUid())
+                        .ntagUids(bookDto.getNtagUids() != null ? bookDto.getNtagUids() : new ArrayList<>())
+                        .copies(copies)
                         .createdAt(existing.getCreatedAt())
                         .updatedAt(now)
                         .language(bookDto.getLanguage() != null ? bookDto.getLanguage() : "en")
                         .build();
             } else {
                 // Insert operation
+                List<BookCopy> copies = synchronizeCopies(new ArrayList<>(), bookDto);
                 book = Book.builder()
                         .isbn(cleanIsbn)
                         .title(bookDto.getTitle())
@@ -156,6 +212,8 @@ public class BookService {
                         .totalCopies(bookDto.getTotalCopies())
                         .availableCopies(bookDto.getAvailableCopies() != null ? bookDto.getAvailableCopies() : bookDto.getTotalCopies())
                         .ntagUid(bookDto.getNtagUid())
+                        .ntagUids(bookDto.getNtagUids() != null ? bookDto.getNtagUids() : new ArrayList<>())
+                        .copies(copies)
                         .createdAt(now)
                         .updatedAt(now)
                         .language(bookDto.getLanguage() != null ? bookDto.getLanguage() : "en")
@@ -200,6 +258,60 @@ public class BookService {
         }
     }
 
+    /**
+     * Update the number of total and available copies of a book.
+     * Gracefully reconciles individual physical copies list and serializes it.
+     *
+     * @param isbn            The ISBN of the book
+     * @param totalCopies     The new total copies
+     * @param availableCopies The new available copies
+     */
+    public void updateBookCopies(String isbn, int totalCopies, int availableCopies) {
+        String cleanIsbn = isbn.trim().replace("-", "");
+        log.info("Updating book copies for ISBN {}: Total={}, Available={}", cleanIsbn, totalCopies, availableCopies);
+        try {
+            DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(cleanIsbn);
+            firestore.runTransaction(transaction -> {
+                DocumentSnapshot doc = transaction.get(docRef).get();
+                if (!doc.exists()) {
+                    throw new IllegalArgumentException("Book with ISBN " + cleanIsbn + " does not exist.");
+                }
+
+                Book book = mapToBook(doc);
+                book.setTotalCopies(totalCopies);
+                book.setAvailableCopies(availableCopies);
+
+                List<BookCopy> existingCopies = getOrCreateBookCopies(doc);
+
+                BookDto bookDto = BookDto.builder()
+                        .isbn(book.getIsbn())
+                        .title(book.getTitle())
+                        .authors(book.getAuthors())
+                        .ntagUid(book.getNtagUid())
+                        .ntagUids(book.getNtagUids())
+                        .totalCopies(totalCopies)
+                        .availableCopies(availableCopies)
+                        .build();
+
+                List<BookCopy> updatedCopies = synchronizeCopies(existingCopies, bookDto);
+                List<Map<String, Object>> copiesMaps = copiesToListOfMaps(updatedCopies);
+
+                Map<String, Object> updates = new HashMap<>();
+                updates.put("totalCopies", totalCopies);
+                updates.put("availableCopies", availableCopies);
+                updates.put("copies", copiesMaps);
+                updates.put("updatedAt", com.google.cloud.Timestamp.now());
+                transaction.update(docRef, updates);
+                return null;
+            }).get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Failed to update book copies", e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException("Failed to update book copies", e);
+        }
+    }
+
     private String formatWithColons(String cleanUid) {
         if (cleanUid == null || cleanUid.length() != 14) {
             return cleanUid;
@@ -236,6 +348,18 @@ public class BookService {
             List<QueryDocumentSnapshot> documents = future.get().getDocuments();
             if (!documents.isEmpty()) {
                 Book book = mapToBook(documents.get(0));
+                populateNfcResetTimestamp(book);
+                return book;
+            }
+
+            // Fallback: check multi-copy array field ntagUids
+            ApiFuture<QuerySnapshot> arrayFuture = firestore.collection(COLLECTION_NAME)
+                    .whereArrayContainsAny("ntagUids", candidates)
+                    .limit(1)
+                    .get();
+            List<QueryDocumentSnapshot> arrayDocs = arrayFuture.get().getDocuments();
+            if (!arrayDocs.isEmpty()) {
+                Book book = mapToBook(arrayDocs.get(0));
                 populateNfcResetTimestamp(book);
                 return book;
             }
@@ -413,6 +537,172 @@ public class BookService {
         }
     }
 
+    private List<Map<String, Object>> copiesToListOfMaps(List<BookCopy> copies) {
+        List<Map<String, Object>> list = new ArrayList<>();
+        if (copies == null) return list;
+        for (BookCopy copy : copies) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("copyNo", copy.getCopyNo());
+            m.put("ntagUid", copy.getNtagUid());
+            m.put("status", copy.getStatus());
+            m.put("currentCheckoutId", copy.getCurrentCheckoutId());
+            list.add(m);
+        }
+        return list;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<BookCopy> mapsToListOfCopies(List<Map<String, Object>> maps) {
+        List<BookCopy> list = new ArrayList<>();
+        if (maps == null) return list;
+        for (Map<String, Object> m : maps) {
+            if (m == null) continue;
+            BookCopy copy = BookCopy.builder()
+                    .copyNo(m.get("copyNo") != null ? ((Long) m.get("copyNo")).intValue() : null)
+                    .ntagUid((String) m.get("ntagUid"))
+                    .status((String) m.get("status"))
+                    .currentCheckoutId((String) m.get("currentCheckoutId"))
+                    .build();
+            list.add(copy);
+        }
+        return list;
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<BookCopy> getOrCreateBookCopies(DocumentSnapshot doc) {
+        List<BookCopy> copies = new ArrayList<>();
+        if (doc.contains("copies")) {
+            List<Map<String, Object>> copiesMaps = (List<Map<String, Object>>) doc.get("copies");
+            if (copiesMaps != null) {
+                copies = mapsToListOfCopies(copiesMaps);
+            }
+        }
+        
+        Long totalCopiesLong = doc.getLong("totalCopies");
+        int totalCopies = totalCopiesLong != null ? totalCopiesLong.intValue() : 0;
+        
+        List<String> ntagUids = (List<String>) doc.get("ntagUids");
+        String legacyNtagUid = doc.getString("ntagUid");
+        
+        // Ensure copies list matches totalCopies
+        if (copies.size() < totalCopies) {
+            int start = copies.size() + 1;
+            for (int i = start; i <= totalCopies; i++) {
+                String tag = (ntagUids != null && i <= ntagUids.size()) ? ntagUids.get(i - 1) : null;
+                if (tag == null && i == 1 && legacyNtagUid != null && !legacyNtagUid.isBlank()) {
+                    tag = legacyNtagUid;
+                }
+                copies.add(BookCopy.builder()
+                        .copyNo(i)
+                        .ntagUid(tag)
+                        .status("AVAILABLE")
+                        .currentCheckoutId(null)
+                        .build());
+            }
+        } else if (copies.size() > totalCopies) {
+            // Trim list preserving non-AVAILABLE copies if possible
+            List<BookCopy> nonAvailable = new ArrayList<>();
+            List<BookCopy> available = new ArrayList<>();
+            for (BookCopy copy : copies) {
+                if ("AVAILABLE".equals(copy.getStatus())) {
+                    available.add(copy);
+                } else {
+                    nonAvailable.add(copy);
+                }
+            }
+            
+            List<BookCopy> merged = new ArrayList<>();
+            merged.addAll(nonAvailable);
+            merged.addAll(available);
+            
+            if (merged.size() > totalCopies) {
+                copies = new ArrayList<>(merged.subList(0, totalCopies));
+            } else {
+                copies = merged;
+            }
+            
+            // Re-index copyNo sequentially
+            for (int i = 0; i < copies.size(); i++) {
+                copies.get(i).setCopyNo(i + 1);
+            }
+        }
+        
+        return copies;
+    }
+
+    public List<BookCopy> synchronizeCopies(List<BookCopy> existingCopies, BookDto bookDto) {
+        List<BookCopy> copies = new ArrayList<>();
+        if (existingCopies != null) {
+            copies.addAll(existingCopies);
+        }
+        
+        if (bookDto.getCopies() != null && !bookDto.getCopies().isEmpty()) {
+            copies = new ArrayList<>(bookDto.getCopies());
+        }
+        
+        int targetTotal = bookDto.getTotalCopies();
+        
+        if (copies.size() < targetTotal) {
+            int start = copies.size() + 1;
+            for (int i = start; i <= targetTotal; i++) {
+                String tag = (bookDto.getNtagUids() != null && i <= bookDto.getNtagUids().size()) ? bookDto.getNtagUids().get(i - 1) : null;
+                if (tag == null && i == 1 && bookDto.getNtagUid() != null && !bookDto.getNtagUid().isBlank()) {
+                    tag = bookDto.getNtagUid();
+                }
+                copies.add(BookCopy.builder()
+                        .copyNo(i)
+                        .ntagUid(tag)
+                        .status("AVAILABLE")
+                        .currentCheckoutId(null)
+                        .build());
+            }
+        } else if (copies.size() > targetTotal) {
+            List<BookCopy> nonAvailable = new ArrayList<>();
+            List<BookCopy> available = new ArrayList<>();
+            for (BookCopy copy : copies) {
+                if ("AVAILABLE".equals(copy.getStatus())) {
+                    available.add(copy);
+                } else {
+                    nonAvailable.add(copy);
+                }
+            }
+            
+            List<BookCopy> merged = new ArrayList<>();
+            merged.addAll(nonAvailable);
+            merged.addAll(available);
+            
+            if (merged.size() > targetTotal) {
+                copies = new ArrayList<>(merged.subList(0, targetTotal));
+            } else {
+                copies = merged;
+            }
+            
+            for (int i = 0; i < copies.size(); i++) {
+                copies.get(i).setCopyNo(i + 1);
+            }
+        }
+        
+        for (BookCopy copy : copies) {
+            if (copy.getStatus() == null || copy.getStatus().isBlank()) {
+                copy.setStatus("AVAILABLE");
+            }
+        }
+        
+        List<String> dtoTags = bookDto.getNtagUids();
+        if (dtoTags != null) {
+            for (int i = 0; i < copies.size(); i++) {
+                if (i < dtoTags.size()) {
+                    String tag = dtoTags.get(i);
+                    if (tag != null && !tag.isBlank()) {
+                        copies.get(i).setNtagUid(tag);
+                    }
+                }
+            }
+        }
+        
+        return copies;
+    }
+
     private Map<String, Object> bookToMap(Book book) {
         Map<String, Object> map = new HashMap<>();
         map.put("isbn", book.getIsbn());
@@ -429,6 +719,8 @@ public class BookService {
         map.put("totalCopies", book.getTotalCopies());
         map.put("availableCopies", book.getAvailableCopies());
         map.put("ntagUid", book.getNtagUid());
+        map.put("ntagUids", book.getNtagUids() != null ? book.getNtagUids() : new ArrayList<>());
+        map.put("copies", copiesToListOfMaps(book.getCopies()));
         map.put("language", book.getLanguage() != null ? book.getLanguage() : "en");
         map.put("createdAt", book.getCreatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(book.getCreatedAt().getEpochSecond(), book.getCreatedAt().getNano()) : null);
         map.put("updatedAt", book.getUpdatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(book.getUpdatedAt().getEpochSecond(), book.getUpdatedAt().getNano()) : null);
@@ -444,6 +736,8 @@ public class BookService {
 
         List<String> authors = (List<String>) doc.get("authors");
         List<String> tags = (List<String>) doc.get("tags");
+        List<String> ntagUids = (List<String>) doc.get("ntagUids");
+        List<BookCopy> copies = getOrCreateBookCopies(doc);
 
         return Book.builder()
                 .isbn(doc.getString("isbn"))
@@ -460,6 +754,8 @@ public class BookService {
                 .totalCopies(doc.getLong("totalCopies") != null ? doc.getLong("totalCopies").intValue() : null)
                 .availableCopies(doc.getLong("availableCopies") != null ? doc.getLong("availableCopies").intValue() : null)
                 .ntagUid(doc.getString("ntagUid"))
+                .ntagUids(ntagUids != null ? ntagUids : new ArrayList<>())
+                .copies(copies)
                 .language(doc.getString("language") != null ? doc.getString("language") : "en")
                 .createdAt(createdTimestamp != null ? Instant.ofEpochSecond(createdTimestamp.getSeconds(), createdTimestamp.getNanos()) : null)
                 .updatedAt(updatedTimestamp != null ? Instant.ofEpochSecond(updatedTimestamp.getSeconds(), updatedTimestamp.getNanos()) : null)

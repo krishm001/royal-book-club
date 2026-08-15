@@ -427,14 +427,21 @@ const GatepassPage = ({ user }) => {
         <Link to="/profile" className="back-link">
           <ArrowLeft size={16} /> Back to Profile Ledger
         </Link>
-        {!isPendingApproval && (
-          <button onClick={handlePrint} className="royal-btn print-action-btn">
-            <Printer size={16} /> Print Gatepass
-          </button>
-        )}
+        <button onClick={handlePrint} className="royal-btn print-action-btn">
+          <Printer size={16} /> Print Gatepass
+        </button>
       </div>
 
       <div className="gatepass-card-container printable-gatepass">
+        {isPendingApproval && (
+          <div className="gatepass-pending-watermark">
+            <div className="watermark-content">
+              <Clock className="watermark-icon animate-spin" size={48} style={{ animationDuration: '6s' }} />
+              <h3>PENDING ADMIN APPROVAL</h3>
+              <p>PROVISIONAL GATEPASS — SECURE EXIT CLEARANCE IS NOT ACTIVE</p>
+            </div>
+          </div>
+        )}
         {/* Holographic header decorative element */}
         <div 
           className="gatepass-hologram-seal" 
@@ -526,39 +533,21 @@ const GatepassPage = ({ user }) => {
               </div>
             </div>
 
-            {isPendingApproval ? (
-              <div className="gatepass-pending-overlay" style={{
-                background: 'rgba(212, 175, 55, 0.03)',
-                border: '1px dashed rgba(212, 175, 55, 0.25)',
-                borderRadius: '8px',
-                padding: '24px 20px',
-                textAlign: 'center',
-                margin: '20px 0',
-                boxShadow: 'inset 0 0 15px rgba(212, 175, 55, 0.02)'
-              }}>
-                <Clock size={32} style={{ color: 'var(--accent, #d4af37)', margin: '0 auto 12px', opacity: 0.8 }} />
-                <h4 style={{ color: 'var(--accent, #d4af37)', margin: '0 0 6px 0', fontSize: '0.95rem', fontWeight: 'bold', letterSpacing: '0.05em' }}>GATEPASS NOT GENERATED</h4>
-                <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.8rem', margin: 0, lineHeight: '1.5', maxWidth: '380px', marginLeft: 'auto', marginRight: 'auto' }}>
-                  This digital transit gatepass is currently inactive. The official checkout barcode and security leave clearance will be generated automatically once your request is approved by an administrator.
-                </p>
+            <div className="gatepass-barcode-container">
+              <div className="barcode-bars">
+                {Array.from({ length: 35 }).map((_, idx) => (
+                  <div 
+                    key={idx} 
+                    className="barcode-bar" 
+                    style={{ 
+                      width: `${(idx % 3 === 0 ? 3 : idx % 2 === 0 ? 1 : 2)}px`,
+                      marginRight: `${(idx % 4 === 0 ? 2 : 1)}px` 
+                    }}
+                  />
+                ))}
               </div>
-            ) : (
-              <div className="gatepass-barcode-container">
-                <div className="barcode-bars">
-                  {Array.from({ length: 35 }).map((_, idx) => (
-                    <div 
-                      key={idx} 
-                      className="barcode-bar" 
-                      style={{ 
-                        width: `${(idx % 3 === 0 ? 3 : idx % 2 === 0 ? 1 : 2)}px`,
-                        marginRight: `${(idx % 4 === 0 ? 2 : 1)}px` 
-                      }}
-                    />
-                  ))}
-                </div>
-                <span className="barcode-text">*{checkoutId}*</span>
-              </div>
-            )}
+              <span className="barcode-text">*{checkoutId}*</span>
+            </div>
           </div>
         </div>
       </div>

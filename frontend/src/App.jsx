@@ -20,6 +20,7 @@ import CuratorHeroPage from './pages/admin/CuratorHeroPage';
 import CuratorCheckoutsPage from './pages/admin/CuratorCheckoutsPage';
 import CuratorSettingsPage from './pages/admin/CuratorSettingsPage';
 import CuratorModerationPage from './pages/admin/CuratorModerationPage';
+import CuratorInventoryAuditPage from './pages/admin/CuratorInventoryAuditPage';
 import NfcCounterDashboard from './pages/admin/NfcCounterDashboard';
 import PrivacyNotice from './pages/PrivacyNotice';
 import TermsAndConditions from './pages/TermsAndConditions';
@@ -785,6 +786,7 @@ function App() {
             <Route path="/admin/book-requests" element={<CuratorCheckoutsPage user={user} />} />
             <Route path="/admin/settings" element={<CuratorSettingsPage user={user} />} />
             <Route path="/admin/moderation" element={<CuratorModerationPage user={user} />} />
+            <Route path="/admin/audit" element={<CuratorInventoryAuditPage user={user} />} />
             <Route path="/admin/nfc" element={<NfcCounterDashboard user={user} />} />
             <Route path="/profile" element={<ProfilePage user={user} />} />
             <Route path="/gatepass" element={<GatepassPage user={user} />} />

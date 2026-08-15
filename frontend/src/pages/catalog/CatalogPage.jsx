@@ -1268,6 +1268,26 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                         <Shield size={14} /> View Gatepass
                       </Link>
                     )}
+                    {nfcActionType === 'return' && selectedBook && (
+                      <Link
+                        to={`/catalog/${selectedBook.isbn || selectedBook.id}#reviews-section`}
+                        className="royal-btn"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 16px',
+                          fontSize: '0.85rem',
+                          textDecoration: 'none',
+                          background: 'var(--accent)',
+                          color: '#1a1510',
+                          borderRadius: '4px',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        <Sparkles size={14} /> Write a Book Review
+                      </Link>
+                    )}
                     <button
                       onClick={handleCloseCardModal}
                       className="royal-btn-secondary"
@@ -1340,6 +1360,26 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                         }}
                       >
                         <Shield size={14} /> View Gatepass
+                      </Link>
+                    )}
+                    {nfcActionType === 'return' && selectedBook && (
+                      <Link
+                        to={`/catalog/${selectedBook.isbn || selectedBook.id}#reviews-section`}
+                        className="royal-btn"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 16px',
+                          fontSize: '0.85rem',
+                          textDecoration: 'none',
+                          background: 'var(--accent)',
+                          color: '#1a1510',
+                          borderRadius: '4px',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        <Sparkles size={14} /> Write a Book Review
                       </Link>
                     )}
                     <button
@@ -1669,6 +1709,26 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                         }}
                       >
                         <Shield size={14} /> View Gatepass
+                      </Link>
+                    )}
+                    {p2dActionType === 'return' && p2dBook && (
+                      <Link
+                        to={`/catalog/${p2dBook.isbn || p2dBook.id}#reviews-section`}
+                        className="royal-btn"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 16px',
+                          fontSize: '0.85rem',
+                          textDecoration: 'none',
+                          background: 'var(--accent)',
+                          color: '#1a1510',
+                          borderRadius: '4px',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        <Sparkles size={14} /> Write a Book Review
                       </Link>
                     )}
                     <button

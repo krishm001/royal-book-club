@@ -8,6 +8,8 @@ import com.royalbookclub.api.checkout.model.Checkout;
 import com.royalbookclub.api.config.service.CheckoutSettingsService;
 import com.royalbookclub.api.user.service.UserService;
 import com.royalbookclub.api.user.model.User;
+import com.royalbookclub.api.book.service.BookService;
+import com.royalbookclub.api.book.model.BookCopy;
 import com.royalbookclub.api.common.exception.BusinessRuleException;
 import com.royalbookclub.api.common.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
@@ -32,11 +34,13 @@ public class CheckoutService {
     private final Firestore firestore;
     private final CheckoutSettingsService checkoutSettingsService;
     private final UserService userService;
+    private final BookService bookService;
 
-    public CheckoutService(Firestore firestore, CheckoutSettingsService checkoutSettingsService, UserService userService) {
+    public CheckoutService(Firestore firestore, CheckoutSettingsService checkoutSettingsService, UserService userService, BookService bookService) {
         this.firestore = firestore;
         this.checkoutSettingsService = checkoutSettingsService;
         this.userService = userService;
+        this.bookService = bookService;
     }
 
     private void verifyUserProfileRequirements(String memberId) {
@@ -122,18 +126,50 @@ public class CheckoutService {
 
         try {
             firestore.runTransaction(transaction -> {
-                // 1. Validate Book existence and copy availability
+                // 1. Validate Book existence
                 DocumentSnapshot bookDoc = transaction.get(bookRef).get();
                 if (!bookDoc.exists()) {
                     throw new IllegalArgumentException("Book with ISBN " + cleanIsbn + " does not exist in catalog.");
                 }
 
+                // 2. Co-checkout auto-reconciliation: Query pending return requests for this book
+                Query pendingQuery = firestore.collection(COLLECTION_NAME)
+                        .whereEqualTo("bookId", cleanIsbn)
+                        .whereEqualTo("status", "REQUESTED_RETURN");
+                QuerySnapshot pendingSnap = transaction.get(pendingQuery).get();
+
                 Long availableCopies = bookDoc.getLong("availableCopies");
-                if (availableCopies == null || availableCopies <= 0) {
+                Long totalCopies = bookDoc.getLong("totalCopies");
+                long copiesBeforeCheckout = availableCopies != null ? availableCopies : 0;
+
+                if (!pendingSnap.isEmpty()) {
+                    log.info("Co-checkout auto-reconciliation: approving {} pending return(s) for Book: {}", pendingSnap.size(), cleanIsbn);
+                    Instant now = Instant.now();
+                    for (DocumentSnapshot doc : pendingSnap.getDocuments()) {
+                        transaction.update(doc.getReference(),
+                                "status", "RETURNED",
+                                "returnedAt", toTimestamp(now),
+                                "approvedAt", toTimestamp(now),
+                                "approvedBy", "AUTO_COCHECKOUT_RECONCILED",
+                                "locationVerified", true
+                        );
+                        Long returnCopyNo = doc.getLong("copyNo");
+                        transitionCopyStatus(bookDoc, returnCopyNo != null ? returnCopyNo.intValue() : null, doc.getId(), "AVAILABLE", true, transaction, bookRef);
+                    }
+                    // Re-read bookDoc to reflect updated copies list
+                    bookDoc = transaction.get(bookRef).get();
+                    copiesBeforeCheckout += pendingSnap.size();
+                    if (totalCopies != null && copiesBeforeCheckout > totalCopies) {
+                        copiesBeforeCheckout = totalCopies;
+                    }
+                }
+
+                // 3. Validate copy availability for the new checkout
+                if (copiesBeforeCheckout <= 0) {
                     throw new IllegalStateException("Book with ISBN " + cleanIsbn + " has no copies available for checkout.");
                 }
 
-                // 2. Prevent duplicate active checkouts of the SAME book by the SAME member
+                // 4. Prevent duplicate active checkouts of the SAME book by the SAME member
                 Query activeQuery = firestore.collection(COLLECTION_NAME)
                         .whereEqualTo("memberId", memberId)
                         .whereEqualTo("bookId", cleanIsbn)
@@ -143,8 +179,11 @@ public class CheckoutService {
                     throw new IllegalStateException("Member " + memberId + " already holds active checkout for ISBN: " + cleanIsbn);
                 }
 
-                // 3. Update Book Catalog copies
-                transaction.update(bookRef, "availableCopies", availableCopies - 1);
+                // Find and lock available copy and get copyNo
+                Integer copyNo = findAndLockAvailableCopy(bookDoc, checkoutId, request.getNtagUid(), "CHECKED_OUT", transaction, bookRef);
+
+                // 5. Update Book Catalog copies
+                transaction.update(bookRef, "availableCopies", copiesBeforeCheckout - 1);
 
                 // 4. Construct Checkout Transaction Record
                 Instant checkedOutAt = Instant.now();
@@ -170,6 +209,7 @@ public class CheckoutService {
                 checkoutData.put("id", checkoutId);
                 checkoutData.put("bookId", cleanIsbn);
                 checkoutData.put("memberId", memberId);
+                checkoutData.put("copyNo", copyNo);
                 checkoutData.put("status", "CHECKED_OUT");
                 checkoutData.put("checkedOutAt", toTimestamp(checkedOutAt));
                 checkoutData.put("dueDate", toTimestamp(dueDate));
@@ -203,7 +243,7 @@ public class CheckoutService {
 
     /**
      * Create a checkout request (status: REQUESTED_CHECKOUT).
-     * Does NOT decrement book inventory copies.
+     * Does NOT decrement book inventory copies, but claims copy status as REQUESTED_CHECKOUT.
      */
     public Checkout createCheckoutRequest(CheckoutRequestDto request) {
         String cleanIsbn = request.getBookId().trim().replace("-", "");
@@ -220,50 +260,56 @@ public class CheckoutService {
         log.info("Creating checkout request. Member: {}, Book: {}", memberId, cleanIsbn);
 
         try {
-            DocumentSnapshot bookDoc = bookRef.get().get();
-            if (!bookDoc.exists()) {
-                throw new IllegalArgumentException("Book with ISBN " + cleanIsbn + " does not exist in catalog.");
-            }
-
-            // Prevent duplicate pending requests or active checkouts
-            Query pendingQuery = firestore.collection(COLLECTION_NAME)
-                    .whereEqualTo("memberId", memberId)
-                    .whereEqualTo("bookId", cleanIsbn)
-                    .whereIn("status", Arrays.asList("REQUESTED_CHECKOUT", "CHECKED_OUT", "REQUESTED_RETURN"));
-            QuerySnapshot pendingSnap = pendingQuery.get().get();
-            if (!pendingSnap.isEmpty()) {
-                throw new IllegalStateException("Member already has a pending transaction or active checkout for this book.");
-            }
-
-            Instant now = Instant.now();
-
-            String email = request.getMemberEmail();
-            String name = request.getMemberName();
-            try {
-                User dbUser = userService.getUserById(memberId);
-                if (dbUser != null) {
-                    if (email == null || email.trim().isEmpty()) {
-                        email = dbUser.getEmail();
-                    }
-                    if (name == null || name.trim().isEmpty()) {
-                        name = dbUser.getFullName();
-                    }
+            firestore.runTransaction(transaction -> {
+                DocumentSnapshot bookDoc = transaction.get(bookRef).get();
+                if (!bookDoc.exists()) {
+                    throw new IllegalArgumentException("Book with ISBN " + cleanIsbn + " does not exist in catalog.");
                 }
-            } catch (Exception e) {
-                log.warn("Could not load user profile for memberId {} to populate checkout metadata: {}", memberId, e.getMessage());
-            }
 
-            Map<String, Object> checkoutData = new HashMap<>();
-            checkoutData.put("id", checkoutId);
-            checkoutData.put("bookId", cleanIsbn);
-            checkoutData.put("memberId", memberId);
-            checkoutData.put("status", "REQUESTED_CHECKOUT");
-            checkoutData.put("requestedAt", toTimestamp(now));
-            checkoutData.put("ntagUid", request.getNtagUid());
-            checkoutData.put("memberEmail", email);
-            checkoutData.put("memberName", name);
+                // Prevent duplicate pending requests or active checkouts
+                Query pendingQuery = firestore.collection(COLLECTION_NAME)
+                        .whereEqualTo("memberId", memberId)
+                        .whereEqualTo("bookId", cleanIsbn)
+                        .whereIn("status", Arrays.asList("REQUESTED_CHECKOUT", "CHECKED_OUT", "REQUESTED_RETURN"));
+                QuerySnapshot pendingSnap = transaction.get(pendingQuery).get();
+                if (!pendingSnap.isEmpty()) {
+                    throw new IllegalStateException("Member already has a pending transaction or active checkout for this book.");
+                }
 
-            checkoutRef.set(checkoutData).get();
+                Integer copyNo = findAndLockAvailableCopy(bookDoc, checkoutId, request.getNtagUid(), "REQUESTED_CHECKOUT", transaction, bookRef);
+
+                Instant now = Instant.now();
+
+                String email = request.getMemberEmail();
+                String name = request.getMemberName();
+                try {
+                    User dbUser = userService.getUserById(memberId);
+                    if (dbUser != null) {
+                        if (email == null || email.trim().isEmpty()) {
+                            email = dbUser.getEmail();
+                        }
+                        if (name == null || name.trim().isEmpty()) {
+                            name = dbUser.getFullName();
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Could not load user profile for memberId {} to populate checkout metadata: {}", memberId, e.getMessage());
+                }
+
+                Map<String, Object> checkoutData = new HashMap<>();
+                checkoutData.put("id", checkoutId);
+                checkoutData.put("bookId", cleanIsbn);
+                checkoutData.put("memberId", memberId);
+                checkoutData.put("copyNo", copyNo);
+                checkoutData.put("status", "REQUESTED_CHECKOUT");
+                checkoutData.put("requestedAt", toTimestamp(now));
+                checkoutData.put("ntagUid", request.getNtagUid());
+                checkoutData.put("memberEmail", email);
+                checkoutData.put("memberName", name);
+
+                transaction.set(checkoutRef, checkoutData);
+                return null;
+            }).get();
 
             return getCheckoutById(checkoutId)
                     .orElseThrow(() -> new RuntimeException("Failed to read checkout request."));
@@ -304,13 +350,50 @@ public class CheckoutService {
                     throw new IllegalArgumentException("Book with ISBN " + cleanIsbn + " does not exist.");
                 }
 
+                // Co-checkout auto-reconciliation: Query pending return requests for this book
+                Query pendingQuery = firestore.collection(COLLECTION_NAME)
+                        .whereEqualTo("bookId", cleanIsbn)
+                        .whereEqualTo("status", "REQUESTED_RETURN");
+                QuerySnapshot pendingSnap = transaction.get(pendingQuery).get();
+
                 Long availableCopies = bookDoc.getLong("availableCopies");
-                if (availableCopies == null || availableCopies <= 0) {
+                Long totalCopies = bookDoc.getLong("totalCopies");
+                long copiesBeforeCheckout = availableCopies != null ? availableCopies : 0;
+
+                if (!pendingSnap.isEmpty()) {
+                    log.info("Co-checkout auto-reconciliation (Admin Approval): approving {} pending return(s) for Book: {}", pendingSnap.size(), cleanIsbn);
+                    Instant now = Instant.now();
+                    for (DocumentSnapshot doc : pendingSnap.getDocuments()) {
+                        transaction.update(doc.getReference(),
+                                "status", "RETURNED",
+                                "returnedAt", toTimestamp(now),
+                                "approvedAt", toTimestamp(now),
+                                "approvedBy", "AUTO_COCHECKOUT_RECONCILED",
+                                "locationVerified", true
+                        );
+                        Long returnCopyNo = doc.getLong("copyNo");
+                        transitionCopyStatus(bookDoc, returnCopyNo != null ? returnCopyNo.intValue() : null, doc.getId(), "AVAILABLE", true, transaction, bookRef);
+                    }
+                    // Re-read bookDoc to reflect updated copies list
+                    bookDoc = transaction.get(bookRef).get();
+                    copiesBeforeCheckout += pendingSnap.size();
+                    if (totalCopies != null && copiesBeforeCheckout > totalCopies) {
+                        copiesBeforeCheckout = totalCopies;
+                    }
+                }
+
+                if (copiesBeforeCheckout <= 0) {
                     throw new IllegalStateException("No copies available in catalog to approve checkout.");
                 }
 
+                Long requestCopyNo = checkoutDoc.getLong("copyNo");
+                Integer copyNo = requestCopyNo != null ? requestCopyNo.intValue() : 1;
+
+                // Transition copy status to CHECKED_OUT
+                transitionCopyStatus(bookDoc, copyNo, checkoutId, "CHECKED_OUT", false, transaction, bookRef);
+
                 // Update Book copies
-                transaction.update(bookRef, "availableCopies", availableCopies - 1);
+                transaction.update(bookRef, "availableCopies", copiesBeforeCheckout - 1);
 
                 // Update Checkout status & metadata
                 Instant now = Instant.now();
@@ -356,6 +439,14 @@ public class CheckoutService {
                     throw new IllegalStateException("Checkout request is not in REQUESTED_CHECKOUT state.");
                 }
 
+                String cleanIsbn = checkoutDoc.getString("bookId");
+                DocumentReference bookRef = firestore.collection("books").document(cleanIsbn);
+                DocumentSnapshot bookDoc = transaction.get(bookRef).get();
+
+                Long copyNo = checkoutDoc.getLong("copyNo");
+                // Transition copy status back to AVAILABLE and clear currentCheckoutId
+                transitionCopyStatus(bookDoc, copyNo != null ? copyNo.intValue() : null, checkoutId, "AVAILABLE", true, transaction, bookRef);
+
                 transaction.update(checkoutRef,
                         "status", "REJECTED",
                         "approvedAt", toTimestamp(Instant.now()),
@@ -386,68 +477,78 @@ public class CheckoutService {
         log.info("Creating return request. Member: {}, Book: {}, Checkout ID: {}", memberId, cleanIsbn, checkoutId);
 
         try {
-            DocumentReference checkoutRef;
-            DocumentSnapshot checkoutDoc;
+            String finalCheckoutId = firestore.runTransaction(transaction -> {
+                DocumentReference checkoutRef;
+                DocumentSnapshot checkoutDoc;
 
-            if (checkoutId != null && !checkoutId.isBlank()) {
-                checkoutRef = firestore.collection(COLLECTION_NAME).document(checkoutId);
-                checkoutDoc = checkoutRef.get().get();
-            } else {
-                Query activeQuery = firestore.collection(COLLECTION_NAME)
-                        .whereEqualTo("memberId", memberId)
-                        .whereEqualTo("bookId", cleanIsbn)
-                        .whereEqualTo("status", "CHECKED_OUT")
-                        .limit(1);
-                QuerySnapshot activeSnap = activeQuery.get().get();
-                if (activeSnap.isEmpty()) {
-                    throw new IllegalArgumentException("No active checkout found for Member: " + memberId + " and Book: " + cleanIsbn);
-                }
-                checkoutDoc = activeSnap.getDocuments().get(0);
-                checkoutRef = checkoutDoc.getReference();
-            }
-
-            if (!checkoutDoc.exists()) {
-                throw new IllegalArgumentException("Checkout record not found.");
-            }
-
-            String status = checkoutDoc.getString("status");
-            if (!"CHECKED_OUT".equals(status)) {
-                throw new IllegalStateException("Checkout is not in CHECKED_OUT state.");
-            }
-
-            Instant now = Instant.now();
-            Map<String, Object> updates = new HashMap<>();
-            updates.put("status", "REQUESTED_RETURN");
-            updates.put("requestedAt", toTimestamp(now));
-            updates.put("ntagUid", request.getNtagUid());
-            updates.put("returnLatitude", request.getReturnLatitude());
-            updates.put("returnLongitude", request.getReturnLongitude());
-            updates.put("locationVerified", checkLocationVerification(request.getReturnLatitude(), request.getReturnLongitude()));
-            updates.put("nfcOrBarcode", request.getNfcOrBarcode());
-
-            if (checkoutDoc.getString("memberEmail") == null) {
-                String email = request.getMemberEmail();
-                String name = request.getMemberName();
-                try {
-                    User dbUser = userService.getUserById(memberId);
-                    if (dbUser != null) {
-                        if (email == null || email.trim().isEmpty()) {
-                            email = dbUser.getEmail();
-                        }
-                        if (name == null || name.trim().isEmpty()) {
-                            name = dbUser.getFullName();
-                        }
+                if (checkoutId != null && !checkoutId.isBlank()) {
+                    checkoutRef = firestore.collection(COLLECTION_NAME).document(checkoutId);
+                    checkoutDoc = transaction.get(checkoutRef).get();
+                } else {
+                    Query activeQuery = firestore.collection(COLLECTION_NAME)
+                            .whereEqualTo("memberId", memberId)
+                            .whereEqualTo("bookId", cleanIsbn)
+                            .whereEqualTo("status", "CHECKED_OUT")
+                            .limit(1);
+                    QuerySnapshot activeSnap = transaction.get(activeQuery).get();
+                    if (activeSnap.isEmpty()) {
+                        throw new IllegalArgumentException("No active checkout found for Member: " + memberId + " and Book: " + cleanIsbn);
                     }
-                } catch (Exception e) {
-                    log.warn("Could not load user profile for memberId {} to populate return metadata: {}", memberId, e.getMessage());
+                    checkoutDoc = activeSnap.getDocuments().get(0);
+                    checkoutRef = checkoutDoc.getReference();
                 }
-                if (email != null) updates.put("memberEmail", email);
-                if (name != null) updates.put("memberName", name);
-            }
 
-            checkoutRef.update(updates).get();
+                if (!checkoutDoc.exists()) {
+                    throw new IllegalArgumentException("Checkout record not found.");
+                }
 
-            return getCheckoutById(checkoutRef.getId())
+                String status = checkoutDoc.getString("status");
+                if (!"CHECKED_OUT".equals(status)) {
+                    throw new IllegalStateException("Checkout is not in CHECKED_OUT state.");
+                }
+
+                DocumentReference bookRef = firestore.collection("books").document(cleanIsbn);
+                DocumentSnapshot bookDoc = transaction.get(bookRef).get();
+                Long copyNo = checkoutDoc.getLong("copyNo");
+                
+                // Transition copy status to REQUESTED_RETURN
+                transitionCopyStatus(bookDoc, copyNo != null ? copyNo.intValue() : null, checkoutDoc.getId(), "REQUESTED_RETURN", false, transaction, bookRef);
+
+                Instant now = Instant.now();
+                Map<String, Object> updates = new HashMap<>();
+                updates.put("status", "REQUESTED_RETURN");
+                updates.put("requestedAt", toTimestamp(now));
+                updates.put("ntagUid", request.getNtagUid());
+                updates.put("returnLatitude", request.getReturnLatitude());
+                updates.put("returnLongitude", request.getReturnLongitude());
+                updates.put("locationVerified", checkLocationVerification(request.getReturnLatitude(), request.getReturnLongitude()));
+                updates.put("nfcOrBarcode", request.getNfcOrBarcode());
+
+                if (checkoutDoc.getString("memberEmail") == null) {
+                    String email = request.getMemberEmail();
+                    String name = request.getMemberName();
+                    try {
+                        User dbUser = userService.getUserById(memberId);
+                        if (dbUser != null) {
+                            if (email == null || email.trim().isEmpty()) {
+                                email = dbUser.getEmail();
+                            }
+                            if (name == null || name.trim().isEmpty()) {
+                                name = dbUser.getFullName();
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("Could not load user profile for memberId {} to populate return metadata: {}", memberId, e.getMessage());
+                    }
+                    if (email != null) updates.put("memberEmail", email);
+                    if (name != null) updates.put("memberName", name);
+                }
+
+                transaction.update(checkoutRef, updates);
+                return checkoutRef.getId();
+            }).get();
+
+            return getCheckoutById(finalCheckoutId)
                     .orElseThrow(() -> new RuntimeException("Failed to read updated return request."));
         } catch (Exception e) {
             log.error("Failed to create return request", e);
@@ -490,6 +591,10 @@ public class CheckoutService {
                         newAvailable = total;
                     }
                     transaction.update(bookRef, "availableCopies", newAvailable);
+
+                    Long copyNo = checkoutDoc.getLong("copyNo");
+                    // Transition copy status to AVAILABLE and clear currentCheckoutId
+                    transitionCopyStatus(bookDoc, copyNo != null ? copyNo.intValue() : null, checkoutId, "AVAILABLE", true, transaction, bookRef);
                 }
 
                 Instant now = Instant.now();
@@ -526,6 +631,11 @@ public class CheckoutService {
         String checkoutId = request.getCheckoutId() != null ? request.getCheckoutId().trim() : null;
 
         log.info("Initiating atomic return. Member: {}, Book: {}, Request ID: {}", memberId, cleanIsbn, checkoutId);
+
+        // Geofencing verification for physical direct return
+        if (!checkLocationVerification(request.getReturnLatitude(), request.getReturnLongitude())) {
+            throw new IllegalArgumentException("Self-return is only permitted within library premises. Please submit a manual return request instead.");
+        }
 
         try {
             String finalCheckoutId = firestore.runTransaction(transaction -> {
@@ -571,6 +681,10 @@ public class CheckoutService {
                         newAvailable = total; // clamp to maximum bound
                     }
                     transaction.update(bookRef, "availableCopies", newAvailable);
+
+                    Long copyNo = checkoutDoc.getLong("copyNo");
+                    // Transition copy status to AVAILABLE and clear currentCheckoutId
+                    transitionCopyStatus(bookDoc, copyNo != null ? copyNo.intValue() : null, checkoutDoc.getId(), "AVAILABLE", true, transaction, bookRef);
                 }
 
                 transaction.update(checkoutRef,
@@ -633,23 +747,63 @@ public class CheckoutService {
                     throw new IllegalArgumentException("Book with ISBN " + cleanIsbn + " does not exist in catalog.");
                 }
 
-                String bookNtagUid = bookDoc.getString("ntagUid");
-                if (bookNtagUid == null || bookNtagUid.isBlank()) {
-                    throw new IllegalStateException("Book does not have an NTAG213 tag bound to it in the system.");
+                List<BookCopy> copies = bookService.getOrCreateBookCopies(bookDoc);
+                BookCopy matchedCopy = null;
+                String normScanned = tagUid.trim().toLowerCase().replace(":", "");
+                for (BookCopy copy : copies) {
+                    if (copy.getNtagUid() != null) {
+                        String normCopyTag = copy.getNtagUid().trim().toLowerCase().replace(":", "");
+                        if (normCopyTag.equals(normScanned)) {
+                            matchedCopy = copy;
+                            break;
+                        }
+                    }
+                }
+                if (matchedCopy == null) {
+                    throw new IllegalArgumentException("Scanned NFC Tag UID does not match any copy of this book.");
+                }
+                if (!"AVAILABLE".equals(matchedCopy.getStatus())) {
+                    throw new IllegalStateException("The matched book copy (Copy #" + matchedCopy.getCopyNo() + ") is not available (status: " + matchedCopy.getStatus() + ").");
                 }
 
-                String normBookUid = bookNtagUid.trim().toLowerCase().replace(":", "");
-                String normTagUid = tagUid.trim().toLowerCase().replace(":", "");
-                if (!normBookUid.equals(normTagUid)) {
-                    throw new IllegalArgumentException("Scanned NFC Tag UID does not match the bound tag for this book.");
-                }
+                // 2. Co-checkout auto-reconciliation: Query pending return requests for this book
+                Query pendingQuery = firestore.collection(COLLECTION_NAME)
+                        .whereEqualTo("bookId", cleanIsbn)
+                        .whereEqualTo("status", "REQUESTED_RETURN");
+                QuerySnapshot pendingSnap = transaction.get(pendingQuery).get();
 
                 Long availableCopies = bookDoc.getLong("availableCopies");
-                if (availableCopies == null || availableCopies <= 0) {
+                Long totalCopies = bookDoc.getLong("totalCopies");
+                long copiesBeforeCheckout = availableCopies != null ? availableCopies : 0;
+
+                if (!pendingSnap.isEmpty()) {
+                    log.info("Co-checkout auto-reconciliation (NFC): approving {} pending return(s) for Book: {}", pendingSnap.size(), cleanIsbn);
+                    Instant now = Instant.now();
+                    for (DocumentSnapshot doc : pendingSnap.getDocuments()) {
+                        transaction.update(doc.getReference(),
+                                "status", "RETURNED",
+                                "returnedAt", toTimestamp(now),
+                                "approvedAt", toTimestamp(now),
+                                "approvedBy", "AUTO_COCHECKOUT_RECONCILED",
+                                "locationVerified", true
+                        );
+                        Long returnCopyNo = doc.getLong("copyNo");
+                        transitionCopyStatus(bookDoc, returnCopyNo != null ? returnCopyNo.intValue() : null, doc.getId(), "AVAILABLE", true, transaction, bookRef);
+                    }
+                    // Re-read bookDoc to reflect updated copies list
+                    bookDoc = transaction.get(bookRef).get();
+                    copiesBeforeCheckout += pendingSnap.size();
+                    if (totalCopies != null && copiesBeforeCheckout > totalCopies) {
+                        copiesBeforeCheckout = totalCopies;
+                    }
+                }
+
+                // 3. Validate copy availability for the new checkout
+                if (copiesBeforeCheckout <= 0) {
                     throw new IllegalStateException("Book with ISBN " + cleanIsbn + " has no copies available for checkout.");
                 }
 
-                // 2. Prevent duplicate active checkouts of the SAME book by the SAME member
+                // 4. Prevent duplicate active checkouts of the SAME book by the SAME member
                 Query activeQuery = firestore.collection(COLLECTION_NAME)
                         .whereEqualTo("memberId", memberId)
                         .whereEqualTo("bookId", cleanIsbn)
@@ -659,8 +813,11 @@ public class CheckoutService {
                     throw new IllegalStateException("Member already holds active checkout for ISBN: " + cleanIsbn);
                 }
 
-                // 3. Update Book Catalog copies
-                transaction.update(bookRef, "availableCopies", availableCopies - 1);
+                // Find and lock available copy using tagUid
+                Integer copyNo = findAndLockAvailableCopy(bookDoc, checkoutId, tagUid, "CHECKED_OUT", transaction, bookRef);
+
+                // 5. Update Book Catalog copies
+                transaction.update(bookRef, "availableCopies", copiesBeforeCheckout - 1);
 
                 // 4. Construct Checkout Transaction Record
                 Instant checkedOutAt = Instant.now();
@@ -670,6 +827,7 @@ public class CheckoutService {
                 checkoutData.put("id", checkoutId);
                 checkoutData.put("bookId", cleanIsbn);
                 checkoutData.put("memberId", memberId);
+                checkoutData.put("copyNo", copyNo);
                 checkoutData.put("status", "CHECKED_OUT");
                 checkoutData.put("checkedOutAt", toTimestamp(checkedOutAt));
                 checkoutData.put("dueDate", toTimestamp(dueDate));
@@ -716,6 +874,11 @@ public class CheckoutService {
 
         log.info("Initiating verified return. Member: {}, Book: {}, Tag: {}", memberId, cleanIsbn, tagUid);
 
+        // Geofencing verification for physical direct NFC return
+        if (!checkLocationVerification(request.getReturnLatitude(), request.getReturnLongitude())) {
+            throw new IllegalArgumentException("Self-return is only permitted within library premises. Please submit a manual return request instead.");
+        }
+
         try {
             String finalCheckoutId = firestore.runTransaction(transaction -> {
                 DocumentReference checkoutRef;
@@ -756,15 +919,20 @@ public class CheckoutService {
                     throw new IllegalArgumentException("Book not found.");
                 }
 
-                String bookNtagUid = bookDoc.getString("ntagUid");
-                if (bookNtagUid == null || bookNtagUid.isBlank()) {
-                    throw new IllegalStateException("Book does not have an NTAG213 tag bound to it in the system.");
+                List<BookCopy> copies = bookService.getOrCreateBookCopies(bookDoc);
+                BookCopy matchedCopy = null;
+                String normScanned = tagUid.trim().toLowerCase().replace(":", "");
+                for (BookCopy copy : copies) {
+                    if (copy.getNtagUid() != null) {
+                        String normCopyTag = copy.getNtagUid().trim().toLowerCase().replace(":", "");
+                        if (normCopyTag.equals(normScanned)) {
+                            matchedCopy = copy;
+                            break;
+                        }
+                    }
                 }
-
-                String normBookUid = bookNtagUid.trim().toLowerCase().replace(":", "");
-                String normTagUid = tagUid.trim().toLowerCase().replace(":", "");
-                if (!normBookUid.equals(normTagUid)) {
-                    throw new IllegalArgumentException("Scanned NFC Tag UID does not match the bound tag for this book.");
+                if (matchedCopy == null) {
+                    throw new IllegalArgumentException("Scanned NFC Tag UID does not match any copy of this book.");
                 }
 
                 Long available = bookDoc.getLong("availableCopies");
@@ -774,6 +942,9 @@ public class CheckoutService {
                     newAvailable = total;
                 }
                 transaction.update(bookRef, "availableCopies", newAvailable);
+
+                // Transition copy status to AVAILABLE and clear currentCheckoutId
+                transitionCopyStatus(bookDoc, matchedCopy.getCopyNo(), checkoutDoc.getId(), "AVAILABLE", true, transaction, bookRef);
 
                 Instant now = Instant.now();
                 transaction.update(checkoutRef,
@@ -975,6 +1146,119 @@ public class CheckoutService {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         return R * c;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Integer findAndLockAvailableCopy(DocumentSnapshot bookDoc, String checkoutId, String expectedNtagUid, String targetStatus, Transaction transaction, DocumentReference bookRef) {
+        List<BookCopy> copies = bookService.getOrCreateBookCopies(bookDoc);
+        BookCopy selected = null;
+
+        // 1. If physical NFC UID is expected/provided, match by NFC UID
+        if (expectedNtagUid != null && !expectedNtagUid.isBlank()) {
+            String normTag = expectedNtagUid.trim().toLowerCase().replace(":", "");
+            for (BookCopy copy : copies) {
+                if (copy.getNtagUid() != null) {
+                    String normCopyTag = copy.getNtagUid().trim().toLowerCase().replace(":", "");
+                    if (normCopyTag.equals(normTag)) {
+                        selected = copy;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 2. Otherwise, find the first available copy
+        if (selected == null) {
+            for (BookCopy copy : copies) {
+                if ("AVAILABLE".equals(copy.getStatus())) {
+                    selected = copy;
+                    break;
+                }
+            }
+        }
+
+        // 3. Fallback: if still null, find first copy not in CHECKED_OUT or REQUESTED_CHECKOUT status
+        if (selected == null) {
+            for (BookCopy copy : copies) {
+                if (!"CHECKED_OUT".equals(copy.getStatus()) && !"REQUESTED_CHECKOUT".equals(copy.getStatus())) {
+                    selected = copy;
+                    break;
+                }
+            }
+        }
+
+        // 4. Default fallback: assign to Copy #1
+        if (selected == null && !copies.isEmpty()) {
+            selected = copies.get(0);
+        }
+
+        if (selected != null) {
+            selected.setStatus(targetStatus);
+            selected.setCurrentCheckoutId(checkoutId);
+            
+            // Serialize and update the copies list back to the Book
+            List<Map<String, Object>> serializedCopies = new ArrayList<>();
+            for (BookCopy copy : copies) {
+                Map<String, Object> m = new HashMap<>();
+                m.put("copyNo", copy.getCopyNo());
+                m.put("ntagUid", copy.getNtagUid());
+                m.put("status", copy.getStatus());
+                m.put("currentCheckoutId", copy.getCurrentCheckoutId());
+                serializedCopies.add(m);
+            }
+            transaction.update(bookRef, "copies", serializedCopies);
+            return selected.getCopyNo();
+        }
+        return 1;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void transitionCopyStatus(DocumentSnapshot bookDoc, Integer copyNo, String checkoutId, String targetStatus, boolean clearCheckoutId, Transaction transaction, DocumentReference bookRef) {
+        if (bookDoc == null || !bookDoc.exists()) return;
+        List<BookCopy> copies = bookService.getOrCreateBookCopies(bookDoc);
+        boolean updated = false;
+        
+        if (copyNo != null) {
+            for (BookCopy copy : copies) {
+                if (copyNo.equals(copy.getCopyNo())) {
+                    copy.setStatus(targetStatus);
+                    if (clearCheckoutId) {
+                        copy.setCurrentCheckoutId(null);
+                    } else if (checkoutId != null) {
+                        copy.setCurrentCheckoutId(checkoutId);
+                    }
+                    updated = true;
+                    break;
+                }
+            }
+        }
+        
+        // Secondary fallback match by checkoutId if copyNo mismatch or null
+        if (!updated && checkoutId != null) {
+            for (BookCopy copy : copies) {
+                if (checkoutId.equals(copy.getCurrentCheckoutId())) {
+                    copy.setStatus(targetStatus);
+                    if (clearCheckoutId) {
+                        copy.setCurrentCheckoutId(null);
+                    }
+                    updated = true;
+                    break;
+                }
+            }
+        }
+
+        if (updated) {
+            List<Map<String, Object>> serializedCopies = new ArrayList<>();
+            for (BookCopy copy : copies) {
+                Map<String, Object> m = new HashMap<>();
+                m.put("copyNo", copy.getCopyNo());
+                m.put("ntagUid", copy.getNtagUid());
+                m.put("status", copy.getStatus());
+                m.put("currentCheckoutId", copy.getCurrentCheckoutId());
+                serializedCopies.add(m);
+            }
+            transaction.update(bookRef, "copies", serializedCopies);
+        }
     }
 
     public void rateCheckout(String checkoutId, Integer rating) {

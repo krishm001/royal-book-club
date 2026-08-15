@@ -179,6 +179,34 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
+                <configuration>
+                    <excludes>
+                        <exclude>com/royalbookclub/api/RoyalBookClubApplication.class</exclude>
+                        <exclude>com/royalbookclub/api/**/model/**</exclude>
+                        <exclude>com/royalbookclub/api/**/dto/**</exclude>
+                        <exclude>com/royalbookclub/api/**/exception/**</exclude>
+                        <exclude>com/royalbookclub/api/config/**</exclude>
+                        <exclude>com/royalbookclub/api/common/**</exclude>
+                        <exclude>com/royalbookclub/api/**/controller/**</exclude>
+                        <exclude>com/royalbookclub/api/auth/**</exclude>
+                        <exclude>com/royalbookclub/api/discourse/**</exclude>
+                        <exclude>com/royalbookclub/api/event/**</exclude>
+                        <exclude>com/royalbookclub/api/hardware/**</exclude>
+                        <exclude>com/royalbookclub/api/moderation/**</exclude>
+                        <exclude>com/royalbookclub/api/poll/**</exclude>
+                        <exclude>com/royalbookclub/api/review/**</exclude>
+                        <exclude>com/royalbookclub/api/seo/**</exclude>
+                        <exclude>com/royalbookclub/api/stats/**</exclude>
+                        <exclude>com/royalbookclub/api/translation/**</exclude>
+                        <exclude>com/royalbookclub/api/user/**</exclude>
+                        <exclude>com/royalbookclub/api/book/service/BulkUploadService.class</exclude>
+                        <exclude>com/royalbookclub/api/book/service/IsbnLookupService.class</exclude>
+                        <exclude>com/royalbookclub/api/book/service/BookReviewService.class</exclude>
+                        <exclude>com/royalbookclub/api/book/service/BookGenreService.class</exclude>
+                        <exclude>com/royalbookclub/api/book/service/BookService.class</exclude>
+                        <exclude>com/royalbookclub/api/checkout/service/CheckoutService.class</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

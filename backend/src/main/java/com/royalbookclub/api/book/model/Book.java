@@ -38,6 +38,13 @@ public class Book {
     private Integer totalCopies;
     private Integer availableCopies;
     private String ntagUid;
+    
+    @Builder.Default
+    private List<String> ntagUids = new ArrayList<>();
+
+    @Builder.Default
+    private List<BookCopy> copies = new ArrayList<>();
+
     private Instant createdAt;
     private Instant updatedAt;
     

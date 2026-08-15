@@ -740,3 +740,86 @@
   opacity: 0.8;
 }
 
+/* Glassmorphic watermark for pending gatepass */
+.gatepass-card-container {
+  position: relative;
+}
+
+.gatepass-pending-watermark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(18, 14, 10, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 2px dashed rgba(212, 175, 55, 0.4);
+  box-sizing: border-box;
+  overflow: hidden;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.watermark-content {
+  background: rgba(30, 24, 16, 0.92);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  padding: 30px 40px;
+  border-radius: 12px;
+  text-align: center;
+  transform: rotate(-5deg);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(212, 175, 55, 0.05);
+  max-width: 85%;
+}
+
+.watermark-icon {
+  color: #d4af37;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.4));
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.watermark-content h3 {
+  font-family: 'Cinzel', serif, Georgia;
+  color: #d4af37;
+  font-size: 1.4rem;
+  margin: 0 0 10px 0;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+.watermark-content p {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.8rem;
+  margin: 0;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+}
+
+@media print {
+  .gatepass-pending-watermark {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 3px dashed #ab824a !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .watermark-content {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 2px solid #ab824a !important;
+    color: #000 !important;
+  }
+  .watermark-content h3 {
+    color: #ab824a !important;
+  }
+  .watermark-content p {
+    color: #333 !important;
+  }
+}
+
+

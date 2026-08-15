@@ -21,6 +21,8 @@ public class CheckoutRequestDto {
     @NotBlank(message = "Member ID is required")
     private String memberId;
 
+    private Integer copyNo;
+
     @Builder.Default
     private int durationDays = 14; // Default checkout window: 2 weeks
 

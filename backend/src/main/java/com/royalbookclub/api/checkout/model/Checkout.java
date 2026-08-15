@@ -19,6 +19,7 @@ public class Checkout {
     private String id;
     private String bookId; // ISBN
     private String memberId;
+    private Integer copyNo;
     private Instant checkedOutAt;
     private Instant dueDate;
     private Instant returnedAt;

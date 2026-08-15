@@ -70,10 +70,27 @@ const BookIngestionConsole = ({ user }) => {
 
   // NTAG213 and Camera Hardware states
   const [ntagUid, setNtagUid] = useState('');
+  const [ntagUids, setNtagUids] = useState([]);
+  const [activeScanningIndex, setActiveScanningIndex] = useState(null);
   const [isNfcReading, setIsNfcReading] = useState(false);
   const [writeIosRedirect, setWriteIosRedirect] = useState(false);
   const [nfcError, setNfcError] = useState('');
   const [nfcSuccess, setNfcSuccess] = useState(false);
+
+  // Synchronize ntagUids size with totalCopies
+  useEffect(() => {
+    setNtagUids((prev) => {
+      const copy = [...prev];
+      if (copy.length < totalCopies) {
+        while (copy.length < totalCopies) {
+          copy.push('');
+        }
+      } else if (copy.length > totalCopies) {
+        copy.splice(totalCopies);
+      }
+      return copy;
+    });
+  }, [totalCopies]);
 
   const [cameraModalOpen, setCameraModalOpen] = useState(false);
   const [cameraMode, setCameraMode] = useState('isbn'); // 'isbn' or 'cover'
@@ -185,6 +202,7 @@ const BookIngestionConsole = ({ user }) => {
     setSelectedHouse(defaultHouse);
     setGenreSearchQuery(defaultHouse);
     setNtagUid(formatUidWithColons(book.ntagUid || ''));
+    setNtagUids(book.ntagUids ? book.ntagUids.map(uid => formatUidWithColons(uid || '')) : []);
     if (book.tags) {
       setTagsInput(Array.isArray(book.tags) ? book.tags.join(', ') : book.tags);
     } else {
@@ -211,6 +229,8 @@ const BookIngestionConsole = ({ user }) => {
     setSelectedHouse(defaultHouse);
     setGenreSearchQuery(defaultHouse);
     setNtagUid('');
+    setNtagUids([]);
+    setActiveScanningIndex(null);
     setTagsInput('');
     setInfoMessage('');
     setErrorMessage('');
@@ -595,6 +615,7 @@ const BookIngestionConsole = ({ user }) => {
         setGenreSearchQuery(matchedGenre);
         setTagsInput(Array.isArray(existingBook.tags) ? existingBook.tags.join(', ') : '');
         setNtagUid(formatUidWithColons(existingBook.ntagUid || ''));
+        setNtagUids(existingBook.ntagUids ? existingBook.ntagUids.map(uid => formatUidWithColons(uid || '')) : []);
         setBookLanguage(existingBook.language || 'en');
         
         setIsEditMode(true);
@@ -1225,6 +1246,7 @@ const BookIngestionConsole = ({ user }) => {
         setAvailableCopies(matchedBook.availableCopies || 1);
         setTagsInput(Array.isArray(matchedBook.tags) ? matchedBook.tags.join(', ') : '');
         setNtagUid(formatUidWithColons(matchedBook.ntagUid || cleanScanned));
+        setNtagUids(matchedBook.ntagUids ? matchedBook.ntagUids.map(uid => formatUidWithColons(uid || '')) : []);
         setBookLanguage(matchedBook.language || 'en');
         if (matchedBook.genre) {
           setSelectedHouse(matchedBook.genre);
@@ -1237,6 +1259,7 @@ const BookIngestionConsole = ({ user }) => {
         setInfoMessage(`Existing book "${matchedBook.title}" loaded from NFC tap.`);
       } else {
         setNtagUid(formatUidWithColons(cleanScanned));
+        setNtagUids([formatUidWithColons(cleanScanned)]);
         setNfcSuccess(true);
         setIsNfcReading(false);
         setInfoMessage(`Tag ID "${formatUidWithColons(cleanScanned)}" read successfully. Complete the metadata details to pair and ingest this book.`);
@@ -1245,6 +1268,7 @@ const BookIngestionConsole = ({ user }) => {
       console.error("Error matching NTAG tap:", err);
       const fallbackClean = (serialNumber || '').toLowerCase().replace(/:/g, '');
       setNtagUid(formatUidWithColons(fallbackClean));
+      setNtagUids([formatUidWithColons(fallbackClean)]);
       setNfcSuccess(true);
       setIsNfcReading(false);
       setInfoMessage(`Tag detected: ${fallbackClean}`);
@@ -1252,9 +1276,10 @@ const BookIngestionConsole = ({ user }) => {
   };
 
   // Web NFC NTAG213 Scanning Logic
-  const startNfcRead = async () => {
+  const startNfcRead = async (copyIndex = null) => {
     setNfcError('');
     setNfcSuccess(false);
+    setActiveScanningIndex(copyIndex);
     
     if (!('NDEFReader' in window)) {
       setNfcError('Web NFC is not supported on this browser/device. NFC registration requires an Android Chrome or Web NFC compatible device.');
@@ -1268,6 +1293,7 @@ const BookIngestionConsole = ({ user }) => {
       
       ndef.addEventListener("readingerror", () => {
         setNfcError("NFC Reading Error: Cannot read data from the tag. Try again.");
+        setActiveScanningIndex(null);
       });
 
       ndef.addEventListener("reading", async ({ serialNumber, message }) => {
@@ -1290,12 +1316,31 @@ const BookIngestionConsole = ({ user }) => {
             }
           }
         }
-        await processScannedNtag(extractedUid || serialNumber, extractedIsbn);
+        
+        const targetUid = extractedUid || serialNumber;
+        if (copyIndex !== null) {
+          const cleanScanned = (targetUid || '').trim().toLowerCase().replace(/:/g, '');
+          setNtagUids((prev) => {
+            const next = [...prev];
+            next[copyIndex] = formatUidWithColons(cleanScanned);
+            return next;
+          });
+          if (copyIndex === 0) {
+            setNtagUid(formatUidWithColons(cleanScanned));
+          }
+          setNfcSuccess(true);
+          setIsNfcReading(false);
+          setActiveScanningIndex(null);
+          setInfoMessage(`Copy #${copyIndex + 1} Tag ID "${formatUidWithColons(cleanScanned)}" read successfully.`);
+        } else {
+          await processScannedNtag(targetUid, extractedIsbn);
+        }
       });
     } catch (error) {
       console.error("NFC reading error: ", error);
       setNfcError(`NFC activation failed: ${error.message || error}`);
       setIsNfcReading(false);
+      setActiveScanningIndex(null);
     }
   };
 
@@ -1383,6 +1428,8 @@ const BookIngestionConsole = ({ user }) => {
     setInfoMessage('');
     setTagsInput('');
     setNtagUid('');
+    setNtagUids([]);
+    setActiveScanningIndex(null);
     setBookLanguage('en');
     setNfcSuccess(false);
     setNfcError('');
@@ -1505,6 +1552,7 @@ const BookIngestionConsole = ({ user }) => {
       genre: finalGenre,
       tags: deduplicatedTags,
       ntagUid: ntagUid ? ntagUid.trim().toLowerCase().replace(/:/g, '') : null,
+      ntagUids: ntagUids.map((uid) => uid ? uid.trim().toLowerCase().replace(/:/g, '') : ''),
       language: bookLanguage
     };
 
@@ -1762,41 +1810,116 @@ const BookIngestionConsole = ({ user }) => {
                   </div>
                 </div>
 
-                <div className="nfc-query-column">
-                  <label className="royal-input-label">{t('admin.nfcUidLabel', 'Assign/Search by NFC')}</label>
-                  <div className="nfc-input-row">
-                    <input
-                      type="text"
-                      className="royal-input nfc-input-box"
-                      value={ntagUid}
-                      onChange={(e) => setNtagUid(formatUidWithColons(e.target.value))}
-                      placeholder="e.g. 04:A3:B2:C1:D0:E9:80"
-                    />
-                    <button
-                      type="button"
-                      onClick={startNfcRead}
-                      className={`royal-btn nfc-top-btn ${isNfcReading ? 'loading-btn' : ''}`}
-                      style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      {isNfcReading ? <RefreshCw className="spin-icon" size={14} /> : <Smartphone size={14} />}
-                      <span>{isNfcReading ? 'Reading...' : t('admin.assignNfcBtn', 'Scan NFC')}</span>
-                    </button>
-                  </div>
-                  {isNfcReading && (
-                    <div className="nfc-pulse-overlay royal-card">
-                      <div className="nfc-scanner-pulse">
-                        <Smartphone size={32} className="gold-glow-icon animate-pulse" />
-                        <div className="pulse-ring"></div>
+                <div className="nfc-query-column" style={{ position: 'relative' }}>
+                  {totalCopies <= 1 ? (
+                    <>
+                      <label className="royal-input-label">{t('admin.nfcUidLabel', 'Assign/Search by NFC')}</label>
+                      <div className="nfc-input-row">
+                        <input
+                          type="text"
+                          className="royal-input nfc-input-box"
+                          value={ntagUid}
+                          onChange={(e) => {
+                            const val = formatUidWithColons(e.target.value);
+                            setNtagUid(val);
+                            setNtagUids([val]);
+                          }}
+                          placeholder="e.g. 04:A3:B2:C1:D0:E9:80"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => startNfcRead(0)}
+                          className={`royal-btn nfc-top-btn ${isNfcReading && activeScanningIndex === 0 ? 'loading-btn' : ''}`}
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          {isNfcReading && activeScanningIndex === 0 ? <RefreshCw className="spin-icon" size={14} /> : <Smartphone size={14} />}
+                          <span>{isNfcReading && activeScanningIndex === 0 ? 'Reading...' : t('admin.assignNfcBtn', 'Scan NFC')}</span>
+                        </button>
                       </div>
-                      <p className="pulse-help-text">Tap NTAG213 Tag to register this book volume in the ledger.</p>
-                      <button
-                        type="button"
-                        onClick={() => setIsNfcReading(false)}
-                        className="royal-btn-secondary"
-                        style={{ marginTop: '12px', fontSize: '0.8rem', padding: '6px 14px' }}
-                      >
-                        Cancel Scan
-                      </button>
+                      {isNfcReading && activeScanningIndex === 0 && (
+                        <div className="nfc-pulse-overlay royal-card">
+                          <div className="nfc-scanner-pulse">
+                            <Smartphone size={32} className="gold-glow-icon animate-pulse" />
+                            <div className="pulse-ring"></div>
+                          </div>
+                          <p className="pulse-help-text">Tap NTAG213 Tag to register this book volume in the ledger.</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsNfcReading(false);
+                              setActiveScanningIndex(null);
+                            }}
+                            className="royal-btn-secondary"
+                            style={{ marginTop: '12px', fontSize: '0.8rem', padding: '6px 14px' }}
+                          >
+                            Cancel Scan
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="multi-copy-tags-container royal-card" style={{ padding: '16px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '12px' }}>
+                      <h4 style={{ color: '#d4af37', fontFamily: '"Outfit", sans-serif', fontSize: '0.95rem', fontWeight: '600', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Smartphone size={15} />
+                        <span>Multi-Volume NFC Tag Registry ({totalCopies} Copies)</span>
+                      </h4>
+                      <p style={{ fontSize: '0.78rem', opacity: 0.7, marginBottom: '14px', lineHeight: '1.4' }}>Assign or scan a physical tag for each library copy. Unscanned volumes can be saved blank.</p>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
+                        {Array.from({ length: totalCopies }).map((_, index) => (
+                          <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: '500', width: '65px', opacity: 0.85 }}>Copy #{index + 1}:</span>
+                            <input
+                              type="text"
+                              className="royal-input"
+                              style={{ flex: 1, padding: '6px 10px', fontSize: '0.85rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)' }}
+                              value={ntagUids[index] || ''}
+                              onChange={(e) => {
+                                const val = formatUidWithColons(e.target.value);
+                                setNtagUids((prev) => {
+                                  const next = [...prev];
+                                  next[index] = val;
+                                  return next;
+                                });
+                                if (index === 0) {
+                                  setNtagUid(val);
+                                }
+                              }}
+                              placeholder="Blank (Unscanned)"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => startNfcRead(index)}
+                              className={`royal-btn-secondary ${isNfcReading && activeScanningIndex === index ? 'loading-btn' : ''}`}
+                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid rgba(212, 175, 55, 0.35)', background: 'transparent' }}
+                            >
+                              <Smartphone size={11} />
+                              <span>{isNfcReading && activeScanningIndex === index ? 'Scanning' : 'Scan'}</span>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {activeScanningIndex !== null && isNfcReading && (
+                        <div className="nfc-pulse-overlay royal-card" style={{ zIndex: 10 }}>
+                          <div className="nfc-scanner-pulse">
+                            <Smartphone size={32} className="gold-glow-icon animate-pulse" />
+                            <div className="pulse-ring"></div>
+                          </div>
+                          <p className="pulse-help-text" style={{ fontSize: '0.85rem' }}>Tap NTAG213 Tag to register Copy #{activeScanningIndex + 1} in the ledger.</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsNfcReading(false);
+                              setActiveScanningIndex(null);
+                            }}
+                            className="royal-btn-secondary"
+                            style={{ marginTop: '12px', fontSize: '0.8rem', padding: '6px 14px' }}
+                          >
+                            Cancel Scan
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -2350,6 +2473,81 @@ const BookIngestionConsole = ({ user }) => {
                     onChange={(e) => setAvailableCopies(Number(e.target.value))}
                   />
                 </div>
+
+                {/* Highly premium dynamic inline NFC Tag Registry */}
+                <div className="inline-nfc-registry royal-card animate-fade-in" style={{ padding: '20px', background: 'rgba(212, 175, 55, 0.03)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '12px', marginTop: '20px', marginBottom: '20px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)' }}>
+                  <h4 style={{ color: '#d4af37', fontFamily: '"Outfit", sans-serif', fontSize: '1rem', fontWeight: '600', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px', marginTop: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <Smartphone size={16} style={{ filter: 'drop-shadow(0 0 4px rgba(212, 175, 55, 0.4))' }} />
+                    <span>NFC Tag Copy Registry ({totalCopies} {totalCopies <= 1 ? 'Copy' : 'Copies'})</span>
+                  </h4>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.4' }}>
+                    {totalCopies <= 1 
+                      ? 'Bind a physical NTAG213 tag to this volume.' 
+                      : 'Assign unique physical NFC tags to each library copy below. Unassigned copies defaults to sequential numbers.'}
+                  </p>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '280px', overflowY: 'auto', paddingRight: '6px' }}>
+                    {Array.from({ length: totalCopies }).map((_, index) => (
+                      <div key={index} className="copy-tag-row" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.03)', padding: '8px 12px', borderRadius: '8px' }}>
+                        <span style={{ fontSize: '0.82rem', fontWeight: '600', color: 'rgba(255, 255, 255, 0.85)', minWidth: '70px' }}>Copy #{index + 1}:</span>
+                        <input
+                          type="text"
+                          className="royal-input"
+                          style={{ flex: 1, padding: '8px 12px', fontSize: '0.85rem', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', margin: 0 }}
+                          value={ntagUids[index] || ''}
+                          onChange={(e) => {
+                            const val = formatUidWithColons(e.target.value);
+                            setNtagUids((prev) => {
+                              const next = [...prev];
+                              while (next.length <= index) next.push('');
+                              next[index] = val;
+                              return next;
+                            });
+                            if (index === 0) {
+                              setNtagUid(val);
+                            }
+                          }}
+                          placeholder={index === 0 ? "e.g. 04:A3:B2:C1:D0:E9:80 (NFC Tag UID)" : "Leave blank for tag-less tracking"}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => startNfcRead(index)}
+                          className={`royal-btn-secondary ${isNfcReading && activeScanningIndex === index ? 'loading-btn' : ''}`}
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '0.8rem', border: '1px solid rgba(212, 175, 55, 0.35)', background: 'rgba(212, 175, 55, 0.05)', borderRadius: '6px', color: '#d4af37', transition: 'all 0.2s' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 175, 55, 0.15)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(212, 175, 55, 0.05)'; }}
+                        >
+                          <Smartphone size={13} />
+                          <span>{isNfcReading && activeScanningIndex === index ? 'Scanning...' : 'Scan'}</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {isNfcReading && activeScanningIndex !== null && (
+                    <div className="nfc-pulse-overlay royal-card animate-fade-in" style={{ marginTop: '16px', background: 'rgba(141, 18, 34, 0.03)', border: '1px dashed var(--accent)', padding: '20px', borderRadius: '8px' }}>
+                      <div className="nfc-scanner-pulse">
+                        <Smartphone size={32} className="gold-glow-icon animate-pulse" style={{ color: 'var(--accent)' }} />
+                        <div className="pulse-ring"></div>
+                      </div>
+                      <p className="pulse-help-text" style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: '500', marginTop: '12px' }}>
+                        Tap physical NFC Tag to pair with <strong>Copy #{activeScanningIndex + 1}</strong>.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsNfcReading(false);
+                          setActiveScanningIndex(null);
+                        }}
+                        className="royal-btn-secondary"
+                        style={{ marginTop: '12px', fontSize: '0.8rem', padding: '6px 14px', borderRadius: '4px' }}
+                      >
+                        Cancel Scanning
+                      </button>
+                    </div>
+                  )}
+                </div>
+
 
 
 

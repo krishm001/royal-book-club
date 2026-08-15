@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2, Shield, Check, Loader2 } from 'lucide-react';
-import { fetchBookByIsbn, checkoutBook, fetchBookReviews, submitBookReview, requestCheckout, requestReturn, verifiedCheckout, verifiedReturn, fetchCheckoutsByMember, updateBookReview, deleteBookReview } from '../../services/libraryApi';
+import { fetchBookByIsbn, checkoutBook, fetchBookReviews, submitBookReview, requestCheckout, requestReturn, verifiedCheckout, verifiedReturn, fetchCheckoutsByMember, updateBookReview, deleteBookReview, fetchCheckouts } from '../../services/libraryApi';
 import api from '../../api/apiClient';
 import { auth } from '../../config/firebase';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
@@ -38,6 +38,8 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
   };
   const [book, setBook] = useState(null);
   const [memberCheckouts, setMemberCheckouts] = useState([]);
+  const [allCheckouts, setAllCheckouts] = useState([]);
+  const [loadingCheckouts, setLoadingCheckouts] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reviewText, setReviewText] = useState('');
@@ -73,6 +75,19 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     };
     fetchGatingSettings();
   }, []);
+
+  // Handle smooth scroll to reviews if hash is present and loading is complete
+  useEffect(() => {
+    if (!loading && window.location.hash === '#reviews-section') {
+      const timer = setTimeout(() => {
+        const element = document.getElementById('reviews-section');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
 
   // Monitor NFC active session with a countdown timer
   useEffect(() => {
@@ -341,6 +356,24 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     }
   };
 
+  const loadAllCheckouts = async () => {
+    if (user && user.role === 'ADMIN') {
+      setLoadingCheckouts(true);
+      try {
+        const checkouts = await fetchCheckouts();
+        const activeForBook = checkouts.filter(
+          (c) => c.bookId === id && 
+                 (c.status === 'CHECKED_OUT' || c.status === 'REQUESTED_CHECKOUT' || c.status === 'REQUESTED_RETURN')
+        );
+        setAllCheckouts(activeForBook);
+      } catch (err) {
+        console.warn('Unable to load active checkouts for tracking', err);
+      } finally {
+        setLoadingCheckouts(false);
+      }
+    }
+  };
+
   const getResolvedStatus = () => {
     if (!book) return 'available';
     if (!user) {
@@ -387,6 +420,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       console.warn('Unable to refresh book details', err);
     }
     await loadMemberCheckouts();
+    await loadAllCheckouts();
   };
 
   useEffect(() => {
@@ -419,7 +453,10 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
 
   useEffect(() => {
     loadMemberCheckouts();
-  }, [user]);
+    if (user && user.role === 'ADMIN') {
+      loadAllCheckouts();
+    }
+  }, [user, id]);
 
   useEffect(() => {
     const handleOnboardingFocus = () => {
@@ -1210,7 +1247,124 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         </div>
       </div>
 
-      <section className="detail-reviews-section royal-card">
+      {/* 🛡️ Luxury Physical Copies Inventory Tracker Grid */}
+      <div className="physical-copies-tracker-section royal-card animate-fade-in" style={{ marginTop: '30px', padding: '30px', border: '1px solid rgba(212, 175, 55, 0.15)', background: 'rgba(22, 22, 28, 0.65)', backdropFilter: 'blur(12px)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)' }}>
+        <h3 className="gold-gradient-text" style={{ fontFamily: '"Outfit", sans-serif', fontSize: '1.4rem', fontWeight: '700', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
+          <BookOpen size={22} style={{ filter: 'drop-shadow(0 0 6px rgba(212, 175, 55, 0.5))' }} />
+          <span>Physical Inventory & Copy Tracker</span>
+        </h3>
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '24px', marginTop: '4px', lineHeight: '1.5' }}>
+          Each physical volume of this title is separately indexed and trackable inside the Royal Book Club catalog ledger.
+        </p>
+
+        {user && user.role === 'ADMIN' ? (
+          /* Detailed tracking console for Admins/Curators */
+          <div className="admin-copy-grid-wrapper" style={{ overflowX: 'auto' }}>
+            <table className="royal-admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(212, 175, 55, 0.2)' }}>
+                  <th style={{ padding: '12px 16px', color: 'var(--accent)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>Copy Number</th>
+                  <th style={{ padding: '12px 16px', color: 'var(--accent)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>NFC Tag UID</th>
+                  <th style={{ padding: '12px 16px', color: 'var(--accent)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>Status</th>
+                  <th style={{ padding: '12px 16px', color: 'var(--accent)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>Current Holder / Member ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(book.copies || Array.from({ length: book.totalCopies || 1 }).map((_, idx) => {
+                  const tag = book.ntagUids && book.ntagUids[idx] ? book.ntagUids[idx] : (idx === 0 ? book.ntagUid : null);
+                  return {
+                    copyNo: idx + 1,
+                    ntagUid: tag,
+                    status: idx < (book.totalCopies - book.availableCopies) ? 'CHECKED_OUT' : 'AVAILABLE'
+                  };
+                })).map((copy) => {
+                  const matchedCheckout = allCheckouts.find(c => c.copyNo === copy.copyNo) || 
+                                         (copy.ntagUid ? allCheckouts.find(c => c.ntagUid?.toLowerCase().replace(/:/g, '') === copy.ntagUid?.toLowerCase().replace(/:/g, '')) : null);
+                  
+                  const statusColors = {
+                    'AVAILABLE': { text: '#4eca5c', bg: 'rgba(78, 202, 92, 0.1)', border: 'rgba(78, 202, 92, 0.2)' },
+                    'REQUESTED_CHECKOUT': { text: '#ffb703', bg: 'rgba(255, 183, 3, 0.1)', border: 'rgba(255, 183, 3, 0.2)' },
+                    'CHECKED_OUT': { text: '#ff5c5c', bg: 'rgba(255, 92, 92, 0.1)', border: 'rgba(255, 92, 92, 0.2)' },
+                    'REQUESTED_RETURN': { text: '#a855f7', bg: 'rgba(168, 85, 247, 0.1)', border: 'rgba(168, 85, 247, 0.2)' }
+                  };
+
+                  const currentStatus = matchedCheckout?.status || copy.status || 'AVAILABLE';
+                  const badge = statusColors[currentStatus] || statusColors['AVAILABLE'];
+
+                  return (
+                    <tr key={copy.copyNo} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)', transition: 'background 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.01)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
+                      <td style={{ padding: '16px', fontSize: '0.9rem', fontWeight: '600' }}>
+                        Copy #{copy.copyNo}
+                      </td>
+                      <td style={{ padding: '16px', fontSize: '0.85rem', fontFamily: 'monospace', color: copy.ntagUid ? 'var(--accent)' : 'rgba(255,255,255,0.4)' }}>
+                        {copy.ntagUid ? copy.ntagUid.toUpperCase() : 'Sequential Tracking (No Tag)'}
+                      </td>
+                      <td style={{ padding: '16px' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '700', color: badge.text, background: badge.bg, border: `1px solid ${badge.border}`, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: badge.text, display: 'inline-block' }}></span>
+                          {currentStatus.replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td style={{ padding: '16px', fontSize: '0.85rem' }}>
+                        {matchedCheckout ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span style={{ fontWeight: '600', color: '#ffffff' }}>{matchedCheckout.memberName || 'NFC Verified Patron'}</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{matchedCheckout.memberEmail || `ID: ${matchedCheckout.memberId}`}</span>
+                          </div>
+                        ) : copy.status === 'CHECKED_OUT' ? (
+                          <span style={{ color: 'rgba(255,255,255,0.6)', fontStyle: 'italic' }}>In Circulation (Active record loading...)</span>
+                        ) : (
+                          <span style={{ color: 'rgba(255,255,255,0.3)' }}>—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          /* Premium High-level summary for Patrons/Members */
+          <div className="patron-copy-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+            {(book.copies || Array.from({ length: book.totalCopies || 1 }).map((_, idx) => {
+              const tag = book.ntagUids && book.ntagUids[idx] ? book.ntagUids[idx] : (idx === 0 ? book.ntagUid : null);
+              return {
+                copyNo: idx + 1,
+                ntagUid: tag,
+                status: idx < (book.totalCopies - book.availableCopies) ? 'CHECKED_OUT' : 'AVAILABLE'
+              };
+            })).map((copy) => {
+              const userCheckout = memberCheckouts.find(c => c.copyNo === copy.copyNo && (c.status === 'CHECKED_OUT' || c.status === 'REQUESTED_CHECKOUT' || c.status === 'REQUESTED_RETURN'));
+              const isCheckedOutByMe = !!userCheckout;
+              const isAvailable = copy.status === 'AVAILABLE' && !isCheckedOutByMe;
+
+              return (
+                <div key={copy.copyNo} style={{ padding: '16px', background: isAvailable ? 'rgba(78, 202, 92, 0.03)' : isCheckedOutByMe ? 'rgba(212, 175, 55, 0.05)' : 'rgba(255, 255, 255, 0.01)', border: isAvailable ? '1px solid rgba(78, 202, 92, 0.15)' : isCheckedOutByMe ? '1px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'transform 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: '700' }}>Copy #{copy.copyNo}</span>
+                    {isAvailable ? (
+                      <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#4eca5c', background: 'rgba(78, 202, 92, 0.1)', padding: '2px 8px', borderRadius: '10px', textTransform: 'uppercase' }}>Available</span>
+                    ) : isCheckedOutByMe ? (
+                      <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#d4af37', background: 'rgba(212, 175, 55, 0.1)', padding: '2px 8px', borderRadius: '10px', textTransform: 'uppercase' }}>Held By You</span>
+                    ) : (
+                      <span style={{ fontSize: '0.72rem', fontWeight: '700', color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '10px', textTransform: 'uppercase' }}>In Circulation</span>
+                    )}
+                  </div>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.4' }}>
+                    {isAvailable 
+                      ? 'Ready for secure checkout inside the physical salon.' 
+                      : isCheckedOutByMe 
+                        ? `Request pending or active return via secure NFC.` 
+                        : 'Currently checked out by another distinguished member.'}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <section id="reviews-section" className="detail-reviews-section royal-card">
         <h3 className="section-title">{t('catalog.reviewsTitle')}</h3>
         {user ? (
           <form onSubmit={handleSubmitReview} className="write-review-form">
@@ -1426,7 +1580,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
 
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '20px' }}>
-                  {createdCheckoutId && (
+                  {createdCheckoutId && nfcActionType !== 'return' && (
                     <Link
                       to={`/gatepass/${createdCheckoutId}`}
                       className="royal-btn"
@@ -1445,6 +1599,33 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                     >
                       <Shield size={14} /> View Gatepass
                     </Link>
+                  )}
+                  {nfcActionType === 'return' && (
+                    <button
+                      onClick={() => {
+                        handleCloseNfcModal();
+                        const element = document.getElementById('reviews-section');
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }}
+                      className="royal-btn"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '8px 16px',
+                        fontSize: '0.85rem',
+                        background: 'var(--accent)',
+                        color: '#fff',
+                        borderRadius: '4px',
+                        fontWeight: 'bold',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Sparkles size={14} /> Write a Book Review
+                    </button>
                   )}
                   <button
                     onClick={() => handleCloseNfcModal()}
@@ -1690,7 +1871,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
 
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '20px' }}>
-                  {createdCheckoutId && (
+                  {createdCheckoutId && instantActionType !== 'return' && (
                     <Link
                       to={`/gatepass/${createdCheckoutId}`}
                       className="royal-btn"
@@ -1709,6 +1890,33 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                     >
                       <Shield size={14} /> View Gatepass
                     </Link>
+                  )}
+                  {instantActionType === 'return' && (
+                    <button
+                      onClick={() => {
+                        setInstantConfirmOpen(false);
+                        const element = document.getElementById('reviews-section');
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }}
+                      className="royal-btn"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '8px 16px',
+                        fontSize: '0.85rem',
+                        background: 'var(--accent)',
+                        color: '#fff',
+                        borderRadius: '4px',
+                        fontWeight: 'bold',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Sparkles size={14} /> Write a Book Review
+                    </button>
                   )}
                   <button
                     onClick={() => setInstantConfirmOpen(false)}

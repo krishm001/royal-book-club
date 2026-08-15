@@ -25,6 +25,11 @@ const CuratorSettingsPage = ({ user }) => {
     enforceEmailVerification: false,
   });
 
+  const [leafletLoaded, setLeafletLoaded] = useState(false);
+  const [mapInstance, setMapInstance] = useState(null);
+  const [markerInstance, setMarkerInstance] = useState(null);
+  const [circleInstance, setCircleInstance] = useState(null);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setSettings((prev) => ({
@@ -34,6 +39,101 @@ const CuratorSettingsPage = ({ user }) => {
   };
 
   const isAdmin = user && user.role === 'ADMIN';
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const loadLeaflet = () => {
+      if (window.L) {
+        setLeafletLoaded(true);
+        return;
+      }
+
+      // Avoid duplicate injections
+      if (document.getElementById('leaflet-cdn-css')) {
+        return;
+      }
+
+      const link = document.createElement('link');
+      link.id = 'leaflet-cdn-css';
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+
+      const script = document.createElement('script');
+      script.id = 'leaflet-cdn-js';
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.onload = () => {
+        setLeafletLoaded(true);
+      };
+      document.body.appendChild(script);
+    };
+
+    loadLeaflet();
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (loading || !leafletLoaded || !window.L) return;
+
+    const lat = settings.libraryLatitude || 37.7749;
+    const lon = settings.libraryLongitude || -122.4194;
+    const radius = settings.validRadiusMeters || 100;
+
+    let map = mapInstance;
+    if (!map) {
+      map = window.L.map('library-geofence-map').setView([lat, lon], 15);
+      
+      window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+      }).addTo(map);
+
+      map.on('click', (e) => {
+        const { lat, lng } = e.latlng;
+        setSettings((prev) => ({
+          ...prev,
+          libraryLatitude: parseFloat(lat.toFixed(6)),
+          libraryLongitude: parseFloat(lng.toFixed(6)),
+        }));
+      });
+
+      setMapInstance(map);
+    }
+
+    let marker = markerInstance;
+    if (marker) {
+      marker.setLatLng([lat, lon]);
+    } else {
+      marker = window.L.marker([lat, lon], { draggable: true }).addTo(map);
+      marker.on('dragend', (e) => {
+        const position = marker.getLatLng();
+        setSettings((prev) => ({
+          ...prev,
+          libraryLatitude: parseFloat(position.lat.toFixed(6)),
+          libraryLongitude: parseFloat(position.lng.toFixed(6)),
+        }));
+      });
+      setMarkerInstance(marker);
+    }
+
+    let circle = circleInstance;
+    if (circle) {
+      circle.setLatLng([lat, lon]);
+      circle.setRadius(radius);
+    } else {
+      circle = window.L.circle([lat, lon], {
+        color: '#d4af37',
+        fillColor: '#d4af37',
+        fillOpacity: 0.15,
+        radius: radius
+      }).addTo(map);
+      setCircleInstance(circle);
+    }
+
+    map.panTo([lat, lon]);
+
+  }, [loading, leafletLoaded, settings.libraryLatitude, settings.libraryLongitude, settings.validRadiusMeters]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -292,6 +392,21 @@ const CuratorSettingsPage = ({ user }) => {
                   <p className="toggle-description" style={{ marginBottom: '15px' }}>
                     {t('admin.geofencingDesc', 'Configure the coordinates of your Royal Library structure and define the valid haversine radius (in meters) within which mobile return transactions are marked as Location Verified.')}
                   </p>
+
+                  {/* Dynamic Interactive Leaflet Map Container */}
+                  <div 
+                    id="library-geofence-map" 
+                    style={{ 
+                      height: '320px', 
+                      width: '100%', 
+                      borderRadius: '8px', 
+                      border: '1px solid rgba(212, 175, 55, 0.3)', 
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(212, 175, 55, 0.05)',
+                      marginBottom: '20px',
+                      background: 'rgba(0,0,0,0.2)',
+                      zIndex: 1
+                    }}
+                  />
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
                     <div className="gating-field-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
