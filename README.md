@@ -1,117 +1,133 @@
-# Royal Book Club — Cloud Architecture & Deployment Guide
+# Royal Book Club — Cloud Architecture & Running Guide
 
-Welcome to the **Royal Book Club** core repository. This ecosystem provides a highly polished, interactive library management and community portal, custom-designed to run on Google Cloud Platform (GCP) with an **ultra-low-cost, scale-to-zero architectural footprint**.
-
----
-
-## 🏛️ System Architecture Overview
-
-The system utilizes a modern decoupled full-stack architecture optimized for high-performance and zero idle operational expenses:
-
-```mermaid
-graph TD
-    User([User Browser]) -->|Static Assets| GHP[GitHub Pages (Free Tier)]
-    User -->|API Requests| CR[Google Cloud Run (Scale-to-Zero)]
-    CR -->|No-SQL Transactions| CF[Cloud Firestore (Free Tier)]
-    CR -->|OAuth 2.0 / MFA| FA[Firebase Authentication]
-```
-
-### 1. Frontend (Static SPA)
-- **Framework**: React 18 + Vite (configured with SPA routing using HashRouter).
-- **Styling**: Vanilla CSS featuring a premium royal dark-mode design system with deep blue backgrounds, shimmering gold/amber accents, micro-animations, and glassmorphic card layouts.
-- **Hosting**: Deployed directly to GitHub Pages (`krishm001/krishm001.github.io`). Cost: **$0/month**.
-
-### 2. Backend (Java REST API)
-- **Framework**: Spring Boot 3.x with OpenJDK 21, compiled via Maven.
-- **Containerization**: Multi-stage JVM-optimized container running on Alpine JRE.
-- **Hosting**: Google Cloud Run (Fully Managed).
-- **Scale-to-Zero**: Configured with `min_instances = 0` and `max_instances = 3`. Idle cost: **$0/month**.
-
-### 3. Serverless Database & Security
-- **Database**: Cloud Firestore (Native Mode). Provides 1 GiB free storage and 50,000 free read ops/day.
-- **Authentication**: Firebase Auth (10,000 free monthly active users, fully verified sign-in/sign-up out-of-the-box).
+Welcome to the official repository of the **Royal Book Club** serverless ecosystem. This system is designed as a secure, full-stack, scale-to-zero application, utilizing Cloudflare Pages for the frontend static SPA distribution and GCP Cloud Run for its serverless Java Spring Boot 3 REST API.
 
 ---
 
-## 📁 Repository Structure
+## 🏛️ System Architecture Blueprint
 
-```
-royalbookclub/
-├── .github/
-│   └── workflows/
-│       ├── deploy-backend.yml    # Build, test & deploy Spring Boot API to GCP
-│       └── deploy-frontend.yml   # Compile React app & push static assets to GitHub Pages
-├── backend/                      # Java Spring Boot application (Maven-based)
-├── frontend/                     # React 18 + Vite SPA source code
-└── infrastructure/               # Terraform resource definitions for GCP provisioning
-```
+For a complete breakdown of the high-level system layout, package architectures, databases, and authentication state transitions, please see the master [design_doc.md](file:///Users/deepikakumari/.gemini/antigravity/brain/66bef284-ee64-4b47-9c64-e9917b58fff8/design_doc.md).
 
 ---
 
-## 🚀 CI/CD Automation (GitHub Actions)
+## 🛠️ Infrastructure as Code (IaC) vs. Manual Configurations
 
-### 🎨 Frontend Pipeline (`deploy-frontend.yml`)
-- Triggers on pushes targeting the `frontend/` directory.
-- Sets up Node.js 20, runs production builds (`npm run build`).
-- Deploys static assets directly to the target landing repository `krishm001/krishm001.github.io` using a secure Deployment Personal Access Token (`DEPLOY_PAT`).
+All central, automated infrastructure is managed using Terraform within the `/infrastructure` directory.
 
-### ☕ Backend Pipeline (`deploy-backend.yml`)
-- Triggers on pushes targeting the `backend/` directory.
-- Compiles source and executes the full JUnit test suite using Maven.
-- Authenticates securely with Google Cloud using **Workload Identity Federation (WIF)** (eliminating static security keys).
-- Builds, tags, and pushes Docker containers to the Google Artifact Registry.
-- Triggers an automated update to the Cloud Run service, setting `min_instances = 0` and `max_instances = 3` for zero-cost idling.
+### 1. Provisioned via Terraform (`/infrastructure`)
+- **Artifact Registry**: Docker repository with automatic 14-day container pruning policies to avoid storage overhead fees.
+- **Cloud Run API**: Deployed with scale-to-zero (`min_instances = 0`, `max_instances = 3`) to guarantee zero operational costs during idle times.
+- **Cloud Firestore Native Database**: Schema-less serverless database.
+- **Cloudflare Pages**: Global hosting, edge proxy functions, and custom DNS integration (`royalbookclub.com` and `www.royalbookclub.com`).
+- **Workload Identity Federation (WIF)**: Authorizes GitHub Actions CI/CD pipeline deployments securely without permanent, static credential keys.
 
----
-
-## 🛠️ Infrastructure as Code (Terraform)
-
-All GCP cloud resources are fully provisioned via Terraform within the `/infrastructure` directory:
-
-- `main.tf`: Configures the HashiCorp Google provider.
-- `variables.tf`: Declares input variables with sensible, secure defaults.
-- `artifact_registry.tf`: Provisions a Docker repository with integrated cleanup policies that prune old containers automatically after 14 days, preventing storage-creep fees.
-- `cloud_run.tf`: Provisions a low-privilege custom Service Account, binds IAM roles for Cloud Logging and Firestore (`roles/datastore.user`), deploys the Cloud Run service with a scale-to-zero envelope, and enables public unauthenticated access.
-- `outputs.tf`: Exports the generated registry coordinates and service endpoint URLs.
-
-### To provision:
-1. Ensure the `gcloud` CLI is logged in.
-2. Initialize Terraform:
-   ```bash
-   cd infrastructure
-   terraform init
-   ```
-3. Run a planning phase:
-   ```bash
-   terraform plan -var="project_id=YOUR_PROJECT_ID"
-   ```
-4. Apply the configuration:
-   ```bash
-   terraform apply -var="project_id=YOUR_PROJECT_ID" -auto-approve
-   ```
+### 2. Manual Configurations Required
+Before the infrastructure can be fully operational, you must manually execute the following setup steps:
+1. **Firebase Project Creation**:
+   - Create a project named `royal-book-club` inside the Firebase Console.
+   - Enable **Firebase Authentication** and turn on **Email/Password** provider.
+   - Generate a New Private Key for your service account from `Project Settings -> Service accounts` and save it locally as `backend/firebase-service-account.json`.
+2. **LinkedIn Developer Portal Setup**:
+   - Register an application in the LinkedIn Developer Console.
+   - Request **Sign In with LinkedIn (OpenID Connect)** product permissions.
+   - Configure Authorized Redirect URIs to include: `https://royalbookclub.com`.
+   - Copy your **Client ID** and **Client Secret**.
+3. **Cloudflare DNS Custom Nameserver Routing**:
+   - Ensure your domain `royalbookclub.com` has its nameservers delegated to Cloudflare to allow Terraform's `cloudflare_zone` matching to complete.
 
 ---
 
-## 💎 Local Development Guide
+## 🚀 Local Development Setup
 
-### Running the Backend:
+To run the entire full-stack application on your development computer, follow these simple coordinates.
+
+### 1. Backend API (Java Spring Boot)
+Make sure you are using JDK 21 or newer.
+
 ```bash
 cd backend
+
+# Create or verify your service account private key file
+# File: backend/firebase-service-account.json
+
+# Launch the backend dev server
+# (Optional: Provide LINKEDIN_* variables if testing actual LinkedIn OAuth locally, otherwise they default to mock credentials)
+SPRING_PROFILES_ACTIVE=dev \
+FIREBASE_CREDENTIALS_PATH=firebase-service-account.json \
+LINKEDIN_CLIENT_ID=your-linkedin-client-id \
+LINKEDIN_CLIENT_SECRET=your-linkedin-client-secret \
+LINKEDIN_REDIRECT_URI=http://localhost:5173 \
 ./mvnw clean spring-boot:run
 ```
+The API server will launch at `http://localhost:8080`. You can inspect documentation and test endpoints at the Swagger UI: `http://localhost:8080/swagger-ui.html`.
 
-### Running the Frontend:
+### 2. Frontend SPA (React 18 + Vite)
+Make sure you have Node.js 20 installed.
+
 ```bash
 cd frontend
+
+# Verify or create your local env secrets file
+# File: frontend/.env.local (See secrets registry below)
+
+# Install dependencies
 npm install
+
+# Run the dev server
 npm run dev
 ```
-Open `http://localhost:5173` to interact with the responsive views.
+Open `http://localhost:5173` to interact with the responsive, royal glassmorphic catalog and community pages.
 
 ---
 
-## 🔐 Required Secrets
-Set the following secrets in your GitHub Actions settings to enable flawless deployments:
-- `DEPLOY_PAT`: GitHub Personal Access Token with read/write access to `krishm001/krishm001.github.io`.
-- `GCP_WIF_PROVIDER`: The Google Workload Identity Provider URL.
-- `GCP_WIF_SERVICE_ACCOUNT`: The GitHub Actions service account email in GCP.
+## 🔑 Secrets & Variables Registry
+
+Set the following configuration variables inside your local environment or GitHub Actions Settings to enable successful runs and deployments.
+
+### Local Environment Variables (Frontend `.env.local`)
+These coordinates reside in `frontend/.env.local` to enable local Firebase API calls and point client requests to the Spring Boot mock/local backend:
+```properties
+VITE_FIREBASE_API_KEY=your-firebase-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-firebase-project-id.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-firebase-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-firebase-project-id.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
+VITE_FIREBASE_APP_ID=your-firebase-app-id
+VITE_API_BASE_URL=http://localhost:8080
+```
+
+### GitHub Secrets for CI/CD Deployment
+Configure these encrypted secrets in your GitHub Repository under `Settings -> Secrets and variables -> Actions` to automate pipelines successfully:
+
+| Secret Name | Description | Example / Target Value |
+| :--- | :--- | :--- |
+| `CLOUDFLARE_API_TOKEN` | API Token authorized with Pages:Edit and DNS:Edit | `your-cloudflare-api-token` |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Portal Account Identifier | `your-cloudflare-account-id` |
+| `GCP_WIF_PROVIDER` | Workload Identity Federation provider URI | `projects/your-gcp-project-number/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider` |
+| `GCP_WIF_SERVICE_ACCOUNT` | GCP Service Account authorized with Deployment roles | `github-actions-deployer@your-gcp-project-id.iam.gserviceaccount.com` |
+| `VITE_API_BASE_URL` | Production cloud run URL mapped behind proxy | `https://your-custom-domain.com/api` |
+| `VITE_FIREBASE_API_KEY` | Client Firebase Web SDK Authentication Token | `your-firebase-api-key` |
+
+### Backend Runtime Environment Variables (GCP Cloud Run)
+These variables are configured directly inside the GCP Cloud Run service template (or injected via GCP Secret Manager) to power core backend OAuth integrations and Firestore settings:
+
+| Variable Name | Description | Recommended Placeholder / Format |
+| :--- | :--- | :--- |
+| `SPRING_PROFILES_ACTIVE` | Active Spring profile for prod configurations | `prod` |
+| `LINKEDIN_CLIENT_ID` | OAuth Client ID from LinkedIn Developer Console | `your-linkedin-client-id` |
+| `LINKEDIN_CLIENT_SECRET` | OAuth Client Secret from LinkedIn Developer Console | `your-linkedin-client-secret` |
+| `LINKEDIN_REDIRECT_URI` | Authorized Redirect URL mapped for callback | `https://your-custom-domain.com` |
+| `FIREBASE_CREDENTIALS_JSON` | Firebase service account credentials raw JSON | `{"type": "service_account", ...}` |
+| `CLOUDFLARE_SECRET` | Secret shared token mapped on Cloud Run and Edge proxy | `your-origin-shared-secret` |
+
+---
+
+## 🤖 AI Agent Coding Guidelines
+
+We maintain a strict, standardized pair-programming protocol. Any AI developer/agent interacting with this repository MUST consult the coding guidelines and hand-off rules documented in [AGENTS.md](file:///Users/deepikakumari/royalbookclub/AGENTS.md) before writing code.
+```
+- Rule 1: Always Design-First before making changes.
+- Rule 2: Mandatory Test Cases written for all feature additions.
+- Rule 3: Maintain README & design doc integrity whenever schemas/variables change.
+- Rule 4: Safely look up and inspect local files for secrets when asked.
+```

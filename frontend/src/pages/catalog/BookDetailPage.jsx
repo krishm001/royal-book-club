@@ -425,6 +425,19 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     };
   }, []);
 
+  // Center checkout action card in the viewport upon catalog details loading (Epic 1)
+  useEffect(() => {
+    if (!loading && book) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById('detail-checkout-action-card');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 500); // 500ms delay to let layouts render
+      return () => clearTimeout(timer);
+    }
+  }, [loading, book]);
+
   // Deep Link Auto-Checkout or Return Flow Trigger
   useEffect(() => {
     if (book) {
@@ -1016,49 +1029,51 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                 </div>
               )
             )}
-            {checkoutStatus === 'available' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button onClick={handleCheckoutClick} className="royal-btn checkout-cta-btn" id="book-detail-checkout-btn">
-                  <ShoppingBag size={16} /> {t('catalog.secureSovereignCheckout')}
-                </button>
-              </div>
-            ) : checkoutStatus === 'checked-out' ? (
-              <div className="success-checkout-badge-row" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div className="success-checkout-badge">
-                  <CheckCircle size={20} className="success-icon" />
+            {(!nfcSession || nfcSession.verificationStatus !== 'VALID') && (
+              checkoutStatus === 'available' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <button onClick={handleCheckoutClick} className="royal-btn checkout-cta-btn" id="book-detail-checkout-btn">
+                    <ShoppingBag size={16} /> {t('catalog.secureSovereignCheckout')}
+                  </button>
+                </div>
+              ) : checkoutStatus === 'checked-out' ? (
+                <div className="success-checkout-badge-row" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="success-checkout-badge">
+                    <CheckCircle size={20} className="success-icon" />
+                    <div>
+                      <h4>{t('catalog.digitalCheckoutAuthorized')}</h4>
+                      <p>{t('catalog.currentlyInPossession')}</p>
+                    </div>
+                  </div>
+                  <button onClick={handleReturnClick} className="royal-btn checkout-cta-btn return-btn-action" id="book-detail-return-btn">
+                    <RefreshCw size={16} /> {t('catalog.returnVolume')}
+                  </button>
+                </div>
+              ) : checkoutStatus === 'requested-checkout' ? (
+                <div className="pending-checkout-badge royal-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: '1px solid rgba(212, 165, 116, 0.3)', background: 'rgba(212, 165, 116, 0.05)' }}>
+                  <Clock size={20} style={{ color: 'var(--accent)' }} className="spin-icon" />
                   <div>
-                    <h4>{t('catalog.digitalCheckoutAuthorized')}</h4>
-                    <p>{t('catalog.currentlyInPossession')}</p>
+                    <h4 style={{ color: 'var(--accent)', fontSize: '0.95rem', fontWeight: '600' }}>{t('catalog.checkoutRequestPending')}</h4>
+                    <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>{t('catalog.awaitingCuratorApproval')}</p>
                   </div>
                 </div>
-                <button onClick={handleReturnClick} className="royal-btn checkout-cta-btn return-btn-action" id="book-detail-return-btn">
-                  <RefreshCw size={16} /> {t('catalog.returnVolume')}
-                </button>
-              </div>
-            ) : checkoutStatus === 'requested-checkout' ? (
-              <div className="pending-checkout-badge royal-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: '1px solid rgba(212, 165, 116, 0.3)', background: 'rgba(212, 165, 116, 0.05)' }}>
-                <Clock size={20} style={{ color: 'var(--accent)' }} className="spin-icon" />
-                <div>
-                  <h4 style={{ color: 'var(--accent)', fontSize: '0.95rem', fontWeight: '600' }}>{t('catalog.checkoutRequestPending')}</h4>
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>{t('catalog.awaitingCuratorApproval')}</p>
+              ) : checkoutStatus === 'requested-return' ? (
+                <div className="pending-checkout-badge royal-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: '1px solid rgba(212, 165, 116, 0.3)', background: 'rgba(212, 165, 116, 0.05)' }}>
+                  <Clock size={20} style={{ color: 'var(--accent)' }} className="spin-icon" />
+                  <div>
+                    <h4 style={{ color: 'var(--accent)', fontSize: '0.95rem', fontWeight: '600' }}>{t('catalog.returnRequestPending')}</h4>
+                    <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>{t('catalog.awaitingReturnReview')}</p>
+                  </div>
                 </div>
-              </div>
-            ) : checkoutStatus === 'requested-return' ? (
-              <div className="pending-checkout-badge royal-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: '1px solid rgba(212, 165, 116, 0.3)', background: 'rgba(212, 165, 116, 0.05)' }}>
-                <Clock size={20} style={{ color: 'var(--accent)' }} className="spin-icon" />
-                <div>
-                  <h4 style={{ color: 'var(--accent)', fontSize: '0.95rem', fontWeight: '600' }}>{t('catalog.returnRequestPending')}</h4>
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>{t('catalog.awaitingReturnReview')}</p>
+              ) : (
+                <div className="in-circulation-badge royal-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)' }}>
+                  <Clock size={20} style={{ color: '#ff7b72' }} />
+                  <div>
+                    <h4 style={{ color: '#ff7b72', fontSize: '0.95rem', fontWeight: '600' }}>{t('catalog.inCirculation')}</h4>
+                    <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>{t('catalog.checkedOutByOtherScholar')}</p>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="in-circulation-badge royal-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)' }}>
-                <Clock size={20} style={{ color: '#ff7b72' }} />
-                <div>
-                  <h4 style={{ color: '#ff7b72', fontSize: '0.95rem', fontWeight: '600' }}>{t('catalog.inCirculation')}</h4>
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>{t('catalog.checkedOutByOtherScholar')}</p>
-                </div>
-              </div>
+              )
             )}
 
             {getActiveCheckoutInstance() && (
