@@ -441,5 +441,26 @@ public class UserService {
             throw new RuntimeException("Database error deleting user: " + e.getMessage(), e);
         }
     }
+
+    /**
+     * Checks if a user's email is verified.
+     * Only password provider users are checked; federated OAuth logins are bypassed.
+     */
+    public boolean isEmailVerified(String uid) {
+        log.info("Checking email verification status for UID: {}", uid);
+        try {
+            var userRecord = firebaseAuth.getUser(uid);
+            // If the user has a "password" provider, we require verification.
+            for (var provider : userRecord.getProviderData()) {
+                if ("password".equals(provider.getProviderId())) {
+                    return userRecord.isEmailVerified();
+                }
+            }
+            return true; // Bypass for OAuth/social providers
+        } catch (Exception e) {
+            log.error("Failed to fetch Firebase user details for email verification check", e);
+            throw new RuntimeException("Failed to check email verification status", e);
+        }
+    }
 }
 

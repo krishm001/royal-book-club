@@ -53,6 +53,7 @@ public class CheckoutSettingsService {
                         .libraryLatitude(document.getDouble("libraryLatitude"))
                         .libraryLongitude(document.getDouble("libraryLongitude"))
                         .validRadiusMeters(document.getDouble("validRadiusMeters"))
+                        .enforceEmailVerification(Boolean.TRUE.equals(document.getBoolean("enforceEmailVerification")))
                         .build();
             } else {
                 log.info("No checkout settings document found. Initializing with optional defaults.");
@@ -67,6 +68,7 @@ public class CheckoutSettingsService {
                         .libraryLatitude(37.7749) // SF default or equivalent
                         .libraryLongitude(-122.4194)
                         .validRadiusMeters(100.0)
+                        .enforceEmailVerification(false)
                         .build();
             }
         } catch (InterruptedException e) {
@@ -97,6 +99,7 @@ public class CheckoutSettingsService {
             map.put("libraryLatitude", settings.getLibraryLatitude());
             map.put("libraryLongitude", settings.getLibraryLongitude());
             map.put("validRadiusMeters", settings.getValidRadiusMeters());
+            map.put("enforceEmailVerification", settings.isEnforceEmailVerification());
 
             ApiFuture<WriteResult> writeFuture = docRef.set(map);
             writeFuture.get();

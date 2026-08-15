@@ -7,6 +7,7 @@ import { fetchBooks, fetchCheckoutsByMember, verifiedCheckout, verifiedReturn, r
 import { fetchBookHouses } from '../../services/genreApi';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import api from '../../api/apiClient';
+import { auth } from '../../config/firebase';
 import './CatalogPage.css';
 
 const SafeHtml5Qrcode = Html5Qrcode;
@@ -614,7 +615,12 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
         const cityMissing = gating.cityMandatory && !backendUser.city;
         const pinCodeMissing = gating.pinCodeMandatory && !backendUser.pinCode;
 
-        if (phoneMissing || houseNoMissing || streetMissing || cityMissing || pinCodeMissing) {
+        // Email Verification check for email/password based sign ins
+        const currentUser = auth.currentUser;
+        const isPasswordUser = currentUser?.providerData?.some(p => p.providerId === 'password');
+        const emailUnverified = gating.enforceEmailVerification && isPasswordUser && !currentUser?.emailVerified;
+
+        if (phoneMissing || houseNoMissing || streetMissing || cityMissing || pinCodeMissing || emailUnverified) {
           if (triggerOnboarding) triggerOnboarding({ actionType, isbn });
           return false;
         }

@@ -125,6 +125,9 @@ export default function OnboardingWizard({
 
   // Verify Email Status State
   const [emailVerifySent, setEmailVerifySent] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(auth.currentUser?.emailVerified || false);
+  const [verificationResendCooldown, setVerificationResendCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
 
   const suggestionsContainerRef = React.useRef(null);
   const debounceTimeoutRef = React.useRef(null);
@@ -154,6 +157,15 @@ export default function OnboardingWizard({
   const checkIfProfileMeetsGating = (u, gating) => {
     if (!gating) return false;
 
+    // Check email verification if enforced and user is a password user
+    const currentUser = auth.currentUser;
+    if (gating.enforceEmailVerification && currentUser) {
+      const isPasswordUser = currentUser.providerData?.some(p => p.providerId === 'password');
+      if (isPasswordUser && !currentUser.emailVerified) {
+        return false;
+      }
+    }
+
     if (gating.phoneMandatory && !u?.phone) return false;
     if (gating.houseNoMandatory && !u?.houseNo) return false;
     if (gating.streetMandatory && !u?.street) return false;
@@ -161,6 +173,92 @@ export default function OnboardingWizard({
     if (gating.pinCodeMandatory && !u?.pinCode) return false;
 
     return true;
+  };
+
+  // Poll Firebase auth state every 1 second to see if email becomes verified
+  useEffect(() => {
+    let intervalId = null;
+    const currentUser = auth.currentUser;
+    const isPasswordUser = currentUser?.providerData?.some(p => p.providerId === 'password');
+
+    if (currentUser && isPasswordUser && !emailVerified && gatingSettings?.enforceEmailVerification) {
+      intervalId = setInterval(async () => {
+        try {
+          await currentUser.reload();
+          if (currentUser.emailVerified) {
+            setEmailVerified(true);
+            const res = await api.get('/api/v1/auth/me');
+            if (res?.data?.success && res?.data?.data) {
+              const d = res.data.data;
+              const meetsGating = checkIfProfileMeetsGating(d, gatingSettings);
+              if (meetsGating) {
+                if (onResume) {
+                  onResume(targetState);
+                }
+                onClose();
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Error reloading auth user in verification polling", err);
+        }
+      }, 1000);
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [emailVerified, gatingSettings]);
+
+  // Handle email verification resending
+  const handleResendVerification = async () => {
+    if (resending || verificationResendCooldown > 0) return;
+    setResending(true);
+    try {
+      if (auth.currentUser) {
+        await sendEmailVerification(auth.currentUser);
+        setVerificationResendCooldown(60);
+      }
+    } catch (err) {
+      console.error("Failed to resend verification email:", err);
+    } finally {
+      setResending(false);
+    }
+  };
+
+  // Cooldown countdown timer
+  useEffect(() => {
+    if (verificationResendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setVerificationResendCooldown(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [verificationResendCooldown]);
+
+  const forceVerifyCheck = async () => {
+    if (!auth.currentUser) return;
+    try {
+      await auth.currentUser.reload();
+      if (auth.currentUser.emailVerified) {
+        setEmailVerified(true);
+        const res = await api.get('/api/v1/auth/me');
+        if (res?.data?.success && res?.data?.data) {
+          const d = res.data.data;
+          const meetsGating = checkIfProfileMeetsGating(d, gatingSettings);
+          if (meetsGating) {
+            if (onResume) {
+              onResume(targetState);
+            }
+            onClose();
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Manual verification check failed:", err);
+    }
   };
 
   // Load the detailed backend profile and perform auto-skip evaluation
@@ -547,6 +645,9 @@ export default function OnboardingWizard({
 
   // Real-time calculation of missing fields
   const missingFields = [];
+  if (gatingSettings?.enforceEmailVerification && auth.currentUser?.providerData?.some(p => p.providerId === 'password') && !emailVerified) {
+    missingFields.push('Email Verification');
+  }
   if (gatingSettings?.phoneMandatory && !phone.trim()) missingFields.push('Phone Number');
   if (gatingSettings?.houseNoMandatory && !houseNo.trim()) missingFields.push('House/Apartment Number');
   if (gatingSettings?.streetMandatory && !street.trim()) missingFields.push('Street Address');
@@ -773,7 +874,42 @@ export default function OnboardingWizard({
                     )}
                   </section>
 
-                  <div className="profile-form-grid" style={{ gap: '20px' }}>
+                  {gatingSettings?.enforceEmailVerification && 
+                   auth.currentUser?.providerData?.some(p => p.providerId === 'password') && 
+                   !emailVerified ? (
+                    <div className="email-verification-blocking-panel animate-fade-in royal-card" style={{ padding: '24px', margin: '20px 0', border: '1px solid rgba(212,165,116,0.3)', background: 'rgba(212,165,116,0.02)' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                        <div className="pulsing-mail-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(212,165,116,0.1)', borderRadius: '50%', width: '80px', height: '80px', marginBottom: '20px', boxShadow: '0 0 20px rgba(212,165,116,0.2)' }}>
+                          <Mail size={40} className="gold-glow-icon animate-pulse" style={{ color: 'var(--accent)' }} />
+                        </div>
+                        <h3 className="section-title-royal" style={{ color: 'var(--accent)', marginTop: '0', fontSize: '1.2rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Sovereign Verification Gating</h3>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', margin: '12px 0 24px 0', maxWidth: '440px', lineHeight: '1.6' }}>
+                          An administrator has enforced mandatory email verification for secure self-checkout. 
+                          Please check your inbox (<strong>{auth.currentUser?.email}</strong>) and click the verification link to unblock checkout.
+                        </p>
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                          <button 
+                            type="button" 
+                            onClick={handleResendVerification} 
+                            disabled={verificationResendCooldown > 0 || resending}
+                            className="royal-btn-secondary"
+                            style={{ padding: '10px 20px', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}
+                          >
+                            {resending ? <Loader2 className="animate-spin" size={14} /> : verificationResendCooldown > 0 ? `Resend link in ${verificationResendCooldown}s` : 'Resend Verification Email'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={forceVerifyCheck}
+                            className="royal-btn"
+                            style={{ padding: '10px 20px', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}
+                          >
+                            Check Verification Now
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="profile-form-grid" style={{ gap: '20px' }}>
                     
                     {/* Left Form Column */}
                     <div className="royal-card form-card-glass" style={{ padding: '0', background: 'transparent', border: 'none', boxShadow: 'none' }}>
@@ -972,6 +1108,20 @@ export default function OnboardingWizard({
                         </p>
 
                         <div className="checklist-items" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {gatingSettings?.enforceEmailVerification && auth.currentUser?.providerData?.some(p => p.providerId === 'password') && (
+                            <div className="checklist-item" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                              <div className={`status-indicator ${emailVerified ? 'completed' : 'missing'}`}>
+                                {emailVerified ? <CheckCircle size={14} /> : <AlertTriangle size={14} />}
+                              </div>
+                              <div className="checklist-text">
+                                <span className="checklist-label" style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block' }}>Email Verification</span>
+                                <span className="checklist-requirement" style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                                  Mandatory Field
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
                           <div className="checklist-item" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                             <div className={`status-indicator ${phone.trim() ? 'completed' : gatingSettings?.phoneMandatory ? 'missing' : 'optional'}`}>
                               {phone.trim() ? <CheckCircle size={14} /> : gatingSettings?.phoneMandatory ? <AlertTriangle size={14} /> : <CheckCircle size={14} style={{ opacity: 0.3 }} />}
@@ -1036,6 +1186,7 @@ export default function OnboardingWizard({
                     </div>
 
                   </div>
+                )}
 
                 </div>
               )}

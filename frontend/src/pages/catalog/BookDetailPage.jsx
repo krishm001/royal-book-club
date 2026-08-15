@@ -176,8 +176,22 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         return false;
       }
 
-      // 2. Gating Settings Check
-      const gating = gatingSettings;
+      // 2. Fetch absolute latest gating settings dynamically to catch mid-session administrative updates
+      let gating = null;
+      try {
+        const response = await api.get('/api/v1/public/checkout-settings');
+        if (response?.data?.success && response?.data?.data) {
+          gating = response.data.data;
+          setGatingSettings(gating);
+        } else if (response?.data) {
+          gating = response.data;
+          setGatingSettings(gating);
+        }
+      } catch (err) {
+        console.error("Failed to load gating settings dynamically in BookDetailPage", err);
+        gating = gatingSettings; // fallback to loaded state
+      }
+
       if (gating) {
         const phoneMissing = gating.phoneMandatory && !backendUser.phone;
         const houseNoMissing = gating.houseNoMandatory && !backendUser.houseNo;
@@ -185,7 +199,12 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         const cityMissing = gating.cityMandatory && !backendUser.city;
         const pinCodeMissing = gating.pinCodeMandatory && !backendUser.pinCode;
 
-        if (phoneMissing || houseNoMissing || streetMissing || cityMissing || pinCodeMissing) {
+        // Email Verification check for email/password based sign ins
+        const currentUser = auth.currentUser;
+        const isPasswordUser = currentUser?.providerData?.some(p => p.providerId === 'password');
+        const emailUnverified = gating.enforceEmailVerification && isPasswordUser && !currentUser?.emailVerified;
+
+        if (phoneMissing || houseNoMissing || streetMissing || cityMissing || pinCodeMissing || emailUnverified) {
           if (triggerOnboarding) triggerOnboarding({ actionType: actionType, isbn: book?.isbn });
           return false;
         }

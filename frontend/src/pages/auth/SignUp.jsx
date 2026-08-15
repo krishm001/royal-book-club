@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 import { useNavigate, Link } from 'react-router-dom';
 import { registerUser } from '../../services/authApi';
@@ -32,6 +32,13 @@ export default function SignUp() {
       
       if (displayName) {
         await updateProfile(user, { displayName });
+      }
+
+      // Automatically dispatch verification email
+      try {
+        await sendEmailVerification(user);
+      } catch (verificationError) {
+        console.error("Failed to send initial email verification:", verificationError);
       }
 
       // Create Firestore user record

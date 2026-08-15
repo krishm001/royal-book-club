@@ -233,3 +233,104 @@ sequenceDiagram
 - **Frontend SPA assets (JS, CSS, HTML)**: Cached at Cloudflare Edge network with aggressive TTL cache settings. Redeployments trigger an automatic Cloudflare Cache Purge.
 - **Dynamic API requests `/api/*`**: Routed via Cloudflare edge bypass (no cache) to guarantee immediate read-after-write consistency in Firestore.
 - **Images (Unsplash/GCP Storage buckets)**: Cached forever on clients and intermediate CDN edges via immutable HTTP cache headers.
+
+---
+
+### 5. Premium Epics System Architectures (Supplementary)
+
+This section details the architectural designs, database schema updates, and state transitions for the outstanding Epics.
+
+#### 📧 Epic 1: Email Verification Gating Architecture
+- **Settings Schema (`checkout_settings` / `CheckoutSettings.java`)**:
+  - Adds `private boolean enforceEmailVerification;` to control system-wide email verification requirements.
+- **Backend Gating Logic (`CheckoutService.java` & `UserService.java`)**:
+  - In `UserService.java`, the method `isEmailVerified(String uid)` queries standard password provider details:
+    ```java
+    var userRecord = firebaseAuth.getUser(uid);
+    for (var provider : userRecord.getProviderData()) {
+        if ("password".equals(provider.getProviderId())) {
+            return userRecord.isEmailVerified();
+        }
+    }
+    return true; // Auto-bypass federated OAuth providers (already verified)
+    ```
+  - In `CheckoutService.java`, `verifyUserProfileRequirements(String memberId)` intercepts standard and verified checkout pipelines:
+    ```java
+    if (settings.isEnforceEmailVerification()) {
+        if (!userService.isEmailVerified(memberId)) {
+            throw new BusinessRuleException("Sovereign verification gating: Your email address is unverified. Please check your inbox or profile page to verify.");
+        }
+    }
+    ```
+- **Client polling and Resend (`OnboardingWizard.jsx`)**:
+  - If a logged-in password user's email is unverified and gating is active, they are presented with a gorgeous glassmorphic verification modal block.
+  - Background polling occurs every 1 second via `auth.currentUser.reload()`, automatically unblocking the user when verification is detected.
+  - Includes a "Resend Verification Email" button with a beautiful 60-second debounce mechanism.
+
+#### 🎟️ Epic 2: Manual Checkout Gatepasses with Pending Status
+- **UI State Transition (`GatepassPage.jsx`)**:
+  - Instead of blocking the gatepass rendering when a request is `REQUESTED_CHECKOUT`, the barcode is shown normally.
+  - A prominent yellow premium banner/watermark is overlaid to notify that the gatepass is **Pending Administrative Review**.
+  - Once approved, the page automatically updates to "APPROVED LEAVE REALM" with full clearance.
+
+#### 💬 Epic 3: Return Completion Modal Critique Prompt
+- **Navigation Flow (`BookDetailPage.jsx`)**:
+  - Upon successful return confirmation in the Web NFC/Barcode modal overlays, if the action was a return (`nfcActionType === 'return'`), the primary button transitions from "View Security Gatepass" (which is irrelevant for returns) to "Write a Book Review".
+  - Clicking this button smoothly scrolls the viewport directly to the active reviews and rating form (`#reviews-section`), inviting the scholar to leave prompt feedback.
+
+#### 📍 Epic 4: Geofencing Returns & Curator Boundary Console
+- **Library Location Coordinates (`checkout_settings`)**:
+  - Adds `libraryLatitude` (Double), `libraryLongitude` (Double), and `validRadiusMeters` (Double).
+- **Curator Boundary Console (`CuratorSettingsPage.jsx`)**:
+  - Integrates an interactive Leaflet map from CDN.
+  - Admins can pinpoint the library location on the map, draw a radius circle dynamically, or click "Select Current Location" using the browser's Geolocation API.
+  - Updates of the radius input box immediately redraw the circle boundary in real-time.
+- **Backend Geofence Gating (`CheckoutService.java`)**:
+  - Direct verified returns (`verifiedReturn`) validate client coordinates against the allowed library boundary using the Haversine distance formula, throwing a `BusinessRuleException` if the user is out-of-bounds.
+
+#### 🔗 Epic 5: Pending Manual Return Bypass & Co-checkout Verification
+- **Manual Return Bypass**:
+  - Manual return requests (`createReturnRequest`) bypass the Geofence check but save `locationVerified = false` and transition the status to `"REQUESTED_RETURN"`.
+- **Co-checkout Verification Flow**:
+  - When *any* user executes a successful checkout (NFC Direct, Barcode scan, or Manual/Admin approval) on a book that has a pending manual return request (`"REQUESTED_RETURN"`), the system automatically validates and closes the previous return request.
+  - In a single Firestore transaction:
+    ```java
+    long reconciledCount = reconcilePendingReturns(transaction, cleanIsbn); // Updates status to RETURNED
+    long effectiveAvailableCopies = availableCopies + reconciledCount;
+    transaction.update(bookRef, "availableCopies", effectiveAvailableCopies - 1);
+    ```
+  - This perfectly maintains mathematical inventory consistency.
+
+#### 📚 Epic 6: Multi-Copy Catalog Ingestion with Blank NFC Fallbacks
+- **Schema Updates (`books` / `Book.java`)**:
+  - Adds `private List<String> ntagUids = new ArrayList<>();` to store distinct physical serial numbers.
+  - Legacy `ntagUid` field is maintained as a copy-compatible alias pointing to the first element (`ntagUids.get(0)`).
+- **Book Ingestion UI (`BookIngestionConsole.jsx`)**:
+  - Supports adding and updating multiple NFC tag inputs corresponding to the `totalCopies` field.
+  - Any copy missing a physical tag is allowed as a "Blank Placeholder", and can be scanned/updated later.
+- **Multi-Ntag Resolution**:
+  - During checkout or return, if the legacy `ntagUid` field doesn't match the scanned tag, the system queries the `ntagUids` array using Firestore's native array containment `whereArrayContainsAny("ntagUids", candidates)` to resolve the book copy instantly.
+
+#### 🔍 Epic 7: Curator Inventory Audit & Missing Volumes Reconciliation
+- **Database Schema (`inventory_audits`)**:
+  - Tracks unique auditing rounds:
+    ```json
+    {
+      "id": "String (Autogenerated UUID)",
+      "status": "String (IN_PROGRESS | COMPLETED)",
+      "createdAt": "Timestamp",
+      "completedAt": "Timestamp",
+      "createdBy": "String (Admin UID)",
+      "countedCopies": [
+        { "isbn": "String", "ntagUid": "String", "title": "String", "scannedAt": "Timestamp", "status": "VERIFIED | UNKNOWN" }
+      ],
+      "uncountedCopies": [
+        { "isbn": "String", "ntagUid": "String", "title": "String" }
+      ]
+    }
+    ```
+- **Auditing Flow**:
+  - **Start**: Reads all registered books and multiplies them into copy-level items in `uncountedCopies`.
+  - **Scan**: Admins input an ISBN, barcode, or tap NFC. If matched in `uncounted`, it moves to `countedCopies` with state `VERIFIED`. If unmatched, it is registered in `countedCopies` with state `UNKNOWN_IN_CATALOG`.
+  - **Complete**: Remaining uncounted items are automatically marked as `MISSING`. Preserves state history.
+

@@ -73,6 +73,12 @@ public class CheckoutService {
                 throw new BusinessRuleException("Checkout Gated: Please update your profile with required information: " + missingMsg + ".");
             }
         }
+
+        if (settings.isEnforceEmailVerification()) {
+            if (!userService.isEmailVerified(memberId)) {
+                throw new BusinessRuleException("Sovereign verification gating: Your email address is unverified. Please check your inbox or profile page to verify.");
+            }
+        }
     }
 
     private void verifyNoPendingReturns(String memberId) {

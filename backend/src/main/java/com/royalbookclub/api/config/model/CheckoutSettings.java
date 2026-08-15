@@ -24,4 +24,5 @@ public class CheckoutSettings {
     private Double libraryLatitude;
     private Double libraryLongitude;
     private Double validRadiusMeters;
+    private boolean enforceEmailVerification;
 }

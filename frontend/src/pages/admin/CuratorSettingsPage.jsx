@@ -22,6 +22,7 @@ const CuratorSettingsPage = ({ user }) => {
     libraryLatitude: null,
     libraryLongitude: null,
     validRadiusMeters: null,
+    enforceEmailVerification: false,
   });
 
   const handleChange = (e) => {
@@ -236,6 +237,23 @@ const CuratorSettingsPage = ({ user }) => {
                       onClick={() => handleToggle('pinCodeMandatory')}
                     >
                       {settings.pinCodeMandatory ? <ToggleRight size={38} className="gold-toggle" /> : <ToggleLeft size={38} className="muted-toggle" />}
+                    </button>
+                  </div>
+
+                  {/* Email Verification Toggle */}
+                  <div className="gating-toggle-row">
+                    <div className="toggle-text-info">
+                      <span className="toggle-label">{t('admin.enforceEmailVerification', 'Enforce Email Verification')}</span>
+                      <span className="toggle-description">
+                        {t('admin.enforceEmailVerificationDesc', 'Requires users with password-based log-ins to have verified email addresses before performing checkouts.')}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className={`toggle-action-btn ${settings.enforceEmailVerification ? 'active' : ''}`}
+                      onClick={() => handleToggle('enforceEmailVerification')}
+                    >
+                      {settings.enforceEmailVerification ? <ToggleRight size={38} className="gold-toggle" /> : <ToggleLeft size={38} className="muted-toggle" />}
                     </button>
                   </div>
 

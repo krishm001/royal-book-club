@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Phone, MapPin, Search, CheckCircle, AlertTriangle, ArrowLeft, Loader2, Sparkles } from 'lucide-react';
+import { User, Phone, MapPin, Search, CheckCircle, AlertTriangle, ArrowLeft, Loader2, Sparkles, Mail } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { auth } from '../../config/firebase';
+import { sendEmailVerification } from 'firebase/auth';
 import { getCurrentUserProfile, updateUserProfile } from '../../services/userApi';
 import { getCheckoutSettings } from '../../services/checkoutSettingsApi';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -79,7 +81,12 @@ const ProfilePage = ({ user }) => {
     streetMandatory: false,
     cityMandatory: false,
     pinCodeMandatory: false,
+    enforceEmailVerification: false,
   });
+
+  const [emailVerified, setEmailVerified] = useState(auth.currentUser?.emailVerified || false);
+  const [verificationResendCooldown, setVerificationResendCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
 
   // OpenStreetMap Autocomplete state & refs
   const [detectingLocation, setDetectingLocation] = useState(false);
@@ -137,6 +144,87 @@ const ProfilePage = ({ user }) => {
       setLoading(false);
     }
   }, [user]);
+
+  // Poll Firebase auth state every 1 second to see if email becomes verified
+  useEffect(() => {
+    let intervalId = null;
+    const currentUser = auth.currentUser;
+    const isPasswordUser = currentUser?.providerData?.some(p => p.providerId === 'password');
+
+    if (currentUser && isPasswordUser && !emailVerified && settings?.enforceEmailVerification) {
+      intervalId = setInterval(async () => {
+        try {
+          await currentUser.reload();
+          if (currentUser.emailVerified) {
+            setEmailVerified(true);
+          }
+        } catch (err) {
+          console.error("Error reloading auth user in verification polling on ProfilePage", err);
+        }
+      }, 1000);
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [emailVerified, settings]);
+
+  // Handle email verification resending
+  const handleResendVerification = async () => {
+    if (resending || verificationResendCooldown > 0) return;
+    setResending(true);
+    try {
+      if (auth.currentUser) {
+        await sendEmailVerification(auth.currentUser);
+        setVerificationResendCooldown(60);
+        setMessage({
+          type: 'success',
+          text: 'Verification link dispatched! Please check your email inbox.',
+        });
+      }
+    } catch (err) {
+      console.error("Failed to resend verification email:", err);
+      setMessage({
+        type: 'error',
+        text: 'Failed to dispatch verification link. Please try again.',
+      });
+    } finally {
+      setResending(false);
+    }
+  };
+
+  // Cooldown countdown timer
+  useEffect(() => {
+    if (verificationResendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setVerificationResendCooldown(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [verificationResendCooldown]);
+
+  const forceVerifyCheck = async () => {
+    if (!auth.currentUser) return;
+    try {
+      await auth.currentUser.reload();
+      if (auth.currentUser.emailVerified) {
+        setEmailVerified(true);
+        setMessage({
+          type: 'success',
+          text: 'Sovereign email successfully verified and synchronized!',
+        });
+      } else {
+        setMessage({
+          type: 'error',
+          text: 'Email remains unverified. Please inspect your mailbox or resend the link.',
+        });
+      }
+    } catch (err) {
+      console.error("Manual verification check failed:", err);
+    }
+  };
 
   // Synchronize local form state with context language selection
   useEffect(() => {
@@ -417,6 +505,9 @@ const ProfilePage = ({ user }) => {
 
   // Determine gating status
   const missingFields = [];
+  if (settings.enforceEmailVerification && auth.currentUser?.providerData?.some(p => p.providerId === 'password') && !emailVerified) {
+    missingFields.push('Email Verification');
+  }
   if (settings.phoneMandatory && !profile.phone.trim()) missingFields.push('Phone Number');
   if (settings.houseNoMandatory && !profile.houseNo.trim()) missingFields.push('House/Apartment Number');
   if (settings.streetMandatory && !profile.street.trim()) missingFields.push('Street Address');
@@ -513,6 +604,51 @@ const ProfilePage = ({ user }) => {
 
               <form onSubmit={handleSubmit} className="profile-form">
                 <h3 className="section-title-royal">{t('profile.personalCoordinates')}</h3>
+
+                {/* Account Email Status (Epic 1) */}
+                <div className="form-group" style={{ marginBottom: '20px', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(212,165,116,0.1)' }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    Sovereign Scholar Identity
+                  </label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Mail size={16} style={{ color: 'var(--accent)' }} />
+                      <span style={{ fontSize: '0.95rem', fontWeight: 500, color: 'var(--text-primary)' }}>{user?.email || 'Scholar Email'}</span>
+                    </div>
+                    {auth.currentUser?.providerData?.some(p => p.providerId === 'password') && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          padding: '4px 10px',
+                          borderRadius: '12px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          background: emailVerified ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                          color: emailVerified ? '#22c55e' : '#ef4444',
+                          border: `1px solid ${emailVerified ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`
+                        }}>
+                          {emailVerified ? (
+                            <>
+                              <CheckCircle size={12} /> Verified
+                            </>
+                          ) : (
+                            <>
+                              <AlertTriangle size={12} /> Pending Verification
+                            </>
+                          )}
+                        </span>
+                        {settings.enforceEmailVerification && (
+                          <span style={{ fontSize: '0.65rem', fontWeight: 700, background: 'rgba(212,165,116,0.15)', color: 'var(--accent)', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                            Enforced
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="form-row">
                   <div className="form-group flex-1">
                     <label htmlFor="firstName">{t('profile.firstName')}</label>
@@ -733,6 +869,43 @@ const ProfilePage = ({ user }) => {
                 </p>
 
                 <div className="checklist-items">
+                  {settings.enforceEmailVerification && auth.currentUser?.providerData?.some(p => p.providerId === 'password') && (
+                    <div className="checklist-item email-verification-checklist-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px', padding: '12px', background: 'rgba(212,165,116,0.05)', borderRadius: '6px', border: '1px solid rgba(212,165,116,0.15)', marginBottom: '10px' }}>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', width: '100%' }}>
+                        <div className={`status-indicator ${emailVerified ? 'completed' : 'missing'}`}>
+                          {emailVerified ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
+                        </div>
+                        <div className="checklist-text">
+                          <span className="checklist-label" style={{ fontWeight: 600 }}>Email Verification</span>
+                          <span className="checklist-requirement">
+                            Mandatory Field
+                          </span>
+                        </div>
+                      </div>
+                      {!emailVerified && (
+                        <div className="verification-actions" style={{ display: 'flex', gap: '8px', marginTop: '6px', width: '100%', justifyContent: 'flex-start' }}>
+                          <button
+                            type="button"
+                            onClick={handleResendVerification}
+                            disabled={verificationResendCooldown > 0 || resending}
+                            className="royal-btn-secondary"
+                            style={{ padding: '4px 10px', fontSize: '0.75rem', height: 'auto', minWidth: 'auto', textTransform: 'uppercase' }}
+                          >
+                            {resending ? <Loader2 className="animate-spin" size={12} /> : verificationResendCooldown > 0 ? `Resend in ${verificationResendCooldown}s` : 'Resend Email'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={forceVerifyCheck}
+                            className="royal-btn"
+                            style={{ padding: '4px 10px', fontSize: '0.75rem', height: 'auto', minWidth: 'auto', textTransform: 'uppercase' }}
+                          >
+                            Check Now
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="checklist-item">
                     <div className={`status-indicator ${profile.phone.trim() ? 'completed' : settings.phoneMandatory ? 'missing' : 'optional'}`}>
                       {profile.phone.trim() ? <CheckCircle size={16} /> : settings.phoneMandatory ? <AlertTriangle size={16} /> : <CheckCircle size={16} style={{ opacity: 0.3 }} />}
