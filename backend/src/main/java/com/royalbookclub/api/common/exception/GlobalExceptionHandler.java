@@ -86,6 +86,28 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles IllegalArgumentException and maps it to HTTP 400 (Bad Request).
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Invalid argument: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    /**
+     * Handles IllegalStateException and maps it to HTTP 400 (Bad Request).
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalState(IllegalStateException ex) {
+        log.warn("Illegal state: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    /**
      * Fallback handler for all other unhandled exceptions, mapping them to HTTP 500 (Internal Server Error).
      */
     @ExceptionHandler(Exception.class)

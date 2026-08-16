@@ -736,11 +736,32 @@ public class CheckoutService {
         log.info("Initiating atomic return. Member: {}, Book: {}, Request ID: {}", memberId, cleanIsbn, checkoutId);
 
         // Geofencing verification for physical direct return (optional based on curatorial settings)
+        Double clientLat = request.getReturnLatitude();
+        Double clientLon = request.getReturnLongitude();
+
         CheckoutSettings settings = checkoutSettingsService.getCheckoutSettings();
         boolean mustEnforceGps = settings == null || settings.isEnforceReturnGeofencing();
         if (mustEnforceGps) {
-            if (!checkLocationVerification(request.getReturnLatitude(), request.getReturnLongitude())) {
-                throw new IllegalArgumentException("Self-return is only permitted within library premises. Please submit a manual return request instead.");
+            if (clientLat == null || clientLon == null) {
+                recordGeofenceFailure(memberId, cleanIsbn, null, null, settings, -1.0);
+                throw new IllegalArgumentException("Self-return is only permitted within library premises. GPS coordinates are missing or blocked. Please allow location access in your browser.");
+            }
+            if (settings != null && settings.getLibraryLatitude() != null && settings.getLibraryLongitude() != null) {
+                double libraryLat = settings.getLibraryLatitude();
+                double libraryLon = settings.getLibraryLongitude();
+                double allowedRadius = settings.getValidRadiusMeters() != null ? settings.getValidRadiusMeters() : 100.0;
+                double distance = calculateHaversineDistance(clientLat, clientLon, libraryLat, libraryLon);
+
+                log.warn("Geofence return check in returnBook: memberId={}, bookId={}, client location: ({}, {}), required location: ({}, {}), distance: {}m, allowed: {}m",
+                        memberId, cleanIsbn, clientLat, clientLon, libraryLat, libraryLon, distance, allowedRadius);
+
+                if (distance > allowedRadius) {
+                    recordGeofenceFailure(memberId, cleanIsbn, clientLat, clientLon, settings, distance);
+                    throw new IllegalArgumentException(String.format(
+                        "Self-return is only permitted within library premises. Attempted location: (%.6f, %.6f), Required library location: (%.6f, %.6f), Distance: %.1fm (Allowed max: %.1fm).",
+                        clientLat, clientLon, libraryLat, libraryLon, distance, allowedRadius
+                    ));
+                }
             }
         } else {
             log.info("Bypassing return geofencing validation check as requested by Curator settings.");
@@ -1050,9 +1071,36 @@ public class CheckoutService {
 
         log.info("Initiating verified return. Member: {}, Book: {}, Tag: {}", memberId, cleanIsbn, tagUid);
 
-        // Geofencing verification for physical direct NFC return
-        if (!checkLocationVerification(request.getReturnLatitude(), request.getReturnLongitude())) {
-            throw new IllegalArgumentException("Self-return is only permitted within library premises. Please submit a manual return request instead.");
+        // Geofencing verification for physical direct NFC/Barcode return
+        Double clientLat = request.getReturnLatitude();
+        Double clientLon = request.getReturnLongitude();
+
+        CheckoutSettings settings = checkoutSettingsService.getCheckoutSettings();
+        boolean mustEnforceGps = settings == null || settings.isEnforceReturnGeofencing();
+        if (mustEnforceGps) {
+            if (clientLat == null || clientLon == null) {
+                recordGeofenceFailure(memberId, cleanIsbn, null, null, settings, -1.0);
+                throw new IllegalArgumentException("Self-return is only permitted within library premises. GPS coordinates are missing or blocked. Please allow location access in your browser.");
+            }
+            if (settings != null && settings.getLibraryLatitude() != null && settings.getLibraryLongitude() != null) {
+                double libraryLat = settings.getLibraryLatitude();
+                double libraryLon = settings.getLibraryLongitude();
+                double allowedRadius = settings.getValidRadiusMeters() != null ? settings.getValidRadiusMeters() : 100.0;
+                double distance = calculateHaversineDistance(clientLat, clientLon, libraryLat, libraryLon);
+
+                log.warn("Geofence return check in verifiedReturn: memberId={}, bookId={}, client location: ({}, {}), required location: ({}, {}), distance: {}m, allowed: {}m",
+                        memberId, cleanIsbn, clientLat, clientLon, libraryLat, libraryLon, distance, allowedRadius);
+
+                if (distance > allowedRadius) {
+                    recordGeofenceFailure(memberId, cleanIsbn, clientLat, clientLon, settings, distance);
+                    throw new IllegalArgumentException(String.format(
+                        "Self-return is only permitted within library premises. Attempted location: (%.6f, %.6f), Required library location: (%.6f, %.6f), Distance: %.1fm (Allowed max: %.1fm).",
+                        clientLat, clientLon, libraryLat, libraryLon, distance, allowedRadius
+                    ));
+                }
+            }
+        } else {
+            log.info("Bypassing return geofencing validation for verified return as requested by Curator settings.");
         }
 
         try {
@@ -1467,6 +1515,27 @@ public class CheckoutService {
                 serializedCopies.add(m);
             }
             transaction.update(bookRef, "copies", serializedCopies);
+        }
+    }
+
+    private void recordGeofenceFailure(String memberId, String bookId, Double clientLat, Double clientLon, CheckoutSettings settings, double distance) {
+        try {
+            Map<String, Object> data = new HashMap<>();
+            data.put("id", java.util.UUID.randomUUID().toString());
+            data.put("memberId", memberId);
+            data.put("bookId", bookId);
+            data.put("attemptedLatitude", clientLat);
+            data.put("attemptedLongitude", clientLon);
+            data.put("requiredLatitude", settings != null ? settings.getLibraryLatitude() : null);
+            data.put("requiredLongitude", settings != null ? settings.getLibraryLongitude() : null);
+            data.put("allowedRadius", settings != null ? (settings.getValidRadiusMeters() != null ? settings.getValidRadiusMeters() : 100.0) : 100.0);
+            data.put("calculatedDistance", distance);
+            data.put("timestamp", com.google.cloud.Timestamp.now());
+            
+            firestore.collection("geofence_failures").document((String) data.get("id")).set(data).get();
+            log.info("Recorded geofence failure for user {} attempting book return {}", memberId, bookId);
+        } catch (Exception e) {
+            log.error("Failed to write geofence failure log to Firestore", e);
         }
     }
 

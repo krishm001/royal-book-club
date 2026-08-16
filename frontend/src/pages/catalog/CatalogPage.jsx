@@ -44,6 +44,29 @@ export const isNfcTagMatched = (b, cleanScanned) => {
 
 const CatalogPage = ({ user, triggerOnboarding }) => {
   const { t } = useLanguage();
+
+  const getCoordinates = () => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        resolve({ latitude: null, longitude: null });
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.warn("Unable to obtain GPS coordinates:", error.message);
+          resolve({ latitude: null, longitude: null });
+        },
+        { enableHighAccuracy: true, timeout: 3500 }
+      );
+    });
+  };
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState(null);
   const [selectedHouse, setSelectedHouse] = useState('All');
@@ -556,7 +579,17 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
           }
         }
       } else {
-        const res = await verifiedReturn({ bookId: p2dBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
+        const coords = await getCoordinates();
+        const res = await verifiedReturn({
+          bookId: p2dBook.isbn,
+          memberId: user.uid || user.id,
+          ntagUid: targetUid,
+          memberName: user?.displayName,
+          memberEmail: user?.email,
+          returnLatitude: coords.latitude,
+          returnLongitude: coords.longitude,
+          nfcOrBarcode: 'BARCODE'
+        });
         if (res) {
           setCreatedCheckoutId(res.id || res.data?.id);
         }
@@ -812,7 +845,15 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                 setCreatedCheckoutId(res.id || res.data?.id);
               }
             } else {
-              const res = await verifiedReturn({ bookId: targetBook.isbn, memberId: user.uid || user.id, ntagUid: cleanScanned });
+              const coords = await getCoordinates();
+              const res = await verifiedReturn({
+                bookId: targetBook.isbn,
+                memberId: user.uid || user.id,
+                ntagUid: cleanScanned,
+                returnLatitude: coords.latitude,
+                returnLongitude: coords.longitude,
+                nfcOrBarcode: 'NFC'
+              });
               if (res) {
                 setCreatedCheckoutId(res.id || res.data?.id);
               }
@@ -1016,7 +1057,15 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
             }
           }
         } else {
-          const res = await verifiedReturn({ bookId: currentBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid });
+          const coords = await getCoordinates();
+          const res = await verifiedReturn({
+            bookId: currentBook.isbn,
+            memberId: user.uid || user.id,
+            ntagUid: targetUid,
+            returnLatitude: coords.latitude,
+            returnLongitude: coords.longitude,
+            nfcOrBarcode: 'BARCODE'
+          });
           if (res) {
             setCreatedCheckoutId(res.id || res.data?.id);
           }
