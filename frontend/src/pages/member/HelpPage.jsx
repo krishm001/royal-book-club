@@ -11,6 +11,8 @@ import './HelpPage.css';
 // Import generated step assets
 import nfcTapGuideImg from '../../assets/nfc_tap_guide.png';
 import barcodeScanGuideImg from '../../assets/barcode_scan_guide.png';
+import instantLoanGuideImg from '../../assets/instant_loan_guide.png';
+import secureAccountLoginImg from '../../assets/secure_account_login.png';
 
 const HelpPage = () => {
   const { t } = useLanguage();
@@ -30,40 +32,31 @@ const HelpPage = () => {
 
   const nfcSteps = [
     {
-      title: t('sagesGuild.nfcTitle1', 'Locate Gold Tag'),
-      headline: t('sagesGuild.nfcHeadline1', 'Spot the Golden Sticker'),
-      short: t('sagesGuild.nfcShort1', 'Sticker sits on top left cover'),
-      verbatim: t('sagesGuild.nfcVerbatim1', "Every physical book in the Royal Library holds an elite electronic soul. Walk to the bookshelves and locate your desired book. Look at the top-left corner of the book's front cover to find the gold circular NTAG213 electronic tag. Ensure the sticker is visible and clean before initiating your swipe."),
-      tips: t('sagesGuild.nfcTips1', "All books are pre-programmed at curation time. This sticker serves as your physical-digital gateway."),
-      icon: <BookOpen size={20} />,
-      image: null
-    },
-    {
-      title: t('sagesGuild.nfcTitle2', 'Tap Smartphone'),
-      headline: t('sagesGuild.nfcHeadline2', 'Hold & Swipe Device'),
-      short: t('sagesGuild.nfcShort2', 'iPhone: tap top edge. Android: tap back'),
-      verbatim: t('sagesGuild.nfcVerbatim2', "Unlock your smartphone and hold it near the book cover:\n\n• 📱 iPhone (iOS): Tap the very top edge of your iPhone against the gold sticker.\n• 🤖 Android: Place the back center of your phone flat against the top-left of the book cover. Gently slide the phone around the sticker area and wait for a brief vibration.\n\n*NFC Prompt Behavior*: In some cases, your device will prompt you to choose the correct browser (always select Chrome or Safari). In others, it will seamlessly launch your browser and take you directly to the digital library website checkout page."),
-      tips: t('sagesGuild.nfcTips2', "Ensure NFC is turned ON in your phone settings. Remove thick metallic phone cases if the signal is not instantly received."),
+      title: t('sagesGuild.nfcStep1Title', 'Tap Smartphone'),
+      headline: t('sagesGuild.nfcStep1Headline', 'Hold & Swipe Device'),
+      short: t('sagesGuild.nfcStep1Short', 'Unlock screen and tap top-left of front cover'),
+      verbatim: t('sagesGuild.nfcStep1Verbatim', "There is an NFC sticker placed on the top-left inside the front cover. You do NOT need to open the book; the tap works perfectly from the outside through the cover. Ensure your smartphone's screen is unlocked. Gently place your phone flat near the top-left of the book's front cover:\n\n• 📱 iPhone (iOS): Tap the top edge of your iPhone against the top-left of the front cover.\n• 🤖 Android: Place the back center of your phone flat against the top-left of the front cover. For older Android models, ensure NFC is manually turned on in your settings (usually always-on when screen is on).\n\nWait for a brief vibration, and your phone will seamlessly open the website to check out the book!"),
+      tips: t('sagesGuild.nfcStep1Tips', "Remove thick metallic phone cases if the signal is not instantly received."),
       icon: <Smartphone size={20} />,
       image: nfcTapGuideImg
     },
     {
-      title: t('sagesGuild.nfcTitle3', 'Secure Account'),
-      headline: t('sagesGuild.nfcHeadline3', 'Sign In Securely'),
-      short: t('sagesGuild.nfcShort3', 'First timers: Select Google, LinkedIn, or Email'),
-      verbatim: t('sagesGuild.nfcVerbatim3', "If you are a first-time scholar visiting our sanctuary, a secure login popup will slide up. Do not worry! This is a one-time credential check to record your literary custody in our immutable ledger. You can choose from Google, LinkedIn, or a traditional Email based signup. This securely registers your scholarly profile instantly."),
-      tips: t('sagesGuild.nfcTips3', "We protect your privacy. No personal reading history is disclosed outside of official circulation reports."),
+      title: t('sagesGuild.nfcStep2Title', 'Secure Account'),
+      headline: t('sagesGuild.nfcStep2Headline', 'Sign In Securely'),
+      short: t('sagesGuild.nfcStep2Short', 'Select Google, LinkedIn, or Email and complete requirements'),
+      verbatim: t('sagesGuild.nfcStep2Verbatim', "If you are a first-time scholar, a secure login popup will slide up. Prompt yourself to fill in all required details before proceeding. Under our library requirements, you are prompted to provide your flat number and phone number if mandated. Logging in via Google or LinkedIn is preferred and seamless, but traditional Email signup is available and will require an email verification step before proceeding."),
+      tips: t('sagesGuild.nfcStep2Tips', "All credentials are encrypted and stored securely inside the Royal ledger."),
       icon: <Key size={20} />,
-      image: null
+      image: secureAccountLoginImg
     },
     {
-      title: t('sagesGuild.nfcTitle4', 'Instant Loan'),
-      headline: t('sagesGuild.nfcHeadline4', 'Authorize & Go'),
-      short: t('sagesGuild.nfcShort4', 'Click checkout and collect your Gatepass'),
-      verbatim: t('sagesGuild.nfcVerbatim4', "Once authenticated, the book detail screen will dynamically render the active NFC token. Simply click the golden 'Instant Checkout' button. The ledger updates instantly in the cloud, granting you authorized loan custody. A secure Gatepass barcode will immediately be written to your profile. You are now free to walk past the entrance hall!"),
-      tips: t('sagesGuild.nfcTips4', "Your profile will now list this book under your active loans with its live due dates."),
+      title: t('sagesGuild.nfcStep3Title', 'Secure Sovereign Checkout'),
+      headline: t('sagesGuild.nfcStep3Headline', 'Authorize & Go'),
+      short: t('sagesGuild.nfcStep3Short', 'Click Secure Sovereign Checkout and collect Gatepass'),
+      verbatim: t('sagesGuild.nfcStep3Verbatim', "Once signed in, the book detail screen will dynamically render the physical copies. Simply click the golden 'Secure Sovereign Checkout' button. The secure ledger updates instantly in the cloud, and a digital Gatepass barcode will be written to your profile. You are now authorized to leave the salon with your physical volume!"),
+      tips: t('sagesGuild.nfcStep3Tips', "Your profile will now list this book under your active loans with its live due dates."),
       icon: <CheckCircle2 size={20} />,
-      image: null
+      image: instantLoanGuideImg
     }
   ];
 
@@ -110,8 +103,8 @@ const HelpPage = () => {
     {
       title: t('sagesGuild.manTitle2', 'File Loan'),
       headline: t('sagesGuild.manHeadline2', 'Request Curator approval'),
-      short: t('sagesGuild.manShort2', 'Click Check Out Volume in details page'),
-      verbatim: t('sagesGuild.manVerbatim2', "Click the golden 'Check Out Volume' button on the book details page. This files a digital loan request to our active desk curator queue. Ensure you are signed in first using Google, LinkedIn, or Email to map this request to your ledger profile."),
+      short: t('sagesGuild.manShort2', 'Click Secure Sovereign Checkout'),
+      verbatim: t('sagesGuild.manVerbatim2', "Click the golden 'Secure Sovereign Checkout' button on the book details page. This files a digital loan request to our active desk curator queue. Ensure you are signed in first using Google, LinkedIn, or Email to map this request to your ledger profile."),
       tips: t('sagesGuild.manTips2', "Curators monitor this queue in real-time inside the Entrance Salon."),
       icon: <ClipboardList size={20} />,
       image: null
@@ -353,19 +346,19 @@ const HelpPage = () => {
                 className={`sub-tab-btn ${checkoutMethod === 'nfc' ? 'active' : ''}`}
                 onClick={() => setCheckoutMethod('nfc')}
               >
-                <span>NFC Instant Tap</span>
+                <span>{t('sagesGuild.nfcSubtab', 'NFC Instant Tap')}</span>
               </button>
               <button 
                 className={`sub-tab-btn ${checkoutMethod === 'barcode' ? 'active' : ''}`}
                 onClick={() => setCheckoutMethod('barcode')}
               >
-                <span>Barcode Scan</span>
+                <span>{t('sagesGuild.barcodeSubtab', 'Barcode Scan')}</span>
               </button>
               <button 
                 className={`sub-tab-btn ${checkoutMethod === 'manual' ? 'active' : ''}`}
                 onClick={() => setCheckoutMethod('manual')}
               >
-                <span>Digital Request</span>
+                <span>{t('sagesGuild.manualSubtab', 'Digital Request')}</span>
               </button>
             </div>
 
@@ -408,13 +401,13 @@ const HelpPage = () => {
                 className={`sub-tab-btn ${returnMethod === 'gps' ? 'active' : ''}`}
                 onClick={() => setReturnMethod('gps')}
               >
-                <span>Geofenced Self-Return</span>
+                <span>{t('sagesGuild.gpsSubtab', 'Geofenced Self-Return')}</span>
               </button>
               <button 
                 className={`sub-tab-btn ${returnMethod === 'qr' ? 'active' : ''}`}
                 onClick={() => setReturnMethod('qr')}
               >
-                <span>Validator QR Scan</span>
+                <span>{t('sagesGuild.qrSubtab', 'Validator QR Scan')}</span>
               </button>
             </div>
 

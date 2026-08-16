@@ -432,27 +432,33 @@ export default {
     consentError: "Please agree to the Terms & Conditions and Privacy Notice before signing up."
   },
   sagesGuild: {
-    title: "Royal Guidance Hub",
+    title: "Royal Guide Hub",
     subtitle: "Unlock the mysteries of the library's physical-digital circulation gateway",
     tabCheckout: "Checkout Options",
     tabReturn: "Return Options",
-    tabGatepass: "Gatepass & Access",
-    tabFaq: "Sacred Scroll FAQs",
+    tabGatepass: "Gatepass",
+    tabFaq: "FAQs",
+    
+    nfcSubtab: "NFC Instant Tap",
+    barcodeSubtab: "Barcode Scan",
+    manualSubtab: "Digital Request",
+    gpsSubtab: "Geofenced Self-Return",
+    qrSubtab: "Validator QR Scan",
     
     nfcTitle: "1. Web NFC Instant Tap",
-    nfcDesc: "Physically locate the book in our salon, unlock your phone, turn on NFC, and tap the back of your device against the book's golden circular NTAG213 sticker. A verification prompt will slide up. Click 'Instant Checkout' to walk away with the book immediately.",
+    nfcDesc: "Unlock your phone, turn on NFC, and tap the top-left of the front cover of the physical book. A verification prompt will slide up. Click 'Secure Sovereign Checkout' to walk away with the book immediately.",
     
-    barcodeTitle: "2. Omni-Scanner Barcode Scan",
-    barcodeDesc: "Open 'Study' page on your phone, click 'Self-Checkout' button, and scan the barcode printed on the back of any physical volume. Ensure proper camera alignment in our viewfinder.",
+    barcodeTitle: "2. Barcode Scan",
+    barcodeDesc: "Open 'Study' page on your phone, click 'Barcode Scan' under 'Self-Checkout Portal' tab, and scan the barcode printed on the back of any physical volume. Ensure proper camera alignment in our viewfinder.",
     
     manualTitle: "3. Digital Request",
-    manualDesc: "If your device lacks an NFC chip, browse the Study catalog, find the book, and click 'Check Out Volume'. This logs a manual checkout request. The library curator will verify and approve your loan instantly.",
+    manualDesc: "If your device lacks an NFC chip, browse the Study catalog, find the book, and click 'Secure Sovereign Checkout'. This logs a manual checkout request. The library curator will verify and approve your loan instantly.",
     
     geofenceTitle: "1. Geofenced Self-Return",
-    geofenceDesc: "If you are physically standing inside the library's coordinates, click 'Initiate Return' on your checkout ledger. Our system verifies your physical presence via GPS and instantly completes the return, clearing the book back into catalog availability.",
+    geofenceDesc: "If you are physically standing inside the library's coordinates, click 'Initiate Self-Return' on your Profile Ledger. Our system verifies your physical presence via GPS and instantly completes the return, clearing the book back into catalog availability.",
     
     qrTitle: "2. Return Validator QR Scan (Bypass)",
-    qrDesc: "If your GPS signal is weak, or coordinates fail to verify, select 'Validate via Return QR' on your return screen. Simply scan the physical Return Validator QR placard placed on the main desk of the library to instantly verify your return without administrative delay.",
+    qrDesc: "If your GPS signal is weak, or coordinates fail to verify, select 'Validate via Return QR' (Validator QR) on your return screen. Simply scan the physical Return Validator QR placard placed on the main desk of the library to instantly verify your return without administrative delay.",
     
     curatorTitle: "3. Curator Manual Override",
     curatorDesc: "If all digital networks fail, you can leave the volume in our physical drop-box. The curator will manually audit the shelf, approve your pending return, and restore your checkout ledger.",
@@ -465,7 +471,25 @@ export default {
     faqQ2: "What is the return grace period?",
     faqA2: "All scholarly volumes are lent for 14 days, with options to extend your loan via profile details.",
     faqQ3: "Why does geofencing require GPS location?",
-    faqA3: "GPS location verifies that physical books are returned within the actual library walls to maintain absolute inventory accountability."
+    faqA3: "GPS location verifies that physical books are returned within the actual library walls to maintain absolute inventory accountability.",
+
+    nfcStep1Title: "Tap Smartphone",
+    nfcStep1Headline: "Hold & Swipe Device",
+    nfcStep1Short: "Unlock screen and tap top-left of front cover",
+    nfcStep1Verbatim: "There is an NFC sticker placed on the top-left inside the front cover. You do NOT need to open the book; the tap works perfectly from the outside through the cover. Ensure your smartphone's screen is unlocked. Gently place your phone flat near the top-left of the book's front cover:\n\n• 📱 iPhone (iOS): Tap the top edge of your iPhone against the top-left of the front cover.\n• 🤖 Android: Place the back center of your phone flat against the top-left of the front cover. For older Android models, ensure NFC is manually turned on in your settings (usually always-on when screen is on).\n\nWait for a brief vibration, and your phone will seamlessly open the website to check out the book!",
+    nfcStep1Tips: "Remove thick metallic phone cases if the signal is not instantly received.",
+
+    nfcStep2Title: "Secure Account",
+    nfcStep2Headline: "Sign In Securely",
+    nfcStep2Short: "Select Google, LinkedIn, or Email and complete requirements",
+    nfcStep2Verbatim: "If you are a first-time scholar, a secure login popup will slide up. Prompt yourself to fill in all required details before proceeding. Under our library requirements, you are prompted to provide your flat number and phone number if mandated. Logging in via Google or LinkedIn is preferred and seamless, but traditional Email signup is available and will require an email verification step before proceeding.",
+    nfcStep2Tips: "All credentials are encrypted and stored securely inside the Royal ledger.",
+
+    nfcStep3Title: "Secure Sovereign Checkout",
+    nfcStep3Headline: "Authorize & Go",
+    nfcStep3Short: "Click Secure Sovereign Checkout and collect Gatepass",
+    nfcStep3Verbatim: "Once signed in, the book detail screen will dynamically render the physical copies. Simply click the golden 'Secure Sovereign Checkout' button. The secure ledger updates instantly in the cloud, and a digital Gatepass barcode will be written to your profile. You are now authorized to leave the salon with your physical volume!",
+    nfcStep3Tips: "Your profile will now list this book under your active loans with its live due dates."
   }
 };
 
