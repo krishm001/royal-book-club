@@ -18,6 +18,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class Book {
+    private String id;
     private String isbn;
     private String title;
     private String subtitle;
@@ -29,6 +30,9 @@ public class Book {
     
     @Builder.Default
     private List<String> tags = new ArrayList<>();
+
+    @Builder.Default
+    private List<String> alternativeIsbns = new ArrayList<>();
     
     private String publisher;
     private String publishDate;
@@ -44,6 +48,9 @@ public class Book {
 
     @Builder.Default
     private List<BookCopy> copies = new ArrayList<>();
+
+    @Builder.Default
+    private List<Long> qrIds = new ArrayList<>();
 
     private Instant createdAt;
     private Instant updatedAt;

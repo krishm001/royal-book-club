@@ -16,6 +16,7 @@ const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
 const CatalogPage = ({ user, triggerOnboarding }) => {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTag, setSelectedTag] = useState(null);
   const [selectedHouse, setSelectedHouse] = useState('All');
   const [sortBy, setSortBy] = useState('featured');
   const [showFilters, setShowFilters] = useState(false);
@@ -231,6 +232,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
               return { width: idealW, height: idealH };
             },
             formatsToSupport: [
+              SafeHtml5QrcodeSupportedFormats.QR_CODE,
               SafeHtml5QrcodeSupportedFormats.EAN_13,
               SafeHtml5QrcodeSupportedFormats.EAN_8,
               SafeHtml5QrcodeSupportedFormats.ISBN_13,
@@ -352,19 +354,74 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
       window.alert(t('catalog.signInToCheckoutOrReturn'));
       return;
     }
-    const scannedCode = (decodedText || '').trim().replace(/[-\s]/g, '');
-    const matchedBook = books.find(b => {
-      const bIsbn = (b.isbn || '').trim().replace(/[-\s]/g, '');
-      return bIsbn === scannedCode;
-    });
+    const scannedCode = (decodedText || '').trim();
+    let qrId = null;
+
+    // Detect QR schema
+    const qrMatch = scannedCode.match(/qr=(\d+)/);
+    if (qrMatch) {
+      qrId = parseInt(qrMatch[1], 10);
+    } else if (/^\d+$/.test(scannedCode) && scannedCode.length <= 9) {
+      // Short numeric value is treated as copy-level QR ID
+      qrId = parseInt(scannedCode, 10);
+    }
+
+    let matchedBook = null;
+    let matchedCopy = null;
+
+    if (qrId !== null) {
+      // Give explicit precedence to QR code resolution
+      matchedBook = books.find(b => 
+        Array.isArray(b.copies) && b.copies.some(c => {
+          if (c.qrId === qrId) {
+            matchedCopy = c;
+            return true;
+          }
+          return false;
+        })
+      );
+    }
+
+    if (!matchedBook) {
+      // Fallback or primary resolution via primary/alternative ISBN or QR ID matching
+      const cleanCode = scannedCode.replace(/[-\s]/g, '');
+      matchedBook = books.find(b => {
+        const bIsbn = (b.isbn || '').trim().replace(/[-\s]/g, '');
+        if (bIsbn === cleanCode) return true;
+        
+        // Match alternative ISBNs
+        if (Array.isArray(b.alternativeIsbns) && b.alternativeIsbns.some(alt => alt && alt.trim().replace(/[-\s]/g, '') === cleanCode)) {
+          return true;
+        }
+
+        // Match copy QR codes
+        if (Array.isArray(b.copies) && b.copies.some(c => {
+          if (String(c.qrId) === cleanCode) {
+            matchedCopy = c;
+            return true;
+          }
+          return false;
+        })) {
+          return true;
+        }
+
+        return false;
+      });
+    }
 
     if (matchedBook) {
-      const resolvedStatus = getResolvedStatus(matchedBook);
+      // Create a shallow copy of matchedBook to map copy details safely
+      const resolvedBook = { ...matchedBook };
+      if (matchedCopy && matchedCopy.ntagUid) {
+        resolvedBook.ntagUid = matchedCopy.ntagUid;
+      }
+
+      const resolvedStatus = getResolvedStatus(resolvedBook);
       if (resolvedStatus !== 'checked-out') {
-        const passes = await checkGatingPasses('checkout', matchedBook.isbn);
+        const passes = await checkGatingPasses('checkout', resolvedBook.isbn);
         if (!passes) return;
       }
-      openP2dOverlay(matchedBook);
+      openP2dOverlay(resolvedBook);
     } else {
       window.alert(t('catalog.noBarcodeMatch') + decodedText + ".");
     }
@@ -1008,7 +1065,9 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
 
       const matchesHouse = selectedHouse === 'All' || genre === selectedHouse;
 
-      return matchesSearch && matchesHouse;
+      const matchesTag = !selectedTag || tags.some(tag => tag.toLowerCase() === selectedTag.toLowerCase());
+
+      return matchesSearch && matchesHouse && matchesTag;
     })
     .sort((a, b) => {
       if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
@@ -1124,6 +1183,53 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
           </div>
         )}
       </section>
+
+      {/* Dynamic Premium Tag Filter Row */}
+      <div className="catalog-tags-filter-row" style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '12px 16px', marginBottom: '20px', scrollbarWidth: 'none', msOverflowStyle: 'none', background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(212, 175, 55, 0.08)', borderRadius: '12px', backdropFilter: 'blur(10px)' }}>
+        <button
+          type="button"
+          onClick={() => setSelectedTag(null)}
+          className={`royal-tag-pill ${!selectedTag ? 'active' : ''}`}
+          style={{
+            padding: '6px 14px',
+            borderRadius: '20px',
+            fontSize: '0.8rem',
+            fontWeight: '500',
+            border: '1px solid ' + (!selectedTag ? 'var(--accent, #d4af37)' : 'rgba(255, 255, 255, 0.1)'),
+            background: !selectedTag ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+            color: !selectedTag ? 'var(--accent, #d4af37)' : 'var(--text-secondary, #9a9ab0)',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            transition: 'all 0.2s',
+            boxShadow: !selectedTag ? '0 0 10px rgba(212, 175, 55, 0.2)' : 'none'
+          }}
+        >
+          All Tags
+        </button>
+        {Array.from(new Set(books.flatMap(b => Array.isArray(b.tags) ? b.tags : []))).filter(Boolean).map(tag => (
+          <button
+            key={tag}
+            type="button"
+            onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+            className={`royal-tag-pill ${selectedTag === tag ? 'active' : ''}`}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '20px',
+              fontSize: '0.8rem',
+              fontWeight: '500',
+              border: '1px solid ' + (selectedTag === tag ? 'var(--accent, #d4af37)' : 'rgba(255, 255, 255, 0.1)'),
+              background: selectedTag === tag ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+              color: selectedTag === tag ? 'var(--accent, #d4af37)' : 'var(--text-secondary, #9a9ab0)',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.2s',
+              boxShadow: selectedTag === tag ? '0 0 10px rgba(212, 175, 55, 0.2)' : 'none'
+            }}
+          >
+            #{tag}
+          </button>
+        ))}
+      </div>
 
       <main className="catalog-grid-main">
         {loading ? (

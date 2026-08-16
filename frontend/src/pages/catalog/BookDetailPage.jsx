@@ -643,6 +643,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
               return { width: idealW, height: idealH };
             },
             formatsToSupport: [
+              SafeHtml5QrcodeSupportedFormats.QR_CODE,
               SafeHtml5QrcodeSupportedFormats.EAN_13,
               SafeHtml5QrcodeSupportedFormats.EAN_8,
               SafeHtml5QrcodeSupportedFormats.ISBN_13,
@@ -764,13 +765,42 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       window.alert(t('catalog.signInToCompleteTx'));
       return;
     }
-    const scannedCode = (decodedText || '').trim().replace(/[-\s]/g, '');
-    const cleanBookIsbn = (book.isbn || '').trim().replace(/[-\s]/g, '');
+    const scannedCode = (decodedText || '').trim();
+    let qrId = null;
 
-    if (scannedCode === cleanBookIsbn) {
+    // Detect QR schema
+    const qrMatch = scannedCode.match(/qr=(\d+)/);
+    if (qrMatch) {
+      qrId = parseInt(qrMatch[1], 10);
+    } else if (/^\d+$/.test(scannedCode) && scannedCode.length <= 9) {
+      qrId = parseInt(scannedCode, 10);
+    }
+
+    const cleanBookIsbn = (book.isbn || '').trim().replace(/[-\s]/g, '');
+    const cleanScannedCode = scannedCode.replace(/[-\s]/g, '');
+
+    // Is it a match?
+    let isMatch = (cleanScannedCode === cleanBookIsbn);
+
+    // Match alternative ISBNs
+    if (!isMatch && Array.isArray(book.alternativeIsbns)) {
+      isMatch = book.alternativeIsbns.some(alt => alt && alt.trim().replace(/[-\s]/g, '') === cleanScannedCode);
+    }
+
+    // Match copy-level QR IDs
+    let matchedCopy = null;
+    if (!isMatch && Array.isArray(book.copies)) {
+      matchedCopy = book.copies.find(c => c.qrId === qrId || String(c.qrId) === cleanScannedCode);
+      if (matchedCopy) {
+        isMatch = true;
+      }
+    }
+
+    if (isMatch) {
       try {
         resetRatingAndCheckoutId();
-        const targetUid = book.ntagUid || '04:A3:B2:C1:D0:E9:80';
+        // Use matched copy's NTAG UID if found
+        const targetUid = (matchedCopy && matchedCopy.ntagUid) || book.ntagUid || '04:A3:B2:C1:D0:E9:80';
         let txRes;
         if (nfcActionType === 'checkout') {
           txRes = await verifiedCheckout({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });

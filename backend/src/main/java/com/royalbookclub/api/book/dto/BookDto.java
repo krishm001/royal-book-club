@@ -20,6 +20,8 @@ import java.util.List;
 @Builder
 public class BookDto {
 
+    private String id;
+
     @NotBlank(message = "ISBN is required")
     private String isbn;
 
@@ -33,6 +35,10 @@ public class BookDto {
 
     private String genre;
     private List<String> tags;
+
+    @Builder.Default
+    private List<String> alternativeIsbns = new java.util.ArrayList<>();
+
     private String publisher;
     private String publishDate;
     private String description;
@@ -55,6 +61,9 @@ public class BookDto {
 
     @Builder.Default
     private List<com.royalbookclub.api.book.model.BookCopy> copies = new java.util.ArrayList<>();
+
+    @Builder.Default
+    private List<Long> qrIds = new java.util.ArrayList<>();
     
     @Builder.Default
     private String language = "en";

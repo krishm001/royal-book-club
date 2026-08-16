@@ -44,6 +44,12 @@ const CuratorInventoryAuditPage = ({ user }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Curator Audit Notes & Checklist verification states
+  const [auditNotes, setAuditNotes] = useState({});
+  const [auditChecklists, setAuditChecklists] = useState({});
+  const [selectedFilterFlag, setSelectedFilterFlag] = useState('ALL');
+  const [expandedBookIsbn, setExpandedBookIsbn] = useState(null);
+
   // Fetch initial data: catalog books and current active audit
   const loadInitialData = async () => {
     try {
@@ -70,6 +76,50 @@ const CuratorInventoryAuditPage = ({ user }) => {
   useEffect(() => {
     loadInitialData();
   }, [user]);
+
+  // Load audit-specific notes and checklists from localStorage when activeAudit changes
+  useEffect(() => {
+    if (activeAudit) {
+      const storedNotes = localStorage.getItem(`audit_notes_${activeAudit.id}`);
+      if (storedNotes) {
+        setAuditNotes(JSON.parse(storedNotes));
+      } else {
+        setAuditNotes({});
+      }
+
+      const storedChecklists = localStorage.getItem(`audit_checklists_${activeAudit.id}`);
+      if (storedChecklists) {
+        setAuditChecklists(JSON.parse(storedChecklists));
+      } else {
+        setAuditChecklists({});
+      }
+    }
+  }, [activeAudit]);
+
+  const updateNote = (isbn, value) => {
+    const updated = { ...auditNotes, [isbn]: value };
+    setAuditNotes(updated);
+    if (activeAudit) {
+      localStorage.setItem(`audit_notes_${activeAudit.id}`, JSON.stringify(updated));
+    }
+  };
+
+  const updateChecklist = (isbn, key, value) => {
+    const defaultChecklist = {
+      isbnMatch: true,
+      descriptionCorrect: true,
+      genreCorrect: true,
+      tagsCorrect: true,
+      nfcPresent: true
+    };
+    const currentChecklist = auditChecklists[isbn] || defaultChecklist;
+    const updatedChecklist = { ...currentChecklist, [key]: value };
+    const updated = { ...auditChecklists, [isbn]: updatedChecklist };
+    setAuditChecklists(updated);
+    if (activeAudit) {
+      localStorage.setItem(`audit_checklists_${activeAudit.id}`, JSON.stringify(updated));
+    }
+  };
 
   // Handle starting a new audit session
   const handleStartSession = async () => {
@@ -332,43 +382,183 @@ const CuratorInventoryAuditPage = ({ user }) => {
                 <span style={{ fontSize: '0.85rem', opacity: 0.7 }}>{books.length} Catalogue entries</span>
               </div>
 
+              {/* Premium Flag-based Filter Row */}
+              <div className="audit-flag-filters" style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '12px 16px', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', scrollbarWidth: 'none', msOverflowStyle: 'none', marginBottom: '14px' }}>
+                {[
+                  { key: 'ALL', label: 'All Items' },
+                  { key: 'ISBN_MISMATCH', label: 'Mismatched ISBNs' },
+                  { key: 'BAD_DESCRIPTION', label: 'Bad Descriptions' },
+                  { key: 'BAD_GENRE', label: 'Bad Genres' },
+                  { key: 'BAD_TAGS', label: 'Bad Tags' },
+                  { key: 'NFC_MISSING', label: 'NFC Missing' },
+                  { key: 'HAS_NOTES', label: 'Has Notes' }
+                ].map(filter => (
+                  <button
+                    key={filter.key}
+                    type="button"
+                    onClick={() => setSelectedFilterFlag(filter.key)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '16px',
+                      fontSize: '0.75rem',
+                      fontWeight: '500',
+                      border: '1px solid ' + (selectedFilterFlag === filter.key ? 'var(--accent, #d4af37)' : 'rgba(255, 255, 255, 0.08)'),
+                      background: selectedFilterFlag === filter.key ? 'rgba(212, 175, 55, 0.12)' : 'rgba(255, 255, 255, 0.02)',
+                      color: selectedFilterFlag === filter.key ? 'var(--accent, #d4af37)' : 'rgba(255, 255, 255, 0.6)',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="catalog-scroll-list">
-                {books.map((book) => {
+                {books.filter((book) => {
+                  const defaultChecklist = {
+                    isbnMatch: true,
+                    descriptionCorrect: true,
+                    genreCorrect: true,
+                    tagsCorrect: true,
+                    nfcPresent: true
+                  };
+                  const checklist = auditChecklists[book.isbn] || defaultChecklist;
+                  const notes = auditNotes[book.isbn] || '';
+
+                  if (selectedFilterFlag === 'ALL') return true;
+                  if (selectedFilterFlag === 'ISBN_MISMATCH') return !checklist.isbnMatch;
+                  if (selectedFilterFlag === 'BAD_DESCRIPTION') return !checklist.descriptionCorrect;
+                  if (selectedFilterFlag === 'BAD_GENRE') return !checklist.genreCorrect;
+                  if (selectedFilterFlag === 'BAD_TAGS') return !checklist.tagsCorrect;
+                  if (selectedFilterFlag === 'NFC_MISSING') return !checklist.nfcPresent;
+                  if (selectedFilterFlag === 'HAS_NOTES') return notes.trim().length > 0;
+                  return true;
+                }).map((book) => {
                   const scannedCountForThis = scannedIsbns.filter(isbn => isbn === book.isbn).length;
                   const isFullyAudited = scannedCountForThis >= (book.totalCopies || 1);
                   const isPartiallyAudited = scannedCountForThis > 0 && scannedCountForThis < (book.totalCopies || 1);
                   
                   return (
-                    <div 
-                      key={book.isbn} 
-                      className={`catalog-item-card ${isFullyAudited ? 'scanned' : isPartiallyAudited ? 'scanned' : 'missing'}`}
-                    >
-                      {book.coverUrl ? (
-                        <img src={book.coverUrl} alt={book.title} className="book-cover-thumbnail" />
-                      ) : (
-                        <div className="book-cover-thumbnail" style={{ background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContext: 'center' }}>
-                          <BookOpen size={16} style={{ margin: 'auto', opacity: 0.3 }} />
+                    <div key={book.isbn} style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.02)', paddingBottom: '12px' }}>
+                      <div 
+                        className={`catalog-item-card ${isFullyAudited ? 'scanned' : isPartiallyAudited ? 'scanned' : 'missing'}`}
+                        onClick={() => setExpandedBookIsbn(expandedBookIsbn === book.isbn ? null : book.isbn)}
+                        style={{ cursor: 'pointer', transition: 'all 0.2s', background: expandedBookIsbn === book.isbn ? 'rgba(212, 175, 55, 0.04)' : 'rgba(255,255,255,0.01)' }}
+                      >
+                        {book.coverUrl ? (
+                          <img src={book.coverUrl} alt={book.title} className="book-cover-thumbnail" />
+                        ) : (
+                          <div className="book-cover-thumbnail" style={{ background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <BookOpen size={16} style={{ margin: 'auto', opacity: 0.3 }} />
+                          </div>
+                        )}
+                        
+                        <div className="book-meta-details">
+                          <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>{book.title}</span>
+                            {(auditNotes[book.isbn] || '').trim() && (
+                              <span style={{ fontSize: '0.65rem', background: 'rgba(212, 175, 55, 0.15)', color: '#d4af37', padding: '1px 6px', borderRadius: '4px', border: '1px solid rgba(212, 175, 55, 0.2)' }}>Note</span>
+                            )}
+                          </h4>
+                          <p style={{ marginBottom: '2px' }}>{Array.isArray(book.authors) ? book.authors.join(', ') : book.author}</p>
+                          <p style={{ fontSize: '0.74rem', opacity: 0.55 }}>ISBN: {book.isbn}</p>
                         </div>
-                      )}
-                      
-                      <div className="book-meta-details">
-                        <h4>{book.title}</h4>
-                        <p style={{ marginBottom: '2px' }}>{Array.isArray(book.authors) ? book.authors.join(', ') : book.author}</p>
-                        <p style={{ fontSize: '0.74rem', opacity: 0.55 }}>ISBN: {book.isbn}</p>
+
+                        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: '500' }}>
+                            Scanned: {scannedCountForThis} / Expected: {book.totalCopies || 0}
+                          </span>
+                          {isFullyAudited ? (
+                            <span className="status-badge scanned-badge">Verified</span>
+                          ) : isPartiallyAudited ? (
+                            <span className="status-badge scanned-badge" style={{ color: '#fbbf24', borderColor: '#fbbf24' }}>Partial</span>
+                          ) : (
+                            <span className="status-badge missing-badge">Missing</span>
+                          )}
+                        </div>
                       </div>
 
-                      <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
-                        <span style={{ fontSize: '0.8rem', fontWeight: '500' }}>
-                          Scanned: {scannedCountForThis} / Expected: {book.totalCopies || 0}
-                        </span>
-                        {isFullyAudited ? (
-                          <span className="status-badge scanned-badge">Verified</span>
-                        ) : isPartiallyAudited ? (
-                          <span className="status-badge scanned-badge" style={{ color: '#fbbf24', borderColor: '#fbbf24' }}>Partial</span>
-                        ) : (
-                          <span className="status-badge missing-badge">Missing</span>
-                        )}
-                      </div>
+                      {/* Expanded Tray */}
+                      {expandedBookIsbn === book.isbn && (
+                        <div 
+                          className="book-audit-tray animate-fade-in" 
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ 
+                            background: 'rgba(0, 0, 0, 0.25)', 
+                            border: '1px solid rgba(212, 175, 55, 0.15)', 
+                            borderRadius: '10px', 
+                            padding: '16px', 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            gap: '12px' 
+                          }}
+                        >
+                          <span style={{ fontSize: '0.85rem', color: '#d4af37', fontWeight: '600', fontFamily: '"Outfit", sans-serif' }}>Copy Checklist Verification</span>
+                          
+                          {/* Checklist items */}
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px' }}>
+                            {[
+                              { key: 'isbnMatch', label: 'ISBN match' },
+                              { key: 'descriptionCorrect', label: 'Description correct' },
+                              { key: 'genreCorrect', label: 'Genre correct' },
+                              { key: 'tagsCorrect', label: 'Tags correct' },
+                              { key: 'nfcPresent', label: 'NFC present' }
+                            ].map(item => {
+                              const defaultChecklist = {
+                                isbnMatch: true,
+                                descriptionCorrect: true,
+                                genreCorrect: true,
+                                tagsCorrect: true,
+                                nfcPresent: true
+                              };
+                              const currentVal = (auditChecklists[book.isbn] || defaultChecklist)[item.key];
+                              return (
+                                <label 
+                                  key={item.key} 
+                                  style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.85)' }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={currentVal}
+                                    onChange={(e) => updateChecklist(book.isbn, item.key, e.target.checked)}
+                                    style={{
+                                      accentColor: 'var(--accent, #d4af37)',
+                                      cursor: 'pointer',
+                                      width: '15px',
+                                      height: '15px'
+                                    }}
+                                  />
+                                  <span>{item.label}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+
+                          {/* Free-text Curator Notes */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <span style={{ fontSize: '0.78rem', color: '#d4af37', fontWeight: '500' }}>Curator Audit Notes:</span>
+                            <textarea
+                              className="royal-input"
+                              placeholder="Capture custom free-text notes for this book copy..."
+                              value={auditNotes[book.isbn] || ''}
+                              onChange={(e) => updateNote(book.isbn, e.target.value)}
+                              style={{
+                                width: '100%',
+                                minHeight: '60px',
+                                fontSize: '0.8rem',
+                                padding: '8px 12px',
+                                background: 'rgba(0, 0, 0, 0.2)',
+                                border: '1px solid rgba(212, 175, 55, 0.12)',
+                                borderRadius: '8px',
+                                resize: 'vertical',
+                                color: '#ffffff'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

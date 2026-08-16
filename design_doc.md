@@ -334,3 +334,55 @@ This section details the architectural designs, database schema updates, and sta
   - **Scan**: Admins input an ISBN, barcode, or tap NFC. If matched in `uncounted`, it moves to `countedCopies` with state `VERIFIED`. If unmatched, it is registered in `countedCopies` with state `UNKNOWN_IN_CATALOG`.
   - **Complete**: Remaining uncounted items are automatically marked as `MISSING`. Preserves state history.
 
+#### 📚 Epic 8: Decoupled Primary Keys & Editable ISBNs
+- **Database Schema & Key Decoupling**:
+  - Adds `id` (String) field to represent the immutable, unique document ID in Firestore.
+  - For existing books, `id` maps to the legacy ISBN (their existing document ID), allowing `isbn` to be updated dynamically while maintaining intact foreign key reference integrity.
+  - For newly ingested books, a unique UUID or auto-generated ID is assigned to the `id` field.
+  - Queries for books by ISBN now query: `whereEqualTo("isbn", cleanIsbn)` instead of document path lookups.
+  - Adds `alternativeIsbns` (List of Strings) field at the parent `Book` level to support mistakenly printed barcode scans on physical volumes without overwriting or replacing the single, true parent `isbn`.
+- **Backend Model Updates (`Book.java` & `BookDto.java`)**:
+  - Add `private String id;` to both classes.
+  - Add `private List<String> alternativeIsbns = new ArrayList<>();` to both classes.
+  - Update `BookService` and related controllers/services to support matching and retrieving by decoupled `id`, true `isbn`, or any `alternativeIsbns` dynamically.
+- **Search Console & Catalog Tag/Alternative ISBN Searching**:
+  - The admin database search panel and the main catalog study listing page support comprehensive, unified text search filtering over: Title, Authors, true `isbn`, all `tags`, and all `alternativeIsbns`.
+
+
+#### 🎟️ Epic 9: Globally Unique Copy-Level QR Code Tracking & Gated Navigation
+- **Copy-Level QR Tracking (`BookCopy.java`)**:
+  - Adds `private Long qrId;` to represent an optional, globally unique 9-digit sticker code representing a physical copy of a book.
+- **Flat Indexing Array (`Book.java`)**:
+  - Adds `private List<Long> qrIds = new ArrayList<>();` to store a flat array of all QR IDs associated with the book's copies for instant indexing.
+  - Instant query resolver: `firestore.collection("books").whereArrayContains("qrIds", scannedQrId)`.
+- **Standard QR Code URL Schema**:
+  - Supports standard scanning of URLs matching: `https://bookshelfnet.com/qr=<QRID>`.
+- **Gated Navigation**:
+  - Scanning a copy QR code programmatically navigates the user to the standard **Book Details page** (`/catalog/:isbn?qrId=<QRID>`) with the regular checkout/return flow (gated pipeline), instead of initiating an instant NFC-style checkout bypass.
+
+#### 📷 Epic 10: Omni-Scanner & Viewfinder Precedence Controls
+- **Unified Camera Scanning**:
+  - The study listing catalog scanner and book details checkout scanner support both standard barcode formats and QR code formats (`SafeHtml5QrcodeSupportedFormats.QR_CODE`).
+- **Viewfinder Precedence**:
+  - If both barcode and QR code are present in the viewfinder, the parser prioritizes the copy-specific QR code, enabling direct copy identification.
+
+#### 📋 Epic 11: Curator Inventory Audit Notes & Checklist Verification
+- **Curator Audit Notes**:
+  - Extends `inventory_audits` to support text comments/notes captured during a live shelf audit.
+- **Copy Checklist Verification**:
+  - Adds copy verification flags to ensure physical and digital catalogs remain perfectly aligned:
+    - ISBN matched
+    - Description correct
+    - Genre correct
+    - Tags correct
+    - NFC present
+- **Post-Audit Filtering**:
+  - Curator review screens provide filters to isolate items matching or failing specific checklist flags (e.g., show only books with bad descriptions, mismatched ISBNs, or missing NFCs).
+
+#### 🪟 Epic 12: Gatepass Warning Overlays & Android WebView Compatibility
+- **Gatepass Pending Gating Override**:
+  - If a checkout request status is `REQUESTED_CHECKOUT`, the book detail view is NOT blurred or masked. Instead, the details remain completely clear, overlaying a highly prominent, elegant glassmorphic "Pending Administrative Approval" warning banner at the top of the interface.
+- **Geofencing Curator Coordinates Fill**:
+  - Adds a "Select Current Location" button leveraging the browser's Geolocation API to auto-fill latitude and longitude fields.
+  - Resolves Academic theme contrast issues (grey-on-dark-grey text, white-on-white text input settings).
+  - Fixes blank location selection rendering on Android Webview devices by utilizing native, standards-compliant HTML select styling.

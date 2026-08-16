@@ -428,4 +428,39 @@ public class BookServiceTest {
         assertNotNull(book);
         assertEquals("REUSED", book.getNfcVerificationStatus());
     }
+
+    @Test
+    void testGetBookByQrId_Found() throws Exception {
+        Long qrId = 123456789L;
+        when(firestore.collection("books")).thenReturn(booksCollection);
+        when(booksCollection.whereArrayContains("qrIds", qrId)).thenReturn(booksCollection);
+        when(booksCollection.limit(1)).thenReturn(booksCollection);
+        when(booksCollection.get()).thenReturn(queryFuture);
+        when(queryFuture.get()).thenReturn(querySnapshot);
+        when(querySnapshot.getDocuments()).thenReturn(Collections.singletonList(queryDocSnapshot));
+        
+        when(queryDocSnapshot.exists()).thenReturn(true);
+        when(queryDocSnapshot.getId()).thenReturn("some-book-id");
+        when(queryDocSnapshot.getString("isbn")).thenReturn("9783161484100");
+        when(queryDocSnapshot.getString("title")).thenReturn("A Royal Tale");
+        
+        Optional<Book> result = bookService.getBookByQrId(qrId);
+        assertTrue(result.isPresent());
+        assertEquals("A Royal Tale", result.get().getTitle());
+        assertEquals("some-book-id", result.get().getId());
+    }
+
+    @Test
+    void testGetBookByQrId_NotFound() throws Exception {
+        Long qrId = 999999999L;
+        when(firestore.collection("books")).thenReturn(booksCollection);
+        when(booksCollection.whereArrayContains("qrIds", qrId)).thenReturn(booksCollection);
+        when(booksCollection.limit(1)).thenReturn(booksCollection);
+        when(booksCollection.get()).thenReturn(queryFuture);
+        when(queryFuture.get()).thenReturn(querySnapshot);
+        when(querySnapshot.getDocuments()).thenReturn(Collections.emptyList());
+        
+        Optional<Book> result = bookService.getBookByQrId(qrId);
+        assertFalse(result.isPresent());
+    }
 }

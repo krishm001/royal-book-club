@@ -434,11 +434,25 @@ const GatepassPage = ({ user }) => {
 
       <div className="gatepass-card-container printable-gatepass">
         {isPendingApproval && (
-          <div className="gatepass-pending-watermark">
-            <div className="watermark-content">
-              <Clock className="watermark-icon animate-spin" size={48} style={{ animationDuration: '6s' }} />
-              <h3>PENDING ADMIN APPROVAL</h3>
-              <p>PROVISIONAL GATEPASS — SECURE EXIT CLEARANCE IS NOT ACTIVE</p>
+          <div className="gatepass-pending-warning-banner animate-fade-in" style={{
+            background: 'rgba(212, 175, 55, 0.12)',
+            borderBottom: '1px solid rgba(212, 175, 55, 0.25)',
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '14px',
+            width: '100%',
+            boxSizing: 'border-box'
+          }}>
+            <Clock className="gold-glow-icon animate-pulse" size={24} style={{ color: '#d4af37' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#d4af37', fontFamily: '"Outfit", sans-serif', letterSpacing: '0.5px' }}>
+                PENDING ADMINISTRATIVE APPROVAL
+              </span>
+              <span style={{ fontSize: '0.74rem', color: 'rgba(255, 255, 255, 0.75)', fontWeight: '500' }}>
+                PROVISIONAL GATEPASS — SECURE EXIT CLEARANCE IS NOT ACTIVE
+              </span>
             </div>
           </div>
         )}

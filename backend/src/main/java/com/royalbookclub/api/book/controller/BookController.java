@@ -82,4 +82,15 @@ public class BookController {
         }
         return ResponseEntity.notFound().build();
     }
+
+    /**
+     * Fetch book by copy-level QR ID.
+     */
+    @GetMapping("/qr/{qrId}")
+    @Operation(summary = "Get book by copy-level QR ID", description = "Query Firestore catalog to fetch book by physical copy-level QR ID.")
+    public ResponseEntity<Book> getBookByQrId(@PathVariable Long qrId) {
+        return bookService.getBookByQrId(qrId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }

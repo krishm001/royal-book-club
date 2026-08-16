@@ -65,8 +65,8 @@ public class CheckoutSettingsService {
                         .cityMandatory(false)
                         .pinCodeMandatory(false)
                         .autoModerateBlogs(false)
-                        .libraryLatitude(37.7749) // SF default or equivalent
-                        .libraryLongitude(-122.4194)
+                        .libraryLatitude(12.8983) // default library location
+                        .libraryLongitude(77.705317)
                         .validRadiusMeters(100.0)
                         .enforceEmailVerification(false)
                         .build();

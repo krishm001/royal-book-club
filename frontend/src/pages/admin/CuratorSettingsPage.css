@@ -284,3 +284,90 @@
   margin: 20px 0;
 }
 
+/* Gating Field Labels and Inputs */
+.gating-field-label {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.gating-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(212, 165, 116, 0.2);
+  padding: 10px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+}
+
+.gating-input:focus {
+  border-color: var(--accent, #d4af37);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.25);
+}
+
+.gating-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* Academic Theme Contrast & WebView Overrides */
+[data-theme="academic"] .settings-glass-form-card,
+[data-theme="academic"] .settings-info-sidebar {
+  background: var(--surface-elevated, #eae5dc) !important;
+  border: 1px solid rgba(88, 17, 26, 0.15) !important;
+  box-shadow: 0 10px 30px rgba(88, 17, 26, 0.08) !important;
+  color: var(--text-primary, #2c1a1c) !important;
+}
+
+[data-theme="academic"] .gating-toggle-row,
+[data-theme="academic"] .impact-check-box {
+  background: var(--surface, #f5f2eb) !important;
+  border: 1px solid rgba(88, 17, 26, 0.08) !important;
+}
+
+[data-theme="academic"] .toggle-label {
+  color: var(--text-primary, #2c1a1c) !important;
+}
+
+[data-theme="academic"] .toggle-description,
+[data-theme="academic"] .sidebar-info-p,
+[data-theme="academic"] .gating-field-label {
+  color: var(--text-secondary, #654c4e) !important;
+}
+
+[data-theme="academic"] .impact-list li {
+  color: var(--text-primary, #2c1a1c) !important;
+}
+
+[data-theme="academic"] .settings-divider-custom {
+  background: rgba(88, 17, 26, 0.1) !important;
+}
+
+[data-theme="academic"] .curator-settings-container {
+  color: var(--text-primary, #2c1a1c) !important;
+}
+
+[data-theme="academic"] .settings-page-subtitle {
+  color: var(--text-secondary, #654c4e) !important;
+}
+
+[data-theme="academic"] .gating-input {
+  background: var(--surface, #f5f2eb) !important;
+  border: 1px solid rgba(88, 17, 26, 0.25) !important;
+  color: var(--text-primary, #2c1a1c) !important;
+}
+
+[data-theme="academic"] .gating-input::placeholder {
+  color: rgba(88, 17, 26, 0.45) !important;
+}
+
+[data-theme="academic"] .current-location-btn {
+  background: rgba(88, 17, 26, 0.05) !important;
+  border: 1px solid rgba(88, 17, 26, 0.25) !important;
+  color: var(--accent, #8d1222) !important;
+}
+
+[data-theme="academic"] .current-location-btn:hover {
+  background: rgba(88, 17, 26, 0.1) !important;
+}
+
+

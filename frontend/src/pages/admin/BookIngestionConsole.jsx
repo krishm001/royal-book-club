@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Sparkles, Upload, Scan, CheckCircle, RefreshCw, X, Camera, Cpu, Smartphone, Check, ArrowLeft, Search, Compass, BookOpen, ChevronDown, Plus, Minus, Sliders } from 'lucide-react';
-import { createBook, lookupBookByIsbn, fetchBookByIsbn, fetchBooks, searchBookMetadata, fetchBookByNtagUid } from '../../services/libraryApi';
+import { createBook, lookupBookByIsbn, fetchBookByIsbn, fetchBooks, searchBookMetadata, fetchBookByNtagUid, fetchBookByQrId } from '../../services/libraryApi';
 import { fetchBookHouses, createBookHouse } from '../../services/genreApi';
 import { uploadBookImage } from '../../services/storageApi';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
@@ -40,6 +40,7 @@ const BookIngestionConsole = ({ user }) => {
   const [existingBooks, setExistingBooks] = useState([]);
   const [dbSearchQuery, setDbSearchQuery] = useState('');
   const [isEditingExisting, setIsEditingExisting] = useState(false);
+  const [editingBookId, setEditingBookId] = useState('');
   const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -77,9 +78,23 @@ const BookIngestionConsole = ({ user }) => {
   const [nfcError, setNfcError] = useState('');
   const [nfcSuccess, setNfcSuccess] = useState(false);
 
-  // Synchronize ntagUids size with totalCopies
+  const [alternativeIsbnsInput, setAlternativeIsbnsInput] = useState('');
+  const [copyQrIds, setCopyQrIds] = useState([]);
+
+  // Synchronize ntagUids and copyQrIds size with totalCopies
   useEffect(() => {
     setNtagUids((prev) => {
+      const copy = [...prev];
+      if (copy.length < totalCopies) {
+        while (copy.length < totalCopies) {
+          copy.push('');
+        }
+      } else if (copy.length > totalCopies) {
+        copy.splice(totalCopies);
+      }
+      return copy;
+    });
+    setCopyQrIds((prev) => {
       const copy = [...prev];
       if (copy.length < totalCopies) {
         while (copy.length < totalCopies) {
@@ -187,6 +202,7 @@ const BookIngestionConsole = ({ user }) => {
     if (!book) return;
     setIsEditMode(true);
     setIsEditingExisting(true);
+    setEditingBookId(book.id || book.isbn || '');
     setIsbn(book.isbn || '');
     setManualTitle(book.title || '');
     setManualAuthor(Array.isArray(book.authors) ? book.authors.join(', ') : book.author || '');
@@ -202,7 +218,14 @@ const BookIngestionConsole = ({ user }) => {
     setSelectedHouse(defaultHouse);
     setGenreSearchQuery(defaultHouse);
     setNtagUid(formatUidWithColons(book.ntagUid || ''));
-    setNtagUids(book.ntagUids ? book.ntagUids.map(uid => formatUidWithColons(uid || '')) : []);
+    setAlternativeIsbnsInput(Array.isArray(book.alternativeIsbns) ? book.alternativeIsbns.join(', ') : '');
+    if (book.copies) {
+      setCopyQrIds(book.copies.map(c => c.qrId || ''));
+      setNtagUids(book.copies.map(c => formatUidWithColons(c.ntagUid || '')));
+    } else {
+      setCopyQrIds([]);
+      setNtagUids(book.ntagUids ? book.ntagUids.map(uid => formatUidWithColons(uid || '')) : []);
+    }
     if (book.tags) {
       setTagsInput(Array.isArray(book.tags) ? book.tags.join(', ') : book.tags);
     } else {
@@ -214,6 +237,7 @@ const BookIngestionConsole = ({ user }) => {
   const handleResetForm = () => {
     setIsEditMode(false);
     setIsEditingExisting(false);
+    setEditingBookId('');
     setIsbn('');
     setManualTitle('');
     setManualAuthor('');
@@ -230,6 +254,8 @@ const BookIngestionConsole = ({ user }) => {
     setGenreSearchQuery(defaultHouse);
     setNtagUid('');
     setNtagUids([]);
+    setAlternativeIsbnsInput('');
+    setCopyQrIds([]);
     setActiveScanningIndex(null);
     setTagsInput('');
     setInfoMessage('');
@@ -240,6 +266,17 @@ const BookIngestionConsole = ({ user }) => {
 
   // Check if user is admin
   const isAdmin = user && user.role === 'ADMIN';
+
+  // Scroll directly to "Search & Edit Local Ledger Database" panel on landing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const el = document.getElementById('db-search-panel');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -615,10 +652,18 @@ const BookIngestionConsole = ({ user }) => {
         setGenreSearchQuery(matchedGenre);
         setTagsInput(Array.isArray(existingBook.tags) ? existingBook.tags.join(', ') : '');
         setNtagUid(formatUidWithColons(existingBook.ntagUid || ''));
-        setNtagUids(existingBook.ntagUids ? existingBook.ntagUids.map(uid => formatUidWithColons(uid || '')) : []);
+        setAlternativeIsbnsInput(Array.isArray(existingBook.alternativeIsbns) ? existingBook.alternativeIsbns.join(', ') : '');
+        if (existingBook.copies) {
+          setCopyQrIds(existingBook.copies.map(c => c.qrId || ''));
+          setNtagUids(existingBook.copies.map(c => formatUidWithColons(c.ntagUid || '')));
+        } else {
+          setCopyQrIds([]);
+          setNtagUids(existingBook.ntagUids ? existingBook.ntagUids.map(uid => formatUidWithColons(uid || '')) : []);
+        }
         setBookLanguage(existingBook.language || 'en');
         
         setIsEditMode(true);
+        setIsEditingExisting(true);
         setInfoMessage('Existing book found in catalog. Edit the fields and save the updated details.');
       } else {
         await fetchExternalMetadata(targetIsbn.trim());
@@ -944,6 +989,7 @@ const BookIngestionConsole = ({ user }) => {
 
         try {
           const formats = [
+            SafeHtml5QrcodeSupportedFormats.QR_CODE,
             SafeHtml5QrcodeSupportedFormats.EAN_13,
             SafeHtml5QrcodeSupportedFormats.EAN_8,
             SafeHtml5QrcodeSupportedFormats.UPC_A,
@@ -988,16 +1034,56 @@ const BookIngestionConsole = ({ user }) => {
                 }
               },
               (decodedText, decodedResult) => {
-                console.log(`Barcode decoded successfully: ${decodedText}`);
-                setIsbn(decodedText);
-                html5QrCode.stop().then(() => {
+                console.log(`Scan decoded successfully: ${decodedText}`);
+                
+                // Parse scanned text
+                const clean = decodedText.trim();
+                const qrMatch = clean.match(/qr=(\d+)/i) || clean.match(/^(\d{1,9})$/);
+                const isQrId = !!qrMatch;
+                const parsedValue = isQrId ? (qrMatch[1] || clean) : clean.replace(/[-\s]/g, '');
+
+                html5QrCode.stop().then(async () => {
                   html5QrCodeRef.current = null;
                   setCameraModalOpen(false);
-                  handleIsbnFetch(decodedText);
+                  
+                  if (isQrId) {
+                    setInfoMessage(`Searching database for Copy QR ID: ${parsedValue}...`);
+                    try {
+                      const book = await fetchBookByQrId(parsedValue);
+                      if (book) {
+                        handleSelectExistingBook(book);
+                        setInfoMessage(`Book "${book.title}" successfully loaded via copy QR ID #${parsedValue}.`);
+                      } else {
+                        setErrorMessage(`No matching book found for Copy QR ID #${parsedValue}.`);
+                      }
+                    } catch (err) {
+                      console.error("Failed to fetch book by QR ID:", err);
+                      setErrorMessage(`Failed to search Copy QR ID #${parsedValue}.`);
+                    }
+                  } else {
+                    setInfoMessage(`Searching ledger for ISBN: ${parsedValue}...`);
+                    try {
+                      const allBooks = await fetchBooks();
+                      const matchedBook = allBooks.find(b => 
+                        (b.isbn && b.isbn.replace(/[-\s]/g, '') === parsedValue) ||
+                        (Array.isArray(b.alternativeIsbns) && b.alternativeIsbns.some(alt => alt && alt.replace(/[-\s]/g, '') === parsedValue))
+                      );
+                      
+                      if (matchedBook) {
+                        handleSelectExistingBook(matchedBook);
+                        setInfoMessage(`Existing book "${matchedBook.title}" loaded from database.`);
+                        return;
+                      }
+                    } catch (err) {
+                      console.warn("Local ledger check failed:", err);
+                    }
+                    
+                    setIsbn(parsedValue);
+                    handleIsbnFetch(parsedValue);
+                  }
                 }).catch(err => {
                   console.error('Failed to stop html5Qrcode', err);
                   setCameraModalOpen(false);
-                  handleIsbnFetch(decodedText);
                 });
               },
               (errorMessage) => {
@@ -1235,6 +1321,7 @@ const BookIngestionConsole = ({ user }) => {
 
       if (matchedBook) {
         setIsbn(matchedBook.isbn || '');
+        setEditingBookId(matchedBook.id || matchedBook.isbn || '');
         setManualTitle(matchedBook.title || '');
         setManualAuthor(Array.isArray(matchedBook.authors) ? matchedBook.authors.join(', ') : matchedBook.author || '');
         setPublisher(matchedBook.publisher || '');
@@ -1246,7 +1333,14 @@ const BookIngestionConsole = ({ user }) => {
         setAvailableCopies(matchedBook.availableCopies || 1);
         setTagsInput(Array.isArray(matchedBook.tags) ? matchedBook.tags.join(', ') : '');
         setNtagUid(formatUidWithColons(matchedBook.ntagUid || cleanScanned));
-        setNtagUids(matchedBook.ntagUids ? matchedBook.ntagUids.map(uid => formatUidWithColons(uid || '')) : []);
+        setAlternativeIsbnsInput(Array.isArray(matchedBook.alternativeIsbns) ? matchedBook.alternativeIsbns.join(', ') : '');
+        if (matchedBook.copies) {
+          setCopyQrIds(matchedBook.copies.map(c => c.qrId || ''));
+          setNtagUids(matchedBook.copies.map(c => formatUidWithColons(c.ntagUid || '')));
+        } else {
+          setCopyQrIds([]);
+          setNtagUids(matchedBook.ntagUids ? matchedBook.ntagUids.map(uid => formatUidWithColons(uid || '')) : []);
+        }
         setBookLanguage(matchedBook.language || 'en');
         if (matchedBook.genre) {
           setSelectedHouse(matchedBook.genre);
@@ -1318,22 +1412,59 @@ const BookIngestionConsole = ({ user }) => {
         }
         
         const targetUid = extractedUid || serialNumber;
-        if (copyIndex !== null) {
-          const cleanScanned = (targetUid || '').trim().toLowerCase().replace(/:/g, '');
-          setNtagUids((prev) => {
-            const next = [...prev];
-            next[copyIndex] = formatUidWithColons(cleanScanned);
-            return next;
-          });
-          if (copyIndex === 0) {
-            setNtagUid(formatUidWithColons(cleanScanned));
+        const cleanScanned = (targetUid || '').trim().toLowerCase().replace(/:/g, '');
+        
+        // Always search database first for this scanned NFC tag!
+        setInfoMessage(`Searching database for tag ID: ${formatUidWithColons(cleanScanned)}...`);
+        let matchedBook = null;
+        try {
+          matchedBook = await fetchBookByNtagUid(cleanScanned);
+        } catch (err) {
+          console.warn("Backend lookup failed, checking local catalog fallback:", err);
+        }
+        
+        if (!matchedBook) {
+          try {
+            const allBooks = await fetchBooks();
+            matchedBook = allBooks.find(b => {
+              const cleanBookTag = (b.ntagUid || '').toLowerCase().replace(/:/g, '');
+              if (cleanBookTag === cleanScanned) return true;
+              if (b.copies && Array.isArray(b.copies)) {
+                return b.copies.some(c => c.ntagUid && c.ntagUid.toLowerCase().replace(/:/g, '') === cleanScanned);
+              }
+              return false;
+            });
+          } catch (err) {
+            console.error("Local fallback search failed:", err);
           }
+        }
+
+        if (matchedBook) {
+          // Found an existing book with this NFC tag! Load it!
+          handleSelectExistingBook(matchedBook);
           setNfcSuccess(true);
           setIsNfcReading(false);
           setActiveScanningIndex(null);
-          setInfoMessage(`Copy #${copyIndex + 1} Tag ID "${formatUidWithColons(cleanScanned)}" read successfully.`);
+          setInfoMessage(`Existing book "${matchedBook.title}" loaded because it matches the scanned tag ID.`);
         } else {
-          await processScannedNtag(targetUid, extractedIsbn);
+          // No book matches this tag. Assign it to the copy slot!
+          if (copyIndex !== null) {
+            setNtagUids((prev) => {
+              const next = [...prev];
+              while (next.length <= copyIndex) next.push('');
+              next[copyIndex] = formatUidWithColons(cleanScanned);
+              return next;
+            });
+            if (copyIndex === 0) {
+              setNtagUid(formatUidWithColons(cleanScanned));
+            }
+            setNfcSuccess(true);
+            setIsNfcReading(false);
+            setActiveScanningIndex(null);
+            setInfoMessage(`Tag ID "${formatUidWithColons(cleanScanned)}" bound to Copy #${copyIndex + 1}.`);
+          } else {
+            await processScannedNtag(targetUid, extractedIsbn);
+          }
         }
       });
     } catch (error) {
@@ -1537,7 +1668,25 @@ const BookIngestionConsole = ({ user }) => {
       .filter((t) => t.length > 0);
     const deduplicatedTags = Array.from(new Set(tags));
 
+    const alternativeIsbns = alternativeIsbnsInput
+      .split(',')
+      .map(alt => alt.trim().replace(/[-\s]/g, ''))
+      .filter(alt => alt.length > 0);
+    const deduplicatedAlternativeIsbns = Array.from(new Set(alternativeIsbns));
+
+    const copies = Array.from({ length: totalCopies }).map((_, index) => {
+      const u = ntagUids[index] ? ntagUids[index].trim().toLowerCase().replace(/:/g, '') : '';
+      const q = copyQrIds[index] ? parseInt(copyQrIds[index], 10) : null;
+      return {
+        copyNo: index + 1,
+        ntagUid: u || null,
+        qrId: q || null,
+        status: 'AVAILABLE'
+      };
+    });
+
     const bookDto = {
+      id: editingBookId || undefined,
       isbn: isbn.trim(),
       title: manualTitle.trim(),
       subtitle: '',
@@ -1551,6 +1700,8 @@ const BookIngestionConsole = ({ user }) => {
       availableCopies: Number(availableCopies) || 1,
       genre: finalGenre,
       tags: deduplicatedTags,
+      alternativeIsbns: deduplicatedAlternativeIsbns,
+      copies,
       ntagUid: ntagUid ? ntagUid.trim().toLowerCase().replace(/:/g, '') : null,
       ntagUids: ntagUids.map((uid) => uid ? uid.trim().toLowerCase().replace(/:/g, '') : ''),
       language: bookLanguage
@@ -1664,7 +1815,7 @@ const BookIngestionConsole = ({ user }) => {
           </header>
 
           {/* Streamlined, sleek internal database search bar */}
-          <div className="royal-card db-catalog-search-card-top" style={{ maxWidth: '800px', margin: '0 auto 24px auto', padding: '16px 20px', border: '1px solid rgba(212, 175, 55, 0.2)', background: 'rgba(141, 18, 34, 0.03)' }}>
+          <div id="db-search-panel" className="royal-card db-catalog-search-card-top" style={{ maxWidth: '800px', margin: '0 auto 24px auto', padding: '16px 20px', border: '1px solid rgba(212, 175, 55, 0.2)', background: 'rgba(141, 18, 34, 0.03)' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Search size={18} style={{ color: 'var(--accent)' }} />
@@ -1673,14 +1824,14 @@ const BookIngestionConsole = ({ user }) => {
                 </h3>
               </div>
               <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                Search and retrieve existing physical and digital volumes from the local database to update their catalog metadata or program their tag.
+                Search and retrieve existing physical and digital volumes from the local database by Title, Author, Keyword, ISBN, QR Code, or NFC Tag ID.
               </p>
               
               <div className="db-search-input-group" style={{ marginTop: '8px' }}>
                 <div className="db-search-row" style={{ display: 'flex', gap: '8px' }}>
                   <input
                     type="text"
-                    placeholder="Search by Title, Author, or ISBN..."
+                    placeholder="Search by Title, Author, Keyword, ISBN, QR, NFC..."
                     className="royal-input db-search-input-box"
                     value={dbSearchQuery}
                     onChange={(e) => setDbSearchQuery(e.target.value)}
@@ -1697,25 +1848,116 @@ const BookIngestionConsole = ({ user }) => {
                     </button>
                   )}
                 </div>
+                
+                {/* Premium Action Row */}
+                <div className="top-search-actions-row" style={{ display: 'flex', gap: '10px', marginTop: '12px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="royal-btn camera-scan-btn glow-accent-btn"
+                    onClick={() => startCamera('isbn')}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'center', padding: '10px 16px', background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05))', border: '1px solid rgba(212, 175, 55, 0.45)', color: 'var(--text-primary, #ffffff)' }}
+                  >
+                    <Camera size={16} style={{ color: 'var(--accent)' }} />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Camera Scanner (Barcode/QR)</span>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    className={`royal-btn nfc-scan-btn glow-accent-btn ${isNfcReading && activeScanningIndex === null ? 'loading-btn' : ''}`}
+                    onClick={() => startNfcRead(null)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'center', padding: '10px 16px', background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05))', border: '1px solid rgba(212, 175, 55, 0.45)', color: 'var(--text-primary, #ffffff)' }}
+                  >
+                    {isNfcReading && activeScanningIndex === null ? (
+                      <RefreshCw className="spin-icon" size={16} />
+                    ) : (
+                      <Smartphone size={16} style={{ color: 'var(--accent)' }} />
+                    )}
+                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>
+                      {isNfcReading && activeScanningIndex === null ? 'Scanning...' : 'NFC Tap Search'}
+                    </span>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    className="royal-btn external-search-btn"
+                    onClick={() => setIsSearchDrawerOpen(true)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'center', padding: '10px 16px', border: '1px solid var(--accent, rgba(212, 175, 55, 0.45))', background: 'rgba(212, 175, 55, 0.05)', color: 'var(--text-primary, #ffffff)' }}
+                  >
+                    <Compass size={16} style={{ color: 'var(--accent)' }} />
+                    <span style={{ fontSize: '0.85rem' }}>Search External Metadata</span>
+                  </button>
+                </div>
               </div>
 
               {dbSearchQuery.trim() ? (
                 <div className="db-search-results-list" style={{ marginTop: '12px', maxHeight: '320px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid rgba(212, 175, 55, 0.1)', padding: '8px', borderRadius: '6px', background: 'rgba(0, 0, 0, 0.2)' }}>
                   {existingBooks.filter(b => {
                     const q = dbSearchQuery.toLowerCase().trim();
-                    return (b.title && b.title.toLowerCase().includes(q)) ||
-                           (b.isbn && b.isbn.toLowerCase().includes(q)) ||
-                           (Array.isArray(b.authors) && b.authors.some(a => a.toLowerCase().includes(q))) ||
-                           (b.author && b.author.toLowerCase().includes(q));
+                    const cleanQ = q.replace(/[-\s]/g, '');
+                    
+                    // Match title
+                    if (b.title && b.title.toLowerCase().includes(q)) return true;
+                    
+                    // Match authors
+                    if (Array.isArray(b.authors) && b.authors.some(a => a && a.toLowerCase().includes(q))) return true;
+                    if (b.author && b.author.toLowerCase().includes(q)) return true;
+                    
+                    // Match primary ISBN
+                    if (b.isbn && b.isbn.replace(/[-\s]/g, '').toLowerCase().includes(cleanQ)) return true;
+                    
+                    // Match alternative ISBNs
+                    if (Array.isArray(b.alternativeIsbns) && b.alternativeIsbns.some(alt => alt && alt.replace(/[-\s]/g, '').toLowerCase().includes(cleanQ))) return true;
+                    
+                    // Match tags
+                    if (Array.isArray(b.tags) && b.tags.some(tag => tag && tag.toLowerCase().includes(q))) return true;
+                    
+                    // Match primary NTAG
+                    if (b.ntagUid && b.ntagUid.replace(/:/g, '').toLowerCase().includes(cleanQ)) return true;
+                    if (Array.isArray(b.ntagUids) && b.ntagUids.some(uid => uid && uid.replace(/:/g, '').toLowerCase().includes(cleanQ))) return true;
+                    
+                    // Match copy-level NTAG
+                    if (Array.isArray(b.copies) && b.copies.some(c => c.ntagUid && c.ntagUid.replace(/:/g, '').toLowerCase().includes(cleanQ))) return true;
+                    
+                    // Match copy-level QR ID
+                    if (Array.isArray(b.copies) && b.copies.some(c => c.qrId && String(c.qrId).includes(q))) return true;
+                    if (Array.isArray(b.qrIds) && b.qrIds.some(qr => String(qr).includes(q))) return true;
+                    
+                    return false;
                   }).length > 0 ? (
                     existingBooks.filter(b => {
                       const q = dbSearchQuery.toLowerCase().trim();
-                      return (b.title && b.title.toLowerCase().includes(q)) ||
-                             (b.isbn && b.isbn.toLowerCase().includes(q)) ||
-                             (Array.isArray(b.authors) && b.authors.some(a => a.toLowerCase().includes(q))) ||
-                             (b.author && b.author.toLowerCase().includes(q));
+                      const cleanQ = q.replace(/[-\s]/g, '');
+                      
+                      // Match title
+                      if (b.title && b.title.toLowerCase().includes(q)) return true;
+                      
+                      // Match authors
+                      if (Array.isArray(b.authors) && b.authors.some(a => a && a.toLowerCase().includes(q))) return true;
+                      if (b.author && b.author.toLowerCase().includes(q)) return true;
+                      
+                      // Match primary ISBN
+                      if (b.isbn && b.isbn.replace(/[-\s]/g, '').toLowerCase().includes(cleanQ)) return true;
+                      
+                      // Match alternative ISBNs
+                      if (Array.isArray(b.alternativeIsbns) && b.alternativeIsbns.some(alt => alt && alt.replace(/[-\s]/g, '').toLowerCase().includes(cleanQ))) return true;
+                      
+                      // Match tags
+                      if (Array.isArray(b.tags) && b.tags.some(tag => tag && tag.toLowerCase().includes(q))) return true;
+                      
+                      // Match primary NTAG
+                      if (b.ntagUid && b.ntagUid.replace(/:/g, '').toLowerCase().includes(cleanQ)) return true;
+                      if (Array.isArray(b.ntagUids) && b.ntagUids.some(uid => uid && uid.replace(/:/g, '').toLowerCase().includes(cleanQ))) return true;
+                      
+                      // Match copy-level NTAG
+                      if (Array.isArray(b.copies) && b.copies.some(c => c.ntagUid && c.ntagUid.replace(/:/g, '').toLowerCase().includes(cleanQ))) return true;
+                      
+                      // Match copy-level QR ID
+                      if (Array.isArray(b.copies) && b.copies.some(c => c.qrId && String(c.qrId).includes(q))) return true;
+                      if (Array.isArray(b.qrIds) && b.qrIds.some(qr => String(qr).includes(q))) return true;
+                      
+                      return false;
                     }).map((b) => (
-                      <div key={b.isbn} className="db-search-result-item" onClick={() => { handleSelectExistingBook(b); setDbSearchQuery(''); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                      <div key={b.id || b.isbn} className="db-search-result-item" onClick={() => { handleSelectExistingBook(b); setDbSearchQuery(''); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s' }}>
                         <div className="result-item-cover-wrapper" style={{ width: '36px', height: '48px', overflow: 'hidden', borderRadius: '3px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0, 0, 0, 0.2)' }}>
                           {b.coverUrl ? (
                             <img src={b.coverUrl} alt={b.title} className="result-item-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -1808,120 +2050,161 @@ const BookIngestionConsole = ({ user }) => {
                       </button>
                     </div>
                   </div>
+
+                  <div className="alternative-isbns-group" style={{ marginTop: '12px' }}>
+                    <label className="royal-input-label">Alternative ISBN Barcodes (Comma-separated)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 9780141439571, 9780141439572"
+                      className="royal-input alternative-isbn-input"
+                      value={alternativeIsbnsInput}
+                      onChange={(e) => setAlternativeIsbnsInput(e.target.value)}
+                    />
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginTop: '4px' }}>
+                      Add any mistakenly printed alternative ISBN barcodes. These map to the parent book document, not specific copies.
+                    </span>
+                  </div>
                 </div>
 
                 <div className="nfc-query-column" style={{ position: 'relative' }}>
-                  {totalCopies <= 1 ? (
-                    <>
-                      <label className="royal-input-label">{t('admin.nfcUidLabel', 'Assign/Search by NFC')}</label>
-                      <div className="nfc-input-row">
-                        <input
-                          type="text"
-                          className="royal-input nfc-input-box"
-                          value={ntagUid}
-                          onChange={(e) => {
-                            const val = formatUidWithColons(e.target.value);
-                            setNtagUid(val);
-                            setNtagUids([val]);
-                          }}
-                          placeholder="e.g. 04:A3:B2:C1:D0:E9:80"
-                        />
+                  <div className="multi-copy-tags-container royal-card" style={{ padding: '16px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '12px' }}>
+                    <h4 style={{ color: '#d4af37', fontFamily: '"Outfit", sans-serif', fontSize: '0.95rem', fontWeight: '600', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Smartphone size={15} />
+                      <span>Physical Volume Copy Registry ({totalCopies} {totalCopies === 1 ? 'Copy' : 'Copies'})</span>
+                    </h4>
+                    <p style={{ fontSize: '0.78rem', opacity: 0.7, marginBottom: '14px', lineHeight: '1.4' }}>
+                      Pair physical NFC tags (NTAG213) and unique copy-level QR sticker IDs parallel to each volume copy.
+                    </p>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '250px', overflowY: 'auto', paddingRight: '4px' }}>
+                      {Array.from({ length: totalCopies }).map((_, index) => (
+                        <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'rgba(0,0,0,0.15)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--accent)' }}>Copy #{index + 1}</span>
+                            {copyQrIds[index] && (
+                              <span style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: 'rgba(255, 255, 255, 0.4)' }}>
+                                QR Schema: https://bookshelfnet.com/qr={copyQrIds[index]}
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                            {/* NFC Registration */}
+                            <div style={{ flex: 1, minWidth: '220px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '0.75rem', opacity: 0.7, width: '55px' }}>NFC UID:</span>
+                              <input
+                                type="text"
+                                className="royal-input"
+                                style={{ flex: 1, padding: '6px 8px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)' }}
+                                value={ntagUids[index] || ''}
+                                onChange={(e) => {
+                                  const val = formatUidWithColons(e.target.value);
+                                  setNtagUids((prev) => {
+                                    const next = [...prev];
+                                    while (next.length <= index) next.push('');
+                                    next[index] = val;
+                                    return next;
+                                  });
+                                  if (index === 0) {
+                                    setNtagUid(val);
+                                  }
+                                }}
+                                placeholder="Blank (Unscanned NFC)"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => startNfcRead(index)}
+                                className={`royal-btn-secondary ${isNfcReading && activeScanningIndex === index ? 'loading-btn' : ''}`}
+                                style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 8px', fontSize: '0.75rem', border: '1px solid rgba(212, 175, 55, 0.35)', background: 'transparent' }}
+                              >
+                                <Smartphone size={11} />
+                                <span>{isNfcReading && activeScanningIndex === index ? 'Scanning' : 'Scan'}</span>
+                              </button>
+                            </div>
+
+                            {/* Copy QR Code ID */}
+                            <div style={{ flex: 1, minWidth: '180px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '0.75rem', opacity: 0.7, width: '50px' }}>QR ID:</span>
+                              <input
+                                type="text"
+                                pattern="[0-9]*"
+                                maxLength={9}
+                                className="royal-input"
+                                style={{ flex: 1, padding: '6px 8px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)' }}
+                                value={copyQrIds[index] || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/[^0-9]/g, '');
+                                  setCopyQrIds((prev) => {
+                                    const next = [...prev];
+                                    while (next.length <= index) next.push('');
+                                    next[index] = val;
+                                    return next;
+                                  });
+                                }}
+                                placeholder="Sticker QR #"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="copy-registry-action-row" style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = totalCopies + 1;
+                          setTotalCopies(val);
+                          setAvailableCopies(prev => prev + 1);
+                        }}
+                        className="royal-btn-secondary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '0.8rem', border: '1px solid var(--accent, rgba(212, 175, 55, 0.45))', background: 'rgba(212, 175, 55, 0.05)', borderRadius: '6px', color: 'var(--accent, #d4af37)', fontWeight: 'bold', cursor: 'pointer' }}
+                      >
+                        <Plus size={13} />
+                        <span>Add Copy</span>
+                      </button>
+                      {totalCopies > 1 && (
                         <button
                           type="button"
-                          onClick={() => startNfcRead(0)}
-                          className={`royal-btn nfc-top-btn ${isNfcReading && activeScanningIndex === 0 ? 'loading-btn' : ''}`}
-                          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                          onClick={() => {
+                            const val = Math.max(1, totalCopies - 1);
+                            setTotalCopies(val);
+                            setAvailableCopies(prev => Math.max(0, prev - 1));
+                            setNtagUids(prev => prev.slice(0, -1));
+                            setCopyQrIds(prev => prev.slice(0, -1));
+                          }}
+                          className="royal-btn-secondary"
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '0.8rem', border: '1px solid rgba(255, 255, 255, 0.15)', background: 'transparent', borderRadius: '6px', color: 'var(--text-secondary, #9a9ab0)', cursor: 'pointer' }}
                         >
-                          {isNfcReading && activeScanningIndex === 0 ? <RefreshCw className="spin-icon" size={14} /> : <Smartphone size={14} />}
-                          <span>{isNfcReading && activeScanningIndex === 0 ? 'Reading...' : t('admin.assignNfcBtn', 'Scan NFC')}</span>
+                          <Minus size={13} />
+                          <span>Remove Last Copy</span>
                         </button>
-                      </div>
-                      {isNfcReading && activeScanningIndex === 0 && (
-                        <div className="nfc-pulse-overlay royal-card">
-                          <div className="nfc-scanner-pulse">
-                            <Smartphone size={32} className="gold-glow-icon animate-pulse" />
-                            <div className="pulse-ring"></div>
-                          </div>
-                          <p className="pulse-help-text">Tap NTAG213 Tag to register this book volume in the ledger.</p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsNfcReading(false);
-                              setActiveScanningIndex(null);
-                            }}
-                            className="royal-btn-secondary"
-                            style={{ marginTop: '12px', fontSize: '0.8rem', padding: '6px 14px' }}
-                          >
-                            Cancel Scan
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="multi-copy-tags-container royal-card" style={{ padding: '16px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '12px' }}>
-                      <h4 style={{ color: '#d4af37', fontFamily: '"Outfit", sans-serif', fontSize: '0.95rem', fontWeight: '600', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Smartphone size={15} />
-                        <span>Multi-Volume NFC Tag Registry ({totalCopies} Copies)</span>
-                      </h4>
-                      <p style={{ fontSize: '0.78rem', opacity: 0.7, marginBottom: '14px', lineHeight: '1.4' }}>Assign or scan a physical tag for each library copy. Unscanned volumes can be saved blank.</p>
-                      
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
-                        {Array.from({ length: totalCopies }).map((_, index) => (
-                          <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: '500', width: '65px', opacity: 0.85 }}>Copy #{index + 1}:</span>
-                            <input
-                              type="text"
-                              className="royal-input"
-                              style={{ flex: 1, padding: '6px 10px', fontSize: '0.85rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)' }}
-                              value={ntagUids[index] || ''}
-                              onChange={(e) => {
-                                const val = formatUidWithColons(e.target.value);
-                                setNtagUids((prev) => {
-                                  const next = [...prev];
-                                  next[index] = val;
-                                  return next;
-                                });
-                                if (index === 0) {
-                                  setNtagUid(val);
-                                }
-                              }}
-                              placeholder="Blank (Unscanned)"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => startNfcRead(index)}
-                              className={`royal-btn-secondary ${isNfcReading && activeScanningIndex === index ? 'loading-btn' : ''}`}
-                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid rgba(212, 175, 55, 0.35)', background: 'transparent' }}
-                            >
-                              <Smartphone size={11} />
-                              <span>{isNfcReading && activeScanningIndex === index ? 'Scanning' : 'Scan'}</span>
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-
-                      {activeScanningIndex !== null && isNfcReading && (
-                        <div className="nfc-pulse-overlay royal-card" style={{ zIndex: 10 }}>
-                          <div className="nfc-scanner-pulse">
-                            <Smartphone size={32} className="gold-glow-icon animate-pulse" />
-                            <div className="pulse-ring"></div>
-                          </div>
-                          <p className="pulse-help-text" style={{ fontSize: '0.85rem' }}>Tap NTAG213 Tag to register Copy #{activeScanningIndex + 1} in the ledger.</p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsNfcReading(false);
-                              setActiveScanningIndex(null);
-                            }}
-                            className="royal-btn-secondary"
-                            style={{ marginTop: '12px', fontSize: '0.8rem', padding: '6px 14px' }}
-                          >
-                            Cancel Scan
-                          </button>
-                        </div>
                       )}
                     </div>
-                  )}
+
+                    {activeScanningIndex !== null && isNfcReading && (
+                      <div className="nfc-pulse-overlay royal-card" style={{ zIndex: 10 }}>
+                        <div className="nfc-scanner-pulse">
+                          <Smartphone size={32} className="gold-glow-icon animate-pulse" />
+                          <div className="pulse-ring"></div>
+                        </div>
+                        <p className="pulse-help-text" style={{ fontSize: '0.85rem' }}>
+                          Tap NTAG213 Tag to register Copy #{activeScanningIndex + 1} in the ledger.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsNfcReading(false);
+                            setActiveScanningIndex(null);
+                          }}
+                          className="royal-btn-secondary"
+                          style={{ marginTop: '12px', fontSize: '0.8rem', padding: '6px 14px' }}
+                        >
+                          Cancel Scan
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                   {nfcSuccess && (
                     <p className="nfc-success-text" style={{ fontSize: '0.85rem', color: 'var(--success)', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -2447,7 +2730,10 @@ const BookIngestionConsole = ({ user }) => {
                       className="royal-input"
                       min="0"
                       value={pages}
-                      onChange={(e) => setPages(Number(e.target.value))}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setPages(val === '' ? '' : Number(val));
+                      }}
                     />
                   </div>
                   <div className="input-group">
@@ -2457,95 +2743,14 @@ const BookIngestionConsole = ({ user }) => {
                       className="royal-input"
                       min="1"
                       value={totalCopies}
-                      onChange={(e) => setTotalCopies(Number(e.target.value))}
+                      onChange={(e) => {
+                        const val = Math.max(1, Number(e.target.value) || 1);
+                        const diff = val - totalCopies;
+                        setTotalCopies(val);
+                        setAvailableCopies(prev => Math.max(0, prev + diff));
+                      }}
                     />
                   </div>
-                </div>
-
-                <div className="input-group">
-                  <label className="royal-input-label">{t('catalog.availableCopies', 'Available Copies')}</label>
-                  <input
-                    type="number"
-                    className="royal-input"
-                    min="0"
-                    max={totalCopies}
-                    value={availableCopies}
-                    onChange={(e) => setAvailableCopies(Number(e.target.value))}
-                  />
-                </div>
-
-                {/* Highly premium dynamic inline NFC Tag Registry */}
-                <div className="inline-nfc-registry royal-card animate-fade-in" style={{ padding: '20px', background: 'rgba(212, 175, 55, 0.03)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '12px', marginTop: '20px', marginBottom: '20px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)' }}>
-                  <h4 style={{ color: '#d4af37', fontFamily: '"Outfit", sans-serif', fontSize: '1rem', fontWeight: '600', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px', marginTop: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    <Smartphone size={16} style={{ filter: 'drop-shadow(0 0 4px rgba(212, 175, 55, 0.4))' }} />
-                    <span>NFC Tag Copy Registry ({totalCopies} {totalCopies <= 1 ? 'Copy' : 'Copies'})</span>
-                  </h4>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.4' }}>
-                    {totalCopies <= 1 
-                      ? 'Bind a physical NTAG213 tag to this volume.' 
-                      : 'Assign unique physical NFC tags to each library copy below. Unassigned copies defaults to sequential numbers.'}
-                  </p>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '280px', overflowY: 'auto', paddingRight: '6px' }}>
-                    {Array.from({ length: totalCopies }).map((_, index) => (
-                      <div key={index} className="copy-tag-row" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.03)', padding: '8px 12px', borderRadius: '8px' }}>
-                        <span style={{ fontSize: '0.82rem', fontWeight: '600', color: 'rgba(255, 255, 255, 0.85)', minWidth: '70px' }}>Copy #{index + 1}:</span>
-                        <input
-                          type="text"
-                          className="royal-input"
-                          style={{ flex: 1, padding: '8px 12px', fontSize: '0.85rem', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', margin: 0 }}
-                          value={ntagUids[index] || ''}
-                          onChange={(e) => {
-                            const val = formatUidWithColons(e.target.value);
-                            setNtagUids((prev) => {
-                              const next = [...prev];
-                              while (next.length <= index) next.push('');
-                              next[index] = val;
-                              return next;
-                            });
-                            if (index === 0) {
-                              setNtagUid(val);
-                            }
-                          }}
-                          placeholder={index === 0 ? "e.g. 04:A3:B2:C1:D0:E9:80 (NFC Tag UID)" : "Leave blank for tag-less tracking"}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => startNfcRead(index)}
-                          className={`royal-btn-secondary ${isNfcReading && activeScanningIndex === index ? 'loading-btn' : ''}`}
-                          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '0.8rem', border: '1px solid rgba(212, 175, 55, 0.35)', background: 'rgba(212, 175, 55, 0.05)', borderRadius: '6px', color: '#d4af37', transition: 'all 0.2s' }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 175, 55, 0.15)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(212, 175, 55, 0.05)'; }}
-                        >
-                          <Smartphone size={13} />
-                          <span>{isNfcReading && activeScanningIndex === index ? 'Scanning...' : 'Scan'}</span>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  {isNfcReading && activeScanningIndex !== null && (
-                    <div className="nfc-pulse-overlay royal-card animate-fade-in" style={{ marginTop: '16px', background: 'rgba(141, 18, 34, 0.03)', border: '1px dashed var(--accent)', padding: '20px', borderRadius: '8px' }}>
-                      <div className="nfc-scanner-pulse">
-                        <Smartphone size={32} className="gold-glow-icon animate-pulse" style={{ color: 'var(--accent)' }} />
-                        <div className="pulse-ring"></div>
-                      </div>
-                      <p className="pulse-help-text" style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: '500', marginTop: '12px' }}>
-                        Tap physical NFC Tag to pair with <strong>Copy #{activeScanningIndex + 1}</strong>.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsNfcReading(false);
-                          setActiveScanningIndex(null);
-                        }}
-                        className="royal-btn-secondary"
-                        style={{ marginTop: '12px', fontSize: '0.8rem', padding: '6px 14px', borderRadius: '4px' }}
-                      >
-                        Cancel Scanning
-                      </button>
-                    </div>
-                  )}
                 </div>
 
 

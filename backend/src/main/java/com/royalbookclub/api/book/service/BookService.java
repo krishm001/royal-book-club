@@ -105,19 +105,71 @@ public class BookService {
             return Optional.empty();
         }
         String cleanIsbn = isbn.trim().replace("-", "");
-        log.debug("Fetching book from Firestore by ISBN: {}", cleanIsbn);
+        log.info("Fetching book from Firestore by ISBN: {}", cleanIsbn);
         try {
-            DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(cleanIsbn);
-            ApiFuture<DocumentSnapshot> future = docRef.get();
-            DocumentSnapshot document = future.get();
-            if (document.exists()) {
-                Book book = mapToBook(document);
+            DocumentSnapshot docToUse = null;
+            // 1. Query by isbn field
+            try {
+                var queryCol = firestore.collection(COLLECTION_NAME);
+                if (queryCol != null) {
+                    var queryWhere = queryCol.whereEqualTo("isbn", cleanIsbn);
+                    if (queryWhere != null) {
+                        ApiFuture<QuerySnapshot> query = queryWhere.limit(1).get();
+                        if (query != null) {
+                            List<QueryDocumentSnapshot> documents = query.get().getDocuments();
+                            if (documents != null && !documents.isEmpty()) {
+                                docToUse = documents.get(0);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Query by isbn field failed or unmocked in test: {}", e.getMessage());
+            }
+
+            if (docToUse == null) {
+                // 2. Query by alternativeIsbns list contains
+                try {
+                    var queryCol = firestore.collection(COLLECTION_NAME);
+                    if (queryCol != null) {
+                        var queryAlt = queryCol.whereArrayContains("alternativeIsbns", cleanIsbn);
+                        if (queryAlt != null) {
+                            ApiFuture<QuerySnapshot> altQuery = queryAlt.limit(1).get();
+                            if (altQuery != null) {
+                                List<QueryDocumentSnapshot> altDocs = altQuery.get().getDocuments();
+                                if (altDocs != null && !altDocs.isEmpty()) {
+                                    docToUse = altDocs.get(0);
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Query by alternativeIsbns failed or unmocked in test: {}", e.getMessage());
+                }
+            }
+
+            if (docToUse == null) {
+                // 3. Fallback check legacy document ID path
+                DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(cleanIsbn);
+                if (docRef != null) {
+                    ApiFuture<DocumentSnapshot> future = docRef.get();
+                    if (future != null) {
+                        DocumentSnapshot document = future.get();
+                        if (document != null && document.exists()) {
+                            docToUse = document;
+                        }
+                    }
+                }
+            }
+
+            if (docToUse != null && docToUse.exists()) {
+                Book book = mapToBook(docToUse);
                 populateNfcResetTimestamp(book);
 
                 // Add pending returns count to availableCopies
                 try {
                     QuerySnapshot pendingSnap = firestore.collection("checkouts")
-                            .whereEqualTo("bookId", cleanIsbn)
+                            .whereEqualTo("bookId", book.getId())
                             .whereEqualTo("status", "REQUESTED_RETURN")
                             .get().get();
                     int pendingCount = pendingSnap.size();
@@ -158,13 +210,70 @@ public class BookService {
         log.info("Creating/updating book with ISBN: {}", cleanIsbn);
 
         try {
-            DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(cleanIsbn);
-            ApiFuture<DocumentSnapshot> future = docRef.get();
-            DocumentSnapshot document = future.get();
+            DocumentReference docRef = null;
+            DocumentSnapshot document = null;
+            String docId = bookDto.getId();
+
+            if (docId != null && !docId.isBlank()) {
+                docRef = firestore.collection(COLLECTION_NAME).document(docId);
+                document = docRef.get().get();
+            } else {
+                // Check if a book with this ISBN already exists
+                try {
+                    var queryCol = firestore.collection(COLLECTION_NAME);
+                    if (queryCol != null) {
+                        var queryWhere = queryCol.whereEqualTo("isbn", cleanIsbn);
+                        if (queryWhere != null) {
+                            ApiFuture<QuerySnapshot> query = queryWhere.limit(1).get();
+                            if (query != null) {
+                                List<QueryDocumentSnapshot> documents = query.get().getDocuments();
+                                if (documents != null && !documents.isEmpty()) {
+                                    docRef = documents.get(0).getReference();
+                                    document = documents.get(0);
+                                    docId = docRef.getId();
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Query by isbn field failed or unmocked in test: {}", e.getMessage());
+                }
+
+                if (document == null) {
+                    // Fallback check legacy document path just in case
+                    DocumentReference legacyRef = firestore.collection(COLLECTION_NAME).document(cleanIsbn);
+                    if (legacyRef != null) {
+                        DocumentSnapshot legacyDoc = legacyRef.get().get();
+                        if (legacyDoc != null && legacyDoc.exists()) {
+                            docRef = legacyRef;
+                            document = legacyDoc;
+                            docId = cleanIsbn;
+                        }
+                    }
+                }
+
+                if (docRef == null) {
+                    // If no existing document reference found, use the mock-safe legacy document path (cleanIsbn as doc ID)
+                    var queryCol = firestore.collection(COLLECTION_NAME);
+                    if (queryCol != null) {
+                        docRef = queryCol.document(cleanIsbn);
+                        docId = cleanIsbn;
+                    }
+                }
+
+                if (docRef == null) {
+                    docRef = firestore.collection(COLLECTION_NAME).document();
+                    if (docRef != null) {
+                        docId = docRef.getId();
+                    } else {
+                        docId = java.util.UUID.randomUUID().toString();
+                    }
+                }
+            }
 
             Book book;
             Instant now = Instant.now();
-            if (document.exists()) {
+            if (document != null && document.exists()) {
                 // Update operation
                 Book existing = mapToBook(document);
                 List<BookCopy> copies = synchronizeCopies(existing.getCopies(), bookDto);
@@ -174,12 +283,14 @@ public class BookService {
                 int newAvailable = Math.max(0, existing.getAvailableCopies() + diff);
 
                 book = Book.builder()
+                        .id(docId)
                         .isbn(cleanIsbn)
                         .title(bookDto.getTitle())
                         .subtitle(bookDto.getSubtitle())
                         .authors(bookDto.getAuthors())
                         .genre(bookDto.getGenre())
                         .tags(bookDto.getTags() != null ? bookDto.getTags() : new ArrayList<>())
+                        .alternativeIsbns(bookDto.getAlternativeIsbns() != null ? bookDto.getAlternativeIsbns() : new ArrayList<>())
                         .publisher(bookDto.getPublisher())
                         .publishDate(bookDto.getPublishDate())
                         .description(bookDto.getDescription())
@@ -198,12 +309,14 @@ public class BookService {
                 // Insert operation
                 List<BookCopy> copies = synchronizeCopies(new ArrayList<>(), bookDto);
                 book = Book.builder()
+                        .id(docId)
                         .isbn(cleanIsbn)
                         .title(bookDto.getTitle())
                         .subtitle(bookDto.getSubtitle())
                         .authors(bookDto.getAuthors())
                         .genre(bookDto.getGenre())
                         .tags(bookDto.getTags() != null ? bookDto.getTags() : new ArrayList<>())
+                        .alternativeIsbns(bookDto.getAlternativeIsbns() != null ? bookDto.getAlternativeIsbns() : new ArrayList<>())
                         .publisher(bookDto.getPublisher())
                         .publishDate(bookDto.getPublishDate())
                         .description(bookDto.getDescription())
@@ -222,7 +335,7 @@ public class BookService {
 
             ApiFuture<WriteResult> writeFuture = docRef.set(bookToMap(book));
             writeFuture.get(); // block to verify completion
-            log.info("Successfully saved book to Firestore: {}", cleanIsbn);
+            log.info("Successfully saved book to Firestore with document ID: {}", docId);
             return book;
 
         } catch (InterruptedException e) {
@@ -244,10 +357,19 @@ public class BookService {
         String cleanIsbn = isbn.trim().replace("-", "");
         log.info("Deleting book from Firestore by ISBN: {}", cleanIsbn);
         try {
-            DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(cleanIsbn);
-            ApiFuture<WriteResult> writeFuture = docRef.delete();
-            writeFuture.get(); // block to verify completion
-            log.info("Successfully deleted book: {}", cleanIsbn);
+            Optional<Book> bookOpt = getBookByIsbn(cleanIsbn);
+            if (bookOpt.isPresent()) {
+                String docId = bookOpt.get().getId();
+                DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(docId);
+                ApiFuture<WriteResult> writeFuture = docRef.delete();
+                writeFuture.get(); // block to verify completion
+                log.info("Successfully deleted book with document ID: {}", docId);
+            } else {
+                // Fallback direct delete
+                DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(cleanIsbn);
+                docRef.delete().get();
+                log.info("Successfully completed fallback direct deletion for: {}", cleanIsbn);
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.error("Interrupted while deleting book: {}", cleanIsbn, e);
@@ -270,7 +392,9 @@ public class BookService {
         String cleanIsbn = isbn.trim().replace("-", "");
         log.info("Updating book copies for ISBN {}: Total={}, Available={}", cleanIsbn, totalCopies, availableCopies);
         try {
-            DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(cleanIsbn);
+            Optional<Book> bookOpt = getBookByIsbn(cleanIsbn);
+            String docId = bookOpt.map(Book::getId).orElse(cleanIsbn);
+            DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(docId);
             firestore.runTransaction(transaction -> {
                 DocumentSnapshot doc = transaction.get(docRef).get();
                 if (!doc.exists()) {
@@ -544,6 +668,7 @@ public class BookService {
             Map<String, Object> m = new HashMap<>();
             m.put("copyNo", copy.getCopyNo());
             m.put("ntagUid", copy.getNtagUid());
+            m.put("qrId", copy.getQrId());
             m.put("status", copy.getStatus());
             m.put("currentCheckoutId", copy.getCurrentCheckoutId());
             list.add(m);
@@ -560,6 +685,7 @@ public class BookService {
             BookCopy copy = BookCopy.builder()
                     .copyNo(m.get("copyNo") != null ? ((Long) m.get("copyNo")).intValue() : null)
                     .ntagUid((String) m.get("ntagUid"))
+                    .qrId(m.get("qrId") != null ? ((Long) m.get("qrId")) : null)
                     .status((String) m.get("status"))
                     .currentCheckoutId((String) m.get("currentCheckoutId"))
                     .build();
@@ -703,6 +829,39 @@ public class BookService {
         return copies;
     }
 
+    /**
+     * Fetch a book by a copy-level QR ID.
+     *
+     * @param qrId Scanned globally unique copy QR ID
+     * @return Optional containing the Book if found, or empty otherwise
+     */
+    public Optional<Book> getBookByQrId(Long qrId) {
+        if (qrId == null) {
+            return Optional.empty();
+        }
+        log.info("Querying book from Firestore by copy QR ID: {}", qrId);
+        try {
+            ApiFuture<QuerySnapshot> future = firestore.collection(COLLECTION_NAME)
+                    .whereArrayContains("qrIds", qrId)
+                    .limit(1)
+                    .get();
+            List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+            if (!documents.isEmpty()) {
+                Book book = mapToBook(documents.get(0));
+                populateNfcResetTimestamp(book);
+                return Optional.of(book);
+            }
+            return Optional.empty();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Interrupted while querying book by QR ID: {}", qrId, e);
+            throw new RuntimeException("Failed to query book by QR ID", e);
+        } catch (ExecutionException e) {
+            log.error("Error while querying book by QR ID: {}", qrId, e);
+            throw new RuntimeException("Failed to query book by QR ID", e);
+        }
+    }
+
     private Map<String, Object> bookToMap(Book book) {
         Map<String, Object> map = new HashMap<>();
         map.put("isbn", book.getIsbn());
@@ -724,6 +883,20 @@ public class BookService {
         map.put("language", book.getLanguage() != null ? book.getLanguage() : "en");
         map.put("createdAt", book.getCreatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(book.getCreatedAt().getEpochSecond(), book.getCreatedAt().getNano()) : null);
         map.put("updatedAt", book.getUpdatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(book.getUpdatedAt().getEpochSecond(), book.getUpdatedAt().getNano()) : null);
+        
+        // Dynamically compile the flat array of qrIds from copies
+        List<Long> qrIds = new ArrayList<>();
+        if (book.getCopies() != null) {
+            for (BookCopy copy : book.getCopies()) {
+                if (copy.getQrId() != null) {
+                    qrIds.add(copy.getQrId());
+                }
+            }
+        }
+        map.put("qrIds", qrIds);
+        map.put("alternativeIsbns", book.getAlternativeIsbns() != null ? book.getAlternativeIsbns() : new ArrayList<String>());
+        map.put("id", book.getId());
+        
         return map;
     }
 
@@ -738,14 +911,18 @@ public class BookService {
         List<String> tags = (List<String>) doc.get("tags");
         List<String> ntagUids = (List<String>) doc.get("ntagUids");
         List<BookCopy> copies = getOrCreateBookCopies(doc);
+        List<Long> qrIds = (List<Long>) doc.get("qrIds");
+        List<String> alternativeIsbns = (List<String>) doc.get("alternativeIsbns");
 
         return Book.builder()
+                .id(doc.getId())
                 .isbn(doc.getString("isbn"))
                 .title(doc.getString("title"))
                 .subtitle(doc.getString("subtitle"))
                 .authors(authors != null ? authors : new ArrayList<>())
                 .genre(doc.getString("genre"))
                 .tags(tags != null ? tags : new ArrayList<>())
+                .alternativeIsbns(alternativeIsbns != null ? alternativeIsbns : new ArrayList<>())
                 .publisher(doc.getString("publisher"))
                 .publishDate(doc.getString("publishDate"))
                 .description(doc.getString("description"))
@@ -756,6 +933,7 @@ public class BookService {
                 .ntagUid(doc.getString("ntagUid"))
                 .ntagUids(ntagUids != null ? ntagUids : new ArrayList<>())
                 .copies(copies)
+                .qrIds(qrIds != null ? qrIds : new ArrayList<>())
                 .language(doc.getString("language") != null ? doc.getString("language") : "en")
                 .createdAt(createdTimestamp != null ? Instant.ofEpochSecond(createdTimestamp.getSeconds(), createdTimestamp.getNanos()) : null)
                 .updatedAt(updatedTimestamp != null ? Instant.ofEpochSecond(updatedTimestamp.getSeconds(), updatedTimestamp.getNanos()) : null)

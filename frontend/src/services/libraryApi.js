@@ -104,6 +104,11 @@ export const fetchBookByNtagUid = async (uid) => {
   return response.data;
 };
 
+export const fetchBookByQrId = async (qrId) => {
+  const response = await api.get(`/api/v1/books/qr/${encodeURIComponent(qrId)}`);
+  return response.data;
+};
+
 export const pairNtagUid = async (isbn, ntagUid) => {
   const response = await api.post(`/api/v1/admin/books/pair?isbn=${encodeURIComponent(isbn)}&ntagUid=${encodeURIComponent(ntagUid)}`);
   return response.data;
