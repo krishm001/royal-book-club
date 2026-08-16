@@ -472,7 +472,7 @@ public class BookService {
             List<QueryDocumentSnapshot> documents = future.get().getDocuments();
             if (!documents.isEmpty()) {
                 Book book = mapToBook(documents.get(0));
-                populateNfcResetTimestamp(book);
+                populateNfcResetTimestamp(book, ntagUid);
                 return book;
             }
 
@@ -484,7 +484,7 @@ public class BookService {
             List<QueryDocumentSnapshot> arrayDocs = arrayFuture.get().getDocuments();
             if (!arrayDocs.isEmpty()) {
                 Book book = mapToBook(arrayDocs.get(0));
-                populateNfcResetTimestamp(book);
+                populateNfcResetTimestamp(book, ntagUid);
                 return book;
             }
             return null;
@@ -555,7 +555,10 @@ public class BookService {
             return null;
         }
 
-        String cleanUid = book.getNtagUid().trim().toLowerCase().replace(":", "");
+        // Dynamically propagate the scanned/matched physical tag UID to the book object
+        book.setNtagUid(ntagUid);
+
+        String cleanUid = ntagUid.trim().toLowerCase().replace(":", "");
         if (counter == null || counter.trim().isEmpty()) {
             book.setNfcVerificationStatus("NONE");
             return book;
@@ -941,10 +944,17 @@ public class BookService {
     }
 
     private void populateNfcResetTimestamp(Book book) {
-        if (book == null || book.getNtagUid() == null || book.getNtagUid().isBlank()) {
+        if (book == null) {
             return;
         }
-        String cleanUid = book.getNtagUid().trim().toLowerCase().replace(":", "");
+        populateNfcResetTimestamp(book, book.getNtagUid());
+    }
+
+    private void populateNfcResetTimestamp(Book book, String ntagUid) {
+        if (book == null || ntagUid == null || ntagUid.isBlank()) {
+            return;
+        }
+        String cleanUid = ntagUid.trim().toLowerCase().replace(":", "");
         try {
             DocumentSnapshot counterDoc = firestore.collection("nfc_counters").document(cleanUid).get().get();
             if (counterDoc.exists()) {

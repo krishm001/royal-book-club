@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2, Shield, Check, Loader2 } from 'lucide-react';
-import { fetchBookByIsbn, checkoutBook, fetchBookReviews, submitBookReview, requestCheckout, requestReturn, verifiedCheckout, verifiedReturn, fetchCheckoutsByMember, updateBookReview, deleteBookReview, fetchCheckouts } from '../../services/libraryApi';
+import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2, Shield, Check, Loader2, QrCode } from 'lucide-react';
+import { fetchBookByIsbn, checkoutBook, fetchBookReviews, submitBookReview, requestCheckout, requestReturn, verifiedCheckout, verifiedReturn, fetchCheckoutsByMember, updateBookReview, deleteBookReview, fetchCheckouts, validateQrReturn } from '../../services/libraryApi';
 import api from '../../api/apiClient';
 import { auth } from '../../config/firebase';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { isNfcTagMatched } from './CatalogPage';
 import './BookDetailPage.css';
 
 const SafeHtml5Qrcode = Html5Qrcode;
@@ -286,7 +287,17 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       await refreshState();
     } catch (txError) {
       console.error('Instant NFC transaction error:', txError);
-      setInstantError(txError.response?.data?.message || txError.message);
+      const errMsg = txError.response?.data?.message || txError.message || '';
+      const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
+      if (isLocationError && instantActionType === 'return') {
+        setInstantConfirmOpen(false);
+        setNfcActionType('return');
+        setNfcModalOpen(true);
+        setActiveTab('validator_qr');
+        setNfcError("Location verification failed. We have automatically opened Validator QR scanning for your convenience.");
+      } else {
+        setInstantError(errMsg);
+      }
     } finally {
       setLoading(false);
     }
@@ -328,6 +339,9 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
 
   // Preference-hierarchy tab & scanner states
   const [activeTab, setActiveTab] = useState('NDEFReader' in window ? 'nfc' : 'barcode');
+  const [validatorQrPath, setValidatorQrPath] = useState('');
+  const [validatorLoading, setValidatorLoading] = useState(false);
+  const [validatorError, setValidatorError] = useState('');
 
   useEffect(() => {
     if (book) {
@@ -340,6 +354,11 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
   const detailHtml5QrCodeRef = React.useRef(null);
   const detailScannerTimeoutRef = React.useRef(null);
   const detailScannerActiveRef = React.useRef(false);
+  const detailQrHtml5QrCodeRef = React.useRef(null);
+  const detailQrScannerTimeoutRef = React.useRef(null);
+  const detailQrScannerActiveRef = React.useRef(false);
+  const [detailQrScannerError, setDetailQrScannerError] = useState('');
+  const [isQrCameraActive, setIsQrCameraActive] = useState(false);
 
 
   const loadMemberCheckouts = async () => {
@@ -759,6 +778,165 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     setDetailScannerOpen(false);
   };
 
+  const extractQrPath = (text) => {
+    if (!text) return '';
+    const cleanText = text.trim();
+    const urlMatch = cleanText.match(/[?&]qr=([^&]+)/);
+    if (urlMatch) {
+      return decodeURIComponent(urlMatch[1]);
+    }
+    const pathMatch = cleanText.match(/\/qr\/([^/?#]+)/);
+    if (pathMatch) {
+      return decodeURIComponent(pathMatch[1]);
+    }
+    return cleanText;
+  };
+
+  const startDetailQrValidatorScanner = () => {
+    setDetailQrScannerError('');
+    setIsQrCameraActive(true);
+    
+    if (detailQrScannerTimeoutRef.current) {
+      clearTimeout(detailQrScannerTimeoutRef.current);
+    }
+    
+    detailQrScannerActiveRef.current = true;
+
+    detailQrScannerTimeoutRef.current = setTimeout(() => {
+      if (!detailQrScannerActiveRef.current) {
+        return;
+      }
+
+      try {
+        const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const html5QrCode = new SafeHtml5Qrcode("detail-qr-validator-reader", {
+          verbose: false,
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: !isIOS
+          }
+        });
+        detailQrHtml5QrCodeRef.current = html5QrCode;
+        html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 25,
+            qrbox: (width, height) => {
+              const idealW = Math.min(width * 0.9, 280);
+              const idealH = Math.min(height * 0.8, 220);
+              return { width: idealW, height: idealH };
+            },
+            formatsToSupport: [
+              SafeHtml5QrcodeSupportedFormats.QR_CODE
+            ]
+          },
+          (decodedText) => {
+            console.log("Detail QR validator scanned successfully:", decodedText);
+            stopDetailQrValidatorScanner();
+            const pathName = extractQrPath(decodedText);
+            setValidatorQrPath(pathName);
+            handleValidatorQrSubmit(null, pathName);
+          },
+          (errorMessage) => {
+            // silent scan progression
+          }
+        ).then(() => {
+          try {
+            const videoElem = document.querySelector("#detail-qr-validator-reader video");
+            if (videoElem && videoElem.srcObject) {
+              const stream = videoElem.srcObject;
+              const track = stream.getVideoTracks()[0];
+              if (track) {
+                const capabilities = typeof track.getCapabilities === 'function' ? track.getCapabilities() : {};
+                const advancedConstraints = {};
+
+                if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+                  advancedConstraints.focusMode = 'continuous';
+                }
+
+                if (isIOS && capabilities.zoom) {
+                  const minZ = capabilities.zoom.min || 1;
+                  const maxZ = capabilities.zoom.max || 10;
+                  advancedConstraints.zoom = Math.min(Math.max(1.75, minZ), maxZ);
+                  console.log('[detail-qr-validator-reader] Applied optimal iOS WebRTC zoom:', advancedConstraints.zoom);
+                }
+
+                if (Object.keys(advancedConstraints).length > 0) {
+                  track.applyConstraints({ advanced: [advancedConstraints] })
+                    .then(() => console.log('[detail-qr-validator-reader] Track constraints applied successfully:', advancedConstraints))
+                    .catch(err => {
+                      console.warn('[detail-qr-validator-reader] Failed to apply advanced constraints. Retrying focus only.', err);
+                      if (advancedConstraints.focusMode) {
+                        track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] })
+                          .then(() => console.log('[detail-qr-validator-reader] Focus applied successfully'));
+                      }
+                    });
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('[detail-qr-validator-reader] Unable to configure autofocus:', e);
+          }
+
+          if (detailQrHtml5QrCodeRef.current !== html5QrCode || !detailQrScannerActiveRef.current) {
+            console.log("QR Validator scanner cancelled or replaced during boot. Stopping now.");
+            html5QrCode.stop().catch(err => console.warn("Failed late QR stop inside start promise", err));
+          }
+        }).catch(err => {
+          console.error("Failed to start QR validator scanner:", err);
+          if (detailQrScannerActiveRef.current) {
+            setDetailQrScannerError("Camera initialization failed. Please ensure camera permissions are granted.");
+          }
+        });
+      } catch (err) {
+        console.error("QR validator scanner exception:", err);
+        if (detailQrScannerActiveRef.current) {
+          setDetailQrScannerError("Could not initialize QR scanner: " + err.message);
+        }
+      }
+    }, 150);
+  };
+
+  const stopDetailQrValidatorScanner = async () => {
+    detailQrScannerActiveRef.current = false;
+    
+    if (detailQrScannerTimeoutRef.current) {
+      clearTimeout(detailQrScannerTimeoutRef.current);
+      detailQrScannerTimeoutRef.current = null;
+    }
+
+    if (detailQrHtml5QrCodeRef.current) {
+      const currentScanner = detailQrHtml5QrCodeRef.current;
+      detailQrHtml5QrCodeRef.current = null;
+      try {
+        if (currentScanner.isScanning) {
+          await currentScanner.stop();
+        }
+      } catch (err) {
+        console.error("Failed to stop QR validator scanner:", err);
+      }
+    }
+
+    try {
+      const videos = document.querySelectorAll('#detail-qr-validator-reader video');
+      videos.forEach(video => {
+        if (video.srcObject) {
+          const stream = video.srcObject;
+          if (typeof stream.getTracks === 'function') {
+            stream.getTracks().forEach(track => {
+              track.stop();
+              console.log("Detail QR video track stopped manually:", track.label);
+            });
+          }
+          video.srcObject = null;
+        }
+      });
+    } catch (err) {
+      console.warn("Failed to manually stop QR detail track fallback", err);
+    }
+
+    setIsQrCameraActive(false);
+  };
+
   const handleDetailBarcodeScanned = async (decodedText) => {
     await stopDetailBarcodeScanner();
     if (!user) {
@@ -828,7 +1006,14 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         await refreshState();
       } catch (txError) {
         console.error('Verified barcode database error:', txError);
-        setNfcError(t('catalog.unableToSubmitRequest') + (txError.response?.data?.message || txError.message));
+        const errMsg = txError.response?.data?.message || txError.message || '';
+        const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
+        if (isLocationError && nfcActionType === 'return') {
+          setActiveTab('validator_qr');
+          setNfcError("Location verification failed. We have automatically switched to the Validator QR tab for your convenience.");
+        } else {
+          setNfcError(t('catalog.unableToSubmitRequest') + errMsg);
+        }
       }
     } else {
       setNfcError(t('catalog.securityMismatch') + decodedText + ".");
@@ -840,15 +1025,21 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     if (tabName !== 'barcode') {
       stopDetailBarcodeScanner();
     }
+    if (tabName !== 'validator_qr') {
+      stopDetailQrValidatorScanner();
+    }
     if (tabName === 'nfc') {
       startNfcAction(nfcActionType);
     } else if (tabName === 'barcode') {
       startDetailBarcodeScanner();
+    } else if (tabName === 'validator_qr') {
+      startDetailQrValidatorScanner();
     }
   };
 
   const handleCloseNfcModal = () => {
     stopDetailBarcodeScanner();
+    stopDetailQrValidatorScanner();
     setNfcModalOpen(false);
   };
 
@@ -874,11 +1065,9 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       ndef.addEventListener("reading", async ({ serialNumber }) => {
         console.log(`NFC tag scanned: ${serialNumber}`);
         
-        // Clean serial number and compare to book's ntagUid
         const cleanScanned = (serialNumber || '').toLowerCase().replace(/:/g, '');
-        const cleanBookTag = (book.ntagUid || '').toLowerCase().replace(/:/g, '');
 
-        if (cleanScanned === cleanBookTag) {
+        if (isNfcTagMatched(book, cleanScanned)) {
           try {
             resetRatingAndCheckoutId();
             let txRes;
@@ -907,7 +1096,14 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
             await refreshState();
           } catch (txError) {
             console.error('NFC verified transaction database error:', txError);
-            setNfcError(t('catalog.unableToSubmitRequest') + (txError.response?.data?.message || txError.message));
+            const errMsg = txError.response?.data?.message || txError.message || '';
+            const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
+            if (isLocationError && actionType === 'return') {
+              setActiveTab('validator_qr');
+              setNfcError("Location verification failed. We have automatically switched to the Validator QR tab for your convenience.");
+            } else {
+              setNfcError(t('catalog.unableToSubmitRequest') + errMsg);
+            }
           }
         } else {
           setNfcError(t('catalog.nfcSecurityMismatch') + serialNumber + ".");
@@ -917,6 +1113,51 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       console.error('NFC scanning error:', err);
       setNfcError(t('catalog.nfcScanFailed') + (err.message || err));
       setNfcReading(false);
+    }
+  };
+
+  const handleValidatorQrSubmit = async (e, pathOverride) => {
+    if (e) e.preventDefault();
+    const finalPath = pathOverride || validatorQrPath;
+    if (!finalPath.trim()) {
+      setValidatorError(t('catalog.pleaseScanOrEnterPath', 'Please scan or enter the validator path.'));
+      return;
+    }
+
+    const checkoutInst = getActiveCheckoutInstance();
+    const checkoutId = checkoutInst?.id;
+
+    if (!checkoutId) {
+      setValidatorError(t('catalog.noActiveCheckoutToReturn', 'No active checkout instance found for this book to return.'));
+      return;
+    }
+
+    setValidatorLoading(true);
+    setValidatorError('');
+    try {
+      resetRatingAndCheckoutId();
+      const txRes = await validateQrReturn({
+        checkoutId: checkoutId,
+        qrPathName: finalPath.trim(),
+        memberId: user.uid || user.id
+      });
+
+      if (txRes && txRes.id) {
+        setCreatedCheckoutId(txRes.id);
+      } else if (txRes && txRes.data && txRes.data.id) {
+        setCreatedCheckoutId(txRes.data.id);
+      } else {
+        setCreatedCheckoutId(checkoutId);
+      }
+
+      setNfcSuccess(true);
+      setValidatorQrPath('');
+      await refreshState();
+    } catch (err) {
+      console.error('Validator QR return failed:', err);
+      setValidatorError(t('catalog.qrValidationFailed', 'Return validation failed: ') + (err.response?.data?.message || err.message));
+    } finally {
+      setValidatorLoading(false);
     }
   };
 
@@ -1568,6 +1809,16 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
               <Clock size={14} />
               <span>{t('catalog.manualRequest')}</span>
             </button>
+            {nfcActionType === 'return' && (
+              <button
+                className={`verification-tab-btn ${activeTab === 'validator_qr' ? 'active' : ''}`}
+                onClick={() => handleTabChange('validator_qr')}
+                disabled={nfcSuccess || fallbackSuccess}
+              >
+                <QrCode size={14} />
+                <span>{t('catalog.validatorQr', 'Validator QR')}</span>
+              </button>
+            )}
           </div>
 
           <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginTop: '16px' }}>
@@ -1840,6 +2091,102 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                         {fallbackLoading ? t('profile.submitting') : t('catalog.submitManualRequest')}
                       </button>
                     </div>
+                  </div>
+                )}
+
+                {activeTab === 'validator_qr' && (
+                  <div className="tab-pane qr-validator-tab-pane animate-fade-in" style={{ width: '100%' }}>
+                    <p style={{ fontSize: '0.82rem', color: 'rgba(255, 255, 255, 0.75)', lineHeight: '1.5', marginBottom: '16px', textAlign: 'left' }}>
+                      {t('catalog.qrValidatorExpl', 'Point your camera at the Return Validator QR Code on the library placard, or enter/simulate the scanned path below.')}
+                    </p>
+
+                    <div className="barcode-scanner-viewfinder" style={{ margin: '15px auto', position: 'relative', width: '100%', maxWidth: '320px', height: '240px', overflow: 'hidden', background: '#000', borderRadius: '8px', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
+                      <div id="detail-qr-validator-reader" style={{ width: '100%', height: '100%' }}></div>
+                      <div className="scanner-laser-line"></div>
+                    </div>
+
+                    {detailQrScannerError && (
+                      <div style={{ color: '#ff7b72', fontSize: '0.78rem', marginBottom: '10px', textAlign: 'center' }}>
+                        {detailQrScannerError}
+                      </div>
+                    )}
+
+                    <form onSubmit={handleValidatorQrSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+                      <input
+                        type="text"
+                        value={validatorQrPath}
+                        onChange={(e) => setValidatorQrPath(e.target.value)}
+                        placeholder={t('catalog.enterQrPathPlaceholder', 'e.g. exit-spot-alpha')}
+                        className="gating-input"
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px',
+                          background: 'rgba(0,0,0,0.3)',
+                          border: '1px solid rgba(212, 175, 55, 0.3)',
+                          borderRadius: '6px',
+                          color: '#fff',
+                          fontSize: '0.9rem'
+                        }}
+                      />
+
+                      {validatorError && (
+                        <div className="nfc-error-message royal-card" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '10px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)', color: '#ff7b72', fontSize: '0.75rem', textAlign: 'left' }}>
+                          <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                          <span>{validatorError}</span>
+                        </div>
+                      )}
+
+                      {/* Mock simulation shortcut panel */}
+                      <div className="simulation-shortcuts" style={{ border: '1px dashed rgba(212, 175, 55, 0.25)', background: 'rgba(212, 175, 55, 0.02)', padding: '10px', borderRadius: '6px', textAlign: 'left' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>
+                          {t('catalog.simulationShortcuts', 'DEVELOPMENT SHORTCUTS:')}
+                        </span>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setValidatorQrPath('royal-vault-alpha');
+                              handleValidatorQrSubmit(null, 'royal-vault-alpha');
+                            }}
+                            className="mock-scan-shortcut-btn"
+                            style={{ padding: '4px 8px', fontSize: '0.72rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: '#fff', cursor: 'pointer' }}
+                          >
+                            Scan: royal-vault-alpha
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setValidatorQrPath('exit-spot-alpha');
+                              handleValidatorQrSubmit(null, 'exit-spot-alpha');
+                            }}
+                            className="mock-scan-shortcut-btn"
+                            style={{ padding: '4px 8px', fontSize: '0.72rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: '#fff', cursor: 'pointer' }}
+                          >
+                            Scan: exit-spot-alpha
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={handleCloseNfcModal}
+                          className="royal-btn-secondary"
+                          style={{ flex: 1, padding: '10px' }}
+                        >
+                          {t('common.cancel')}
+                        </button>
+                        <button
+                          type="submit"
+                          className="royal-btn"
+                          style={{ flex: 1, padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                          disabled={validatorLoading}
+                        >
+                          {validatorLoading ? <RefreshCw className="spin-icon" size={14} /> : <Check size={14} />}
+                          {validatorLoading ? t('common.loading', 'Validating...') : t('catalog.validateQrBtn', 'Validate QR')}
+                        </button>
+                      </div>
+                    </form>
                   </div>
                 )}
               </>

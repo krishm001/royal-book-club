@@ -1456,5 +1456,31 @@ main:has(.discourses-page-container) {
   [data-theme="academic"] .socratic-citation-card {
     background: rgba(0, 0, 0, 0.02) !important;
   }
+
+  /* Android input fields full-width layout overrides */
+  .debate-stance-sticky-wrapper,
+  .debate-root-reply-form,
+  .reply-submit-form,
+  .reply-submit-form textarea,
+  .debate-root-reply-form textarea {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  .debate-stance-sticky-wrapper {
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    padding: 10px !important;
+  }
 }
 

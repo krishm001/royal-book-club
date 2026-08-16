@@ -37,7 +37,8 @@ export default {
     details: "Details",
     theLibrary: "The Library",
     termsAndConditions: "Terms & Conditions",
-    privacyNotice: "Privacy Notice"
+    privacyNotice: "Privacy Notice",
+    sagesGuild: "Sages Guild"
   },
   home: {
     established: "ESTABLISHED",
@@ -387,6 +388,18 @@ export default {
     gatingControls: "Self-Checkout Gating Controls",
     requirePhone: "Require Phone Number",
     requireAddress: "Require GPS Coordinates / Address",
+    qrValidatorTitle: "Return Validator QR Generator",
+    qrValidatorDesc: "Generate a new custom QR code pathway to place physically in your library. Patrons can scan this QR code to bypass geofencing requirements.",
+    customPathLabel: "Custom Path Name (e.g. exit-spot-alpha)",
+    mintQrBtn: "Mint Return Validator QR",
+    qrHistoryTable: "Validator Minting History",
+    pathHeader: "Path Name",
+    statusHeader: "Active Status",
+    actionHeader: "Actions",
+    deactivateBtn: "Deactivate Code",
+    printBtn: "Print Physical Placard",
+    placardTitle: "OFFICIAL RETURN VALIDATION PORTAL",
+    placardInstruction: "Scan this Return Validator QR Code in your Royal Book Club application to instantly complete your book return. If scanned with a phone camera, you will be directed to the Sages Guidance Hub.",
     
     // Curator Moderation Page
     moderationLedger: "Content Moderation Ledger",
@@ -417,6 +430,42 @@ export default {
     resetLinkSent: "Password reset link sent. Please check your inbox.",
     resetLinkError: "Failed to send password reset link.",
     consentError: "Please agree to the Terms & Conditions and Privacy Notice before signing up."
+  },
+  sagesGuild: {
+    title: "Sages Guidance Hub",
+    subtitle: "Unlock the mysteries of the library's physical-digital circulation gateway",
+    tabCheckout: "Checkout Options",
+    tabReturn: "Return Options",
+    tabGatepass: "Gatepass & Access",
+    tabFaq: "Sacred Scroll FAQs",
+    
+    nfcTitle: "1. Web NFC Instant Tap",
+    nfcDesc: "Physically locate the book in our salon, unlock your phone, turn on NFC, and tap the back of your device against the book's golden circular NTAG213 sticker. A verification prompt will slide up. Click 'Instant Checkout' to walk away with the book immediately.",
+    
+    barcodeTitle: "2. Omni-Scanner Barcode Scan",
+    barcodeDesc: "Open 'Study' page on your phone, click 'Self-Checkout' button, and scan the barcode printed on the back of any physical volume. Ensure proper camera alignment in our viewfinder.",
+    
+    manualTitle: "3. Digital Request",
+    manualDesc: "If your device lacks an NFC chip, browse the Study catalog, find the book, and click 'Check Out Volume'. This logs a manual checkout request. The library curator will verify and approve your loan instantly.",
+    
+    geofenceTitle: "1. Geofenced Self-Return",
+    geofenceDesc: "If you are physically standing inside the library's coordinates, click 'Initiate Return' on your checkout ledger. Our system verifies your physical presence via GPS and instantly completes the return, clearing the book back into catalog availability.",
+    
+    qrTitle: "2. Return Validator QR Scan (Bypass)",
+    qrDesc: "If your GPS signal is weak, or coordinates fail to verify, select 'Validate via Return QR' on your return screen. Simply scan the physical Return Validator QR placard placed on the main desk of the library to instantly verify your return without administrative delay.",
+    
+    curatorTitle: "3. Curator Manual Override",
+    curatorDesc: "If all digital networks fail, you can leave the volume in our physical drop-box. The curator will manually audit the shelf, approve your pending return, and restore your checkout ledger.",
+    
+    gatepassTitle: "Sovereign Gatepass Verification",
+    gatepassDesc: "Upon checkout approval, a digital secure Gatepass token (with real-time checkout barcode and cryptographic validation ID) is generated for you. Present this Gatepass to our security gate scanner when leaving the library archway.",
+    
+    faqQ1: "Can I borrow multiple volumes simultaneously?",
+    faqA1: "Yes, up to 3 physical volumes can be actively recorded on your scholar profile ledger.",
+    faqQ2: "What is the return grace period?",
+    faqA2: "All scholarly volumes are lent for 14 days, with options to extend your loan via profile details.",
+    faqQ3: "Why does geofencing require GPS location?",
+    faqA3: "GPS location verifies that physical books are returned within the actual library walls to maintain absolute inventory accountability."
   }
 };
 

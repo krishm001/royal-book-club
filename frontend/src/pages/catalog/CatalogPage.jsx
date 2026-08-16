@@ -13,6 +13,35 @@ import './CatalogPage.css';
 const SafeHtml5Qrcode = Html5Qrcode;
 const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
 
+export const isNfcTagMatched = (b, cleanScanned) => {
+  if (!b || !cleanScanned) return false;
+  // 1. Check primary tag
+  const primaryTag = (b.ntagUid || '').toLowerCase().replace(/:/g, '');
+  if (primaryTag && primaryTag === cleanScanned) return true;
+
+  // 2. Check legacy/alt tag array
+  if (Array.isArray(b.ntagUids)) {
+    const matchedAlt = b.ntagUids.some(uid => (uid || '').toLowerCase().replace(/:/g, '') === cleanScanned);
+    if (matchedAlt) return true;
+  }
+
+  // 3. Check nested copy documents
+  if (Array.isArray(b.copies)) {
+    const matchedCopy = b.copies.some(copy => {
+      if (!copy) return false;
+      const copyTag = (copy.ntagUid || '').toLowerCase().replace(/:/g, '');
+      if (copyTag && copyTag === cleanScanned) return true;
+      if (Array.isArray(copy.ntagUids)) {
+        return copy.ntagUids.some(uid => (uid || '').toLowerCase().replace(/:/g, '') === cleanScanned);
+      }
+      return false;
+    });
+    if (matchedCopy) return true;
+  }
+
+  return false;
+};
+
 const CatalogPage = ({ user, triggerOnboarding }) => {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
@@ -455,10 +484,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
         
         // Match by UID first
         const cleanScanned = (serialNumber || '').toLowerCase().replace(/:/g, '');
-        matchedBook = books.find(b => {
-          const cleanBookTag = (b.ntagUid || '').toLowerCase().replace(/:/g, '');
-          return cleanBookTag && cleanBookTag === cleanScanned;
-        });
+        matchedBook = books.find(b => isNfcTagMatched(b, cleanScanned));
 
         // Fallback match by URL NDEF record containing ISBN
         if (!matchedBook && message && message.records) {
@@ -574,6 +600,14 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
 
     loadBooksAndData();
     loadHouses();
+
+    // Smooth scroll so that the Self-checkout panel is aligned right at the top on landing
+    setTimeout(() => {
+      const selfCheckoutEl = document.querySelector('.self-checkout-portal');
+      if (selfCheckoutEl) {
+        selfCheckoutEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 400);
   }, []);
 
   const loadMemberCheckouts = async () => {
@@ -759,9 +793,8 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
         console.log(`NFC tag scanned: ${serialNumber}`);
         
         const cleanScanned = (serialNumber || '').toLowerCase().replace(/:/g, '');
-        const cleanBookTag = (targetBook.ntagUid || '').toLowerCase().replace(/:/g, '');
 
-        if (cleanScanned === cleanBookTag) {
+        if (isNfcTagMatched(targetBook, cleanScanned)) {
           try {
             if (actionType === 'checkout') {
               const res = await verifiedCheckout({ bookId: targetBook.isbn, memberId: user.uid || user.id, ntagUid: cleanScanned });
@@ -782,7 +815,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
             setNfcError(`Database rejected verification: ${txError.response?.data?.message || txError.message}`);
           }
         } else {
-          setNfcError(`Security Mismatch: This NFC tag (${serialNumber || 'Unknown'}) does not match this book volume's registered ID (${targetBook.ntagUid}).`);
+          setNfcError(`Security Mismatch: This NFC tag (${serialNumber || 'Unknown'}) does not match this book volume's registered IDs.`);
         }
       });
     } catch (err) {

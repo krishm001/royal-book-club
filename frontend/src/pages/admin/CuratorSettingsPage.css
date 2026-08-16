@@ -370,4 +370,63 @@
   background: rgba(88, 17, 26, 0.1) !important;
 }
 
+/* QR Validator Card Styles */
+.qr-validator-card {
+  margin-top: 2.5rem;
+  background: var(--surface-elevated, rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
+  border-radius: 16px;
+  padding: 30px;
+}
+
+[data-theme="academic"] .qr-validator-card {
+  background: var(--surface-elevated, #eae5dc) !important;
+  border: 1px solid rgba(88, 17, 26, 0.15) !important;
+}
+
+[data-theme="academic"] .qr-active-box {
+  background: var(--surface, #f5f2eb) !important;
+  border: 1px solid rgba(88, 17, 26, 0.15) !important;
+}
+
+[data-theme="academic"] .qr-history-table-wrapper th {
+  background: var(--surface, #f5f2eb) !important;
+  color: var(--text-primary, #2c1a1c) !important;
+}
+
+[data-theme="academic"] .qr-history-table-wrapper td {
+  border-bottom: 1px solid rgba(88, 17, 26, 0.1) !important;
+  color: var(--text-primary, #2c1a1c) !important;
+}
+
+/* Printable placard CSS rules for professional presentation */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .placard-overlay, .placard-overlay * {
+    visibility: visible;
+  }
+  .placard-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: #ffffff !important;
+    padding: 0 !important;
+  }
+  .printable-placard {
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 2rem !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
 

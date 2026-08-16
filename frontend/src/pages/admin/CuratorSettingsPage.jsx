@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Sparkles, ArrowLeft, Loader2, Save, CheckCircle, AlertTriangle, ToggleLeft, ToggleRight, MapPin } from 'lucide-react';
+import { Shield, Sparkles, ArrowLeft, Loader2, Save, CheckCircle, AlertTriangle, ToggleLeft, ToggleRight, MapPin, QrCode, Printer, Clock, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getCheckoutSettings, updateCheckoutSettings } from '../../services/checkoutSettingsApi';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -68,7 +68,17 @@ const CuratorSettingsPage = ({ user }) => {
     libraryLongitude: null,
     validRadiusMeters: null,
     enforceEmailVerification: false,
+    enforceReturnGeofencing: true,
+    enforceReturnQr: true,
+    latestQrPathName: '',
+    previousQrPathName: '',
+    previousQrActive: false,
+    qrHistory: [],
   });
+
+  const [newQrPathName, setNewQrPathName] = useState('');
+  const [showPrintPlacard, setShowPrintPlacard] = useState(false);
+  const [selectedPlacardPath, setSelectedPlacardPath] = useState('');
 
   const [currentTheme, setCurrentTheme] = useState(document.documentElement.getAttribute('data-theme') || 'salon');
   const [locationDetails, setLocationDetails] = useState(null);
@@ -146,8 +156,16 @@ const CuratorSettingsPage = ({ user }) => {
         return;
       }
 
-      // Avoid duplicate injections
+      // Avoid duplicate injections, but poll if script is already injecting
       if (document.getElementById('leaflet-cdn-css')) {
+        const checkL = setInterval(() => {
+          if (window.L) {
+            setLeafletLoaded(true);
+            clearInterval(checkL);
+          }
+        }, 100);
+        // Safety timeout of 10 seconds
+        setTimeout(() => clearInterval(checkL), 10000);
         return;
       }
 
@@ -246,6 +264,12 @@ const CuratorSettingsPage = ({ user }) => {
 
     map.panTo([lat, lon]);
 
+    // Force Leaflet map layout recalculation on mobile viewports
+    const resizeTimeout = setTimeout(() => {
+      map.invalidateSize();
+    }, 250);
+
+    return () => clearTimeout(resizeTimeout);
   }, [loading, leafletLoaded, settings.libraryLatitude, settings.libraryLongitude, settings.validRadiusMeters]);
 
   useEffect(() => {
@@ -272,7 +296,11 @@ const CuratorSettingsPage = ({ user }) => {
         setLoading(true);
         const res = await getCheckoutSettings();
         if (res?.success && res?.data) {
-          setSettings(res.data);
+          setSettings({
+            ...res.data,
+            enforceReturnGeofencing: res.data.enforceReturnGeofencing !== false,
+            enforceReturnQr: res.data.enforceReturnQr !== false,
+          });
         }
       } catch (err) {
         console.error('Failed to load gating settings', err);
@@ -351,6 +379,99 @@ const CuratorSettingsPage = ({ user }) => {
         type: 'error',
         text: `${t('admin.errorUpdatingSettings', 'Error updating settings')}: ${err.message}`,
       });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleMintQr = async (e) => {
+    e.preventDefault();
+    if (!newQrPathName || !newQrPathName.trim()) {
+      alert("Please supply a valid path name first.");
+      return;
+    }
+    const cleanPath = newQrPathName.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    if (!cleanPath) {
+      alert("Invalid path name format.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setMessage(null);
+
+      // Build updated history
+      const nowStr = new Date().toISOString();
+      const newHistoryEntry = {
+        pathName: cleanPath,
+        active: true,
+        createdAt: nowStr
+      };
+
+      // Deactivate older entries (only latest and previous remain active)
+      const updatedHistory = [
+        newHistoryEntry,
+        ...(settings.qrHistory || []).map(item => ({
+          ...item,
+          active: item.pathName === settings.latestQrPathName ? true : false
+        }))
+      ];
+
+      const updatedSettings = {
+        ...settings,
+        previousQrPathName: settings.latestQrPathName || '',
+        previousQrActive: settings.latestQrPathName ? true : false,
+        latestQrPathName: cleanPath,
+        qrHistory: updatedHistory
+      };
+
+      const res = await updateCheckoutSettings(updatedSettings);
+      if (res?.success && res?.data) {
+        setSettings(res.data);
+        setNewQrPathName('');
+        setMessage({
+          type: 'success',
+          text: t('admin.qrMintedSuccess', 'New Return Validator QR code minted and broadcasted successfully.'),
+        });
+      } else {
+        setMessage({
+          type: 'error',
+          text: res?.message || t('admin.failedMintQr', 'Failed to save minted QR code.'),
+        });
+      }
+    } catch (err) {
+      console.error('Failed to mint QR settings', err);
+      setMessage({
+        type: 'error',
+        text: t('admin.failedMintQr', 'An unexpected error occurred during QR code minting.'),
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeactivatePreviousQr = async () => {
+    try {
+      setSaving(true);
+      const updatedSettings = {
+        ...settings,
+        previousQrActive: false,
+        qrHistory: (settings.qrHistory || []).map(item => ({
+          ...item,
+          active: item.pathName === settings.latestQrPathName ? true : false
+        }))
+      };
+
+      const res = await updateCheckoutSettings(updatedSettings);
+      if (res?.success && res?.data) {
+        setSettings(res.data);
+        setMessage({
+          type: 'success',
+          text: t('admin.deactivatedQrSuccess', 'Previous Return Validator QR successfully deactivated.'),
+        });
+      }
+    } catch (err) {
+      console.error('Failed to deactivate QR settings', err);
     } finally {
       setSaving(false);
     }
@@ -515,6 +636,40 @@ const CuratorSettingsPage = ({ user }) => {
                       onClick={() => handleToggle('enforceEmailVerification')}
                     >
                       {settings.enforceEmailVerification ? <ToggleRight size={38} className="gold-toggle" /> : <ToggleLeft size={38} className="muted-toggle" />}
+                    </button>
+                  </div>
+
+                  {/* Return Geofencing Toggle */}
+                  <div className="gating-toggle-row">
+                    <div className="toggle-text-info">
+                      <span className="toggle-label">{t('admin.enforceReturnGeofencing', 'Enforce Location Geofencing on Self-Returns')}</span>
+                      <span className="toggle-description">
+                        {t('admin.enforceReturnGeofencingDesc', 'Requires scholars to be physically present within the configured library geofence perimeter to perform instant direct self-returns.')}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className={`toggle-action-btn ${settings.enforceReturnGeofencing ? 'active' : ''}`}
+                      onClick={() => handleToggle('enforceReturnGeofencing')}
+                    >
+                      {settings.enforceReturnGeofencing ? <ToggleRight size={38} className="gold-toggle" /> : <ToggleLeft size={38} className="muted-toggle" />}
+                    </button>
+                  </div>
+
+                  {/* Return QR Gating Toggle */}
+                  <div className="gating-toggle-row">
+                    <div className="toggle-text-info">
+                      <span className="toggle-label">{t('admin.enforceReturnQr', 'Enforce Validator QR Verification on Fallback')}</span>
+                      <span className="toggle-description">
+                        {t('admin.enforceReturnQrDesc', 'Forces scanning of physical library QR plaques to verify return validity when GPS checks are failing or blocked.')}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className={`toggle-action-btn ${settings.enforceReturnQr ? 'active' : ''}`}
+                      onClick={() => handleToggle('enforceReturnQr')}
+                    >
+                      {settings.enforceReturnQr ? <ToggleRight size={38} className="gold-toggle" /> : <ToggleLeft size={38} className="muted-toggle" />}
                     </button>
                   </div>
 
@@ -721,6 +876,188 @@ const CuratorSettingsPage = ({ user }) => {
                   </button>
                 </div>
               </form>
+
+              {/* Return Validator QR Code Section */}
+              <div className="royal-card qr-validator-card" style={{ marginTop: '2.5rem' }}>
+                <div className="settings-section-header" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                  <QrCode className="sparkle-icon" size={24} />
+                  <h3 className="section-title-settings" style={{ margin: 0 }}>
+                    {t('admin.qrValidatorTitle', 'Return Validator QR Generator')}
+                  </h3>
+                </div>
+                
+                <p className="section-desc" style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '2rem' }}>
+                  {t('admin.qrValidatorDesc', 'Provision deep-linked validator QR codes for physical library return locations. Scanning these validation codes will instantly authorize patron returns.')}
+                </p>
+
+                {/* Minting form */}
+                <form onSubmit={handleMintQr} className="qr-mint-form" style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '2rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <input
+                      type="text"
+                      value={newQrPathName}
+                      onChange={(e) => setNewQrPathName(e.target.value)}
+                      placeholder={t('admin.qrPlaceholder', 'e.g. exit-spot-alpha')}
+                      className="gating-input"
+                      style={{ width: '100%', padding: '0.8rem 1.2rem', borderRadius: '10px' }}
+                    />
+                  </div>
+                  <button type="submit" disabled={saving} className="royal-btn" style={{ padding: '0.8rem 1.8rem', whiteSpace: 'nowrap' }}>
+                    <Sparkles size={16} style={{ marginRight: '6px' }} />
+                    {t('admin.mintQrBtn', 'Mint QR Code')}
+                  </button>
+                </form>
+
+                {/* Active codes info */}
+                <div className="active-codes-container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2.5rem' }}>
+                  <div className="qr-active-box latest" style={{ border: '1px solid var(--border-color)', borderRadius: '14px', padding: '1.5rem', background: 'rgba(var(--accent-glow), 0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                      <span className="badge active" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700 }}>
+                        {t('admin.latestActive', 'LATEST ACTIVE')}
+                      </span>
+                      {settings.latestQrPathName && (
+                        <button
+                          type="button"
+                          className="print-action-btn"
+                          onClick={() => {
+                            setSelectedPlacardPath(settings.latestQrPathName);
+                            setShowPrintPlacard(true);
+                          }}
+                          style={{ background: 'transparent', border: 'none', color: 'var(--gold-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', fontWeight: 600 }}
+                        >
+                          <Printer size={14} /> {t('admin.printPlacard', 'Print Placard')}
+                        </button>
+                      )}
+                    </div>
+                    <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>{settings.latestQrPathName || t('admin.noActiveQr', 'No active code')}</h4>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>https://bookshelfnet.com/{settings.latestQrPathName || '...'}</p>
+                  </div>
+
+                  <div className="qr-active-box previous" style={{ border: '1px solid var(--border-color)', borderRadius: '14px', padding: '1.5rem', position: 'relative' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                      <span className={`badge ${settings.previousQrActive ? 'active' : 'inactive'}`} style={{ background: settings.previousQrActive ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0, 0, 0, 0.05)', color: settings.previousQrActive ? '#3b82f6' : '#888888', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700 }}>
+                        {settings.previousQrActive ? t('admin.prevActive', 'PREVIOUS ACTIVE') : t('admin.deactivated', 'DEACTIVATED')}
+                      </span>
+                      {settings.previousQrActive && (
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <button
+                            type="button"
+                            className="deactivate-action-btn"
+                            onClick={handleDeactivatePreviousQr}
+                            style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', fontWeight: 600 }}
+                          >
+                            <Trash2 size={14} /> {t('admin.deactivate', 'Deactivate')}
+                          </button>
+                          <button
+                            type="button"
+                            className="print-action-btn"
+                            onClick={() => {
+                              setSelectedPlacardPath(settings.previousQrPathName);
+                              setShowPrintPlacard(true);
+                            }}
+                            style={{ background: 'transparent', border: 'none', color: 'var(--gold-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', fontWeight: 600 }}
+                          >
+                            <Printer size={14} /> {t('admin.printPlacard', 'Print Placard')}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>{settings.previousQrPathName || t('admin.noPreviousQr', 'No previous code')}</h4>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>https://bookshelfnet.com/{settings.previousQrPathName || '...'}</p>
+                  </div>
+                </div>
+
+                {/* History table */}
+                <h4 style={{ fontSize: '1.1rem', marginBottom: '1rem', fontWeight: 700 }}>{t('admin.qrHistoryTitle', 'QR Code Registry & Lineage')}</h4>
+                <div className="qr-history-table-wrapper" style={{ overflowX: 'auto', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ background: 'var(--border-color)', opacity: 0.8 }}>
+                        <th style={{ padding: '0.8rem 1.2rem', fontWeight: 700 }}>{t('admin.pathName', 'PATH NAME')}</th>
+                        <th style={{ padding: '0.8rem 1.2rem', fontWeight: 700 }}>{t('admin.status', 'STATUS')}</th>
+                        <th style={{ padding: '0.8rem 1.2rem', fontWeight: 700 }}>{t('admin.dateMinted', 'DATE MINTED')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(settings.qrHistory && settings.qrHistory.length > 0) ? (
+                        settings.qrHistory.map((item, idx) => {
+                          const isActive = item.pathName === settings.latestQrPathName || (item.pathName === settings.previousQrPathName && settings.previousQrActive);
+                          return (
+                            <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                              <td style={{ padding: '0.8rem 1.2rem', fontFamily: 'monospace', fontWeight: 600 }}>{item.pathName}</td>
+                              <td style={{ padding: '0.8rem 1.2rem' }}>
+                                <span style={{
+                                  padding: '0.2rem 0.6rem',
+                                  borderRadius: '12px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  background: isActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                                  color: isActive ? '#10b981' : '#888888'
+                                }}>
+                                  {isActive ? t('admin.active', 'Active') : t('admin.inactive', 'Inactive')}
+                                </span>
+                              </td>
+                              <td style={{ padding: '0.8rem 1.2rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan="3" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                            {t('admin.noQrHistory', 'No QR validator codes currently provisioned.')}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Printable Placard Modal overlay */}
+              {showPrintPlacard && (
+                <div className="placard-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '2rem' }}>
+                  <div className="printable-placard" style={{ background: '#ffffff', color: '#000000', width: '100%', maxWidth: '600px', padding: '3.5rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
+                    
+                    {/* Action buttons */}
+                    <div className="no-print" style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', display: 'flex', gap: '10px' }}>
+                      <button onClick={() => window.print()} className="royal-btn" style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Printer size={16} /> {t('admin.printPlacard', 'Print Placard')}
+                      </button>
+                      <button onClick={() => setShowPrintPlacard(false)} className="royal-btn-secondary" style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem', color: '#333', background: '#f5f5f5', border: '1px solid #ccc' }}>
+                        {t('common.close', 'Close')}
+                      </button>
+                    </div>
+
+                    <div style={{ textAlign: 'center', borderBottom: '2px solid #d4af37', width: '100%', paddingBottom: '1.5rem', marginBottom: '2.5rem' }}>
+                      <h2 style={{ fontSize: '1.8rem', fontWeight: 800, margin: '0 0 0.5rem 0', letterSpacing: '0.05em', color: '#111111' }}>ROYAL BOOK CLUB</h2>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#d4af37' }}>Official Physical Validation Point</span>
+                    </div>
+
+                    <div style={{ background: '#ffffff', border: '3px solid #d4af37', padding: '1.5rem', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)', marginBottom: '2.5rem' }}>
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://bookshelfnet.com/${selectedPlacardPath}`}
+                        alt="Return Validation QR Code"
+                        style={{ display: 'block', width: '250px', height: '250px' }}
+                      />
+                    </div>
+
+                    <div style={{ textAlign: 'center', maxWidth: '420px' }}>
+                      <h3 style={{ fontSize: '1.3rem', fontWeight: 700, margin: '0 0 1rem 0', color: '#222222' }}>How to complete your return:</h3>
+                      <ol style={{ paddingLeft: '1.5rem', textAlign: 'left', fontSize: '0.95rem', lineHeight: '1.6', color: '#555555' }}>
+                        <li style={{ marginBottom: '0.5rem' }}>Initiate return on your device using NFC tap, barcode scan, or manual request.</li>
+                        <li style={{ marginBottom: '0.5rem' }}>When prompted, point your device camera at this QR code to validate your physical location.</li>
+                        <li style={{ marginBottom: '0.5rem' }}>Your ledger status will instantly transition to <strong>RETURNED</strong>.</li>
+                      </ol>
+                    </div>
+
+                    <div style={{ marginTop: '3rem', fontSize: '0.8rem', color: '#888888', borderTop: '1px dashed #ccc', width: '100%', paddingTop: '1.5rem', textAlign: 'center' }}>
+                      Validator Path: <strong>{selectedPlacardPath}</strong> &bull; Secure Sovereign Ledger
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Informational sidebar panel */}

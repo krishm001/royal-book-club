@@ -95,35 +95,55 @@
   border: 1px solid var(--accent);
   background: var(--glass-bg);
   box-shadow: var(--glow-shadow);
-  padding: 20px;
+  padding: 24px;
+}
+
+@media (min-width: 769px) {
+  .featured-highlight-card {
+    height: 460px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 12px;
+  }
 }
 
 .highlight-tag {
   color: var(--accent);
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.15em;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .highlight-body {
   display: flex;
-  gap: 20px;
+  gap: 24px;
+  flex: 1;
 }
 
 @media (max-width: 500px) {
   .highlight-body {
     flex-direction: column;
+    gap: 16px;
   }
 }
 
 .highlight-img {
-  width: 120px;
-  height: 180px;
+  width: 140px;
+  height: 220px;
   object-fit: cover;
   border-radius: var(--border-radius-sm);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
   border-left: 3px solid var(--accent);
+}
+
+@media (max-width: 768px) {
+  .highlight-img {
+    width: 120px;
+    height: 180px;
+  }
 }
 
 @media (max-width: 500px) {
@@ -135,54 +155,69 @@
 .highlight-details {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   flex: 1;
+  gap: 8px;
 }
 
 .highlight-title {
-  font-size: 1.3rem;
-  margin-bottom: 4px;
+  font-size: 1.4rem;
+  margin-bottom: 2px;
+  font-weight: 700;
 }
 
 .highlight-author {
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   color: var(--accent);
   font-style: italic;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .highlight-desc {
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   color: var(--text-secondary);
-  line-height: 1.5;
-  margin-bottom: 12px;
+  line-height: 1.55;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .highlight-note {
   color: var(--accent);
   border-left: 3px solid rgba(212, 165, 116, 0.5);
   padding-left: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   font-size: 0.85rem;
 }
 
 .highlight-quote {
   border-left: 2px solid var(--accent);
-  padding-left: 10px;
+  padding-left: 12px;
   font-style: italic;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--text-primary);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .highlight-action-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--accent);
   width: fit-content;
+  margin-top: auto; /* Push the action button dynamically to the bottom */
+  transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .highlight-action-btn:hover {

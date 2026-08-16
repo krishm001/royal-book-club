@@ -25,4 +25,13 @@ public class CheckoutSettings {
     private Double libraryLongitude;
     private Double validRadiusMeters;
     private boolean enforceEmailVerification;
+    private String latestQrPathName;
+    private String previousQrPathName;
+    private boolean previousQrActive;
+    @Builder.Default
+    private boolean enforceReturnGeofencing = true;
+    @Builder.Default
+    private boolean enforceReturnQr = true;
+    @Builder.Default
+    private java.util.List<String> qrHistory = new java.util.ArrayList<>();
 }

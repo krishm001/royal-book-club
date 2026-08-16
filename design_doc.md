@@ -154,7 +154,9 @@ Firestore is populated with six primary transactional and configuration collecti
   "ntagUid": "String (NTAG UID registered during physical check)",
   "nfcOrBarcode": "String (NFC | BARCODE | MANUAL)",
   "returnLatitude": "Double (Nullable)",
-  "returnLongitude": "Double (Nullable)"
+  "returnLongitude": "Double (Nullable)",
+  "locationVerified": "Boolean (Nullable)",
+  "qrVerified": "Boolean (Nullable)"
 }
 ```
 
@@ -279,14 +281,17 @@ This section details the architectural designs, database schema updates, and sta
   - Clicking this button smoothly scrolls the viewport directly to the active reviews and rating form (`#reviews-section`), inviting the scholar to leave prompt feedback.
 
 #### 📍 Epic 4: Geofencing Returns & Curator Boundary Console
-- **Library Location Coordinates (`checkout_settings`)**:
+- **Library Location Coordinates & Gating Preferences (`checkout_settings` / `CheckoutSettings.java`)**:
   - Adds `libraryLatitude` (Double), `libraryLongitude` (Double), and `validRadiusMeters` (Double).
+  - Adds `enforceReturnGeofencing` (Boolean) and `enforceReturnQr` (Boolean) toggles to optionally skip or strictly enforce verification gates.
 - **Curator Boundary Console (`CuratorSettingsPage.jsx`)**:
   - Integrates an interactive Leaflet map from CDN.
   - Admins can pinpoint the library location on the map, draw a radius circle dynamically, or click "Select Current Location" using the browser's Geolocation API.
   - Updates of the radius input box immediately redraw the circle boundary in real-time.
-- **Backend Geofence Gating (`CheckoutService.java`)**:
-  - Direct verified returns (`verifiedReturn`) validate client coordinates against the allowed library boundary using the Haversine distance formula, throwing a `BusinessRuleException` if the user is out-of-bounds.
+  - Provides toggles for `enforceReturnGeofencing` and `enforceReturnQr` configurations.
+- **Backend Geofence Gating & Return Verification Fallback (`CheckoutService.java`)**:
+  - If geofencing is enabled, direct verified returns (`verifiedReturn`) validate client coordinates against the library bounds. If check fails, or GPS coordinates cannot be resolved, client can transition to scan the physical **Return Validator QR** as fallback.
+  - Manual returns request queue tracks coordinates (`locationVerified`) and scanned QR codes (`qrVerified`) so curators have instant visual validation aids.
 
 #### 🔗 Epic 5: Pending Manual Return Bypass & Co-checkout Verification
 - **Manual Return Bypass**:

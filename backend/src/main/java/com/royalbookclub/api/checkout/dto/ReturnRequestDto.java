@@ -32,5 +32,6 @@ public class ReturnRequestDto {
     private Double returnLatitude;
     private Double returnLongitude;
     private String nfcOrBarcode; // e.g. "NFC" or "BARCODE"
+    private String scannedQrPath;
 }
 

@@ -54,6 +54,12 @@ public class CheckoutSettingsService {
                         .libraryLongitude(document.getDouble("libraryLongitude"))
                         .validRadiusMeters(document.getDouble("validRadiusMeters"))
                         .enforceEmailVerification(Boolean.TRUE.equals(document.getBoolean("enforceEmailVerification")))
+                        .latestQrPathName(document.getString("latestQrPathName"))
+                        .previousQrPathName(document.getString("previousQrPathName"))
+                        .previousQrActive(Boolean.TRUE.equals(document.getBoolean("previousQrActive")))
+                        .enforceReturnGeofencing(document.contains("enforceReturnGeofencing") ? Boolean.TRUE.equals(document.getBoolean("enforceReturnGeofencing")) : true)
+                        .enforceReturnQr(document.contains("enforceReturnQr") ? Boolean.TRUE.equals(document.getBoolean("enforceReturnQr")) : true)
+                        .qrHistory(document.get("qrHistory") != null ? (java.util.List<String>) document.get("qrHistory") : new java.util.ArrayList<>())
                         .build();
             } else {
                 log.info("No checkout settings document found. Initializing with optional defaults.");
@@ -69,6 +75,12 @@ public class CheckoutSettingsService {
                         .libraryLongitude(77.705317)
                         .validRadiusMeters(100.0)
                         .enforceEmailVerification(false)
+                        .latestQrPathName(null)
+                        .previousQrPathName(null)
+                        .previousQrActive(false)
+                        .enforceReturnGeofencing(true)
+                        .enforceReturnQr(true)
+                        .qrHistory(new java.util.ArrayList<>())
                         .build();
             }
         } catch (InterruptedException e) {
@@ -100,6 +112,12 @@ public class CheckoutSettingsService {
             map.put("libraryLongitude", settings.getLibraryLongitude());
             map.put("validRadiusMeters", settings.getValidRadiusMeters());
             map.put("enforceEmailVerification", settings.isEnforceEmailVerification());
+            map.put("latestQrPathName", settings.getLatestQrPathName());
+            map.put("previousQrPathName", settings.getPreviousQrPathName());
+            map.put("previousQrActive", settings.isPreviousQrActive());
+            map.put("enforceReturnGeofencing", settings.isEnforceReturnGeofencing());
+            map.put("enforceReturnQr", settings.isEnforceReturnQr());
+            map.put("qrHistory", settings.getQrHistory() != null ? settings.getQrHistory() : new java.util.ArrayList<>());
 
             ApiFuture<WriteResult> writeFuture = docRef.set(map);
             writeFuture.get();

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Check, X, Clock, BookOpen, User, RefreshCw, Search, Filter, AlertCircle, CheckCircle, Smartphone, ArrowLeft, Phone, MapPin } from 'lucide-react';
+import { Shield, Check, X, Clock, BookOpen, User, RefreshCw, Search, Filter, AlertCircle, CheckCircle, Smartphone, ArrowLeft, Phone, MapPin, QrCode } from 'lucide-react';
 import { fetchCheckouts, approveCheckout, rejectCheckout, approveReturn, fetchBooks, clearCheckout, verifiedReturn } from '../../services/libraryApi';
 import { getCheckoutSettings } from '../../services/checkoutSettingsApi';
 import { getAllUsers } from '../../services/userApi';
@@ -822,12 +822,18 @@ export default function CuratorCheckoutsPage({ user }) {
                         <Clock size={12} />
                         <span>{r.requestedAt ? new Date(r.requestedAt).toLocaleDateString() : t('admin.today', 'Today')}</span>
                       </div>
-                      <div className="compact-location-badge">
-                        {r.locationVerified ? (
-                          <span className="location-badge verified" style={{ color: '#d4a574', border: '1px solid #d4a574', background: 'rgba(212, 165, 116, 0.1)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <div className="compact-location-badge" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        {r.locationVerified && (
+                          <span className="location-badge verified" style={{ color: '#52c41a', border: '1px solid #52c41a', background: 'rgba(82, 196, 26, 0.1)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                             <MapPin size={10} /> Location Verified
                           </span>
-                        ) : (
+                        )}
+                        {r.qrVerified && (
+                          <span className="qr-badge verified" style={{ color: '#52c41a', border: '1px solid #52c41a', background: 'rgba(82, 196, 26, 0.1)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <QrCode size={10} /> QR Verified
+                          </span>
+                        )}
+                        {!r.locationVerified && !r.qrVerified && (
                           <span className="location-badge unverified" style={{ color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255, 255, 255, 0.05)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                             <MapPin size={10} /> Unverified Location
                           </span>

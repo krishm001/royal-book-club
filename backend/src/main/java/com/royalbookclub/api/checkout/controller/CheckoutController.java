@@ -168,6 +168,19 @@ public class CheckoutController {
     }
 
     /**
+     * Validate book return using physical library QR code.
+     */
+    @PostMapping("/validate-qr-return")
+    @Operation(summary = "Validate return via QR code", description = "Validates return using the library's physical return validator QR code path name.")
+    public ResponseEntity<Checkout> validateQrReturn(
+            @RequestParam String checkoutId,
+            @RequestParam String qrPathName) {
+        log.info("REST request to validate return via QR for checkout ID: {}, QR path: {}", checkoutId, qrPathName);
+        Checkout checkout = checkoutService.validateQrReturn(checkoutId, qrPathName);
+        return ResponseEntity.ok(checkout);
+    }
+
+    /**
      * Complete direct verified checkout via Web NFC.
      */
     @PostMapping("/verified")

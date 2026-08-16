@@ -5,6 +5,7 @@ import com.google.cloud.firestore.*;
 import com.royalbookclub.api.checkout.dto.CheckoutRequestDto;
 import com.royalbookclub.api.checkout.dto.ReturnRequestDto;
 import com.royalbookclub.api.checkout.model.Checkout;
+import com.royalbookclub.api.config.model.CheckoutSettings;
 import com.royalbookclub.api.config.service.CheckoutSettingsService;
 import com.royalbookclub.api.user.service.UserService;
 import com.royalbookclub.api.user.model.User;
@@ -522,6 +523,7 @@ public class CheckoutService {
                 updates.put("returnLatitude", request.getReturnLatitude());
                 updates.put("returnLongitude", request.getReturnLongitude());
                 updates.put("locationVerified", checkLocationVerification(request.getReturnLatitude(), request.getReturnLongitude()));
+                updates.put("qrVerified", checkQrVerification(request.getScannedQrPath()));
                 updates.put("nfcOrBarcode", request.getNfcOrBarcode());
 
                 if (checkoutDoc.getString("memberEmail") == null) {
@@ -602,7 +604,8 @@ public class CheckoutService {
                         "status", "RETURNED",
                         "returnedAt", toTimestamp(now),
                         "approvedAt", toTimestamp(now),
-                        "approvedBy", adminId
+                        "approvedBy", adminId,
+                        "returnValidationMethod", "MANUAL_CURATOR"
                 );
 
                 return null;
@@ -612,6 +615,106 @@ public class CheckoutService {
                     .orElseThrow(() -> new RuntimeException("Failed to read updated checkout."));
         } catch (Exception e) {
             log.error("Failed to approve return request: {}", checkoutId, e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new RuntimeException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Atomically validate and complete a book return using physical library QR validator.
+     * Transitions status to RETURNED and increments availableCopies.
+     * Works for both CHECKED_OUT and REQUESTED_RETURN.
+     */
+    public Checkout validateQrReturn(String checkoutId, String qrPathName) {
+        log.info("Validating return via QR for checkout ID: {} and QR path name: {}", checkoutId, qrPathName);
+        
+        CheckoutSettings settings = checkoutSettingsService.getCheckoutSettings();
+        boolean qrValid = false;
+        if (settings != null) {
+            String cleanQrPath = qrPathName.trim();
+            // Match exactly or try to extract path name from URL if it's a full URL
+            if (cleanQrPath.contains("bookshelfnet.com/")) {
+                cleanQrPath = cleanQrPath.substring(cleanQrPath.indexOf("bookshelfnet.com/") + "bookshelfnet.com/".length());
+            }
+            if (cleanQrPath.contains("?code=")) {
+                cleanQrPath = cleanQrPath.substring(cleanQrPath.indexOf("?code=") + "?code=".length());
+            }
+            if (cleanQrPath.contains("?qr=")) {
+                cleanQrPath = cleanQrPath.substring(cleanQrPath.indexOf("?qr=") + "?qr=".length());
+            }
+            if (cleanQrPath.contains("qr=")) {
+                cleanQrPath = cleanQrPath.substring(cleanQrPath.indexOf("qr=") + "qr=".length());
+            }
+
+            String activeLatest = settings.getLatestQrPathName();
+            String activePrevious = settings.getPreviousQrPathName();
+            
+            if (activeLatest != null && activeLatest.trim().equalsIgnoreCase(cleanQrPath)) {
+                qrValid = true;
+            } else if (settings.isPreviousQrActive() && activePrevious != null && activePrevious.trim().equalsIgnoreCase(cleanQrPath)) {
+                qrValid = true;
+            }
+        }
+        
+        if (!qrValid) {
+            throw new IllegalArgumentException("Invalid or inactive Return Validator QR code. Please scan the active library QR code.");
+        }
+
+        DocumentReference checkoutRef = firestore.collection(COLLECTION_NAME).document(checkoutId);
+
+        try {
+            firestore.runTransaction(transaction -> {
+                DocumentSnapshot checkoutDoc = transaction.get(checkoutRef).get();
+                if (!checkoutDoc.exists()) {
+                    throw new IllegalArgumentException("Checkout record not found.");
+                }
+
+                String status = checkoutDoc.getString("status");
+                if ("RETURNED".equals(status)) {
+                    throw new IllegalStateException("This book checkout is already marked as returned.");
+                }
+
+                if (!"CHECKED_OUT".equals(status) && !"REQUESTED_RETURN".equals(status)) {
+                    throw new IllegalStateException("Checkout record is not in a returnable state.");
+                }
+
+                String cleanIsbn = checkoutDoc.getString("bookId");
+                DocumentReference bookRef = firestore.collection("books").document(cleanIsbn);
+                DocumentSnapshot bookDoc = transaction.get(bookRef).get();
+
+                if (bookDoc.exists()) {
+                    Long available = bookDoc.getLong("availableCopies");
+                    Long total = bookDoc.getLong("totalCopies");
+                    long newAvailable = (available != null ? available : 0) + 1;
+                    if (total != null && newAvailable > total) {
+                        newAvailable = total;
+                    }
+                    transaction.update(bookRef, "availableCopies", newAvailable);
+
+                    Long copyNo = checkoutDoc.getLong("copyNo");
+                    // Transition copy status to AVAILABLE and clear currentCheckoutId
+                    transitionCopyStatus(bookDoc, copyNo != null ? copyNo.intValue() : null, checkoutId, "AVAILABLE", true, transaction, bookRef);
+                }
+
+                Instant now = Instant.now();
+                transaction.update(checkoutRef,
+                        "status", "RETURNED",
+                        "returnedAt", toTimestamp(now),
+                        "approvedAt", toTimestamp(now),
+                        "approvedBy", "QR_VALIDATOR",
+                        "returnValidationMethod", "QR_VALIDATOR",
+                        "locationVerified", true
+                );
+
+                return null;
+            }).get();
+
+            return getCheckoutById(checkoutId)
+                    .orElseThrow(() -> new RuntimeException("Failed to read updated checkout."));
+        } catch (Exception e) {
+            log.error("Failed to validate QR return request: {}", checkoutId, e);
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
@@ -632,9 +735,15 @@ public class CheckoutService {
 
         log.info("Initiating atomic return. Member: {}, Book: {}, Request ID: {}", memberId, cleanIsbn, checkoutId);
 
-        // Geofencing verification for physical direct return
-        if (!checkLocationVerification(request.getReturnLatitude(), request.getReturnLongitude())) {
-            throw new IllegalArgumentException("Self-return is only permitted within library premises. Please submit a manual return request instead.");
+        // Geofencing verification for physical direct return (optional based on curatorial settings)
+        CheckoutSettings settings = checkoutSettingsService.getCheckoutSettings();
+        boolean mustEnforceGps = settings == null || settings.isEnforceReturnGeofencing();
+        if (mustEnforceGps) {
+            if (!checkLocationVerification(request.getReturnLatitude(), request.getReturnLongitude())) {
+                throw new IllegalArgumentException("Self-return is only permitted within library premises. Please submit a manual return request instead.");
+            }
+        } else {
+            log.info("Bypassing return geofencing validation check as requested by Curator settings.");
         }
 
         try {
@@ -693,7 +802,8 @@ public class CheckoutService {
                         "returnLatitude", request.getReturnLatitude(),
                         "returnLongitude", request.getReturnLongitude(),
                         "locationVerified", checkLocationVerification(request.getReturnLatitude(), request.getReturnLongitude()),
-                        "nfcOrBarcode", request.getNfcOrBarcode()
+                        "nfcOrBarcode", request.getNfcOrBarcode(),
+                        "returnValidationMethod", "GEOFENCING"
                 );
 
                 return checkoutRef.getId();
@@ -1113,6 +1223,7 @@ public class CheckoutService {
                 .returnLongitude(doc.getDouble("returnLongitude"))
                 .locationVerified(doc.getBoolean("locationVerified"))
                 .nfcOrBarcode(doc.getString("nfcOrBarcode"))
+                .returnValidationMethod(doc.getString("returnValidationMethod"))
                 .build();
     }
 
@@ -1131,6 +1242,39 @@ public class CheckoutService {
         double distance = calculateHaversineDistance(clientLat, clientLon, libraryLat, libraryLon);
         log.info("Haversine check: user distance from library is {} meters (allowed limit: {} meters)", distance, allowedRadius);
         return distance <= allowedRadius;
+    }
+
+    private boolean checkQrVerification(String qrPathName) {
+        if (qrPathName == null || qrPathName.trim().isEmpty()) {
+            return false;
+        }
+        CheckoutSettings settings = checkoutSettingsService.getCheckoutSettings();
+        if (settings == null) {
+            return false;
+        }
+        String cleanQrPath = qrPathName.trim();
+        if (cleanQrPath.contains("bookshelfnet.com/")) {
+            cleanQrPath = cleanQrPath.substring(cleanQrPath.indexOf("bookshelfnet.com/") + "bookshelfnet.com/".length());
+        }
+        if (cleanQrPath.contains("?code=")) {
+            cleanQrPath = cleanQrPath.substring(cleanQrPath.indexOf("?code=") + "?code=".length());
+        }
+        if (cleanQrPath.contains("?qr=")) {
+            cleanQrPath = cleanQrPath.substring(cleanQrPath.indexOf("?qr=") + "?qr=".length());
+        }
+        if (cleanQrPath.contains("qr=")) {
+            cleanQrPath = cleanQrPath.substring(cleanQrPath.indexOf("qr=") + "qr=".length());
+        }
+
+        String activeLatest = settings.getLatestQrPathName();
+        String activePrevious = settings.getPreviousQrPathName();
+
+        if (activeLatest != null && activeLatest.trim().equalsIgnoreCase(cleanQrPath)) {
+            return true;
+        } else if (settings.isPreviousQrActive() && activePrevious != null && activePrevious.trim().equalsIgnoreCase(cleanQrPath)) {
+            return true;
+        }
+        return false;
     }
 
     private double calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {

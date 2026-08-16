@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, NavLink, Link } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, NavLink, Link, useLocation } from 'react-router-dom';
 import { BookOpen, Calendar, BookText, Home, User, Compass, Sparkles, LogOut, Menu, X, Shield, Palette } from 'lucide-react';
 import { onAuthStateChanged, signInAnonymously, signOut } from 'firebase/auth';
 import { auth } from './config/firebase';
@@ -28,12 +28,40 @@ import SignIn from './pages/auth/SignIn';
 import SignUp from './pages/auth/SignUp';
 import ResetPassword from './pages/auth/ResetPassword';
 import ProfilePage from './pages/member/ProfilePage';
+import HelpPage from './pages/member/HelpPage';
 import GatepassPage from './pages/catalog/GatepassPage';
 import './App.css';
 import { fetchHeroConfig } from './services/heroApi';
 import { useLanguage } from './i18n/LanguageContext';
 import OnboardingWizard from './components/OnboardingWizard';
 import CovenantViewerModal from './components/CovenantViewerModal';
+
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    // 1. Book Ingestion
+    if (pathname.includes('/admin/books/ingest') || pathname.includes('/admin/books')) {
+      const element = document.getElementById('db-search-panel');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+    }
+
+    // 2. Book detail
+    if (pathname.includes('/books/')) {
+      // By default scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    // 3. All other pages (Home, Catalog, Assembly/Events, Discourses, Gatepass, Profile, Curator Settings, Admin Dashboard, Help, Sages)
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [pathname]);
+
+  return null;
+};
 
 function App() {
   const { language, setLanguage, t, getLocalized } = useLanguage();
@@ -185,6 +213,34 @@ function App() {
   useEffect(() => {
     const handleUrlDeepLink = async () => {
       const href = window.location.href;
+      
+      // Return Validator QR direct scanner interceptor
+      const pathname = window.location.pathname;
+      if (pathname && pathname !== '/' && !pathname.startsWith('/api') && !pathname.startsWith('/static') && !pathname.includes('.')) {
+        const pathName = pathname.substring(1);
+        if (pathName && pathName.trim().length > 0) {
+          console.info("[QR INTERCEPT] Redirecting custom QR validator path direct scan to sages guild hub:", pathName);
+          window.location.href = window.location.origin + '/#/sages?qr=' + encodeURIComponent(pathName);
+          return;
+        }
+      }
+
+      // Return Validator QR query parameter scan interceptor (?qr=)
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.has('qr')) {
+        const qrCode = searchParams.get('qr');
+        if (qrCode && qrCode.trim().length > 0) {
+          console.info("[QR QUERY INTERCEPT] Redirecting custom QR query parameter direct scan to sages guild hub:", qrCode);
+          try {
+            const cleanUrl = window.location.origin + '/' + window.location.hash;
+            window.history.replaceState(null, '', cleanUrl);
+          } catch (historyErr) {
+            console.warn("Failed to clean address bar history:", historyErr);
+          }
+          window.location.href = window.location.origin + '/#/sages?qr=' + encodeURIComponent(qrCode);
+          return;
+        }
+      }
       
       // First, try to retrieve the pre-boot intercepted parameters from sessionStorage
       let u = sessionStorage.getItem('pending_nfc_u');
@@ -358,8 +414,9 @@ function App() {
               // Dispatch custom event for real-time reactivity
               window.dispatchEvent(new CustomEvent('nfc_tap_detected', { detail: sessionData }));
             } else {
-              // c is not present: just take the user to homepage silently for easy landing
-              window.location.replace(`${window.location.origin}/#/`);
+              // c is not present: route internally to Book Details page as requested!
+              console.info("NFC tapped without counter 'c'. Navigating scholar straight to book catalog details.");
+              window.location.replace(`${window.location.origin}/#/catalog/${book.isbn}`);
             }
           } else {
             // Strip parameter if invalid
@@ -578,6 +635,7 @@ function App() {
 
   return (
     <Router>
+      <ScrollToTop />
       <div className="app-container">
         {/* Top Decorative Border */}
         <div className="royal-top-border"></div>
@@ -609,6 +667,9 @@ function App() {
               </NavLink>
               <NavLink to="/gatepass" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <Shield size={16} /> {t('common.gatepass')}
+              </NavLink>
+              <NavLink to="/sages" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <BookOpen size={16} /> {t('common.sagesGuild')}
               </NavLink>
               {user?.role === 'ADMIN' && (
                 <NavLink to="/admin" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
@@ -700,6 +761,9 @@ function App() {
                 <NavLink to="/gatepass" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu}>
                   <Shield size={20} /> {t('common.gatepass')}
                 </NavLink>
+                <NavLink to="/sages" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={closeMobileMenu}>
+                  <BookOpen size={20} /> {t('common.sagesGuild')}
+                </NavLink>
 
                 <div className="mobile-language-section" style={{ padding: '10px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
@@ -789,6 +853,8 @@ function App() {
             <Route path="/admin/audit" element={<CuratorInventoryAuditPage user={user} />} />
             <Route path="/admin/nfc" element={<NfcCounterDashboard user={user} />} />
             <Route path="/profile" element={<ProfilePage user={user} />} />
+            <Route path="/sages" element={<HelpPage />} />
+            <Route path="/help" element={<HelpPage />} />
             <Route path="/gatepass" element={<GatepassPage user={user} />} />
             <Route path="/gatepass/:checkoutId" element={<GatepassPage user={user} />} />
             <Route path="/privacy" element={<PrivacyNotice />} />
