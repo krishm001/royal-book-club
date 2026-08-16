@@ -843,7 +843,6 @@ public class CheckoutService {
             throw new IllegalArgumentException("NFC Tag UID is required for verified checkout.");
         }
 
-        DocumentReference bookRef = firestore.collection("books").document(cleanIsbn);
         DocumentReference checkoutRef = firestore.collection(COLLECTION_NAME).document();
         String checkoutId = checkoutRef.getId();
 
@@ -852,10 +851,11 @@ public class CheckoutService {
         try {
             String finalCheckoutId = firestore.runTransaction(transaction -> {
                 // 1. Validate Book existence, copy availability, and Tag UID match
-                DocumentSnapshot bookDoc = transaction.get(bookRef).get();
-                if (!bookDoc.exists()) {
+                DocumentSnapshot bookDoc = resolveBookDocument(cleanIsbn, transaction);
+                if (bookDoc == null) {
                     throw new IllegalArgumentException("Book with ISBN " + cleanIsbn + " does not exist in catalog.");
                 }
+                DocumentReference bookRef = bookDoc.getReference();
 
                 List<BookCopy> copies = bookService.getOrCreateBookCopies(bookDoc);
                 BookCopy matchedCopy = null;
@@ -1088,12 +1088,11 @@ public class CheckoutService {
                 }
 
                 String resolvedBookId = checkoutDoc.getString("bookId");
-                DocumentReference bookRef = firestore.collection("books").document(resolvedBookId);
-                DocumentSnapshot bookDoc = transaction.get(bookRef).get();
-
-                if (!bookDoc.exists()) {
+                DocumentSnapshot bookDoc = resolveBookDocument(resolvedBookId, transaction);
+                if (bookDoc == null) {
                     throw new IllegalArgumentException("Book not found.");
                 }
+                DocumentReference bookRef = bookDoc.getReference();
 
                 List<BookCopy> copies = bookService.getOrCreateBookCopies(bookDoc);
                 BookCopy matchedCopy = null;
@@ -1469,6 +1468,36 @@ public class CheckoutService {
             }
             transaction.update(bookRef, "copies", serializedCopies);
         }
+    }
+
+    private DocumentSnapshot resolveBookDocument(String isbn, com.google.cloud.firestore.Transaction transaction) throws Exception {
+        if (isbn == null || isbn.isBlank()) {
+            return null;
+        }
+        String cleanIsbn = isbn.trim().replace("-", "");
+        
+        // 1. Query by isbn field
+        Query isbnQuery = firestore.collection("books").whereEqualTo("isbn", cleanIsbn).limit(1);
+        QuerySnapshot isbnSnap = transaction.get(isbnQuery).get();
+        if (!isbnSnap.isEmpty()) {
+            return isbnSnap.getDocuments().get(0);
+        }
+        
+        // 2. Query by alternativeIsbns list
+        Query altQuery = firestore.collection("books").whereArrayContains("alternativeIsbns", cleanIsbn).limit(1);
+        QuerySnapshot altSnap = transaction.get(altQuery).get();
+        if (!altSnap.isEmpty()) {
+            return altSnap.getDocuments().get(0);
+        }
+        
+        // 3. Fallback to document ID
+        DocumentReference docRef = firestore.collection("books").document(cleanIsbn);
+        DocumentSnapshot docSnap = transaction.get(docRef).get();
+        if (docSnap.exists()) {
+            return docSnap;
+        }
+        
+        return null;
     }
 
     public void rateCheckout(String checkoutId, Integer rating) {
