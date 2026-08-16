@@ -685,10 +685,23 @@ public class BookService {
         if (maps == null) return list;
         for (Map<String, Object> m : maps) {
             if (m == null) continue;
+            
+            Integer copyNo = null;
+            Object copyNoVal = m.get("copyNo");
+            if (copyNoVal instanceof Number) {
+                copyNo = ((Number) copyNoVal).intValue();
+            }
+            
+            Long qrId = null;
+            Object qrIdVal = m.get("qrId");
+            if (qrIdVal instanceof Number) {
+                qrId = ((Number) qrIdVal).longValue();
+            }
+
             BookCopy copy = BookCopy.builder()
-                    .copyNo(m.get("copyNo") != null ? ((Long) m.get("copyNo")).intValue() : null)
+                    .copyNo(copyNo)
                     .ntagUid((String) m.get("ntagUid"))
-                    .qrId(m.get("qrId") != null ? ((Long) m.get("qrId")) : null)
+                    .qrId(qrId)
                     .status((String) m.get("status"))
                     .currentCheckoutId((String) m.get("currentCheckoutId"))
                     .build();
