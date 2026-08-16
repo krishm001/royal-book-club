@@ -113,8 +113,34 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
         log.error("An unexpected error occurred", ex);
+
+        // Traverse the exception chain to extract specific GCP / Firestore pre-condition, index, or permission messages
+        Throwable cause = ex;
+        String diagnosticMsg = null;
+        while (cause != null) {
+            String msg = cause.getMessage();
+            if (msg != null) {
+                String upperMsg = msg.toUpperCase();
+                if (upperMsg.contains("FAILED_PRECONDITION") || 
+                    upperMsg.contains("INDEX") || 
+                    upperMsg.contains("PERMISSION_DENIED") || 
+                    upperMsg.contains("SECURITY_RULES") ||
+                    upperMsg.contains("REQUIRED_INDEX")) {
+                    diagnosticMsg = msg;
+                    break;
+                }
+            }
+            cause = cause.getCause();
+        }
+
+        String returnedMessage = "An unexpected internal error occurred";
+        if (diagnosticMsg != null) {
+            returnedMessage = "Database rejected verification: " + diagnosticMsg;
+        }
+
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("An unexpected internal error occurred"));
+                .body(ApiResponse.error(returnedMessage));
     }
 }
+
