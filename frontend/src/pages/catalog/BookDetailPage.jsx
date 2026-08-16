@@ -261,6 +261,9 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
           memberName: user?.displayName,
           memberEmail: user?.email
         });
+        if (txRes && (txRes.status === 'RETURNED' || txRes.data?.status === 'RETURNED')) {
+          setInstantActionType('return');
+        }
       } else {
         const coords = await getCoordinates();
         txRes = await verifiedReturn({
@@ -982,6 +985,9 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         let txRes;
         if (nfcActionType === 'checkout') {
           txRes = await verifiedCheckout({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
+          if (txRes && (txRes.status === 'RETURNED' || txRes.data?.status === 'RETURNED')) {
+            setNfcActionType('return');
+          }
         } else {
           const coords = await getCoordinates();
           txRes = await verifiedReturn({
@@ -1073,6 +1079,9 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
             let txRes;
             if (actionType === 'checkout') {
               txRes = await verifiedCheckout({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: cleanScanned });
+              if (txRes && (txRes.status === 'RETURNED' || txRes.data?.status === 'RETURNED')) {
+                setNfcActionType('return');
+              }
             } else {
               const coords = await getCoordinates();
               txRes = await verifiedReturn({

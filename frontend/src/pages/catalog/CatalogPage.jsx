@@ -551,6 +551,9 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
         const res = await verifiedCheckout({ bookId: p2dBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
         if (res) {
           setCreatedCheckoutId(res.id || res.data?.id);
+          if (res.status === 'RETURNED' || res.data?.status === 'RETURNED') {
+            setP2dActionType('return');
+          }
         }
       } else {
         const res = await verifiedReturn({ bookId: p2dBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
@@ -1008,6 +1011,9 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
           const res = await verifiedCheckout({ bookId: currentBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid });
           if (res) {
             setCreatedCheckoutId(res.id || res.data?.id);
+            if (res.status === 'RETURNED' || res.data?.status === 'RETURNED') {
+              setNfcActionType('return');
+            }
           }
         } else {
           const res = await verifiedReturn({ bookId: currentBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid });
