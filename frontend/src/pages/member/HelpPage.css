@@ -33,6 +33,13 @@
   gap: 1.5rem;
 }
 
+.header-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
 .sages-back-btn {
   display: flex;
   align-items: center;
@@ -55,6 +62,29 @@
   border-color: var(--gold-primary, #d4af37);
   color: var(--gold-primary, #d4af37);
   background: rgba(var(--accent-glow, 212, 175, 55), 0.05);
+}
+
+.print-guide-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--gold-primary, #d4af37);
+  border: none;
+  padding: 0.65rem 1.3rem;
+  border-radius: 30px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.print-guide-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.35);
+  filter: brightness(1.1);
 }
 
 .sages-badge {
@@ -97,7 +127,7 @@
   gap: 0.75rem;
   border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
   padding-bottom: 1rem;
-  margin-bottom: 3rem;
+  margin-bottom: 2.5rem;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -134,93 +164,310 @@
   box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
 }
 
-/* Card Grid Layout */
-.sages-card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 2rem;
+/* Sub-tabs / Method Selectors */
+.royal-sub-tabs {
+  display: flex;
+  gap: 0.5rem;
+  background: var(--card-bg, #f5f5f5);
+  padding: 0.4rem;
+  border-radius: 30px;
+  width: fit-content;
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.05));
+  margin-bottom: 1.5rem;
 }
 
-.sages-info-card {
+[data-theme='salon'] .royal-sub-tabs {
+  background: #1e1e1e;
+}
+
+.sub-tab-btn {
+  background: transparent;
+  border: none;
+  padding: 0.6rem 1.4rem;
+  border-radius: 25px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-muted, #666666);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.sub-tab-btn.active {
   background: var(--card-bg, #ffffff);
-  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
-  border-radius: 20px;
-  padding: 2.2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
-  position: relative;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  color: var(--gold-primary, #d4af37);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
-.sages-info-card:hover {
-  transform: translateY(-8px);
-  border-color: var(--gold-primary, #d4af37);
-  box-shadow: 0 10px 30px rgba(var(--accent-glow, 212, 175, 55), 0.1);
-}
-
-.sages-card-icon-wrapper {
-  width: 54px;
-  height: 54px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.5rem;
-}
-
-.nfc-gold {
-  background: rgba(212, 175, 55, 0.1);
+[data-theme='salon'] .sub-tab-btn.active {
+  background: #2a2a2a;
   color: #d4af37;
 }
 
-.scan-teal {
-  background: rgba(20, 184, 166, 0.1);
-  color: #14b8a6;
+/* Train Stepper Container */
+.train-stepper-panel {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+  border-radius: 24px;
+  padding: 3rem;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.02);
+  margin-bottom: 2rem;
 }
 
-.manual-blue {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+.stepper-meta {
+  margin-bottom: 2.5rem;
 }
 
-.location-emerald {
+.stepper-title-gradient {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: linear-gradient(135deg, var(--gold-primary, #d4af37) 0%, #b28e20 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.stepper-meta p {
+  font-size: 0.95rem;
+  color: var(--text-muted, #666666);
+  margin: 0;
+}
+
+/* Train Hops Stepper Tracks */
+.train-hops-wrapper {
+  position: relative;
+  margin-bottom: 3.5rem;
+  padding: 1.5rem 0;
+}
+
+.train-track-line {
+  position: absolute;
+  top: calc(1.5rem + 18px); /* Center aligning with nodes */
+  left: 5%;
+  right: 5%;
+  height: 4px;
+  background: var(--border-color, rgba(0, 0, 0, 0.08));
+  border-radius: 2px;
+  z-index: 1;
+}
+
+.train-track-active {
+  height: 100%;
+  background: var(--gold-primary, #d4af37);
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.train-nodes-container {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index: 2;
+}
+
+.train-hop-node {
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 20%;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.train-node-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--card-bg, #ffffff);
+  border: 3px solid var(--border-color, rgba(0, 0, 0, 0.12));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--text-muted, #777777);
+  margin-bottom: 0.8rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme='salon'] .train-node-circle {
+  background: #1a1a1a;
+  border-color: #333333;
+}
+
+.train-node-text-wrapper {
+  text-align: center;
+  max-width: 140px;
+}
+
+.train-node-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-muted, #555555);
+  display: block;
+  margin-bottom: 0.2rem;
+  transition: color 0.3s ease;
+}
+
+.train-node-short-text {
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: var(--text-muted, #888888);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Train Hop States */
+.train-hop-node.active .train-node-circle {
+  border-color: var(--gold-primary, #d4af37);
+  background: var(--gold-primary, #d4af37);
+  color: #ffffff;
+  transform: scale(1.15);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+}
+
+.train-hop-node.active .train-node-title {
+  color: var(--gold-primary, #d4af37);
+  font-weight: 800;
+}
+
+.train-hop-node.completed .train-node-circle {
+  border-color: #10b981;
   background: rgba(16, 185, 129, 0.1);
   color: #10b981;
 }
 
-.qr-purple {
-  background: rgba(139, 92, 246, 0.1);
-  color: #8b5cf6;
+.train-hop-node.completed .train-node-title {
+  color: #10b981;
 }
 
-.curator-orange {
-  background: rgba(249, 115, 22, 0.1);
-  color: #f97316;
+.train-hop-node:hover:not(.active) .train-node-circle {
+  transform: translateY(-2px);
+  border-color: var(--gold-primary, #d4af37);
 }
 
-.sages-info-card h3 {
-  font-size: 1.3rem;
+/* Hop Detail Panel */
+.hop-detail-panel {
+  background: rgba(var(--accent-glow, 212, 175, 55), 0.02);
+  border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  padding-top: 2.5rem;
+  margin-top: 2rem;
+}
+
+.hop-detail-header {
+  margin-bottom: 1.8rem;
+}
+
+.hop-detail-badge {
+  font-size: 0.7rem;
   font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-muted, #888888);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.hop-detail-header h2 {
+  font-size: 1.8rem;
+  font-weight: 800;
   letter-spacing: -0.01em;
+  color: var(--text-main, #111111);
 }
 
-.sages-info-card p {
-  font-size: 0.95rem;
-  line-height: 1.6;
+.hop-detail-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 3rem;
+  align-items: flex-start;
+}
+
+.hop-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.verbatim-explanation p {
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--text-main, #333333);
+  margin: 0;
+}
+
+.hop-tips-alert {
+  display: flex;
+  gap: 1rem;
+  background: rgba(212, 175, 55, 0.06);
+  border-left: 3px solid var(--gold-primary, #d4af37);
+  padding: 1.2rem;
+  border-radius: 0 12px 12px 0;
+}
+
+.tips-icon {
+  color: var(--gold-primary, #d4af37);
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.tips-content strong {
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gold-primary, #d4af37);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.tips-content p {
+  font-size: 0.9rem;
+  line-height: 1.5;
   color: var(--text-muted, #555555);
+  margin: 0;
 }
 
-.card-micro-tag {
+/* Instructional Image Rendering */
+.hop-detail-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  padding: 0.8rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme='salon'] .hop-detail-visual {
+  background: #1a1a1a;
+}
+
+.royal-instructional-image {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
+}
+
+.image-caption {
   font-size: 0.75rem;
   font-weight: 700;
+  color: var(--text-muted, #999999);
+  text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-muted, #888888);
-  margin-top: auto;
-  border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.05));
-  padding-top: 1rem;
 }
 
 /* Gatepass Panel */
@@ -398,6 +645,11 @@
   margin: 0;
 }
 
+/* Print Only Layout styles (Normally Hidden) */
+.print-only-layout {
+  display: none;
+}
+
 /* Micro animations */
 .fade-in {
   animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -414,12 +666,105 @@
   }
 }
 
+/* Print media query override */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .sages-help-container > *:not(.print-only-layout) {
+    display: none !important;
+  }
+
+  .print-only-layout {
+    display: block !important;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  .print-header {
+    border-bottom: 2px solid #000000;
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  .print-header h1 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .print-header p {
+    font-size: 0.95rem;
+    color: #444444;
+    margin: 0;
+  }
+
+  .print-section {
+    margin-bottom: 2.5rem;
+    page-break-inside: avoid;
+  }
+
+  .print-section h2 {
+    font-size: 1.3rem;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 0.4rem;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+  }
+
+  .print-step {
+    margin-bottom: 1.5rem;
+    page-break-inside: avoid;
+  }
+
+  .print-step h3 {
+    font-size: 1.05rem;
+    margin: 0 0 0.4rem 0;
+    color: #111;
+  }
+
+  .print-verbatim {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0 0 0.4rem 0;
+    white-space: pre-line;
+  }
+
+  .print-tip {
+    font-size: 0.85rem;
+    color: #555;
+    background: #f9f9f9;
+    padding: 0.5rem;
+    border-left: 3px solid #666;
+    margin: 0 0 0.8rem 0;
+  }
+
+  .print-image-container {
+    margin-top: 0.6rem;
+    text-align: center;
+  }
+
+  .print-img {
+    max-width: 300px;
+    height: auto;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+}
+
 /* Responsive adjustments */
 @media (max-width: 992px) {
   .sages-gatepass-panel {
     grid-template-columns: 1fr;
     gap: 2.5rem;
     padding: 2rem;
+  }
+
+  .hop-detail-layout {
+    grid-template-columns: 1fr;
+    gap: 2rem;
   }
 }
 
@@ -441,9 +786,34 @@
     padding: 0.6rem 1rem;
     font-size: 0.85rem;
   }
-  
-  .sages-card-grid {
-    grid-template-columns: 1fr;
+
+  .train-stepper-panel {
+    padding: 1.5rem;
+  }
+
+  .train-track-line {
+    display: none; /* Hide track on mobile for stack layout */
+  }
+
+  .train-nodes-container {
+    flex-direction: column;
     gap: 1.5rem;
+  }
+
+  .train-hop-node {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .train-node-circle {
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .train-node-text-wrapper {
+    text-align: left;
+    max-width: 100%;
   }
 }

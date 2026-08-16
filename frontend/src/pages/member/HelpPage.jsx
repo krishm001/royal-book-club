@@ -1,30 +1,297 @@
 import React, { useState } from 'react';
-import { ArrowLeft, BookOpen, Smartphone, QrCode, ClipboardList, Key, HelpCircle, ShieldCheck, HelpCircle as FaqIcon, CheckCircle2 } from 'lucide-react';
+import { 
+  ArrowLeft, BookOpen, Smartphone, QrCode, ClipboardList, Key, 
+  HelpCircle, ShieldCheck, CheckCircle2, Printer, MapPin, 
+  AlertCircle, ExternalLink 
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../i18n/LanguageContext';
 import './HelpPage.css';
+
+// Import generated step assets
+import nfcTapGuideImg from '../../assets/nfc_tap_guide.png';
+import barcodeScanGuideImg from '../../assets/barcode_scan_guide.png';
 
 const HelpPage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('checkout'); // checkout | return | gatepass | faq
+  
+  // Method selectors
+  const [checkoutMethod, setCheckoutMethod] = useState('nfc'); // nfc | barcode | manual
+  const [returnMethod, setReturnMethod] = useState('gps'); // gps | qr
+
+  // Active Train Hop indices
+  const [activeNfcHop, setActiveNfcHop] = useState(0);
+  const [activeBarcodeHop, setActiveBarcodeHop] = useState(0);
+  const [activeManualHop, setActiveManualHop] = useState(0);
+  const [activeGpsHop, setActiveGpsHop] = useState(0);
+  const [activeQrHop, setActiveQrHop] = useState(0);
+
+  const nfcSteps = [
+    {
+      title: t('sagesGuild.nfcTitle1', 'Locate Gold Tag'),
+      headline: t('sagesGuild.nfcHeadline1', 'Spot the Golden Sticker'),
+      short: t('sagesGuild.nfcShort1', 'Sticker sits on top left cover'),
+      verbatim: t('sagesGuild.nfcVerbatim1', "Every physical book in the Royal Library holds an elite electronic soul. Walk to the bookshelves and locate your desired book. Look at the top-left corner of the book's front cover to find the gold circular NTAG213 electronic tag. Ensure the sticker is visible and clean before initiating your swipe."),
+      tips: t('sagesGuild.nfcTips1', "All books are pre-programmed at curation time. This sticker serves as your physical-digital gateway."),
+      icon: <BookOpen size={20} />,
+      image: null
+    },
+    {
+      title: t('sagesGuild.nfcTitle2', 'Tap Smartphone'),
+      headline: t('sagesGuild.nfcHeadline2', 'Hold & Swipe Device'),
+      short: t('sagesGuild.nfcShort2', 'iPhone: tap top edge. Android: tap back'),
+      verbatim: t('sagesGuild.nfcVerbatim2', "Unlock your smartphone and hold it near the book cover:\n\n• 📱 iPhone (iOS): Tap the very top edge of your iPhone against the gold sticker.\n• 🤖 Android: Place the back center of your phone flat against the top-left of the book cover. Gently slide the phone around the sticker area and wait for a brief vibration.\n\n*NFC Prompt Behavior*: In some cases, your device will prompt you to choose the correct browser (always select Chrome or Safari). In others, it will seamlessly launch your browser and take you directly to the digital library website checkout page."),
+      tips: t('sagesGuild.nfcTips2', "Ensure NFC is turned ON in your phone settings. Remove thick metallic phone cases if the signal is not instantly received."),
+      icon: <Smartphone size={20} />,
+      image: nfcTapGuideImg
+    },
+    {
+      title: t('sagesGuild.nfcTitle3', 'Secure Account'),
+      headline: t('sagesGuild.nfcHeadline3', 'Sign In Securely'),
+      short: t('sagesGuild.nfcShort3', 'First timers: Select Google, LinkedIn, or Email'),
+      verbatim: t('sagesGuild.nfcVerbatim3', "If you are a first-time scholar visiting our sanctuary, a secure login popup will slide up. Do not worry! This is a one-time credential check to record your literary custody in our immutable ledger. You can choose from Google, LinkedIn, or a traditional Email based signup. This securely registers your scholarly profile instantly."),
+      tips: t('sagesGuild.nfcTips3', "We protect your privacy. No personal reading history is disclosed outside of official circulation reports."),
+      icon: <Key size={20} />,
+      image: null
+    },
+    {
+      title: t('sagesGuild.nfcTitle4', 'Instant Loan'),
+      headline: t('sagesGuild.nfcHeadline4', 'Authorize & Go'),
+      short: t('sagesGuild.nfcShort4', 'Click checkout and collect your Gatepass'),
+      verbatim: t('sagesGuild.nfcVerbatim4', "Once authenticated, the book detail screen will dynamically render the active NFC token. Simply click the golden 'Instant Checkout' button. The ledger updates instantly in the cloud, granting you authorized loan custody. A secure Gatepass barcode will immediately be written to your profile. You are now free to walk past the entrance hall!"),
+      tips: t('sagesGuild.nfcTips4', "Your profile will now list this book under your active loans with its live due dates."),
+      icon: <CheckCircle2 size={20} />,
+      image: null
+    }
+  ];
+
+  const barcodeSteps = [
+    {
+      title: t('sagesGuild.barTitle1', 'Enter Study'),
+      headline: t('sagesGuild.barHeadline1', 'Launch Web Portal'),
+      short: t('sagesGuild.barShort1', 'Open Study page and click Self-Checkout'),
+      verbatim: t('sagesGuild.barVerbatim1', "Open the Royal Book Club website on your mobile browser. Enter the 'Study' tab (Catalog) and locate the prominent 'Self-Checkout' glassmorphic card right at the top. Click 'Barcode Scan' to request camera authorization."),
+      tips: t('sagesGuild.barTips1', "Make sure to grant camera permission when prompted by your browser."),
+      icon: <BookOpen size={20} />,
+      image: null
+    },
+    {
+      title: t('sagesGuild.barTitle2', 'Align Viewfinder'),
+      headline: t('sagesGuild.barHeadline2', 'Scan Back Cover'),
+      short: t('sagesGuild.barShort2', 'Hold camera 4 inches away targeting barcode'),
+      verbatim: t('sagesGuild.barVerbatim2', "Flip the physical volume over to find the printed barcode on its back cover. Hold your phone camera parallel to the book, about 4 to 6 inches away. Align the barcode within the glowing golden camera scanner viewfinder box displayed on your screen. The auto-focus lens will instantly capture and parse the ISBN."),
+      tips: t('sagesGuild.barTips2', "Avoid scanning in extreme shadows or under heavy glare. Tilt the book slightly if reflection is high."),
+      icon: <Smartphone size={20} />,
+      image: barcodeScanGuideImg
+    },
+    {
+      title: t('sagesGuild.barTitle3', 'Authorize Loan'),
+      headline: t('sagesGuild.barHeadline3', 'Confirm Book Loan'),
+      short: t('sagesGuild.barShort3', 'Click request checkout to complete transaction'),
+      verbatim: t('sagesGuild.barVerbatim3', "As soon as the barcode is captured, a checkout confirmation sheet will slide up. Review the book title, author, and available copies. Select your copy and click 'Confirm Checkout'. The server immediately records your checkout and writes a Gatepass barcode to your ledger."),
+      tips: t('sagesGuild.barTips3', "If you are not logged in, a secure signup popup will guide you. Choose Google, LinkedIn, or Email to complete registration."),
+      icon: <CheckCircle2 size={20} />,
+      image: null
+    }
+  ];
+
+  const manualSteps = [
+    {
+      title: t('sagesGuild.manTitle1', 'Browse Books'),
+      headline: t('sagesGuild.manHeadline1', 'Select Your Title'),
+      short: t('sagesGuild.manShort1', 'Search catalog and open book details'),
+      verbatim: t('sagesGuild.manVerbatim1', "If your device doesn't have an NFC reader or camera scanner, browse our digital catalog in the 'Study' section. Search by title, author, or genre to locate the desired volume. Click on the book card to open its full details."),
+      tips: t('sagesGuild.manTips1', "You can use search tags to easily find titles from specific salon houses."),
+      icon: <BookOpen size={20} />,
+      image: null
+    },
+    {
+      title: t('sagesGuild.manTitle2', 'File Loan'),
+      headline: t('sagesGuild.manHeadline2', 'Request Curator approval'),
+      short: t('sagesGuild.manShort2', 'Click Check Out Volume in details page'),
+      verbatim: t('sagesGuild.manVerbatim2', "Click the golden 'Check Out Volume' button on the book details page. This files a digital loan request to our active desk curator queue. Ensure you are signed in first using Google, LinkedIn, or Email to map this request to your ledger profile."),
+      tips: t('sagesGuild.manTips2', "Curators monitor this queue in real-time inside the Entrance Salon."),
+      icon: <ClipboardList size={20} />,
+      image: null
+    },
+    {
+      title: t('sagesGuild.manTitle3', 'Collect Book'),
+      headline: t('sagesGuild.manHeadline3', 'Verify & Exit Salon'),
+      short: t('sagesGuild.manShort3', 'Wait for approval badge to exit salon'),
+      verbatim: t('sagesGuild.manVerbatim3', "The desk curator will verify your request on their console instantly. Once approved, the book's stock is locked, and your Gatepass is immediately generated. You can collect your book and exit securely."),
+      tips: t('sagesGuild.manTips3', "You will receive a notification badge once your loan request is approved."),
+      icon: <CheckCircle2 size={20} />,
+      image: null
+    }
+  ];
+
+  const gpsSteps = [
+    {
+      title: t('sagesGuild.gpsTitle1', 'Stand in Salon'),
+      headline: t('sagesGuild.gpsHeadline1', 'Enable Phone GPS'),
+      short: t('sagesGuild.gpsShort1', 'Stand inside library and allow location permission'),
+      verbatim: t('sagesGuild.gpsVerbatim1', "To perform an instant self-return, you must be physically standing inside the library. Ensure your smartphone's GPS/location services are enabled. When the application prompts for location sharing, click 'Allow' so we can verify your presence."),
+      tips: t('sagesGuild.gpsTips1', "Our default geofence coordinates are Latitude 12.8983, Longitude 77.705317 with a 20-meter tolerance radius."),
+      icon: <MapPin size={20} />,
+      image: null
+    },
+    {
+      title: t('sagesGuild.gpsTitle2', 'Initiate Return'),
+      headline: t('sagesGuild.gpsHeadline2', 'Select Active Loan'),
+      short: t('sagesGuild.gpsShort2', 'Select book from ledger active profile'),
+      verbatim: t('sagesGuild.gpsVerbatim2', "Open your Member Profile or go to the Study page. Select the book you are returning from your Active Loans grid, and click 'Initiate Self-Return'. The application will automatically calculate your distance from the geofence center."),
+      tips: t('sagesGuild.gpsTips2', "If GPS signal is weak, you can instantly bypass using the QR Scan tab."),
+      icon: <ClipboardList size={20} />,
+      image: null
+    },
+    {
+      title: t('sagesGuild.gpsTitle3', 'Submit Proof'),
+      headline: t('sagesGuild.gpsHeadline3', 'Submit GPS coordinates'),
+      short: t('sagesGuild.gpsShort3', 'Click return to instantly clear book stock'),
+      verbatim: t('sagesGuild.gpsVerbatim3', "Click the 'Confirm Return' button. The application submits your current coordinates directly to our backend server. Once verified inside bounds, the book's stock updates immediately, and you can place the book back onto its respective shelf!"),
+      tips: t('sagesGuild.gpsTips3', "No admin mediation required. The book is instantly available for other scholars to enjoy."),
+      icon: <CheckCircle2 size={20} />,
+      image: null
+    }
+  ];
+
+  const qrReturnSteps = [
+    {
+      title: t('sagesGuild.qrTitle1', 'Spot Placard'),
+      headline: t('sagesGuild.qrHeadline1', 'Find Return QR Placard'),
+      short: t('sagesGuild.qrShort1', 'Find Return QR placard on main desk'),
+      verbatim: t('sagesGuild.qrVerbatim1', "If your GPS is failing, or coordinates verify as outside bounds, look at the main check-in counter desk in the library. Find the physical printed Return Validator QR placard. This placard contains a specialized security signature confirming physical desk presence."),
+      tips: t('sagesGuild.qrTips1', "Only physical printed placards inside the salon are valid for return verification."),
+      icon: <MapPin size={20} />,
+      image: null
+    },
+    {
+      title: t('sagesGuild.qrTitle2', 'Scan Code'),
+      headline: t('sagesGuild.qrHeadline2', 'Scan Desk Validator QR'),
+      short: t('sagesGuild.qrShort2', 'Scan QR using mobile camera viewfinder'),
+      verbatim: t('sagesGuild.qrVerbatim2', "Select the 'Validator QR' tab on your return screen. Click the camera scanner icon to mount the in-app viewfinder. Focus your lens on the physical desk placard. The app will capture and parse the validator path string dynamically."),
+      tips: t('sagesGuild.qrTips2', "You can also scan this QR code directly with your phone's native camera app; it will open the Royal Guide and immediately process your return."),
+      icon: <QrCode size={20} />,
+      image: null
+    },
+    {
+      title: t('sagesGuild.qrTitle3', 'Verify Return'),
+      headline: t('sagesGuild.qrHeadline3', 'Instant Ledger Clearance'),
+      short: t('sagesGuild.qrShort3', 'Instant catalog clearance, no curator delay'),
+      verbatim: t('sagesGuild.qrVerbatim3', "The system matches the scanned security signature with our ledger credentials. Once validated, your return request is completed instantly, clearing the book back into catalog availability and updating your active loans ledger."),
+      tips: t('sagesGuild.qrTips3', "This serves as a high-security manual fallback, ensuring a seamless self-checkout experience."),
+      icon: <CheckCircle2 size={20} />,
+      image: null
+    }
+  ];
 
   const faqItems = [
-    { q: t('sagesGuild.faqQ1'), a: t('sagesGuild.faqA1') },
-    { q: t('sagesGuild.faqQ2'), a: t('sagesGuild.faqA2') },
-    { q: t('sagesGuild.faqQ3'), a: t('sagesGuild.faqA3') },
+    { q: t('sagesGuild.faqQ1', "What is Web NFC?"), a: t('sagesGuild.faqA1', "Web NFC allows our library web application to read electronic tags attached to books in real-time, completely within the browser. Simply unlock your phone, turn on NFC, and tap.") },
+    { q: t('sagesGuild.faqQ2', "Do I need to download a separate app?"), a: t('sagesGuild.faqA2', "No! The Royal Book Club leverages advanced modern browser APIs. All checkout and return options occur completely on the browser, without app store downloads.") },
+    { q: t('sagesGuild.faqQ3', "What happens if geofencing return fails?"), a: t('sagesGuild.faqA3', "If location coordinates fail due to bad indoor reception, use our QR Validator Bypass. Simply scan the physical QR placard sitting on the main salon desk to instantly finalize the return.") },
   ];
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Helper to render Train Hops
+  const renderTrainHops = (steps, activeHop, setActiveHop) => {
+    return (
+      <div className="train-hops-wrapper">
+        {/* Track Line */}
+        <div className="train-track-line">
+          <div 
+            className="train-track-active" 
+            style={{ width: `${(activeHop / (steps.length - 1)) * 100}%` }}
+          ></div>
+        </div>
+
+        {/* Train Nodes */}
+        <div className="train-nodes-container">
+          {steps.map((item, index) => {
+            const isCompleted = index < activeHop;
+            const isActive = index === activeHop;
+            return (
+              <button 
+                key={index} 
+                className={`train-hop-node ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
+                onClick={() => setActiveHop(index)}
+                aria-label={`Hop ${index + 1}: ${item.title}`}
+              >
+                <div className="train-node-circle">
+                  {isCompleted ? <CheckCircle2 size={16} /> : <span>{index + 1}</span>}
+                </div>
+                <div className="train-node-text-wrapper">
+                  <span className="train-node-title">{item.title}</span>
+                  <p className="train-node-short-text">{item.short}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // Helper to render Active Hop detail
+  const renderHopDetail = (item) => {
+    return (
+      <div className="hop-detail-panel fade-in">
+        <div className="hop-detail-header">
+          <span className="hop-detail-badge">STEP-BY-STEP DETAIL</span>
+          <h2>{item.headline}</h2>
+        </div>
+
+        <div className="hop-detail-layout">
+          <div className="hop-detail-info">
+            <div className="verbatim-explanation">
+              {item.verbatim.split('\n\n').map((para, i) => (
+                <p key={i}>{para}</p>
+              ))}
+            </div>
+
+            {item.tips && (
+              <div className="hop-tips-alert">
+                <AlertCircle size={18} className="tips-icon" />
+                <div className="tips-content">
+                  <strong>PRO TIPS & GUIDANCE</strong>
+                  <p>{item.tips}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {item.image && (
+            <div className="hop-detail-visual">
+              <img src={item.image} alt={item.headline} className="royal-instructional-image" />
+              <div className="image-caption">Sovereign Library Visual Guide</div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="sages-help-container">
-      {/* Premium Header background blob */}
+      {/* Background aesthetic premium glow */}
       <div className="sages-hero-bg-glow"></div>
       
       <header className="sages-help-header">
-        <button className="sages-back-btn" onClick={() => navigate(-1)} aria-label="Go back">
-          <ArrowLeft size={20} />
-          <span>{t('common.back') || 'Back'}</span>
-        </button>
+        <div className="header-top-row">
+          <button className="sages-back-btn" onClick={() => navigate(-1)} aria-label="Go back">
+            <ArrowLeft size={20} />
+            <span>{t('common.back') || 'Back'}</span>
+          </button>
+
+          <button className="print-guide-btn" onClick={handlePrint}>
+            <Printer size={16} />
+            <span>Print Royal Guide</span>
+          </button>
+        </div>
         
         <div className="sages-header-titles">
           <div className="sages-badge">
@@ -71,7 +338,7 @@ const HelpPage = () => {
           className={`sages-tab-btn ${activeTab === 'faq' ? 'active' : ''}`}
           onClick={() => setActiveTab('faq')}
         >
-          <FaqIcon size={18} />
+          <HelpCircle size={18} />
           <span>{t('sagesGuild.tabFaq')}</span>
         </button>
       </nav>
@@ -79,63 +346,98 @@ const HelpPage = () => {
       {/* Main Content Area */}
       <main className="sages-content-area">
         {activeTab === 'checkout' && (
-          <div className="sages-card-grid fade-in">
-            <div className="sages-info-card">
-              <div className="sages-card-icon-wrapper nfc-gold">
-                <Smartphone size={24} />
-              </div>
-              <h3>{t('sagesGuild.nfcTitle')}</h3>
-              <p>{t('sagesGuild.nfcDesc')}</p>
-              <div className="card-micro-tag">NFC NTAG213</div>
+          <div className="methods-vertical-layout fade-in">
+            {/* Method Selectors */}
+            <div className="royal-sub-tabs">
+              <button 
+                className={`sub-tab-btn ${checkoutMethod === 'nfc' ? 'active' : ''}`}
+                onClick={() => setCheckoutMethod('nfc')}
+              >
+                <span>NFC Instant Tap</span>
+              </button>
+              <button 
+                className={`sub-tab-btn ${checkoutMethod === 'barcode' ? 'active' : ''}`}
+                onClick={() => setCheckoutMethod('barcode')}
+              >
+                <span>Barcode Scan</span>
+              </button>
+              <button 
+                className={`sub-tab-btn ${checkoutMethod === 'manual' ? 'active' : ''}`}
+                onClick={() => setCheckoutMethod('manual')}
+              >
+                <span>Digital Request</span>
+              </button>
             </div>
 
-            <div className="sages-info-card">
-              <div className="sages-card-icon-wrapper scan-teal">
-                <QrCode size={24} />
+            {/* Train Stepper Container */}
+            <div className="train-stepper-panel royal-card glassmorphic-panel">
+              <div className="stepper-meta">
+                <span className="stepper-title-gradient">TRAIN HOPS STEPPER</span>
+                <p>Click on any station hop to unlock detailed verbatim guides, micro-tips, and illustrations.</p>
               </div>
-              <h3>{t('sagesGuild.barcodeTitle')}</h3>
-              <p>{t('sagesGuild.barcodeDesc')}</p>
-              <div className="card-micro-tag">Barcode</div>
-            </div>
 
-            <div className="sages-info-card">
-              <div className="sages-card-icon-wrapper manual-blue">
-                <ClipboardList size={24} />
-              </div>
-              <h3>{t('sagesGuild.manualTitle')}</h3>
-              <p>{t('sagesGuild.manualDesc')}</p>
-              <div className="card-micro-tag">Curator Approval</div>
+              {checkoutMethod === 'nfc' && (
+                <>
+                  {renderTrainHops(nfcSteps, activeNfcHop, setActiveNfcHop)}
+                  {renderHopDetail(nfcSteps[activeNfcHop])}
+                </>
+              )}
+
+              {checkoutMethod === 'barcode' && (
+                <>
+                  {renderTrainHops(barcodeSteps, activeBarcodeHop, setActiveBarcodeHop)}
+                  {renderHopDetail(barcodeSteps[activeBarcodeHop])}
+                </>
+              )}
+
+              {checkoutMethod === 'manual' && (
+                <>
+                  {renderTrainHops(manualSteps, activeManualHop, setActiveManualHop)}
+                  {renderHopDetail(manualSteps[activeManualHop])}
+                </>
+              )}
             </div>
           </div>
         )}
 
         {activeTab === 'return' && (
-          <div className="sages-card-grid fade-in">
-            <div className="sages-info-card">
-              <div className="sages-card-icon-wrapper location-emerald">
-                <Smartphone size={24} />
-              </div>
-              <h3>{t('sagesGuild.geofenceTitle')}</h3>
-              <p>{t('sagesGuild.geofenceDesc')}</p>
-              <div className="card-micro-tag">GPS Verification</div>
+          <div className="methods-vertical-layout fade-in">
+            {/* Method Selectors */}
+            <div className="royal-sub-tabs">
+              <button 
+                className={`sub-tab-btn ${returnMethod === 'gps' ? 'active' : ''}`}
+                onClick={() => setReturnMethod('gps')}
+              >
+                <span>Geofenced Self-Return</span>
+              </button>
+              <button 
+                className={`sub-tab-btn ${returnMethod === 'qr' ? 'active' : ''}`}
+                onClick={() => setReturnMethod('qr')}
+              >
+                <span>Validator QR Scan</span>
+              </button>
             </div>
 
-            <div className="sages-info-card">
-              <div className="sages-card-icon-wrapper qr-purple">
-                <QrCode size={24} />
+            {/* Train Stepper Container */}
+            <div className="train-stepper-panel royal-card glassmorphic-panel">
+              <div className="stepper-meta">
+                <span className="stepper-title-gradient">TRAIN HOPS STEPPER</span>
+                <p>Click on any station hop to unlock detailed location bypass parameters, coordinates, and instructions.</p>
               </div>
-              <h3>{t('sagesGuild.qrTitle')}</h3>
-              <p>{t('sagesGuild.qrDesc')}</p>
-              <div className="card-micro-tag">Physical QR Scan</div>
-            </div>
 
-            <div className="sages-info-card">
-              <div className="sages-card-icon-wrapper curator-orange">
-                <ClipboardList size={24} />
-              </div>
-              <h3>{t('sagesGuild.curatorTitle')}</h3>
-              <p>{t('sagesGuild.curatorDesc')}</p>
-              <div className="card-micro-tag">Drop Box Override</div>
+              {returnMethod === 'gps' && (
+                <>
+                  {renderTrainHops(gpsSteps, activeGpsHop, setActiveGpsHop)}
+                  {renderHopDetail(gpsSteps[activeGpsHop])}
+                </>
+              )}
+
+              {returnMethod === 'qr' && (
+                <>
+                  {renderTrainHops(qrReturnSteps, activeQrHop, setActiveQrHop)}
+                  {renderHopDetail(qrReturnSteps[activeQrHop])}
+                </>
+              )}
             </div>
           </div>
         )}
@@ -163,8 +465,8 @@ const HelpPage = () => {
             </div>
             
             <div className="gatepass-info-text">
-              <h3>{t('sagesGuild.gatepassTitle')}</h3>
-              <p>{t('sagesGuild.gatepassDesc')}</p>
+              <h3>{t('sagesGuild.gatepassTitle', 'Entrance & Exit Gatepass')}</h3>
+              <p>{t('sagesGuild.gatepassDesc', 'When exiting the physical Entrance Salon, open your Gatepass page and scan the generated barcode. This clears the safety gate immediately.')}</p>
               
               <div className="gatepass-bullet-points">
                 <div className="gatepass-bullet">
@@ -200,6 +502,68 @@ const HelpPage = () => {
           </div>
         )}
       </main>
+
+      {/* Hidden Print Layout (Expanded sequentially) */}
+      <div className="print-only-layout">
+        <div className="print-header">
+          <h1>Sovereign Library - Comprehensive Royal Guide</h1>
+          <p>Official instructional document for physical-digital circulation gateway</p>
+        </div>
+
+        <section className="print-section">
+          <h2>1. NFC INSTANT CHECKOUT</h2>
+          {nfcSteps.map((step, idx) => (
+            <div key={idx} className="print-step">
+              <h3>Step {idx + 1}: {step.title} — {step.short}</h3>
+              <p className="print-verbatim">{step.verbatim}</p>
+              <p className="print-tip"><strong>Tips:</strong> {step.tips}</p>
+              {step.image && (
+                <div className="print-image-container">
+                  <img src={step.image} alt={step.title} className="print-img" />
+                </div>
+              )}
+            </div>
+          ))}
+        </section>
+
+        <section className="print-section">
+          <h2>2. BARCODE SCAN CHECKOUT</h2>
+          {barcodeSteps.map((step, idx) => (
+            <div key={idx} className="print-step">
+              <h3>Step {idx + 1}: {step.title} — {step.short}</h3>
+              <p className="print-verbatim">{step.verbatim}</p>
+              <p className="print-tip"><strong>Tips:</strong> {step.tips}</p>
+              {step.image && (
+                <div className="print-image-container">
+                  <img src={step.image} alt={step.title} className="print-img" />
+                </div>
+              )}
+            </div>
+          ))}
+        </section>
+
+        <section className="print-section">
+          <h2>3. GEOFENCED SELF-RETURN</h2>
+          {gpsSteps.map((step, idx) => (
+            <div key={idx} className="print-step">
+              <h3>Step {idx + 1}: {step.title} — {step.short}</h3>
+              <p className="print-verbatim">{step.verbatim}</p>
+              <p className="print-tip"><strong>Tips:</strong> {step.tips}</p>
+            </div>
+          ))}
+        </section>
+
+        <section className="print-section">
+          <h2>4. RETURN QR VALIDATOR (BYPASS)</h2>
+          {qrReturnSteps.map((step, idx) => (
+            <div key={idx} className="print-step">
+              <h3>Step {idx + 1}: {step.title} — {step.short}</h3>
+              <p className="print-verbatim">{step.verbatim}</p>
+              <p className="print-tip"><strong>Tips:</strong> {step.tips}</p>
+            </div>
+          ))}
+        </section>
+      </div>
     </div>
   );
 };

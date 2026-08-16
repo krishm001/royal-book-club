@@ -601,11 +601,18 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
     loadBooksAndData();
     loadHouses();
 
-    // Smooth scroll so that the Self-checkout panel is aligned right at the top on landing
+    // Smooth scroll so that the Self-checkout panel is aligned right below the sticky navigation header
     setTimeout(() => {
       const selfCheckoutEl = document.querySelector('.self-checkout-portal');
       if (selfCheckoutEl) {
-        selfCheckoutEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const navbarHeight = 80; // approximate height of floating navigation bar
+        const elementPosition = selfCheckoutEl.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
       }
     }, 400);
   }, []);

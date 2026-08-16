@@ -38,7 +38,7 @@ export default {
     theLibrary: "The Library",
     termsAndConditions: "Terms & Conditions",
     privacyNotice: "Privacy Notice",
-    sagesGuild: "Sages Guild"
+    sagesGuild: "Royal Guide"
   },
   home: {
     established: "ESTABLISHED",
@@ -432,7 +432,7 @@ export default {
     consentError: "Please agree to the Terms & Conditions and Privacy Notice before signing up."
   },
   sagesGuild: {
-    title: "Sages Guidance Hub",
+    title: "Royal Guidance Hub",
     subtitle: "Unlock the mysteries of the library's physical-digital circulation gateway",
     tabCheckout: "Checkout Options",
     tabReturn: "Return Options",
