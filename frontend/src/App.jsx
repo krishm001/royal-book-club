@@ -320,8 +320,13 @@ function App() {
                   // Same counter - local check of 5 minutes
                   const age = Date.now() - Number(latest.firstSeenAt);
                   if (age > 300000) {
-                    console.warn("Local NFC tap has expired (> 5 minutes). Redirecting silently to homepage.");
-                    window.location.replace(`${window.location.origin}/#/`);
+                    console.warn("Local NFC tap has expired (> 5 minutes). Redirecting to book page or homepage.");
+                    const matchIsbn = href.match(/\/catalog\/([0-9Xx]+)/);
+                    if (matchIsbn && matchIsbn[1]) {
+                      window.location.replace(`${window.location.origin}/#/catalog/${matchIsbn[1]}`);
+                    } else {
+                      window.location.replace(`${window.location.origin}/#/`);
+                    }
                     isLocalBlock = true;
                   }
                 }
@@ -350,8 +355,8 @@ function App() {
             
             if (c) {
               if (book.nfcVerificationStatus === "EXPIRED" || book.nfcVerificationStatus === "REUSED") {
-                console.warn(`NFC Tap status is ${book.nfcVerificationStatus}. Redirecting silently to homepage.`);
-                window.location.replace(`${window.location.origin}/#/`);
+                console.warn(`NFC Tap status is ${book.nfcVerificationStatus}. Redirecting to book details.`);
+                window.location.replace(`${window.location.origin}/#/catalog/${book.isbn}`);
                 return;
               }
 
@@ -420,12 +425,21 @@ function App() {
             }
           } else {
             // Strip parameter if invalid
-            window.location.replace(`${window.location.origin}/#/`);
+            const matchIsbn = href.match(/\/catalog\/([0-9Xx]+)/);
+            if (matchIsbn && matchIsbn[1]) {
+              window.location.replace(`${window.location.origin}/#/catalog/${matchIsbn[1]}`);
+            } else {
+              window.location.replace(`${window.location.origin}/#/`);
+            }
           }
         } catch (error) {
           console.error("Failed to resolve book from NFC deep link:", error);
-          // Just take the user to homepage silently for any error (e.g. invalid/not existing UID, or expired counter)
-          window.location.replace(`${window.location.origin}/#/`);
+          const matchIsbn = href.match(/\/catalog\/([0-9Xx]+)/);
+          if (matchIsbn && matchIsbn[1]) {
+            window.location.replace(`${window.location.origin}/#/catalog/${matchIsbn[1]}`);
+          } else {
+            window.location.replace(`${window.location.origin}/#/`);
+          }
         } finally {
           setDeepLinkResolving(false);
         }

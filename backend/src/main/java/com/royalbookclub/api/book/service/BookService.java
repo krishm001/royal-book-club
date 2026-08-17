@@ -774,12 +774,39 @@ public class BookService {
 
     public List<BookCopy> synchronizeCopies(List<BookCopy> existingCopies, BookDto bookDto) {
         List<BookCopy> copies = new ArrayList<>();
-        if (existingCopies != null) {
-            copies.addAll(existingCopies);
-        }
         
+        // Build a map of existing copies by copyNo for non-destructive merging
+        Map<Integer, BookCopy> existingMap = new HashMap<>();
+        if (existingCopies != null) {
+            for (BookCopy ec : existingCopies) {
+                if (ec.getCopyNo() != null) {
+                    existingMap.put(ec.getCopyNo(), ec);
+                }
+            }
+        }
+
         if (bookDto.getCopies() != null && !bookDto.getCopies().isEmpty()) {
-            copies = new ArrayList<>(bookDto.getCopies());
+            for (BookCopy dtoCopy : bookDto.getCopies()) {
+                Integer copyNo = dtoCopy.getCopyNo();
+                BookCopy merged = BookCopy.builder()
+                        .copyNo(copyNo)
+                        .ntagUid(dtoCopy.getNtagUid())
+                        .qrId(dtoCopy.getQrId())
+                        .status("AVAILABLE") // Default
+                        .currentCheckoutId(null)
+                        .build();
+
+                if (copyNo != null && existingMap.containsKey(copyNo)) {
+                    BookCopy existing = existingMap.get(copyNo);
+                    merged.setStatus(existing.getStatus() != null ? existing.getStatus() : "AVAILABLE");
+                    merged.setCurrentCheckoutId(existing.getCurrentCheckoutId());
+                }
+                copies.add(merged);
+            }
+        } else {
+            if (existingCopies != null) {
+                copies.addAll(existingCopies);
+            }
         }
         
         int targetTotal = bookDto.getTotalCopies();

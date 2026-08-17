@@ -10,6 +10,7 @@ import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
 import com.royalbookclub.api.book.dto.BookDto;
 import com.royalbookclub.api.book.model.Book;
+import com.royalbookclub.api.book.model.BookCopy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -507,5 +508,40 @@ public class BookServiceTest {
         assertTrue(writtenNtagUids.contains("04112233aabbcc"));
         assertTrue(writtenNtagUids.contains("04445566ddeeff"));
         assertEquals(2, writtenNtagUids.size());
+    }
+
+    @Test
+    void testSynchronizeCopies_PreservesStatusAndCheckoutId() {
+        List<BookCopy> existingCopies = Arrays.asList(
+            BookCopy.builder().copyNo(1).ntagUid("04112233aabbcc").status("CHECKED_OUT").currentCheckoutId("chk-123").build(),
+            BookCopy.builder().copyNo(2).ntagUid("04223344bbccdd").status("AVAILABLE").currentCheckoutId(null).build()
+        );
+
+        BookDto dto = BookDto.builder()
+                .isbn("9783161484100")
+                .title("A Royal Tale")
+                .totalCopies(2)
+                .copies(Arrays.asList(
+                    BookCopy.builder().copyNo(1).ntagUid("new-tag-1").status("AVAILABLE").build(),
+                    BookCopy.builder().copyNo(2).ntagUid("new-tag-2").status("AVAILABLE").build()
+                ))
+                .build();
+
+        List<BookCopy> result = bookService.synchronizeCopies(existingCopies, dto);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+
+        BookCopy copy1 = result.get(0);
+        assertEquals(1, copy1.getCopyNo());
+        assertEquals("new-tag-1", copy1.getNtagUid());
+        assertEquals("CHECKED_OUT", copy1.getStatus()); // Must be preserved!
+        assertEquals("chk-123", copy1.getCurrentCheckoutId()); // Must be preserved!
+
+        BookCopy copy2 = result.get(1);
+        assertEquals(2, copy2.getCopyNo());
+        assertEquals("new-tag-2", copy2.getNtagUid());
+        assertEquals("AVAILABLE", copy2.getStatus());
+        assertNull(copy2.getCurrentCheckoutId());
     }
 }

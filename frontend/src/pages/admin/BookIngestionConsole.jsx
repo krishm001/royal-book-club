@@ -135,7 +135,28 @@ const BookIngestionConsole = ({ user }) => {
   const [iosWarningModalOpen, setIosWarningModalOpen] = useState(false);
   const [writeCountdown, setWriteCountdown] = useState(10);
   const nfcAbortControllerRef = useRef(null);
+  const nfcScanAbortControllerRef = useRef(null);
   const [shouldWriteNfc, setShouldWriteNfc] = useState(false);
+
+  // Clean up active scan/write abort controllers on unmount
+  useEffect(() => {
+    return () => {
+      if (nfcScanAbortControllerRef.current) {
+        try {
+          nfcScanAbortControllerRef.current.abort();
+        } catch (err) {
+          console.warn("Failed to abort NFC scan on unmount:", err);
+        }
+      }
+      if (nfcAbortControllerRef.current) {
+        try {
+          nfcAbortControllerRef.current.abort();
+        } catch (err) {
+          console.warn("Failed to abort NFC write on unmount:", err);
+        }
+      }
+    };
+  }, []);
 
   // Search Metadata Drawer states
   const [isSearchDrawerOpen, setIsSearchDrawerOpen] = useState(false);
@@ -1380,17 +1401,35 @@ const BookIngestionConsole = ({ user }) => {
       return;
     }
 
+    // Cancel/abort any active NFC scanning before starting a new one
+    if (nfcScanAbortControllerRef.current) {
+      try {
+        nfcScanAbortControllerRef.current.abort();
+      } catch (err) {
+        console.warn("Failed to abort previous NFC scan:", err);
+      }
+      nfcScanAbortControllerRef.current = null;
+    }
+
+    // Create a new abort controller for this scanning session
+    const controller = new AbortController();
+    nfcScanAbortControllerRef.current = controller;
+
     try {
       setIsNfcReading(true);
       const ndef = new window.NDEFReader();
-      await ndef.scan();
+      await ndef.scan({ signal: controller.signal });
       
       ndef.addEventListener("readingerror", () => {
+        if (controller.signal.aborted) return;
         setNfcError("NFC Reading Error: Cannot read data from the tag. Try again.");
         setActiveScanningIndex(null);
       });
 
       ndef.addEventListener("reading", async ({ serialNumber, message }) => {
+        // Only proceed if this controller is still the active one and hasn't been aborted
+        if (controller.signal.aborted) return;
+
         console.log(`NFC tag read. Serial Number: ${serialNumber}`);
         let extractedIsbn = null;
         let extractedUid = null;
@@ -1439,6 +1478,9 @@ const BookIngestionConsole = ({ user }) => {
           }
         }
 
+        // Re-check aborted status after async backend calls
+        if (controller.signal.aborted) return;
+
         const isCurrentBook = matchedBook && (
           (editingBookId && (matchedBook.id === editingBookId || matchedBook.isbn === editingBookId)) ||
           (isbn && matchedBook.isbn && matchedBook.isbn.trim().replace(/[-\s]/g, '') === isbn.trim().replace(/[-\s]/g, ''))
@@ -1481,6 +1523,7 @@ const BookIngestionConsole = ({ user }) => {
         }
       });
     } catch (error) {
+      if (controller.signal.aborted) return;
       console.error("NFC reading error: ", error);
       setNfcError(`NFC activation failed: ${error.message || error}`);
       setIsNfcReading(false);
