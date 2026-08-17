@@ -544,4 +544,26 @@ public class BookServiceTest {
         assertEquals("AVAILABLE", copy2.getStatus());
         assertNull(copy2.getCurrentCheckoutId());
     }
+
+    @Test
+    void testParseCounterToLong_HexPrioritization() throws Exception {
+        java.lang.reflect.Method method = BookService.class.getDeclaredMethod("parseCounterToLong", String.class);
+        method.setAccessible(true);
+
+        // Numeric-only hex string (e.g. "000012" representing 18 in decimal)
+        long res1 = (long) method.invoke(bookService, "000012");
+        assertEquals(18L, res1);
+
+        // Alpha-numeric hex string (e.g. "000013" which is 19 in decimal)
+        long res2 = (long) method.invoke(bookService, "000013");
+        assertEquals(19L, res2);
+
+        // Alpha-numeric hex with a-f characters (e.g. "00001a" which is 26 in decimal)
+        long res3 = (long) method.invoke(bookService, "00001a");
+        assertEquals(26L, res3);
+
+        // Prefixed standard hex (e.g. "0x12" which is 18 in decimal)
+        long res4 = (long) method.invoke(bookService, "0x12");
+        assertEquals(18L, res4);
+    }
 }

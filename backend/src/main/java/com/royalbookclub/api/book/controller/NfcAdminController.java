@@ -64,12 +64,21 @@ public class NfcAdminController {
                 if (ntagUid != null && !ntagUid.isBlank()) {
                     bookMap.put(ntagUid.trim().toLowerCase().replace(":", ""), bookDoc);
                 }
+                List<String> ntagUids = (List<String>) bookDoc.get("ntagUids");
+                if (ntagUids != null) {
+                    for (String tag : ntagUids) {
+                        if (tag != null && !tag.isBlank()) {
+                            bookMap.put(tag.trim().toLowerCase().replace(":", ""), bookDoc);
+                        }
+                    }
+                }
             }
 
             // 3. Assemble DTOs
             List<NfcCounterDto> dtos = new ArrayList<>();
             for (QueryDocumentSnapshot counterDoc : countersDocs) {
-                String uid = counterDoc.getId().trim().toLowerCase().replace(":", "");
+                String rawDocId = counterDoc.getId();
+                String uid = rawDocId.trim().toLowerCase().replace(":", "");
                 Long counter = counterDoc.getLong("counter");
                 if (counter == null) {
                     counter = 0L;
@@ -81,6 +90,7 @@ public class NfcAdminController {
 
                 NfcCounterDto dto = new NfcCounterDto();
                 dto.setNtagUid(uid);
+                dto.setRawDocumentId(rawDocId);
                 dto.setCounter(counter);
                 dto.setFirstSeenAt(counterDoc.getDate("firstSeenAt"));
                 dto.setLastResetAt(counterDoc.getDate("lastResetAt"));
@@ -111,7 +121,7 @@ public class NfcAdminController {
     }
 
     /**
-     * Force a bulk sequence reset on selected tag UIDs.
+     * Force a bulk sequence reset on selected tag UIDs (supporting raw document IDs).
      */
     @PostMapping("/counters/reset")
     @Operation(summary = "Bulk reset counters", description = "Reset physical counter records and cache synchronization timestamps.")
@@ -123,17 +133,23 @@ public class NfcAdminController {
         log.info("Executing administrative NFC bulk counter reset for {} tags", request.getNtagUids().size());
         Date now = new Date();
         for (String uid : request.getNtagUids()) {
-            String cleanUid = uid.trim().toLowerCase().replace(":", "");
-            DocumentReference counterRef = firestore.collection("nfc_counters").document(cleanUid);
             try {
+                // First try direct document reference as is (rawDocumentId)
+                DocumentReference counterRef = firestore.collection("nfc_counters").document(uid);
+                DocumentSnapshot snap = counterRef.get().get();
+                if (!snap.exists()) {
+                    // Fallback to normalized clean UID
+                    String cleanUid = uid.trim().toLowerCase().replace(":", "");
+                    counterRef = firestore.collection("nfc_counters").document(cleanUid);
+                }
                 Map<String, Object> updates = new HashMap<>();
                 updates.put("counter", 0L);
                 updates.put("lastResetAt", now);
                 updates.put("firstSeenAt", now);
                 counterRef.set(updates, com.google.cloud.firestore.SetOptions.merge()).get();
-                log.info("NFC counter reset successful for UID: {}", cleanUid);
+                log.info("NFC counter reset successful for tag reference: {}", counterRef.getId());
             } catch (Exception e) {
-                log.error("Failed to reset NFC counter for UID: {}", cleanUid, e);
+                log.error("Failed to reset NFC counter for reference: {}", uid, e);
             }
         }
 
@@ -144,9 +160,47 @@ public class NfcAdminController {
         ));
     }
 
+    /**
+     * Force administrative deletion of selected NFC counter records.
+     */
+    @PostMapping("/counters/delete")
+    @Operation(summary = "Bulk delete counters", description = "Permanently remove selected physical NFC tag registers.")
+    public ResponseEntity<Map<String, Object>> deleteCounters(@RequestBody ResetRequestDto request) {
+        if (request.getNtagUids() == null || request.getNtagUids().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "ntagUids deletion list is empty."));
+        }
+
+        log.info("Executing administrative NFC bulk counter deletion for {} tags", request.getNtagUids().size());
+        int deletedCount = 0;
+        for (String uid : request.getNtagUids()) {
+            try {
+                // Delete raw document
+                DocumentReference counterRef = firestore.collection("nfc_counters").document(uid);
+                counterRef.delete().get();
+                
+                // Also clean/normalized fallback
+                String cleanUid = uid.trim().toLowerCase().replace(":", "");
+                if (!cleanUid.equals(uid)) {
+                    firestore.collection("nfc_counters").document(cleanUid).delete().get();
+                }
+                
+                deletedCount++;
+                log.info("NFC counter deletion successful for: {}", uid);
+            } catch (Exception e) {
+                log.error("Failed to delete NFC counter record for: {}", uid, e);
+            }
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Successfully deleted " + deletedCount + " NFC counter record(s)."
+        ));
+    }
+
     @Data
     public static class NfcCounterDto {
         private String ntagUid;
+        private String rawDocumentId;
         private Long counter;
         private Date firstSeenAt;
         private Date lastResetAt;

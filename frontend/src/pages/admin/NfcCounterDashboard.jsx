@@ -54,17 +54,22 @@ const NfcCounterDashboard = ({ user }) => {
     fetchCounters(val > 0 ? val : null);
   };
 
-  const handleToggleSelect = (uid) => {
+  const handleToggleSelect = (rawDocId) => {
     setSelectedUids(prev => 
-      prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]
+      prev.includes(rawDocId) ? prev.filter(id => id !== rawDocId) : [...prev, rawDocId]
     );
   };
 
   const handleToggleSelectAll = (filteredList) => {
-    if (selectedUids.length === filteredList.length) {
-      setSelectedUids([]);
+    const ids = filteredList.map(c => c.rawDocumentId || c.ntagUid);
+    const allSelected = ids.every(id => selectedUids.includes(id));
+    if (allSelected) {
+      setSelectedUids(prev => prev.filter(id => !ids.includes(id)));
     } else {
-      setSelectedUids(filteredList.map(c => c.ntagUid));
+      setSelectedUids(prev => {
+        const union = new Set([...prev, ...ids]);
+        return Array.from(union);
+      });
     }
   };
 
@@ -91,6 +96,61 @@ const NfcCounterDashboard = ({ user }) => {
     } catch (e) {
       console.error('Failed to reset counters', e);
       setErrorMsg('Failed to execute bulk counter reset.');
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const handleDeleteCounters = async () => {
+    if (selectedUids.length === 0) return;
+    if (!window.confirm(`Are you absolutely sure you want to permanently delete the physical counter records for the ${selectedUids.length} selected NFC tag(s)? This cannot be undone and will erase all sequence/tap history for these tags.`)) {
+      return;
+    }
+
+    try {
+      setResetting(true);
+      setErrorMsg('');
+      const response = await api.post('/api/v1/admin/nfc/counters/delete', {
+        ntagUids: selectedUids
+      });
+
+      if (response.data?.success) {
+        setSuccessMsg(response.data.message || `Successfully deleted ${selectedUids.length} NFC tag records!`);
+        setTimeout(() => setSuccessMsg(''), 4000);
+        fetchCounters(minCounterFilter > 0 ? minCounterFilter : null);
+      } else {
+        setErrorMsg('Backend rejected counter deletion request.');
+      }
+    } catch (e) {
+      console.error('Failed to delete counters', e);
+      setErrorMsg('Failed to execute bulk counter deletion.');
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const handleDeleteIndividual = async (rawDocId) => {
+    if (!window.confirm(`Are you absolutely sure you want to permanently delete this physical NFC counter record? This will erase all sequence/tap history.`)) {
+      return;
+    }
+
+    try {
+      setResetting(true);
+      setErrorMsg('');
+      const response = await api.post('/api/v1/admin/nfc/counters/delete', {
+        ntagUids: [rawDocId]
+      });
+
+      if (response.data?.success) {
+        setSuccessMsg(`Successfully deleted the selected NFC tag record!`);
+        setTimeout(() => setSuccessMsg(''), 4000);
+        fetchCounters(minCounterFilter > 0 ? minCounterFilter : null);
+      } else {
+        setErrorMsg('Backend rejected counter deletion request.');
+      }
+    } catch (e) {
+      console.error('Failed to delete counter', e);
+      setErrorMsg('Failed to execute counter deletion.');
     } finally {
       setResetting(false);
     }
@@ -142,6 +202,8 @@ const NfcCounterDashboard = ({ user }) => {
       </div>
     );
   }
+
+  const allFilteredSelected = filteredCounters.length > 0 && filteredCounters.every(item => selectedUids.includes(item.rawDocumentId || item.ntagUid));
 
   return (
     <div className="nfc-dashboard-container animate-fade-in" style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 24px 60px 24px' }}>
@@ -242,9 +304,18 @@ const NfcCounterDashboard = ({ user }) => {
               onClick={handleResetCounters}
               disabled={selectedUids.length === 0 || resetting}
               className="royal-btn"
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.85rem', backgroundColor: selectedUids.length > 0 ? '#b22222' : 'rgba(212, 175, 55, 0.1)', borderColor: selectedUids.length > 0 ? '#b22222' : 'rgba(212, 175, 55, 0.2)', color: selectedUids.length > 0 ? '#ffffff' : 'var(--text-secondary)' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.85rem', backgroundColor: selectedUids.length > 0 ? 'var(--accent, #d4af37)' : 'rgba(212, 175, 55, 0.1)', borderColor: selectedUids.length > 0 ? 'var(--accent, #d4af37)' : 'rgba(212, 175, 55, 0.2)', color: selectedUids.length > 0 ? '#1a1a1a' : 'var(--text-secondary)' }}
             >
-              <Trash2 size={14} /> Reset Selected ({selectedUids.length})
+              <RefreshCw size={14} /> Reset Selected ({selectedUids.length})
+            </button>
+
+            <button 
+              onClick={handleDeleteCounters}
+              disabled={selectedUids.length === 0 || resetting}
+              className="royal-btn"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.85rem', backgroundColor: selectedUids.length > 0 ? '#b22222' : 'rgba(178, 34, 34, 0.1)', borderColor: selectedUids.length > 0 ? '#b22222' : 'rgba(178, 34, 34, 0.2)', color: selectedUids.length > 0 ? '#ffffff' : 'var(--text-secondary)' }}
+            >
+              <Trash2 size={14} /> Delete Selected ({selectedUids.length})
             </button>
           </div>
         </div>
@@ -285,7 +356,7 @@ const NfcCounterDashboard = ({ user }) => {
                   <th style={{ padding: '16px 20px', width: '40px', textAlign: 'center' }}>
                     <input 
                       type="checkbox"
-                      checked={selectedUids.length === filteredCounters.length && filteredCounters.length > 0}
+                      checked={allFilteredSelected}
                       onChange={() => handleToggleSelectAll(filteredCounters)}
                       style={{ cursor: 'pointer', accentColor: 'var(--accent, #d4af37)' }}
                     />
@@ -295,51 +366,66 @@ const NfcCounterDashboard = ({ user }) => {
                   <th style={{ padding: '16px 20px', color: 'var(--accent, #d4af37)', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.1em', textAlign: 'center' }}>Tap Counter</th>
                   <th style={{ padding: '16px 20px', color: 'var(--accent, #d4af37)', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.1em' }}>First Seen At</th>
                   <th style={{ padding: '16px 20px', color: 'var(--accent, #d4af37)', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.1em' }}>Last Diagnostic Reset</th>
+                  <th style={{ padding: '16px 20px', color: 'var(--accent, #d4af37)', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.1em', textAlign: 'center' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredCounters.map((item, idx) => (
-                  <tr 
-                    key={item.ntagUid}
-                    className="diagnostic-row"
-                    style={{ borderBottom: idx < filteredCounters.length - 1 ? '1px solid rgba(212, 175, 55, 0.08)' : 'none', background: selectedUids.includes(item.ntagUid) ? 'rgba(212, 175, 55, 0.03)' : 'transparent', transition: 'background 0.2s' }}
-                  >
-                    <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                      <input 
-                        type="checkbox"
-                        checked={selectedUids.includes(item.ntagUid)}
-                        onChange={() => handleToggleSelect(item.ntagUid)}
-                        style={{ cursor: 'pointer', accentColor: 'var(--accent, #d4af37)' }}
-                      />
-                    </td>
-                    <td style={{ padding: '16px 20px', fontWeight: '600', fontFamily: 'monospace', fontSize: '0.9rem', color: '#ffffff' }}>
-                      {formatUidWithColons(item.ntagUid)}
-                    </td>
-                    <td style={{ padding: '16px 20px' }}>
-                      {item.hasBook ? (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontWeight: 'bold', color: 'var(--text-primary)', fontSize: '0.85rem' }}>{item.bookTitle}</span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>By {item.bookAuthor || 'Unknown Curator'} • ISBN {item.bookIsbn}</span>
-                        </div>
-                      ) : (
-                        <span style={{ fontStyle: 'italic', color: 'var(--text-secondary)' }}>Orphaned Tag (No matching volume found)</span>
-                      )}
-                    </td>
-                    <td style={{ padding: '16px 20px', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem', color: item.counter > 0 ? 'var(--accent)' : 'var(--text-secondary)' }}>
-                      {item.counter}
-                    </td>
-                    <td style={{ padding: '16px 20px', color: 'var(--text-secondary)' }}>
-                      {item.firstSeenAt ? new Date(item.firstSeenAt).toLocaleString() : 'N/A'}
-                    </td>
-                    <td style={{ padding: '16px 20px', color: 'var(--text-secondary)' }}>
-                      {item.lastResetAt ? (
-                        <span style={{ color: '#00fa9a', fontWeight: '600' }}>{new Date(item.lastResetAt).toLocaleString()}</span>
-                      ) : (
-                        <span style={{ opacity: 0.5 }}>Never Reset</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {filteredCounters.map((item, idx) => {
+                  const selectId = item.rawDocumentId || item.ntagUid;
+                  return (
+                    <tr 
+                      key={selectId}
+                      className="diagnostic-row"
+                      style={{ borderBottom: idx < filteredCounters.length - 1 ? '1px solid rgba(212, 175, 55, 0.08)' : 'none', background: selectedUids.includes(selectId) ? 'rgba(212, 175, 55, 0.03)' : 'transparent', transition: 'background 0.2s' }}
+                    >
+                      <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                        <input 
+                          type="checkbox"
+                          checked={selectedUids.includes(selectId)}
+                          onChange={() => handleToggleSelect(selectId)}
+                          style={{ cursor: 'pointer', accentColor: 'var(--accent, #d4af37)' }}
+                        />
+                      </td>
+                      <td style={{ padding: '16px 20px', fontWeight: '600', fontFamily: 'monospace', fontSize: '0.9rem', color: '#ffffff' }}>
+                        {formatUidWithColons(item.ntagUid)}
+                      </td>
+                      <td style={{ padding: '16px 20px' }}>
+                        {item.hasBook ? (
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontWeight: 'bold', color: 'var(--text-primary)', fontSize: '0.85rem' }}>{item.bookTitle}</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>By {item.bookAuthor || 'Unknown Curator'} • ISBN {item.bookIsbn}</span>
+                          </div>
+                        ) : (
+                          <span style={{ fontStyle: 'italic', color: 'var(--text-secondary)' }}>Orphaned Tag (No matching volume found)</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '16px 20px', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem', color: item.counter > 0 ? 'var(--accent)' : 'var(--text-secondary)' }}>
+                        {item.counter}
+                      </td>
+                      <td style={{ padding: '16px 20px', color: 'var(--text-secondary)' }}>
+                        {item.firstSeenAt ? new Date(item.firstSeenAt).toLocaleString() : 'N/A'}
+                      </td>
+                      <td style={{ padding: '16px 20px', color: 'var(--text-secondary)' }}>
+                        {item.lastResetAt ? (
+                          <span style={{ color: '#00fa9a', fontWeight: '600' }}>{new Date(item.lastResetAt).toLocaleString()}</span>
+                        ) : (
+                          <span style={{ opacity: 0.5 }}>Never Reset</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                        <button
+                          onClick={() => handleDeleteIndividual(selectId)}
+                          title="Delete this tag record"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ff4d4d', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: '4px', transition: 'background-color 0.2s' }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 77, 77, 0.1)'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

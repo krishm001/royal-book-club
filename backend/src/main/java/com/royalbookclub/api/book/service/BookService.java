@@ -516,25 +516,17 @@ public class BookService {
         }
 
         try {
-            // Check if it looks like a hex string (contains a-f or we stripped 0x)
-            if (clean.matches(".*[a-f].*") || rawCounter.trim().toLowerCase().startsWith("0x")) {
-                return Long.parseLong(clean, 16);
-            } else {
-                return Long.parseLong(clean, 10);
-            }
+            // ALWAYS try parsing as hexadecimal (base 16) first because NTAG mirrors are represented as hex strings
+            return Long.parseLong(clean, 16);
         } catch (NumberFormatException e) {
-            // Fallback: try parsing as hex, then decimal as final fallback
+            // Fallback to base 10 if base 16 parsing throws an error
             try {
-                return Long.parseLong(clean, 16);
+                return Long.parseLong(clean, 10);
             } catch (NumberFormatException e2) {
                 try {
                     // Strip any remaining non-alphanumeric characters
-                    String stripped = clean.replaceAll("[^0-9a-f]", "");
-                    if (stripped.matches(".*[a-f].*")) {
-                        return Long.parseLong(stripped, 16);
-                    } else {
-                        return Long.parseLong(stripped, 10);
-                    }
+                    String stripped = clean.replaceAll("[^0-9a-fA-F]", "");
+                    return Long.parseLong(stripped, 16);
                 } catch (Exception ex) {
                     throw new BusinessRuleException("Invalid NFC counter format: " + rawCounter);
                 }

@@ -297,11 +297,16 @@ function App() {
           }
           clean = clean.replace(/^0+/, "");
           if (!clean) return 0;
-          if (/[a-f]/.test(clean) || rawCounter.trim().toLowerCase().startsWith("0x")) {
-            return parseInt(clean, 16);
-          } else {
-            return parseInt(clean, 10);
+          try {
+            // ALWAYS try parsing as hexadecimal (base 16) first because NTAG mirrors are represented as hex strings
+            const parsed = parseInt(clean, 16);
+            if (!isNaN(parsed)) {
+              return parsed;
+            }
+          } catch (e) {
+            // ignore
           }
+          return parseInt(clean, 10);
         };
 
         // Local Cache Safety Pre-Check (Epic 4 & 2 Demotion and Self-Healing Optimization)
@@ -354,12 +359,6 @@ function App() {
             window.history.replaceState(null, '', cleanUrl);
             
             if (c) {
-              if (book.nfcVerificationStatus === "EXPIRED" || book.nfcVerificationStatus === "REUSED") {
-                console.warn(`NFC Tap status is ${book.nfcVerificationStatus}. Redirecting to book details.`);
-                window.location.replace(`${window.location.origin}/#/catalog/${book.isbn}`);
-                return;
-              }
-
               const storageKey = `nfc_latest_counter_${u}`;
               const incomingCounter = parseCounterToNumber(c);
 
