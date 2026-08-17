@@ -510,6 +510,36 @@ public class CheckoutService {
 
                 DocumentReference bookRef = firestore.collection("books").document(cleanIsbn);
                 DocumentSnapshot bookDoc = transaction.get(bookRef).get();
+
+                // Perform copy check if NFC/QR is used
+                String requestType = request.getNfcOrBarcode() != null ? request.getNfcOrBarcode().trim().toUpperCase() : "";
+                if ("NFC".equals(requestType) || "QR".equals(requestType)) {
+                    String tagUid = request.getNtagUid() != null ? request.getNtagUid().trim().toLowerCase().replace(":", "") : null;
+                    if (tagUid != null && !tagUid.isBlank()) {
+                        List<BookCopy> copies = bookService.getOrCreateBookCopies(bookDoc);
+                        BookCopy matchedCopy = null;
+                        for (BookCopy copy : copies) {
+                            if (copy.getNtagUid() != null) {
+                                String normCopyTag = copy.getNtagUid().trim().toLowerCase().replace(":", "");
+                                if (normCopyTag.equals(tagUid)) {
+                                    matchedCopy = copy;
+                                    break;
+                                }
+                            }
+                        }
+                        if (matchedCopy == null) {
+                            throw new IllegalArgumentException("Scanned NFC Tag UID does not match any copy of this book.");
+                        }
+                        Long expectedCopyNo = checkoutDoc.getLong("copyNo");
+                        if (expectedCopyNo != null && matchedCopy.getCopyNo() != expectedCopyNo.intValue()) {
+                            throw new IllegalArgumentException(String.format(
+                                "This copy (Copy #%d) is different from the one you checked out (Copy #%d). Please return the correct copy or contact library administration.",
+                                matchedCopy.getCopyNo(), expectedCopyNo
+                            ));
+                        }
+                    }
+                }
+
                 Long copyNo = checkoutDoc.getLong("copyNo");
                 
                 // Transition copy status to REQUESTED_RETURN
@@ -804,6 +834,35 @@ public class CheckoutService {
                 DocumentSnapshot bookDoc = transaction.get(bookRef).get();
 
                 if (bookDoc.exists()) {
+                    // Perform copy check if NFC/QR is used
+                    String requestType = request.getNfcOrBarcode() != null ? request.getNfcOrBarcode().trim().toUpperCase() : "";
+                    if ("NFC".equals(requestType) || "QR".equals(requestType)) {
+                        String tagUid = request.getNtagUid() != null ? request.getNtagUid().trim().toLowerCase().replace(":", "") : null;
+                        if (tagUid != null && !tagUid.isBlank()) {
+                            List<BookCopy> copies = bookService.getOrCreateBookCopies(bookDoc);
+                            BookCopy matchedCopy = null;
+                            for (BookCopy copy : copies) {
+                                if (copy.getNtagUid() != null) {
+                                    String normCopyTag = copy.getNtagUid().trim().toLowerCase().replace(":", "");
+                                    if (normCopyTag.equals(tagUid)) {
+                                        matchedCopy = copy;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (matchedCopy == null) {
+                                throw new IllegalArgumentException("Scanned NFC Tag UID does not match any copy of this book.");
+                            }
+                            Long expectedCopyNo = checkoutDoc.getLong("copyNo");
+                            if (expectedCopyNo != null && matchedCopy.getCopyNo() != expectedCopyNo.intValue()) {
+                                throw new IllegalArgumentException(String.format(
+                                    "This copy (Copy #%d) is different from the one you checked out (Copy #%d). Please return the correct copy or contact library administration.",
+                                    matchedCopy.getCopyNo(), expectedCopyNo
+                                ));
+                            }
+                        }
+                    }
+
                     Long available = bookDoc.getLong("availableCopies");
                     Long total = bookDoc.getLong("totalCopies");
                     long newAvailable = (available != null ? available : 0) + 1;
@@ -1156,6 +1215,18 @@ public class CheckoutService {
                 }
                 if (matchedCopy == null) {
                     throw new IllegalArgumentException("Scanned NFC Tag UID does not match any copy of this book.");
+                }
+
+                // Copy-Specific Return Matching
+                String requestType = request.getNfcOrBarcode() != null ? request.getNfcOrBarcode().trim().toUpperCase() : "";
+                if ("NFC".equals(requestType) || "QR".equals(requestType)) {
+                    Long expectedCopyNo = checkoutDoc.getLong("copyNo");
+                    if (expectedCopyNo != null && matchedCopy.getCopyNo() != expectedCopyNo.intValue()) {
+                        throw new IllegalArgumentException(String.format(
+                            "This copy (Copy #%d) is different from the one you checked out (Copy #%d). Please return the correct copy or contact library administration.",
+                            matchedCopy.getCopyNo(), expectedCopyNo
+                        ));
+                    }
                 }
 
                 Long available = bookDoc.getLong("availableCopies");

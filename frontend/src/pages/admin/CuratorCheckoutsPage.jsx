@@ -23,6 +23,7 @@ export default function CuratorCheckoutsPage({ user }) {
   const [simLon, setSimLon] = useState(77.5946);
   const [simNfc, setSimNfc] = useState('04:A3:B2:C1:D0:E9:80');
   const [showContactDetails, setShowContactDetails] = useState(false);
+  const [selectedBookId, setSelectedBookId] = useState('');
 
   // Access check
   const isAdmin = user && user.role === 'ADMIN';
@@ -379,7 +380,7 @@ export default function CuratorCheckoutsPage({ user }) {
     });
   };
 
-  const renderBookCell = (bookId) => {
+  const renderBookCell = (bookId, copyNo = null) => {
     const book = bookMap[bookId];
     if (!book) {
       return (
@@ -388,6 +389,25 @@ export default function CuratorCheckoutsPage({ user }) {
           <div>
             <div className="cell-primary-title">{t('admin.unknownVolume', 'Unknown volume')}</div>
             <div className="cell-sub-detail text-muted">ISBN: {bookId}</div>
+            {copyNo && (
+              <span className="gold-copy-badge" style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '0.65rem',
+                background: 'rgba(212, 165, 116, 0.15)',
+                border: '1px solid #d4a574',
+                color: '#d4a574',
+                padding: '1px 6px',
+                borderRadius: '4px',
+                fontWeight: '700',
+                marginTop: '4px',
+                width: 'fit-content',
+                boxShadow: '0 0 8px rgba(212, 165, 116, 0.15)'
+              }}>
+                Copy #{copyNo}
+              </span>
+            )}
           </div>
         </div>
       );
@@ -398,7 +418,26 @@ export default function CuratorCheckoutsPage({ user }) {
         <div>
           <div className="cell-primary-title truncate">{book.title}</div>
           <div className="cell-sub-detail truncate-author">{t('common.by', 'by')} {Array.isArray(book.authors) ? book.authors.join(', ') : book.author || t('admin.unknownAuthor', 'Unknown')}</div>
-          <div className="cell-sub-detail text-accent">ISBN: {bookId}</div>
+          <div className="cell-sub-detail text-accent" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span>ISBN: {bookId}</span>
+            {copyNo && (
+              <span className="gold-copy-badge" style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '0.65rem',
+                background: 'rgba(212, 165, 116, 0.15)',
+                border: '1px solid #d4a574',
+                color: '#d4a574',
+                padding: '1px 6px',
+                borderRadius: '4px',
+                fontWeight: '700',
+                boxShadow: '0 0 8px rgba(212, 165, 116, 0.15)'
+              }}>
+                Copy #{copyNo}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -729,7 +768,7 @@ export default function CuratorCheckoutsPage({ user }) {
               {checkoutRequests.map(r => (
                 <div key={r.id} className="compact-request-row animate-fade-in">
                   <div className="compact-row-meta">
-                    {renderBookCell(r.bookId)}
+                    {renderBookCell(r.bookId, r.copyNo)}
                     {renderMemberCell(r.memberId, r)}
                     <div className="request-time">
                       <Clock size={12} className="inline-icon" />
@@ -814,7 +853,7 @@ export default function CuratorCheckoutsPage({ user }) {
                 <div key={r.id} className="compact-request-row animate-fade-in" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <div className="compact-row-meta" style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '1' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      {renderBookCell(r.bookId)}
+                      {renderBookCell(r.bookId, r.copyNo)}
                       {renderMemberCell(r.memberId, r)}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
@@ -941,7 +980,7 @@ export default function CuratorCheckoutsPage({ user }) {
                     key={entry.id} 
                     className={`ledger-tr animate-fade-in ${isContactIncomplete(entry.memberId) ? 'contact-incomplete-warning' : ''}`}
                   >
-                    <td>{renderBookCell(entry.bookId)}</td>
+                    <td>{renderBookCell(entry.bookId, entry.copyNo)}</td>
                     <td>{renderMemberCell(entry.memberId, entry)}</td>
                     <td>
                       <div className="date-cell">
@@ -1017,6 +1056,218 @@ export default function CuratorCheckoutsPage({ user }) {
               </tbody>
             </table>
           </div>
+        )}
+      </section>
+
+      {/* Physical Copy Tracking & Circulation Overrides Console */}
+      <section className="physical-copy-registry-section royal-card" style={{ marginTop: '40px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '15px', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
+          <div>
+            <h3 style={{ fontSize: '1.25rem', fontFamily: 'var(--font-display)', fontWeight: 700, margin: 0, color: '#d4a574' }}>
+              🛡️ Physical Copy Tracking & Circulation Overrides
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
+              Track active checkouts, copy-level smart IDs, and enforce administrative overrides for individual volumes.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: '#d4a574', fontWeight: 'bold' }}>Select Book:</span>
+            <select
+              value={selectedBookId}
+              onChange={(e) => setSelectedBookId(e.target.value)}
+              style={{
+                background: 'rgba(0, 0, 0, 0.4)',
+                border: '1px solid rgba(212, 165, 116, 0.3)',
+                color: '#fff',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                outline: 'none',
+                maxWidth: '280px'
+              }}
+            >
+              <option value="">-- Choose Book Volume --</option>
+              {books.map(b => (
+                <option key={b.isbn} value={b.isbn}>{b.title} ({b.isbn})</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {!selectedBookId ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', color: 'var(--text-secondary)', border: '1px dashed rgba(255, 255, 255, 0.06)', borderRadius: '4px' }}>
+            <BookOpen size={36} style={{ color: 'rgba(212, 165, 116, 0.4)', marginBottom: '12px' }} />
+            <p style={{ margin: 0, fontSize: '0.9rem' }}>Select a book volume above to inspect and manage its physical copies independently.</p>
+          </div>
+        ) : (
+          (() => {
+            const selectedBook = bookMap[selectedBookId];
+            if (!selectedBook) return null;
+
+            // Gather the copies
+            const copiesList = selectedBook.copies || [];
+
+            if (copiesList.length === 0) {
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', color: 'var(--text-secondary)', border: '1px dashed rgba(255, 255, 255, 0.06)', borderRadius: '4px' }}>
+                  <AlertCircle size={36} style={{ color: '#ef4444', marginBottom: '12px' }} />
+                  <p style={{ margin: 0, fontSize: '0.9rem' }}>No individual copies have been registered for this volume in the database yet.</p>
+                </div>
+              );
+            }
+
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+                {copiesList.map(copy => {
+                  // Find associated transaction/checkout in checkouts array if checked out or requested
+                  const activeTx = checkouts.find(c => 
+                    c.bookId === selectedBookId && 
+                    c.copyNo === copy.copyNo && 
+                    ['CHECKED_OUT', 'REQUESTED_RETURN', 'REQUESTED_CHECKOUT'].includes(c.status)
+                  );
+
+                  let copyStatusColor = '#4caf50';
+                  let copyStatusText = 'Available';
+                  if (copy.status === 'CHECKED_OUT') {
+                    copyStatusColor = '#ef4444';
+                    copyStatusText = 'Checked Out';
+                  } else if (copy.status === 'REQUESTED_CHECKOUT') {
+                    copyStatusColor = '#ff9800';
+                    copyStatusText = 'Pending Checkout';
+                  } else if (copy.status === 'REQUESTED_RETURN') {
+                    copyStatusColor = '#ff9800';
+                    copyStatusText = 'Pending Return Verification';
+                  }
+
+                  return (
+                    <div 
+                      key={copy.copyNo} 
+                      style={{ 
+                        background: 'rgba(255, 255, 255, 0.02)', 
+                        border: `1px solid ${copy.status === 'CHECKED_OUT' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(212, 165, 116, 0.15)'}`, 
+                        borderRadius: '6px', 
+                        padding: '16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
+                      }}
+                    >
+                      <div>
+                        {/* Header: Copy # and Status */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff' }}>Copy #{copy.copyNo}</span>
+                          <span style={{ 
+                            fontSize: '0.7rem', 
+                            color: copyStatusColor, 
+                            border: `1px solid ${copyStatusColor}`, 
+                            background: `rgba(${copyStatusColor === '#ef4444' ? '239,68,68' : copyStatusColor === '#ff9800' ? '255,152,0' : '76,175,80'}, 0.08)`,
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            fontWeight: 'bold',
+                            textTransform: 'uppercase'
+                          }}>
+                            {copyStatusText}
+                          </span>
+                        </div>
+
+                        {/* Smart Card coordinates details */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px', fontSize: '0.8rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.03)', paddingBottom: '4px' }}>
+                            <span style={{ color: 'var(--text-secondary)' }}>NTAG213 ID:</span>
+                            <span className="font-mono" style={{ color: copy.ntagUid ? '#fff' : 'rgba(255,255,255,0.2)' }}>{copy.ntagUid || '—'}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.03)', paddingBottom: '4px' }}>
+                            <span style={{ color: 'var(--text-secondary)' }}>QR ID:</span>
+                            <span className="font-mono" style={{ color: copy.qrId ? '#fff' : 'rgba(255,255,255,0.2)' }}>{copy.qrId || '—'}</span>
+                          </div>
+                        </div>
+
+                        {/* Borrower Details if Loaned */}
+                        {activeTx && (
+                          <div style={{ background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.03)', borderRadius: '4px', padding: '10px', marginBottom: '16px' }}>
+                            <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#d4a574', fontWeight: 'bold', marginBottom: '6px' }}>Current Borrower</div>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#fff' }}>{activeTx.memberName || 'Patron'}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>{activeTx.memberEmail}</div>
+                            <div style={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.4)', fontFamily: 'monospace' }}>Tx: {activeTx.id.slice(0, 10)}...</div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Overrides / Control actions */}
+                      <div>
+                        {activeTx ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {activeTx.status === 'REQUESTED_RETURN' && (
+                              <button
+                                onClick={() => handleApproveReturn(activeTx.id)}
+                                className="royal-btn"
+                                style={{
+                                  width: '100%',
+                                  padding: '8px',
+                                  fontSize: '0.75rem',
+                                  background: 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  fontWeight: 'bold',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                Approve Return
+                              </button>
+                            )}
+                            {activeTx.status === 'REQUESTED_CHECKOUT' && (
+                              <button
+                                onClick={() => handleApproveCheckout(activeTx.id)}
+                                className="royal-btn"
+                                style={{
+                                  width: '100%',
+                                  padding: '8px',
+                                  fontSize: '0.75rem',
+                                  background: 'linear-gradient(135deg, #d4a574 0%, #b8860b 100%)',
+                                  color: '#121212',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  fontWeight: 'bold',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                Approve Checkout
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleClearCheckout(activeTx.id)}
+                              className="clear-checkout-btn"
+                              style={{
+                                width: '100%',
+                                padding: '8px',
+                                fontSize: '0.72rem',
+                                textAlign: 'center',
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}
+                            >
+                              <X size={12} />
+                              Forcibly Return Copy
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.35)', textAlign: 'center', padding: '10px', border: '1px dashed rgba(255, 255, 255, 0.05)', borderRadius: '4px' }}>
+                            Ready on Shelf (No Overrides Needed)
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()
         )}
       </section>
     </div>

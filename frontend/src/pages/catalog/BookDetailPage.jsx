@@ -998,7 +998,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
             memberEmail: user?.email,
             returnLatitude: coords.latitude,
             returnLongitude: coords.longitude,
-            nfcOrBarcode: 'BARCODE'
+            nfcOrBarcode: matchedCopy ? 'QR' : 'BARCODE'
           });
         }
         
