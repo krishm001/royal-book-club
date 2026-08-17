@@ -463,4 +463,49 @@ public class BookServiceTest {
         Optional<Book> result = bookService.getBookByQrId(qrId);
         assertFalse(result.isPresent());
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void testCreateOrUpdateBook_DynamicNtagUidsCompilation() throws Exception {
+        com.royalbookclub.api.book.model.BookCopy copy1 = com.royalbookclub.api.book.model.BookCopy.builder()
+                .copyNo(1)
+                .ntagUid("04:11:22:33:AA:BB:CC")
+                .status("AVAILABLE")
+                .build();
+        com.royalbookclub.api.book.model.BookCopy copy2 = com.royalbookclub.api.book.model.BookCopy.builder()
+                .copyNo(2)
+                .ntagUid("04:44:55:66:DD:EE:FF")
+                .status("AVAILABLE")
+                .build();
+
+        BookDto dto = BookDto.builder()
+                .isbn("9783161484100")
+                .title("A Royal Tale")
+                .ntagUid("04:11:22:33:AA:BB:CC")
+                .totalCopies(2)
+                .copies(Arrays.asList(copy1, copy2))
+                .build();
+
+        when(firestore.collection("books")).thenReturn(booksCollection);
+        when(booksCollection.document("9783161484100")).thenReturn(bookDocRef);
+        when(bookDocRef.get()).thenReturn(docFuture);
+        when(docFuture.get()).thenReturn(bookDocSnapshot);
+        when(bookDocSnapshot.exists()).thenReturn(false);
+
+        org.mockito.ArgumentCaptor<Map<String, Object>> mapCaptor = org.mockito.ArgumentCaptor.forClass(Map.class);
+        when(bookDocRef.set(mapCaptor.capture())).thenReturn(writeFuture);
+        when(writeFuture.get()).thenReturn(null);
+
+        Book result = bookService.createOrUpdateBook(dto);
+
+        assertNotNull(result);
+        Map<String, Object> capturedMap = mapCaptor.getValue();
+        assertNotNull(capturedMap);
+        List<String> writtenNtagUids = (List<String>) capturedMap.get("ntagUids");
+        assertNotNull(writtenNtagUids);
+        
+        assertTrue(writtenNtagUids.contains("04112233aabbcc"));
+        assertTrue(writtenNtagUids.contains("04445566ddeeff"));
+        assertEquals(2, writtenNtagUids.size());
+    }
 }

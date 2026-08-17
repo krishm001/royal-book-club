@@ -894,7 +894,33 @@ public class BookService {
         map.put("totalCopies", book.getTotalCopies());
         map.put("availableCopies", book.getAvailableCopies());
         map.put("ntagUid", book.getNtagUid());
-        map.put("ntagUids", book.getNtagUids() != null ? book.getNtagUids() : new ArrayList<>());
+        
+        // Dynamically compile the flat array of ntagUids from copies to maintain search indices
+        List<String> compiledNtagUids = new ArrayList<>();
+        if (book.getNtagUid() != null && !book.getNtagUid().trim().isEmpty()) {
+            compiledNtagUids.add(book.getNtagUid().trim().toLowerCase().replace(":", ""));
+        }
+        if (book.getNtagUids() != null) {
+            for (String tag : book.getNtagUids()) {
+                if (tag != null && !tag.trim().isEmpty()) {
+                    String clean = tag.trim().toLowerCase().replace(":", "");
+                    if (!compiledNtagUids.contains(clean)) {
+                        compiledNtagUids.add(clean);
+                    }
+                }
+            }
+        }
+        if (book.getCopies() != null) {
+            for (BookCopy copy : book.getCopies()) {
+                if (copy.getNtagUid() != null && !copy.getNtagUid().trim().isEmpty()) {
+                    String clean = copy.getNtagUid().trim().toLowerCase().replace(":", "");
+                    if (!compiledNtagUids.contains(clean)) {
+                        compiledNtagUids.add(clean);
+                    }
+                }
+            }
+        }
+        map.put("ntagUids", compiledNtagUids);
         map.put("copies", copiesToListOfMaps(book.getCopies()));
         map.put("language", book.getLanguage() != null ? book.getLanguage() : "en");
         map.put("createdAt", book.getCreatedAt() != null ? com.google.cloud.Timestamp.ofTimeSecondsAndNanos(book.getCreatedAt().getEpochSecond(), book.getCreatedAt().getNano()) : null);

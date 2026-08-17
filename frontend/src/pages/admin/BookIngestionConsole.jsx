@@ -1439,15 +1439,20 @@ const BookIngestionConsole = ({ user }) => {
           }
         }
 
-        if (matchedBook) {
-          // Found an existing book with this NFC tag! Load it!
+        const isCurrentBook = matchedBook && (
+          (editingBookId && (matchedBook.id === editingBookId || matchedBook.isbn === editingBookId)) ||
+          (isbn && matchedBook.isbn && matchedBook.isbn.trim().replace(/[-\s]/g, '') === isbn.trim().replace(/[-\s]/g, ''))
+        );
+
+        if (matchedBook && !isCurrentBook) {
+          // Found an existing DIFFERENT book with this NFC tag! Load it!
           handleSelectExistingBook(matchedBook);
           setNfcSuccess(true);
           setIsNfcReading(false);
           setActiveScanningIndex(null);
           setInfoMessage(`Existing book "${matchedBook.title}" loaded because it matches the scanned tag ID.`);
         } else {
-          // No book matches this tag. Assign it to the copy slot!
+          // Either no book matched, or the matched book is the one we are already editing/ingesting!
           if (copyIndex !== null) {
             setNtagUids((prev) => {
               const next = [...prev];
@@ -1463,7 +1468,15 @@ const BookIngestionConsole = ({ user }) => {
             setActiveScanningIndex(null);
             setInfoMessage(`Tag ID "${formatUidWithColons(cleanScanned)}" bound to Copy #${copyIndex + 1}.`);
           } else {
-            await processScannedNtag(targetUid, extractedIsbn);
+            if (matchedBook) {
+              // copyIndex is null, but it's the current book. Just set info message and stop.
+              setNfcSuccess(true);
+              setIsNfcReading(false);
+              setActiveScanningIndex(null);
+              setInfoMessage(`This tag is already registered to the current book "${matchedBook.title}".`);
+            } else {
+              await processScannedNtag(targetUid, extractedIsbn);
+            }
           }
         }
       });
