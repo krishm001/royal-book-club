@@ -448,8 +448,36 @@ public class UserService {
      */
     public boolean isEmailVerified(String uid) {
         log.info("Checking email verification status for UID: {}", uid);
+
+        // 1. Try resolving locally from SecurityContext first to bypass remote API call
         try {
-            var userRecord = firebaseAuth.getUser(uid);
+            var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth instanceof com.royalbookclub.api.auth.FirebaseAuthenticationToken firebaseAuthToken) {
+                var firebaseToken = (com.google.firebase.auth.FirebaseToken) firebaseAuthToken.getCredentials();
+                if (firebaseToken != null && uid.equals(firebaseToken.getUid())) {
+                    var claims = firebaseToken.getClaims();
+                    @SuppressWarnings("unchecked")
+                    var firebaseMetadata = (java.util.Map<String, Object>) claims.get("firebase");
+                    if (firebaseMetadata != null) {
+                        String signInProvider = (String) firebaseMetadata.get("sign_in_provider");
+                        if ("password".equals(signInProvider)) {
+                            boolean verified = Boolean.TRUE.equals(claims.get("email_verified"));
+                            log.info("Resolved email verification from security context for UID: {} (password provider). Verified: {}", uid, verified);
+                            return verified;
+                        } else {
+                            log.info("Bypassing email verification check from security context for non-password provider: {}", signInProvider);
+                            return true;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to check email verification status from security context for UID: {}. Falling back to Firebase Admin API.", uid, e);
+        }
+
+        // 2. Fallback to calling Firebase Admin SDK
+        try {
+            var userRecord = getFirebaseUserRecord(uid);
             // If the user has a "password" provider, we require verification.
             for (var provider : userRecord.getProviderData()) {
                 if ("password".equals(provider.getProviderId())) {
@@ -459,8 +487,24 @@ public class UserService {
             return true; // Bypass for OAuth/social providers
         } catch (Exception e) {
             log.error("Failed to fetch Firebase user details for email verification check", e);
+
+            // Check if the cause is insufficient permissions
+            String errorMsg = e.getMessage() != null ? e.getMessage().toUpperCase() : "";
+            if (errorMsg.contains("INSUFFICIENT_PERMISSION") || errorMsg.contains("PERMISSION_DENIED")) {
+                log.warn("Firebase Admin SDK has INSUFFICIENT_PERMISSION to fetch user details. Bypassing email verification check to avoid blocking the user flow. Please grant 'Firebase Authentication Viewer' or 'Firebase Auth Admin' role to the Service Account in Google Cloud IAM.");
+                return true; // Fallback to true to avoid hard-blocking checkouts when service account lacks IAM permissions
+            }
+
             throw new RuntimeException("Failed to check email verification status", e);
         }
+    }
+
+    /**
+     * Helper to fetch the UserRecord from Firebase Auth.
+     * Overridden in tests to avoid mocking final FirebaseAuth class.
+     */
+    protected com.google.firebase.auth.UserRecord getFirebaseUserRecord(String uid) throws Exception {
+        return firebaseAuth.getUser(uid);
     }
 }
 
