@@ -2006,7 +2006,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
               </>
             )}
 
-            {!qrValidationFailed && nfcActionType === 'return' && (
+            {!qrValidationFailed && nfcActionType === 'return' && geofenceFailed && (
               <button
                 className={`verification-tab-btn ${activeTab === 'validator_qr' ? 'active' : ''}`}
                 onClick={() => handleTabChange('validator_qr')}
