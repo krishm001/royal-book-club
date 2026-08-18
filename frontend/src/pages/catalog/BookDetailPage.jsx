@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2, Shield, Check, Loader2, QrCode, Camera } from 'lucide-react';
 import { fetchBookByIsbn, checkoutBook, fetchBookReviews, submitBookReview, requestCheckout, requestReturn, verifiedCheckout, verifiedReturn, fetchCheckoutsByMember, updateBookReview, deleteBookReview, fetchCheckouts, validateQrReturn } from '../../services/libraryApi';
@@ -295,6 +295,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       if (isLocationError && instantActionType === 'return') {
         setInstantConfirmOpen(false);
         setNfcActionType('return');
+        nfcActionTypeRef.current = 'return';
         setNfcModalOpen(true);
         setActiveTab('validator_qr');
         setGeofenceFailed(true);
@@ -311,6 +312,12 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
   // NFC & Fallback request states
   const [nfcModalOpen, setNfcModalOpen] = useState(false);
   const [nfcActionType, setNfcActionType] = useState('checkout'); // 'checkout' or 'return'
+  const nfcActionTypeRef = useRef('checkout');
+
+  // Synchronize ref with state as a fallback
+  useEffect(() => {
+    nfcActionTypeRef.current = nfcActionType;
+  }, [nfcActionType]);
   const [nfcReading, setNfcReading] = useState(false);
   const [nfcError, setNfcError] = useState('');
   const [nfcSuccess, setNfcSuccess] = useState(false);
@@ -531,6 +538,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       if (action === 'checkout' && status === 'available') {
         resetRatingAndCheckoutId();
         setNfcActionType('checkout');
+        nfcActionTypeRef.current = 'checkout';
         setNfcError('');
         setNfcSuccess(false);
         setFallbackSuccess(false);
@@ -550,6 +558,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       } else if (action === 'return' && status === 'checked-out') {
         resetRatingAndCheckoutId();
         setNfcActionType('return');
+        nfcActionTypeRef.current = 'return';
         setNfcError('');
         setNfcSuccess(false);
         setFallbackSuccess(false);
@@ -576,6 +585,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
 
     resetRatingAndCheckoutId();
     setNfcActionType('checkout');
+    nfcActionTypeRef.current = 'checkout';
     setNfcError('');
     setNfcSuccess(false);
     setFallbackSuccess(false);
@@ -599,6 +609,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
 
     resetRatingAndCheckoutId();
     setNfcActionType('return');
+    nfcActionTypeRef.current = 'return';
     setNfcError('');
     setNfcSuccess(false);
     setFallbackSuccess(false);
@@ -1069,10 +1080,12 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         // Use matched copy's NTAG UID if found
         const targetUid = (matchedCopy && matchedCopy.ntagUid) || book.ntagUid || '04:A3:B2:C1:D0:E9:80';
         let txRes;
-        if (nfcActionType === 'checkout') {
+        const currentActionType = nfcActionTypeRef.current;
+        if (currentActionType === 'checkout') {
           txRes = await verifiedCheckout({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: targetUid, memberName: user?.displayName, memberEmail: user?.email });
           if (txRes && (txRes.status === 'RETURNED' || txRes.data?.status === 'RETURNED')) {
             setNfcActionType('return');
+            nfcActionTypeRef.current = 'return';
           }
         } else {
           const coords = await getCoordinates();
@@ -1100,7 +1113,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         console.error('Verified barcode database error:', txError);
         const errMsg = txError.response?.data?.message || txError.message || '';
         const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
-        if (isLocationError && nfcActionType === 'return') {
+        if (isLocationError && nfcActionTypeRef.current === 'return') {
           setActiveTab('validator_qr');
           setGeofenceFailed(true);
           setNfcError("Location verification failed. We have automatically switched to the Validator QR tab for your convenience.");
@@ -1172,6 +1185,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
               txRes = await verifiedCheckout({ bookId: book.isbn, memberId: user.uid || user.id, ntagUid: cleanScanned });
               if (txRes && (txRes.status === 'RETURNED' || txRes.data?.status === 'RETURNED')) {
                 setNfcActionType('return');
+                nfcActionTypeRef.current = 'return';
               }
             } else {
               const coords = await getCoordinates();
