@@ -79,6 +79,8 @@ const CuratorSettingsPage = ({ user }) => {
   const [newQrPathName, setNewQrPathName] = useState('');
   const [showPrintPlacard, setShowPrintPlacard] = useState(false);
   const [selectedPlacardPath, setSelectedPlacardPath] = useState('');
+  const [qrSectionMessage, setQrSectionMessage] = useState(null);
+
 
   const [currentTheme, setCurrentTheme] = useState(document.documentElement.getAttribute('data-theme') || 'salon');
   const [locationDetails, setLocationDetails] = useState(null);
@@ -386,19 +388,26 @@ const CuratorSettingsPage = ({ user }) => {
 
   const handleMintQr = async (e) => {
     e.preventDefault();
+    setQrSectionMessage(null);
     if (!newQrPathName || !newQrPathName.trim()) {
-      alert("Please supply a valid path name first.");
+      setQrSectionMessage({
+        type: 'error',
+        text: t('admin.pleaseSupplyValidPath', 'Please supply a valid path name first.')
+      });
       return;
     }
     const cleanPath = newQrPathName.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
     if (!cleanPath) {
-      alert("Invalid path name format.");
+      setQrSectionMessage({
+        type: 'error',
+        text: t('admin.invalidPathFormat', 'Invalid path name format.')
+      });
       return;
     }
 
     try {
       setSaving(true);
-      setMessage(null);
+      setQrSectionMessage(null);
 
       // Build updated history
       const nowStr = new Date().toISOString();
@@ -429,19 +438,21 @@ const CuratorSettingsPage = ({ user }) => {
       if (res?.success && res?.data) {
         setSettings(res.data);
         setNewQrPathName('');
-        setMessage({
+        setQrSectionMessage({
           type: 'success',
           text: t('admin.qrMintedSuccess', 'New Return Validator QR code minted and broadcasted successfully.'),
         });
+        setSelectedPlacardPath(cleanPath);
+        setShowPrintPlacard(true);
       } else {
-        setMessage({
+        setQrSectionMessage({
           type: 'error',
           text: res?.message || t('admin.failedMintQr', 'Failed to save minted QR code.'),
         });
       }
     } catch (err) {
       console.error('Failed to mint QR settings', err);
-      setMessage({
+      setQrSectionMessage({
         type: 'error',
         text: t('admin.failedMintQr', 'An unexpected error occurred during QR code minting.'),
       });
@@ -449,6 +460,7 @@ const CuratorSettingsPage = ({ user }) => {
       setSaving(false);
     }
   };
+
 
   const handleDeactivatePreviousQr = async () => {
     try {
@@ -907,6 +919,14 @@ const CuratorSettingsPage = ({ user }) => {
                     {t('admin.mintQrBtn', 'Mint QR Code')}
                   </button>
                 </form>
+
+                {qrSectionMessage && (
+                  <div className={`royal-alert ${qrSectionMessage.type === 'success' ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: '2rem' }}>
+                    {qrSectionMessage.type === 'success' ? <CheckCircle size={18} /> : <AlertTriangle size={18} />}
+                    <span>{qrSectionMessage.text}</span>
+                  </div>
+                )}
+
 
                 {/* Active codes info */}
                 <div className="active-codes-container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2.5rem' }}>

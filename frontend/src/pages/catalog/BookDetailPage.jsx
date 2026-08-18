@@ -784,16 +784,35 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
   const extractQrPath = (text) => {
     if (!text) return '';
     const cleanText = text.trim();
+    
+    // Check if it's a URL query parameter like ?qr=exit-spot-alpha
     const urlMatch = cleanText.match(/[?&]qr=([^&]+)/);
     if (urlMatch) {
       return decodeURIComponent(urlMatch[1]);
     }
+    
+    // Check if it's a path pattern like /qr/exit-spot-alpha
     const pathMatch = cleanText.match(/\/qr\/([^/?#]+)/);
     if (pathMatch) {
       return decodeURIComponent(pathMatch[1]);
     }
+    
+    // Check if it's an absolute URL like http://localhost:3000/exit-spot-alpha or https://bookshelfnet.com/exit-spot-alpha
+    if (cleanText.startsWith('http://') || cleanText.startsWith('https://')) {
+      try {
+        const urlObj = new URL(cleanText);
+        const pathSegments = urlObj.pathname.split('/').filter(Boolean);
+        if (pathSegments.length > 0) {
+          return decodeURIComponent(pathSegments[pathSegments.length - 1]);
+        }
+      } catch (e) {
+        console.warn("URL parsing error in extractQrPath:", e);
+      }
+    }
+    
     return cleanText;
   };
+
 
   const startDetailQrValidatorScanner = () => {
     setDetailQrScannerError('');
