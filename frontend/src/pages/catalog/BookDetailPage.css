@@ -543,3 +543,15 @@
   }
 }
 
+#detail-qr-validator-reader {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#detail-qr-validator-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+

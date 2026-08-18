@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2, Shield, Check, Loader2, QrCode } from 'lucide-react';
+import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2, Shield, Check, Loader2, QrCode, Camera } from 'lucide-react';
 import { fetchBookByIsbn, checkoutBook, fetchBookReviews, submitBookReview, requestCheckout, requestReturn, verifiedCheckout, verifiedReturn, fetchCheckoutsByMember, updateBookReview, deleteBookReview, fetchCheckouts, validateQrReturn } from '../../services/libraryApi';
 import api from '../../api/apiClient';
 import { auth } from '../../config/firebase';
@@ -298,6 +298,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         setNfcModalOpen(true);
         setActiveTab('validator_qr');
         setNfcError("Location verification failed. We have automatically opened Validator QR scanning for your convenience.");
+        startDetailQrValidatorScanner();
       } else {
         setInstantError(errMsg);
       }
@@ -843,9 +844,8 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
           {
             fps: 25,
             qrbox: (width, height) => {
-              const idealW = Math.min(width * 0.9, 280);
-              const idealH = Math.min(height * 0.8, 220);
-              return { width: idealW, height: idealH };
+              const size = Math.min(width * 0.8, height * 0.8, 200);
+              return { width: size, height: size };
             },
             formatsToSupport: [
               SafeHtml5QrcodeSupportedFormats.QR_CODE
@@ -1036,6 +1036,8 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         if (isLocationError && nfcActionType === 'return') {
           setActiveTab('validator_qr');
           setNfcError("Location verification failed. We have automatically switched to the Validator QR tab for your convenience.");
+          stopDetailBarcodeScanner();
+          startDetailQrValidatorScanner();
         } else {
           setNfcError(t('catalog.unableToSubmitRequest') + errMsg);
         }
@@ -1129,6 +1131,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
             if (isLocationError && actionType === 'return') {
               setActiveTab('validator_qr');
               setNfcError("Location verification failed. We have automatically switched to the Validator QR tab for your convenience.");
+              startDetailQrValidatorScanner();
             } else {
               setNfcError(t('catalog.unableToSubmitRequest') + errMsg);
             }
@@ -1144,11 +1147,56 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     }
   };
 
+  const isBookIdentifier = (code) => {
+    const cleanCode = (code || '').trim().replace(/[-\s]/g, '');
+    if (!cleanCode) return false;
+
+    // Check ISBN
+    if (book?.isbn && cleanCode === book.isbn.trim().replace(/[-\s]/g, '')) {
+      return true;
+    }
+
+    // Check alternative ISBNs
+    if (Array.isArray(book?.alternativeIsbns)) {
+      const isAltMatch = book.alternativeIsbns.some(alt => alt && alt.trim().replace(/[-\s]/g, '') === cleanCode);
+      if (isAltMatch) return true;
+    }
+
+    // Check copy QR IDs or copy numeric IDs
+    let qrId = null;
+    const qrMatch = cleanCode.match(/qr=(\d+)/);
+    if (qrMatch) {
+      qrId = parseInt(qrMatch[1], 10);
+    } else if (/^\d+$/.test(cleanCode)) {
+      qrId = parseInt(cleanCode, 10);
+    }
+
+    if (Array.isArray(book?.copies)) {
+      const isCopyMatch = book.copies.some(c => {
+        const copyQrClean = String(c.qrId || '').trim();
+        return (c.qrId === qrId || copyQrClean === cleanCode || (qrId && String(c.qrId) === String(qrId)));
+      });
+      if (isCopyMatch) return true;
+    }
+
+    // If it looks like a standard ISBN or copy QR (all digits, or qr=digits)
+    if (/^\d{10,13}$/.test(cleanCode) || /^\d+$/.test(cleanCode)) {
+      return true;
+    }
+
+    return false;
+  };
+
   const handleValidatorQrSubmit = async (e, pathOverride) => {
     if (e) e.preventDefault();
     const finalPath = pathOverride || validatorQrPath;
     if (!finalPath.trim()) {
       setValidatorError(t('catalog.pleaseScanOrEnterPath', 'Please scan or enter the validator path.'));
+      return;
+    }
+
+    if (isBookIdentifier(finalPath)) {
+      setValidatorError(t('catalog.scannedBookInsteadOfReturn', 'This is an individual book QR/barcode, not the Return Validator QR code. Please scan the active library Return Validator QR code specifically generated for return.'));
       return;
     }
 
@@ -2128,9 +2176,22 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                       {t('catalog.qrValidatorExpl', 'Point your camera at the Return Validator QR Code on the library placard, or enter/simulate the scanned path below.')}
                     </p>
 
-                    <div className="barcode-scanner-viewfinder" style={{ margin: '15px auto', position: 'relative', width: '100%', maxWidth: '320px', height: '240px', overflow: 'hidden', background: '#000', borderRadius: '8px', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
+                    <div className="barcode-scanner-viewfinder" style={{ margin: '15px auto', position: 'relative', width: '100%', maxWidth: '280px', height: '280px', overflow: 'hidden', background: '#000', borderRadius: '8px', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
                       <div id="detail-qr-validator-reader" style={{ width: '100%', height: '100%' }}></div>
-                      <div className="scanner-laser-line"></div>
+                      {isQrCameraActive && <div className="scanner-laser-line"></div>}
+                      {!isQrCameraActive && (
+                        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', gap: '10px', zIndex: 5 }}>
+                          <button
+                            type="button"
+                            onClick={startDetailQrValidatorScanner}
+                            className="royal-btn"
+                            style={{ padding: '8px 16px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                          >
+                            <Camera size={14} />
+                            {t('catalog.startCameraScan', 'Start Camera Scan')}
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {detailQrScannerError && (
