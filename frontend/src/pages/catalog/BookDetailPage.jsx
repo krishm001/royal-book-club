@@ -844,7 +844,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
 
       try {
         const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        const html5QrCode = new SafeHtml5Qrcode("detail-qr-validator-reader", {
+        let html5QrCode = new SafeHtml5Qrcode("detail-qr-validator-reader", {
           verbose: false,
           experimentalFeatures: {
             useBarCodeDetectorIfSupported: !isIOS
@@ -852,11 +852,11 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         });
         detailQrHtml5QrCodeRef.current = html5QrCode;
 
-        const startScanner = (constraints) => {
+        const tryStart = (constraints, fpsVal) => {
           return html5QrCode.start(
             constraints,
             {
-              fps: 40,
+              fps: fpsVal,
               qrbox: (width, height) => {
                 const size = Math.min(width * 0.8, height * 0.8, 200);
                 return { width: size, height: size };
@@ -886,11 +886,47 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
 
         const simpleConstraints = { facingMode: "environment" };
 
-        startScanner(highResConstraints)
+        tryStart(highResConstraints, 30)
           .catch((err) => {
-            console.warn("High-res camera constraints failed. Falling back to simple constraints:", err);
-            // Gracefully retry with simple constraints universally supported by all devices
-            return startScanner(simpleConstraints);
+            console.warn("High-res camera constraints failed. Recreating instance with simple constraints:", err);
+            // Discard scanner instance to avoid internal state machine corruption and restart cleanly
+            try {
+              if (html5QrCode.isScanning) {
+                html5QrCode.stop().catch(() => {});
+              }
+            } catch (stopErr) {}
+            
+            html5QrCode = new SafeHtml5Qrcode("detail-qr-validator-reader", {
+              verbose: false,
+              experimentalFeatures: {
+                useBarCodeDetectorIfSupported: !isIOS
+              }
+            });
+            detailQrHtml5QrCodeRef.current = html5QrCode;
+            
+            return html5QrCode.start(
+              simpleConstraints,
+              {
+                fps: 25,
+                qrbox: (width, height) => {
+                  const size = Math.min(width * 0.8, height * 0.8, 200);
+                  return { width: size, height: size };
+                },
+                formatsToSupport: [
+                  SafeHtml5QrcodeSupportedFormats.QR_CODE
+                ]
+              },
+              (decodedText) => {
+                console.log("Detail QR validator scanned successfully:", decodedText);
+                stopDetailQrValidatorScanner();
+                const pathName = extractQrPath(decodedText);
+                setValidatorQrPath(pathName);
+                handleValidatorQrSubmit(null, pathName);
+              },
+              (errorMessage) => {
+                // silent scan progression
+              }
+            );
           })
           .then(() => {
           try {
@@ -1068,7 +1104,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
           setActiveTab('validator_qr');
           setGeofenceFailed(true);
           setNfcError("Location verification failed. We have automatically switched to the Validator QR tab for your convenience.");
-          stopDetailBarcodeScanner();
+          await stopDetailBarcodeScanner();
           startDetailQrValidatorScanner();
         } else {
           setNfcError(t('catalog.unableToSubmitRequest') + errMsg);
@@ -1079,13 +1115,13 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     }
   };
 
-  const handleTabChange = (tabName) => {
+  const handleTabChange = async (tabName) => {
     setActiveTab(tabName);
     if (tabName !== 'barcode') {
-      stopDetailBarcodeScanner();
+      await stopDetailBarcodeScanner();
     }
     if (tabName !== 'validator_qr') {
-      stopDetailQrValidatorScanner();
+      await stopDetailQrValidatorScanner();
     }
     if (tabName === 'nfc') {
       startNfcAction(nfcActionType);

@@ -772,11 +772,15 @@ public class CheckoutService {
         CheckoutSettings settings = checkoutSettingsService.getCheckoutSettings();
         boolean mustEnforceGps = settings == null || settings.isEnforceReturnGeofencing();
         if (mustEnforceGps) {
-            if (clientLat == null || clientLon == null) {
-                recordGeofenceFailure(memberId, cleanIsbn, null, null, settings, -1.0);
-                throw new IllegalArgumentException("Self-return is only permitted within library premises. GPS coordinates are missing or blocked. Please allow location access in your browser.");
-            }
-            if (settings != null && settings.getLibraryLatitude() != null && settings.getLibraryLongitude() != null) {
+            if (settings == null) {
+                log.warn("Geofencing check: Enforce geofencing is enabled by default, but CheckoutSettings document is missing in Firestore. Bypassing coordinate check.");
+            } else if (settings.getLibraryLatitude() == null || settings.getLibraryLongitude() == null) {
+                log.warn("Geofencing bypass: Enforce geofencing is active, but Library Latitude or Longitude is null in Curator settings. Please set your library's coordinates in Settings.");
+            } else {
+                if (clientLat == null || clientLon == null) {
+                    recordGeofenceFailure(memberId, cleanIsbn, null, null, settings, -1.0);
+                    throw new IllegalArgumentException("Self-return is only permitted within library premises. GPS coordinates are missing or blocked. Please allow location access in your browser.");
+                }
                 double libraryLat = settings.getLibraryLatitude();
                 double libraryLon = settings.getLibraryLongitude();
                 double allowedRadius = settings.getValidRadiusMeters() != null ? settings.getValidRadiusMeters() : 100.0;
@@ -794,7 +798,7 @@ public class CheckoutService {
                 }
             }
         } else {
-            log.info("Bypassing return geofencing validation check as requested by Curator settings.");
+            log.info("Bypassing return geofencing validation check as requested by Curator settings (enforceReturnGeofencing is false).");
         }
 
         try {
@@ -1137,11 +1141,15 @@ public class CheckoutService {
         CheckoutSettings settings = checkoutSettingsService.getCheckoutSettings();
         boolean mustEnforceGps = settings == null || settings.isEnforceReturnGeofencing();
         if (mustEnforceGps) {
-            if (clientLat == null || clientLon == null) {
-                recordGeofenceFailure(memberId, cleanIsbn, null, null, settings, -1.0);
-                throw new IllegalArgumentException("Self-return is only permitted within library premises. GPS coordinates are missing or blocked. Please allow location access in your browser.");
-            }
-            if (settings != null && settings.getLibraryLatitude() != null && settings.getLibraryLongitude() != null) {
+            if (settings == null) {
+                log.warn("Geofencing check: Enforce geofencing is enabled by default, but CheckoutSettings document is missing in Firestore. Bypassing coordinate check.");
+            } else if (settings.getLibraryLatitude() == null || settings.getLibraryLongitude() == null) {
+                log.warn("Geofencing bypass: Enforce geofencing is active, but Library Latitude or Longitude is null in Curator settings. Please set your library's coordinates in Settings.");
+            } else {
+                if (clientLat == null || clientLon == null) {
+                    recordGeofenceFailure(memberId, cleanIsbn, null, null, settings, -1.0);
+                    throw new IllegalArgumentException("Self-return is only permitted within library premises. GPS coordinates are missing or blocked. Please allow location access in your browser.");
+                }
                 double libraryLat = settings.getLibraryLatitude();
                 double libraryLon = settings.getLibraryLongitude();
                 double allowedRadius = settings.getValidRadiusMeters() != null ? settings.getValidRadiusMeters() : 100.0;
@@ -1159,7 +1167,7 @@ public class CheckoutService {
                 }
             }
         } else {
-            log.info("Bypassing return geofencing validation for verified return as requested by Curator settings.");
+            log.info("Bypassing return geofencing validation for verified return as requested by Curator settings (enforceReturnGeofencing is false).");
         }
 
         try {
