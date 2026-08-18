@@ -852,9 +852,13 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         });
         detailQrHtml5QrCodeRef.current = html5QrCode;
         html5QrCode.start(
-          { facingMode: "environment" },
+          { 
+            facingMode: "environment",
+            width: { min: 640, ideal: 1280, max: 1920 },
+            height: { min: 480, ideal: 720, max: 1080 }
+          },
           {
-            fps: 25,
+            fps: 40,
             qrbox: (width, height) => {
               const size = Math.min(width * 0.8, height * 0.8, 200);
               return { width: size, height: size };
@@ -1206,13 +1210,25 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
   const handleValidatorQrSubmit = async (e, pathOverride) => {
     if (e) e.preventDefault();
     const finalPath = pathOverride || validatorQrPath;
-    if (!finalPath.trim()) {
+    const cleanPath = (finalPath || '').trim();
+    if (!cleanPath) {
       setValidatorError(t('catalog.pleaseScanOrEnterPath', 'Please scan or enter the validator path.'));
       return;
     }
 
-    if (isBookIdentifier(finalPath)) {
-      const errMsg = t('catalog.scannedBookInsteadOfReturn', 'This is an individual book QR/barcode, not the Return Validator QR code. Please scan the active library Return Validator QR code specifically generated for return.');
+    if (isBookIdentifier(cleanPath)) {
+      const errMsg = t('catalog.scannedBookInsteadOfReturn', "This is an individual book QR/barcode, which does not match the library's active Return Validator QR code. Please check and scan the correct physical Return Validator QR placard.");
+      setValidatorError(errMsg);
+      setQrValidationFailed(true);
+      setActiveTab('manual');
+      stopDetailQrValidatorScanner();
+      setNfcError(errMsg + " We have automatically transitioned you to manual request submission.");
+      return;
+    }
+
+    // Check for bad scan / partial read (contains space or too short)
+    if (cleanPath.length < 3 || /\s/.test(cleanPath)) {
+      const errMsg = t('catalog.qrNotScannedProperly', "The QR code was not scanned properly or contains invalid characters. Please ensure the QR code is clear, well-lit, fully aligned within the square target box, and scan again.");
       setValidatorError(errMsg);
       setQrValidationFailed(true);
       setActiveTab('manual');
@@ -1235,7 +1251,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       resetRatingAndCheckoutId();
       const txRes = await validateQrReturn({
         checkoutId: checkoutId,
-        qrPathName: finalPath.trim(),
+        qrPathName: cleanPath,
         memberId: user.uid || user.id
       });
 
@@ -1252,12 +1268,20 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       await refreshState();
     } catch (err) {
       console.error('Validator QR return failed:', err);
-      const errMsg = t('catalog.qrValidationFailed', 'Return validation failed: ') + (err.response?.data?.message || err.message);
-      setValidatorError(errMsg);
+      const serverMsg = err.response?.data?.message || err.message || '';
+      
+      let friendlyError = '';
+      if (/Invalid or inactive Return Validator|mismatch|does not match|400/i.test(serverMsg)) {
+        friendlyError = t('catalog.qrMismatchError', "The scanned QR code does not match the library's active Return Validator QR. Please check and scan the correct physical Return Validator QR placard.");
+      } else {
+        friendlyError = t('catalog.qrScanSystemError', "QR validation failed due to an unexpected system or network error. Please try scanning again, or proceed with manual request submission.");
+      }
+
+      setValidatorError(friendlyError);
       setQrValidationFailed(true);
       setActiveTab('manual');
       stopDetailQrValidatorScanner();
-      setNfcError(errMsg + " We have automatically transitioned you to manual request submission.");
+      setNfcError(friendlyError + " We have automatically transitioned you to manual request submission.");
     } finally {
       setValidatorLoading(false);
     }

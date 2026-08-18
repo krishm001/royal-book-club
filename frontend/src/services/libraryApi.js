@@ -176,10 +176,12 @@ export const fetchRatingStatistics = async () => {
 };
 
 export const validateQrReturn = async ({ checkoutId, qrPathName, memberId }) => {
-  const response = await api.post('/api/v1/checkout/validate-qr-return', {
-    checkoutId,
-    qrPathName,
-    memberId
+  const response = await api.post('/api/v1/checkout/validate-qr-return', null, {
+    params: {
+      checkoutId,
+      qrPathName,
+      memberId
+    }
   });
   return response.data;
 };
