@@ -297,6 +297,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         setNfcActionType('return');
         setNfcModalOpen(true);
         setActiveTab('validator_qr');
+        setGeofenceFailed(true);
         setNfcError("Location verification failed. We have automatically opened Validator QR scanning for your convenience.");
         startDetailQrValidatorScanner();
       } else {
@@ -363,6 +364,9 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
   const detailQrScannerActiveRef = React.useRef(false);
   const [detailQrScannerError, setDetailQrScannerError] = useState('');
   const [isQrCameraActive, setIsQrCameraActive] = useState(false);
+  const [geofenceFailed, setGeofenceFailed] = useState(false);
+  const [qrValidationFailed, setQrValidationFailed] = useState(false);
+
 
 
   const loadMemberCheckouts = async () => {
@@ -530,6 +534,8 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         setNfcError('');
         setNfcSuccess(false);
         setFallbackSuccess(false);
+        setGeofenceFailed(false);
+        setQrValidationFailed(false);
         
         const defaultTab = ('NDEFReader' in window && book?.ntagUid) ? 'nfc' : 'barcode';
         setActiveTab(defaultTab);
@@ -547,6 +553,8 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         setNfcError('');
         setNfcSuccess(false);
         setFallbackSuccess(false);
+        setGeofenceFailed(false);
+        setQrValidationFailed(false);
         
         const defaultTab = ('NDEFReader' in window && book?.ntagUid) ? 'nfc' : 'barcode';
         setActiveTab(defaultTab);
@@ -571,6 +579,8 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     setNfcError('');
     setNfcSuccess(false);
     setFallbackSuccess(false);
+    setGeofenceFailed(false);
+    setQrValidationFailed(false);
 
     const defaultTab = ('NDEFReader' in window && book?.ntagUid) ? 'nfc' : 'barcode';
     setActiveTab(defaultTab);
@@ -592,6 +602,8 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     setNfcError('');
     setNfcSuccess(false);
     setFallbackSuccess(false);
+    setGeofenceFailed(false);
+    setQrValidationFailed(false);
 
     const defaultTab = ('NDEFReader' in window && book?.ntagUid) ? 'nfc' : 'barcode';
     setActiveTab(defaultTab);
@@ -1035,6 +1047,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
         if (isLocationError && nfcActionType === 'return') {
           setActiveTab('validator_qr');
+          setGeofenceFailed(true);
           setNfcError("Location verification failed. We have automatically switched to the Validator QR tab for your convenience.");
           stopDetailBarcodeScanner();
           startDetailQrValidatorScanner();
@@ -1068,6 +1081,8 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     stopDetailBarcodeScanner();
     stopDetailQrValidatorScanner();
     setNfcModalOpen(false);
+    setGeofenceFailed(false);
+    setQrValidationFailed(false);
   };
 
   const startNfcAction = async (actionType) => {
@@ -1130,6 +1145,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
             const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
             if (isLocationError && actionType === 'return') {
               setActiveTab('validator_qr');
+              setGeofenceFailed(true);
               setNfcError("Location verification failed. We have automatically switched to the Validator QR tab for your convenience.");
               startDetailQrValidatorScanner();
             } else {
@@ -1196,7 +1212,12 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     }
 
     if (isBookIdentifier(finalPath)) {
-      setValidatorError(t('catalog.scannedBookInsteadOfReturn', 'This is an individual book QR/barcode, not the Return Validator QR code. Please scan the active library Return Validator QR code specifically generated for return.'));
+      const errMsg = t('catalog.scannedBookInsteadOfReturn', 'This is an individual book QR/barcode, not the Return Validator QR code. Please scan the active library Return Validator QR code specifically generated for return.');
+      setValidatorError(errMsg);
+      setQrValidationFailed(true);
+      setActiveTab('manual');
+      stopDetailQrValidatorScanner();
+      setNfcError(errMsg + " We have automatically transitioned you to manual request submission.");
       return;
     }
 
@@ -1231,7 +1252,12 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       await refreshState();
     } catch (err) {
       console.error('Validator QR return failed:', err);
-      setValidatorError(t('catalog.qrValidationFailed', 'Return validation failed: ') + (err.response?.data?.message || err.message));
+      const errMsg = t('catalog.qrValidationFailed', 'Return validation failed: ') + (err.response?.data?.message || err.message);
+      setValidatorError(errMsg);
+      setQrValidationFailed(true);
+      setActiveTab('manual');
+      stopDetailQrValidatorScanner();
+      setNfcError(errMsg + " We have automatically transitioned you to manual request submission.");
     } finally {
       setValidatorLoading(false);
     }
@@ -1859,33 +1885,30 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
           </div>
 
           <div className="verification-tabs-header">
-            <button
-              className={`verification-tab-btn ${activeTab === 'nfc' ? 'active' : ''} ${!book?.ntagUid ? 'tab-disabled' : ''}`}
-              onClick={() => handleTabChange('nfc')}
-              disabled={nfcSuccess || fallbackSuccess || !book?.ntagUid}
-              title={!book?.ntagUid ? "NFC checkout not available (no physical tag registered for this book)" : ""}
-              style={!book?.ntagUid ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
-            >
-              <Smartphone size={14} />
-              <span>{t('catalog.nfcTap')}</span>
-            </button>
-            <button
-              className={`verification-tab-btn ${activeTab === 'barcode' ? 'active' : ''}`}
-              onClick={() => handleTabChange('barcode')}
-              disabled={nfcSuccess || fallbackSuccess}
-            >
-              <ShoppingBag size={14} />
-              <span>{t('catalog.barcodeScan')}</span>
-            </button>
-            <button
-              className={`verification-tab-btn ${activeTab === 'manual' ? 'active' : ''}`}
-              onClick={() => handleTabChange('manual')}
-              disabled={nfcSuccess || fallbackSuccess}
-            >
-              <Clock size={14} />
-              <span>{t('catalog.manualRequest')}</span>
-            </button>
-            {nfcActionType === 'return' && (
+            {!geofenceFailed && !qrValidationFailed && (
+              <>
+                <button
+                  className={`verification-tab-btn ${activeTab === 'nfc' ? 'active' : ''} ${!book?.ntagUid ? 'tab-disabled' : ''}`}
+                  onClick={() => handleTabChange('nfc')}
+                  disabled={nfcSuccess || fallbackSuccess || !book?.ntagUid}
+                  title={!book?.ntagUid ? "NFC checkout not available (no physical tag registered for this book)" : ""}
+                  style={!book?.ntagUid ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+                >
+                  <Smartphone size={14} />
+                  <span>{t('catalog.nfcTap')}</span>
+                </button>
+                <button
+                  className={`verification-tab-btn ${activeTab === 'barcode' ? 'active' : ''}`}
+                  onClick={() => handleTabChange('barcode')}
+                  disabled={nfcSuccess || fallbackSuccess}
+                >
+                  <ShoppingBag size={14} />
+                  <span>{t('catalog.barcodeScan')}</span>
+                </button>
+              </>
+            )}
+
+            {!qrValidationFailed && nfcActionType === 'return' && (
               <button
                 className={`verification-tab-btn ${activeTab === 'validator_qr' ? 'active' : ''}`}
                 onClick={() => handleTabChange('validator_qr')}
@@ -1895,6 +1918,15 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                 <span>{t('catalog.validatorQr', 'Validator QR')}</span>
               </button>
             )}
+
+            <button
+              className={`verification-tab-btn ${activeTab === 'manual' ? 'active' : ''}`}
+              onClick={() => handleTabChange('manual')}
+              disabled={nfcSuccess || fallbackSuccess}
+            >
+              <Clock size={14} />
+              <span>{t('catalog.manualRequest')}</span>
+            </button>
           </div>
 
           <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginTop: '16px' }}>
@@ -2140,6 +2172,13 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                         ? t('catalog.fallbackExplanationCheckout')
                         : t('catalog.fallbackExplanationReturn')}
                     </p>
+
+                    {nfcError && (
+                      <div className="nfc-error-message royal-card" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '12px', border: '1px solid #ff7b72', background: 'rgba(255, 123, 114, 0.05)', color: '#ff7b72', marginBottom: '16px', fontSize: '0.75rem', textAlign: 'left', width: '100%' }}>
+                        <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                        <span>{nfcError}</span>
+                      </div>
+                    )}
 
                     <div className="fallback-form-summary royal-card" style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '16px' }}>
                       <h5 style={{ color: 'var(--accent)', fontWeight: '600', marginBottom: '4px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('catalog.volumeDetails')}</h5>
