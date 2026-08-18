@@ -871,7 +871,14 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
             await refreshCatalogState();
           } catch (txError) {
             console.error('NFC verified transaction database error:', txError);
-            setNfcError(`Database rejected verification: ${txError.response?.data?.message || txError.message}`);
+            const errMsg = txError.response?.data?.message || txError.message || '';
+            const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
+            if (isLocationError && actionType === 'return') {
+              setNfcModalOpen(false);
+              navigate(`/catalog/${targetBook.isbn}?action=return&geofenceFailed=true`);
+            } else {
+              setNfcError(`Database rejected verification: ${errMsg}`);
+            }
           }
         } else {
           setNfcError(`Security Mismatch: This NFC tag (${serialNumber || 'Unknown'}) does not match this book volume's registered IDs.`);
@@ -1082,7 +1089,14 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
         await refreshCatalogState();
       } catch (txError) {
         console.error('Verified card barcode database error:', txError);
-        setNfcError(`Database rejected verification: ${txError.response?.data?.message || txError.message}`);
+        const errMsg = txError.response?.data?.message || txError.message || '';
+        const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
+        if (isLocationError && nfcActionType === 'return') {
+          setNfcModalOpen(false);
+          navigate(`/catalog/${currentBook.isbn}?action=return&geofenceFailed=true`);
+        } else {
+          setNfcError(`Database rejected verification: ${errMsg}`);
+        }
       }
     } else {
       setNfcError(`Security Mismatch: Scanned barcode (${decodedText}) does not match this book's ISBN (${currentBook.isbn}).`);
