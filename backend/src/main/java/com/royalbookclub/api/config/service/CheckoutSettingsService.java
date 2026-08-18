@@ -59,7 +59,7 @@ public class CheckoutSettingsService {
                         .previousQrActive(Boolean.TRUE.equals(document.getBoolean("previousQrActive")))
                         .enforceReturnGeofencing(document.contains("enforceReturnGeofencing") ? Boolean.TRUE.equals(document.getBoolean("enforceReturnGeofencing")) : true)
                         .enforceReturnQr(document.contains("enforceReturnQr") ? Boolean.TRUE.equals(document.getBoolean("enforceReturnQr")) : true)
-                        .qrHistory(document.get("qrHistory") != null ? (java.util.List<String>) document.get("qrHistory") : new java.util.ArrayList<>())
+                        .qrHistory(document.get("qrHistory") != null ? (java.util.List<java.util.Map<String, Object>>) document.get("qrHistory") : new java.util.ArrayList<>())
                         .build();
             } else {
                 log.info("No checkout settings document found. Initializing with optional defaults.");

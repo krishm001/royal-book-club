@@ -33,5 +33,5 @@ public class CheckoutSettings {
     @Builder.Default
     private boolean enforceReturnQr = true;
     @Builder.Default
-    private java.util.List<String> qrHistory = new java.util.ArrayList<>();
+    private java.util.List<java.util.Map<String, Object>> qrHistory = new java.util.ArrayList<>();
 }
