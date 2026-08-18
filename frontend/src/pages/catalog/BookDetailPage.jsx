@@ -851,33 +851,48 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
           }
         });
         detailQrHtml5QrCodeRef.current = html5QrCode;
-        html5QrCode.start(
-          { 
-            facingMode: "environment",
-            width: { min: 640, ideal: 1280, max: 1920 },
-            height: { min: 480, ideal: 720, max: 1080 }
-          },
-          {
-            fps: 40,
-            qrbox: (width, height) => {
-              const size = Math.min(width * 0.8, height * 0.8, 200);
-              return { width: size, height: size };
+
+        const startScanner = (constraints) => {
+          return html5QrCode.start(
+            constraints,
+            {
+              fps: 40,
+              qrbox: (width, height) => {
+                const size = Math.min(width * 0.8, height * 0.8, 200);
+                return { width: size, height: size };
+              },
+              formatsToSupport: [
+                SafeHtml5QrcodeSupportedFormats.QR_CODE
+              ]
             },
-            formatsToSupport: [
-              SafeHtml5QrcodeSupportedFormats.QR_CODE
-            ]
-          },
-          (decodedText) => {
-            console.log("Detail QR validator scanned successfully:", decodedText);
-            stopDetailQrValidatorScanner();
-            const pathName = extractQrPath(decodedText);
-            setValidatorQrPath(pathName);
-            handleValidatorQrSubmit(null, pathName);
-          },
-          (errorMessage) => {
-            // silent scan progression
-          }
-        ).then(() => {
+            (decodedText) => {
+              console.log("Detail QR validator scanned successfully:", decodedText);
+              stopDetailQrValidatorScanner();
+              const pathName = extractQrPath(decodedText);
+              setValidatorQrPath(pathName);
+              handleValidatorQrSubmit(null, pathName);
+            },
+            (errorMessage) => {
+              // silent scan progression
+            }
+          );
+        };
+
+        const highResConstraints = { 
+          facingMode: "environment",
+          width: { min: 640, ideal: 1280, max: 1920 },
+          height: { min: 480, ideal: 720, max: 1080 }
+        };
+
+        const simpleConstraints = { facingMode: "environment" };
+
+        startScanner(highResConstraints)
+          .catch((err) => {
+            console.warn("High-res camera constraints failed. Falling back to simple constraints:", err);
+            // Gracefully retry with simple constraints universally supported by all devices
+            return startScanner(simpleConstraints);
+          })
+          .then(() => {
           try {
             const videoElem = document.querySelector("#detail-qr-validator-reader video");
             if (videoElem && videoElem.srcObject) {
