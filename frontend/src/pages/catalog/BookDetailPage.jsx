@@ -562,17 +562,26 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
         setNfcError('');
         setNfcSuccess(false);
         setFallbackSuccess(false);
-        setGeofenceFailed(false);
-        setQrValidationFailed(false);
         
-        const defaultTab = ('NDEFReader' in window && book?.ntagUid) ? 'nfc' : 'barcode';
-        setActiveTab(defaultTab);
-        setNfcModalOpen(true);
-
-        if (defaultTab === 'nfc') {
-          startNfcAction('return');
+        const geofenceFailedParam = query.get('geofenceFailed') === 'true';
+        if (geofenceFailedParam) {
+          setGeofenceFailed(true);
+          setActiveTab('validator_qr');
+          setNfcModalOpen(true);
+          setNfcError("Location verification failed. We have automatically switched to the Validator QR tab for your convenience.");
+          startDetailQrValidatorScanner();
         } else {
-          startDetailBarcodeScanner();
+          setGeofenceFailed(false);
+          setQrValidationFailed(false);
+          const defaultTab = ('NDEFReader' in window && book?.ntagUid) ? 'nfc' : 'barcode';
+          setActiveTab(defaultTab);
+          setNfcModalOpen(true);
+
+          if (defaultTab === 'nfc') {
+            startNfcAction('return');
+          } else {
+            startDetailBarcodeScanner();
+          }
         }
         window.history.replaceState({}, document.title, window.location.pathname);
       }

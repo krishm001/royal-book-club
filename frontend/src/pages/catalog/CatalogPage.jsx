@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal, BookOpen, Sparkles, X, Smartphone, RefreshCw, AlertTriangle, CheckCircle, Scan, Camera, Check, Clock, ShoppingBag, Loader2, Star, Shield } from 'lucide-react';
 import BookCard from '../../components/shared/BookCard';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -44,6 +44,7 @@ export const isNfcTagMatched = (b, cleanScanned) => {
 
 const CatalogPage = ({ user, triggerOnboarding }) => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
 
   const getCoordinates = () => {
     return new Promise((resolve) => {
@@ -598,7 +599,14 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
       await refreshCatalogState();
     } catch (txError) {
       console.error('P2D direct transaction error:', txError);
-      setP2dError(`Ledger rejected transaction: ${txError.response?.data?.message || txError.message}`);
+      const errMsg = txError.response?.data?.message || txError.message || '';
+      const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
+      if (isLocationError && p2dActionType === 'return') {
+        setP2dModalOpen(false);
+        navigate(`/catalog/${p2dBook.isbn}?action=return&geofenceFailed=true`);
+      } else {
+        setP2dError(`Ledger rejected transaction: ${errMsg}`);
+      }
     } finally {
       setP2dLoading(false);
     }
