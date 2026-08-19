@@ -35,6 +35,7 @@ import { fetchHeroConfig } from './services/heroApi';
 import { useLanguage } from './i18n/LanguageContext';
 import OnboardingWizard from './components/OnboardingWizard';
 import CovenantViewerModal from './components/CovenantViewerModal';
+import { fetchBookByQrId } from './services/libraryApi';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -217,8 +218,21 @@ function App() {
       // Return Validator QR direct scanner interceptor
       const pathname = window.location.pathname;
       if (pathname && pathname !== '/' && !pathname.startsWith('/api') && !pathname.startsWith('/static') && !pathname.includes('.')) {
-        const pathName = pathname.substring(1);
-        if (pathName && pathName.trim().length > 0) {
+        const pathName = pathname.substring(1).trim();
+        if (pathName.length > 0) {
+          if (/^\d+$/.test(pathName)) {
+            console.info("[QR INTERCEPT] Detected numeric potential book copy QR ID path. Checking catalog:", pathName);
+            try {
+              const book = await fetchBookByQrId(pathName);
+              if (book && book.isbn) {
+                console.info("[QR INTERCEPT] Found matching book. Redirecting to gated book details:", book.isbn);
+                window.location.href = window.location.origin + '/#/catalog/' + encodeURIComponent(book.isbn) + '?qrId=' + encodeURIComponent(pathName);
+                return;
+              }
+            } catch (err) {
+              console.warn("[QR INTERCEPT] Failed to fetch book by copy QR ID:", pathName, err);
+            }
+          }
           console.info("[QR INTERCEPT] Redirecting custom QR validator path direct scan to sages guild hub:", pathName);
           window.location.href = window.location.origin + '/#/sages?qr=' + encodeURIComponent(pathName);
           return;
@@ -228,15 +242,30 @@ function App() {
       // Return Validator QR query parameter scan interceptor (?qr=)
       const searchParams = new URLSearchParams(window.location.search);
       if (searchParams.has('qr')) {
-        const qrCode = searchParams.get('qr');
-        if (qrCode && qrCode.trim().length > 0) {
-          console.info("[QR QUERY INTERCEPT] Redirecting custom QR query parameter direct scan to sages guild hub:", qrCode);
+        const qrCode = searchParams.get('qr').trim();
+        if (qrCode.length > 0) {
           try {
             const cleanUrl = window.location.origin + '/' + window.location.hash;
             window.history.replaceState(null, '', cleanUrl);
           } catch (historyErr) {
             console.warn("Failed to clean address bar history:", historyErr);
           }
+
+          if (/^\d+$/.test(qrCode)) {
+            console.info("[QR QUERY INTERCEPT] Detected numeric potential book copy QR ID query. Checking catalog:", qrCode);
+            try {
+              const book = await fetchBookByQrId(qrCode);
+              if (book && book.isbn) {
+                console.info("[QR QUERY INTERCEPT] Found matching book. Redirecting to gated book details:", book.isbn);
+                window.location.href = window.location.origin + '/#/catalog/' + encodeURIComponent(book.isbn) + '?qrId=' + encodeURIComponent(qrCode);
+                return;
+              }
+            } catch (err) {
+              console.warn("[QR QUERY INTERCEPT] Failed to fetch book by copy QR ID:", qrCode, err);
+            }
+          }
+
+          console.info("[QR QUERY INTERCEPT] Redirecting custom QR query parameter direct scan to sages guild hub:", qrCode);
           window.location.href = window.location.origin + '/#/sages?qr=' + encodeURIComponent(qrCode);
           return;
         }

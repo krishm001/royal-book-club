@@ -110,6 +110,8 @@ const BookIngestionConsole = ({ user }) => {
   const [cameraModalOpen, setCameraModalOpen] = useState(false);
   const [cameraMode, setCameraMode] = useState('isbn'); // 'isbn' or 'cover'
   const [cameraError, setCameraError] = useState('');
+  const [activeQrScanningIndex, setActiveQrScanningIndex] = useState(null);
+  const activeQrScanningIndexRef = useRef(null);
   const [cameraStream, setCameraStream] = useState(null);
 
   // Advanced camera control states
@@ -698,7 +700,14 @@ const BookIngestionConsole = ({ user }) => {
   };
 
   // Camera & Scanner Handlers
-  // Camera & Scanner Handlers
+  const startCopyQrScan = (index) => {
+    setCameraError('');
+    activeQrScanningIndexRef.current = index;
+    setActiveQrScanningIndex(index);
+    setCameraMode('copy_qr');
+    setCameraModalOpen(true);
+  };
+
   const startCamera = async (mode) => {
     setCameraError('');
     setCameraMode(mode);
@@ -1000,7 +1009,7 @@ const BookIngestionConsole = ({ user }) => {
   };
 
   useEffect(() => {
-    if (cameraModalOpen && cameraMode === 'isbn') {
+    if (cameraModalOpen && (cameraMode === 'isbn' || cameraMode === 'copy_qr')) {
       const timer = setTimeout(() => {
         const qrReaderElem = document.getElementById('qr-reader');
         if (!qrReaderElem) {
@@ -1061,46 +1070,57 @@ const BookIngestionConsole = ({ user }) => {
                 const clean = decodedText.trim();
                 const qrMatch = clean.match(/qr=(\d+)/i) || clean.match(/^(\d{1,9})$/);
                 const isQrId = !!qrMatch;
-                const parsedValue = isQrId ? (qrMatch[1] || clean) : clean.replace(/[-\s]/g, '');
+                const parsedValue = isQrId ? (qrMatch[1] || clean) : clean.replace(/[^0-9]/g, '');
 
                 html5QrCode.stop().then(async () => {
                   html5QrCodeRef.current = null;
                   setCameraModalOpen(false);
                   
-                  if (isQrId) {
-                    setInfoMessage(`Searching database for Copy QR ID: ${parsedValue}...`);
-                    try {
-                      const book = await fetchBookByQrId(parsedValue);
-                      if (book) {
-                        handleSelectExistingBook(book);
-                        setInfoMessage(`Book "${book.title}" successfully loaded via copy QR ID #${parsedValue}.`);
-                      } else {
-                        setErrorMessage(`No matching book found for Copy QR ID #${parsedValue}.`);
-                      }
-                    } catch (err) {
-                      console.error("Failed to fetch book by QR ID:", err);
-                      setErrorMessage(`Failed to search Copy QR ID #${parsedValue}.`);
-                    }
+                  if (cameraMode === 'copy_qr') {
+                    const targetIndex = activeQrScanningIndexRef.current !== null ? activeQrScanningIndexRef.current : activeQrScanningIndex;
+                    setCopyQrIds((prev) => {
+                      const next = [...prev];
+                      while (next.length <= targetIndex) next.push('');
+                      next[targetIndex] = parsedValue;
+                      return next;
+                    });
+                    setInfoMessage(`Successfully scanned QR ID: ${parsedValue} for Copy #${targetIndex + 1}.`);
                   } else {
-                    setInfoMessage(`Searching ledger for ISBN: ${parsedValue}...`);
-                    try {
-                      const allBooks = await fetchBooks();
-                      const matchedBook = allBooks.find(b => 
-                        (b.isbn && b.isbn.replace(/[-\s]/g, '') === parsedValue) ||
-                        (Array.isArray(b.alternativeIsbns) && b.alternativeIsbns.some(alt => alt && alt.replace(/[-\s]/g, '') === parsedValue))
-                      );
-                      
-                      if (matchedBook) {
-                        handleSelectExistingBook(matchedBook);
-                        setInfoMessage(`Existing book "${matchedBook.title}" loaded from database.`);
-                        return;
+                    if (isQrId) {
+                      setInfoMessage(`Searching database for Copy QR ID: ${parsedValue}...`);
+                      try {
+                        const book = await fetchBookByQrId(parsedValue);
+                        if (book) {
+                          handleSelectExistingBook(book);
+                          setInfoMessage(`Book "${book.title}" successfully loaded via copy QR ID #${parsedValue}.`);
+                        } else {
+                          setErrorMessage(`No matching book found for Copy QR ID #${parsedValue}.`);
+                        }
+                      } catch (err) {
+                        console.error("Failed to fetch book by QR ID:", err);
+                        setErrorMessage(`Failed to search Copy QR ID #${parsedValue}.`);
                       }
-                    } catch (err) {
-                      console.warn("Local ledger check failed:", err);
+                    } else {
+                      setInfoMessage(`Searching ledger for ISBN: ${parsedValue}...`);
+                      try {
+                        const allBooks = await fetchBooks();
+                        const matchedBook = allBooks.find(b => 
+                          (b.isbn && b.isbn.replace(/[-\s]/g, '') === parsedValue) ||
+                          (Array.isArray(b.alternativeIsbns) && b.alternativeIsbns.some(alt => alt && alt.replace(/[-\s]/g, '') === parsedValue))
+                        );
+                        
+                        if (matchedBook) {
+                          handleSelectExistingBook(matchedBook);
+                          setInfoMessage(`Existing book "${matchedBook.title}" loaded from database.`);
+                          return;
+                        }
+                      } catch (err) {
+                        console.warn("Local ledger check failed:", err);
+                      }
+                      
+                      setIsbn(parsedValue);
+                      handleIsbnFetch(parsedValue);
                     }
-                    
-                    setIsbn(parsedValue);
-                    handleIsbnFetch(parsedValue);
                   }
                 }).catch(err => {
                   console.error('Failed to stop html5Qrcode', err);
@@ -1217,7 +1237,7 @@ const BookIngestionConsole = ({ user }) => {
         }
       };
     }
-  }, [cameraModalOpen, cameraMode]);
+  }, [cameraModalOpen, cameraMode, activeQrScanningIndex]);
 
   const captureCoverPhoto = () => {
     if (!videoRef.current) return;
@@ -2199,6 +2219,15 @@ const BookIngestionConsole = ({ user }) => {
                                 }}
                                 placeholder="Sticker QR #"
                               />
+                              <button
+                                type="button"
+                                onClick={() => startCopyQrScan(index)}
+                                className="royal-btn-secondary"
+                                style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 8px', fontSize: '0.75rem', border: '1px solid rgba(212, 175, 55, 0.35)', background: 'transparent' }}
+                              >
+                                <Camera size={11} />
+                                <span>Scan</span>
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -2864,7 +2893,7 @@ const BookIngestionConsole = ({ user }) => {
           <div className={`royal-card camera-modal-card ${cameraMode === 'cover' ? 'cover-mode' : 'isbn-mode'}`}>
             <div className="camera-modal-header">
               <h3>
-                {cameraMode === 'isbn' ? 'Scanning Volume ISBN Barcode' : 'Capture Masterwork Cover'}
+                {cameraMode === 'isbn' ? 'Scanning Volume ISBN Barcode' : (cameraMode === 'copy_qr' ? 'Scanning Physical Copy QR Code' : 'Capture Masterwork Cover')}
               </h3>
               <button onClick={stopCamera} className="close-camera-btn">
                 <X size={18} />
@@ -2875,9 +2904,9 @@ const BookIngestionConsole = ({ user }) => {
               <div className="camera-error-view">
                 <p className="camera-error-text">{cameraError}</p>
                 <div style={{ display: 'flex', gap: '12px', marginTop: '16px', justifyContent: 'center' }}>
-                  {cameraMode === 'isbn' && (
+                  {(cameraMode === 'isbn' || cameraMode === 'copy_qr') && (
                     <button onClick={handleSimulateIsbnScan} className="royal-btn">
-                      Simulate ISBN Scan
+                      Simulate Scan
                     </button>
                   )}
                   <button onClick={stopCamera} className="royal-btn-secondary">
@@ -2888,7 +2917,7 @@ const BookIngestionConsole = ({ user }) => {
             ) : (
               <div className="camera-modal-body">
                 <div className={`camera-stream-wrapper ${cameraMode === 'cover' ? 'cover-mode' : 'isbn-mode'} ${isFitMode ? 'contain-mode' : 'cover-mode'}`}>
-                  {cameraMode === 'isbn' ? (
+                  {cameraMode === 'isbn' || cameraMode === 'copy_qr' ? (
                     <div id="qr-reader" className="scanner-focus-ring-container" onClick={(e) => handleScannerClick(e, html5QrCodeRef.current)} style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} />
                   ) : (
                     <video 
@@ -2905,7 +2934,7 @@ const BookIngestionConsole = ({ user }) => {
                     />
                   )}
                   
-                  {cameraMode === 'isbn' ? null : (
+                  {cameraMode === 'isbn' || cameraMode === 'copy_qr' ? null : (
                     <div className="cover-capture-guide">
                       <div className="cover-frame-outline"></div>
                     </div>

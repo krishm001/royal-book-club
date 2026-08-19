@@ -1540,6 +1540,7 @@ public class CheckoutService {
                 m.put("ntagUid", copy.getNtagUid());
                 m.put("status", copy.getStatus());
                 m.put("currentCheckoutId", copy.getCurrentCheckoutId());
+                m.put("qrId", copy.getQrId());
                 serializedCopies.add(m);
             }
             transaction.update(bookRef, "copies", serializedCopies);
@@ -1591,6 +1592,7 @@ public class CheckoutService {
                 m.put("ntagUid", copy.getNtagUid());
                 m.put("status", copy.getStatus());
                 m.put("currentCheckoutId", copy.getCurrentCheckoutId());
+                m.put("qrId", copy.getQrId());
                 serializedCopies.add(m);
             }
             transaction.update(bookRef, "copies", serializedCopies);
