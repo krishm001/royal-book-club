@@ -22,6 +22,7 @@ import CuratorSettingsPage from './pages/admin/CuratorSettingsPage';
 import CuratorModerationPage from './pages/admin/CuratorModerationPage';
 import CuratorInventoryAuditPage from './pages/admin/CuratorInventoryAuditPage';
 import NfcCounterDashboard from './pages/admin/NfcCounterDashboard';
+import QrStickerGeneratorPage from './pages/admin/QrStickerGeneratorPage';
 import PrivacyNotice from './pages/PrivacyNotice';
 import TermsAndConditions from './pages/TermsAndConditions';
 import SignIn from './pages/auth/SignIn';
@@ -351,10 +352,10 @@ function App() {
                 const storedCounter = Number(latest.counter);
                 
                 if (incomingCounter === storedCounter) {
-                  // Same counter - local check of 5 minutes
+                  // Same counter - local check of 3 minutes
                   const age = Date.now() - Number(latest.firstSeenAt);
-                  if (age > 300000) {
-                    console.warn("Local NFC tap has expired (> 5 minutes). Redirecting to book page or homepage.");
+                  if (age > 180000) {
+                    console.warn("Local NFC tap has expired (> 3 minutes). Redirecting to book page or homepage.");
                     const matchIsbn = href.match(/\/catalog\/([0-9Xx]+)/);
                     if (matchIsbn && matchIsbn[1]) {
                       window.location.replace(`${window.location.origin}/#/catalog/${matchIsbn[1]}`);
@@ -417,14 +418,14 @@ function App() {
                 }));
               }
 
-              // 3. Resume Safety Countdown Timer (Epic 5):
+              // 3. Resume Safety Countdown Timer:
               // If an active session already exists and hasn't expired, preserve the original timestamp to resume the countdown.
               const existingSessionStr = sessionStorage.getItem('nfc_session');
               let originalTimestamp = Date.now();
               if (existingSessionStr) {
                 try {
                   const existing = JSON.parse(existingSessionStr);
-                  if (existing.ntagUid === u && (Date.now() - existing.timestamp < 300000)) {
+                  if (existing.ntagUid === u && (Date.now() - existing.timestamp < 180000)) {
                     originalTimestamp = existing.timestamp;
                   }
                 } catch (e) {
@@ -894,6 +895,7 @@ function App() {
             <Route path="/admin/moderation" element={<CuratorModerationPage user={user} />} />
             <Route path="/admin/audit" element={<CuratorInventoryAuditPage user={user} />} />
             <Route path="/admin/nfc" element={<NfcCounterDashboard user={user} />} />
+            <Route path="/admin/qr-stickers" element={<QrStickerGeneratorPage user={user} />} />
             <Route path="/profile" element={<ProfilePage user={user} />} />
             <Route path="/sages" element={<HelpPage />} />
             <Route path="/help" element={<HelpPage />} />

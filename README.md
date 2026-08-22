@@ -122,6 +122,19 @@ These variables are configured directly inside the GCP Cloud Run service templat
 
 ---
 
+## 🏷️ Physical Catalog Asset Fabrication & QR Generator
+
+The system includes an integrated 65-up A4 physical sticker generator for catalog curation:
+- **Route**: `/admin/qr-stickers` (Curator/Admin only)
+- **Sheet Format**: Standard A4 (`210 mm × 297 mm`), 13 rows × 5 columns = 65 stickers per sheet.
+- **Dimensions**: 39 mm × 21.0 mm stickers with 3 mm left margin, 11 mm top margin, 2 mm horizontal gap (273 mm total column height across 13 rows; 21.0 mm row pitch).
+- **Deep Link Schema**: `https://bookshelfnet.com/?qr=<counter>` with vertically centered 17.5×17.5 mm QR code, middle emblem logo, and Royal Book Club serif branding.
+- **Export Formats**: High-resolution vector PDF export (`jspdf` + `qrcode`) with optional cutting/alignment grid guides.
+
+---
+
+---
+
 ## 🤖 AI Agent Coding Guidelines
 
 We maintain a strict, standardized pair-programming protocol. Any AI developer/agent interacting with this repository MUST consult the coding guidelines and hand-off rules documented in [AGENTS.md](file:///Users/deepikakumari/royalbookclub/AGENTS.md) before writing code.

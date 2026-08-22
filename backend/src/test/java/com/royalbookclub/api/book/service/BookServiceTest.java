@@ -566,4 +566,43 @@ public class BookServiceTest {
         long res4 = (long) method.invoke(bookService, "0x12");
         assertEquals(18L, res4);
     }
+
+    @Test
+    void testBookCopySerializationLossless() {
+        BookCopy copy = BookCopy.builder()
+                .copyNo(1)
+                .ntagUid("04A3B2C1D0E980")
+                .qrId(100000001L)
+                .status("AVAILABLE")
+                .currentCheckoutId("chk-xyz")
+                .build();
+
+        Map<String, Object> map = copy.toMap();
+        assertEquals(1, map.get("copyNo"));
+        assertEquals("04A3B2C1D0E980", map.get("ntagUid"));
+        assertEquals(100000001L, map.get("qrId"));
+        assertEquals("AVAILABLE", map.get("status"));
+        assertEquals("chk-xyz", map.get("currentCheckoutId"));
+
+        BookCopy restored = BookCopy.fromMap(map);
+        assertNotNull(restored);
+        assertEquals(copy.getCopyNo(), restored.getCopyNo());
+        assertEquals(copy.getNtagUid(), restored.getNtagUid());
+        assertEquals(copy.getQrId(), restored.getQrId());
+        assertEquals(copy.getStatus(), restored.getStatus());
+        assertEquals(copy.getCurrentCheckoutId(), restored.getCurrentCheckoutId());
+    }
+
+    @Test
+    void testExtractQrIdsFromCopies() {
+        List<BookCopy> copies = Arrays.asList(
+                BookCopy.builder().copyNo(1).qrId(100000001L).build(),
+                BookCopy.builder().copyNo(2).qrId(null).build(),
+                BookCopy.builder().copyNo(3).qrId(100000003L).build()
+        );
+
+        List<Long> qrIds = BookService.extractQrIdsFromCopies(copies);
+        assertEquals(2, qrIds.size());
+        assertEquals(Arrays.asList(100000001L, 100000003L), qrIds);
+    }
 }

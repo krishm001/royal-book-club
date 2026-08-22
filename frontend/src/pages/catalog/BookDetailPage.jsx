@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2, Shield, Check, Loader2, QrCode, Camera } from 'lucide-react';
-import { fetchBookByIsbn, checkoutBook, fetchBookReviews, submitBookReview, requestCheckout, requestReturn, verifiedCheckout, verifiedReturn, fetchCheckoutsByMember, updateBookReview, deleteBookReview, fetchCheckouts, validateQrReturn } from '../../services/libraryApi';
+import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2, Shield, Check, Loader2, QrCode, Camera, RotateCcw } from 'lucide-react';
+import { fetchBookByIsbn, checkoutBook, fetchBookReviews, submitBookReview, requestCheckout, requestReturn, verifiedCheckout, verifiedReturn, fetchCheckoutsByMember, updateBookReview, deleteBookReview, fetchCheckouts, validateQrReturn, cancelCheckout, cancelReturn } from '../../services/libraryApi';
 import api from '../../api/apiClient';
 import { auth } from '../../config/firebase';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
@@ -97,8 +97,8 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       if (sessionStr) {
         try {
           const session = JSON.parse(sessionStr);
-          // 5-minute timeout check
-          if (Date.now() - session.timestamp < 300000) {
+          // 3-minute timeout check
+          if (Date.now() - session.timestamp < 180000) {
             if (session.isbn === id) {
               setNfcSession(session);
             }
@@ -141,7 +141,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     };
   }, [id]);
 
-  // Handle live 5-minute clock ticks
+  // Handle live 3-minute clock ticks
   useEffect(() => {
     if (!nfcSession) {
       setTimeLeft(0);
@@ -150,7 +150,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
 
     const calculateTimeLeft = () => {
       const elapsed = Date.now() - nfcSession.timestamp;
-      const remaining = Math.max(0, Math.floor((300000 - elapsed) / 1000));
+      const remaining = Math.max(0, Math.floor((180000 - elapsed) / 1000));
       return remaining;
     };
 
@@ -236,6 +236,8 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     }
   };
 
+  const [cancellingInstant, setCancellingInstant] = useState(false);
+
   const handleInstantNfcAction = async (actionType) => {
     const passes = await checkGatingPasses(actionType);
     if (!passes) return;
@@ -244,16 +246,17 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     setInstantConfirmOpen(true);
     setInstantSuccess(false);
     setInstantError('');
+    await executeInstantAction(actionType);
   };
 
-  const handleConfirmInstantAction = async () => {
+  const executeInstantAction = async (actionType) => {
     try {
       setLoading(true);
       setInstantError('');
       resetRatingAndCheckoutId();
       const targetUid = nfcSession?.ntagUid || book?.ntagUid || '04:A3:B2:C1:D0:E9:80';
       let txRes;
-      if (instantActionType === 'checkout') {
+      if (actionType === 'checkout') {
         txRes = await verifiedCheckout({
           bookId: book.isbn,
           memberId: user.uid || user.id,
@@ -292,7 +295,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       console.error('Instant NFC transaction error:', txError);
       const errMsg = txError.response?.data?.message || txError.message || '';
       const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
-      if (isLocationError && instantActionType === 'return') {
+      if (isLocationError && actionType === 'return') {
         setInstantConfirmOpen(false);
         setNfcActionType('return');
         nfcActionTypeRef.current = 'return';
@@ -306,6 +309,33 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConfirmInstantAction = async () => {
+    await executeInstantAction(instantActionType);
+  };
+
+  const handleCancelInstantAction = async () => {
+    if (!createdCheckoutId) {
+      setInstantConfirmOpen(false);
+      return;
+    }
+    try {
+      setCancellingInstant(true);
+      if (instantActionType === 'checkout') {
+        await cancelCheckout(createdCheckoutId, user?.uid || user?.id);
+      } else {
+        await cancelReturn(createdCheckoutId, user?.uid || user?.id);
+      }
+      setInstantConfirmOpen(false);
+      setInstantSuccess(false);
+      await refreshState();
+    } catch (err) {
+      console.error('Failed to cancel instant transaction:', err);
+      setInstantError(err.response?.data?.message || err.message || 'Failed to rollback transaction.');
+    } finally {
+      setCancellingInstant(false);
     }
   };
 
@@ -2473,7 +2503,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '20px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center', marginTop: '20px' }}>
                   {createdCheckoutId && instantActionType !== 'return' && (
                     <Link
                       to={`/gatepass/${createdCheckoutId}`}
@@ -2521,6 +2551,30 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                       <Sparkles size={14} /> Write a Book Review
                     </button>
                   )}
+
+                  {/* Cancel / Undo Button */}
+                  {createdCheckoutId && (
+                    <button
+                      onClick={handleCancelInstantAction}
+                      disabled={cancellingInstant}
+                      className="royal-btn-secondary"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '8px 16px',
+                        fontSize: '0.85rem',
+                        borderRadius: '4px',
+                        borderColor: 'rgba(255, 123, 114, 0.4)',
+                        color: '#ff7b72',
+                      }}
+                      title="Cancel this transaction if executed by mistake"
+                    >
+                      {cancellingInstant ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+                      {instantActionType === 'checkout' ? 'Cancel Checkout' : 'Cancel Return'}
+                    </button>
+                  )}
+
                   <button
                     onClick={() => setInstantConfirmOpen(false)}
                     className="royal-btn-secondary"
@@ -2539,34 +2593,24 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                 <AlertTriangle size={48} style={{ color: 'var(--error, #ff7b72)', marginBottom: '12px' }} />
                 <h4 style={{ color: 'var(--text-primary)', margin: '0 0 8px 0', fontSize: '1rem' }}>Transaction Failed</h4>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '0 0 16px 0' }}>{instantError}</p>
-                <button onClick={handleConfirmInstantAction} className="royal-btn" style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>
-                  Try Again
-                </button>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                  <button onClick={handleConfirmInstantAction} className="royal-btn" style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                    Try Again
+                  </button>
+                  <button onClick={() => setInstantConfirmOpen(false)} className="royal-btn-secondary" style={{ padding: '8px 16px', borderRadius: '4px', fontSize: '0.85rem' }}>
+                    Close
+                  </button>
+                </div>
               </div>
             ) : (
-              <div className="instant-confirm-prompt animate-fade-in" style={{ width: '100%' }}>
-                {/* Book Mini Card */}
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '6px', border: '1px solid rgba(212,175,55,0.1)', marginBottom: '20px', textAlign: 'left' }}>
-                  <img src={coverUrl} alt={book?.title} style={{ width: '45px', height: '65px', objectFit: 'cover', borderRadius: '4px', border: '1px solid rgba(212,175,55,0.2)' }} />
-                  <div>
-                    <h5 style={{ color: 'var(--text-primary)', margin: 0, fontSize: '0.9rem', fontWeight: '600', lineBreak: 'anywhere' }}>{book?.title}</h5>
-                    <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0 0', fontSize: '0.75rem' }}>{authors}</p>
-                  </div>
-                </div>
-
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: '1.5', margin: '0 0 24px 0' }}>
-                  Do you wish to instantly {instantActionType === 'checkout' ? 'check out' : 'return'} this sovereign volume via your active physical NFC session?
+              <div className="instant-processing-state animate-fade-in" style={{ padding: '24px 0', width: '100%', textAlign: 'center' }}>
+                <div className="royal-spinner" style={{ width: '40px', height: '40px', margin: '0 auto 16px' }}></div>
+                <h4 style={{ color: 'var(--text-primary)', margin: '0 0 8px 0', fontSize: '1.05rem' }}>
+                  {instantActionType === 'checkout' ? 'Executing Instant Sovereign Checkout...' : 'Executing Instant Sovereign Return...'}
+                </h4>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', margin: 0 }}>
+                  Cryptographically validating NFC physical signature and updating catalog ledger...
                 </p>
-
-                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', width: '100%' }}>
-                  <button onClick={() => setInstantConfirmOpen(false)} className="royal-btn" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: 'var(--text-secondary)', padding: '10px 18px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>
-                    Cancel
-                  </button>
-                  <button onClick={handleConfirmInstantAction} disabled={loading} className="royal-btn" style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    {loading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                    {instantActionType === 'checkout' ? 'Confirm Checkout' : 'Confirm Return'}
-                  </button>
-                </div>
               </div>
             )}
           </div>

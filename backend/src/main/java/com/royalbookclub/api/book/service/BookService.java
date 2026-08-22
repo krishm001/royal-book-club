@@ -656,48 +656,40 @@ public class BookService {
         }
     }
 
-    private List<Map<String, Object>> copiesToListOfMaps(List<BookCopy> copies) {
+    public static List<Long> extractQrIdsFromCopies(List<BookCopy> copies) {
+        List<Long> qrIds = new ArrayList<>();
+        if (copies != null) {
+            for (BookCopy copy : copies) {
+                if (copy != null && copy.getQrId() != null) {
+                    qrIds.add(copy.getQrId());
+                }
+            }
+        }
+        return qrIds;
+    }
+
+    public List<Map<String, Object>> copiesToListOfMaps(List<BookCopy> copies) {
         List<Map<String, Object>> list = new ArrayList<>();
         if (copies == null) return list;
         for (BookCopy copy : copies) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("copyNo", copy.getCopyNo());
-            m.put("ntagUid", copy.getNtagUid());
-            m.put("qrId", copy.getQrId());
-            m.put("status", copy.getStatus());
-            m.put("currentCheckoutId", copy.getCurrentCheckoutId());
-            list.add(m);
+            if (copy != null) {
+                list.add(copy.toMap());
+            }
         }
         return list;
     }
 
     @SuppressWarnings("unchecked")
-    private List<BookCopy> mapsToListOfCopies(List<Map<String, Object>> maps) {
+    public List<BookCopy> mapsToListOfCopies(List<Map<String, Object>> maps) {
         List<BookCopy> list = new ArrayList<>();
         if (maps == null) return list;
         for (Map<String, Object> m : maps) {
-            if (m == null) continue;
-            
-            Integer copyNo = null;
-            Object copyNoVal = m.get("copyNo");
-            if (copyNoVal instanceof Number) {
-                copyNo = ((Number) copyNoVal).intValue();
+            if (m != null) {
+                BookCopy copy = BookCopy.fromMap(m);
+                if (copy != null) {
+                    list.add(copy);
+                }
             }
-            
-            Long qrId = null;
-            Object qrIdVal = m.get("qrId");
-            if (qrIdVal instanceof Number) {
-                qrId = ((Number) qrIdVal).longValue();
-            }
-
-            BookCopy copy = BookCopy.builder()
-                    .copyNo(copyNo)
-                    .ntagUid((String) m.get("ntagUid"))
-                    .qrId(qrId)
-                    .status((String) m.get("status"))
-                    .currentCheckoutId((String) m.get("currentCheckoutId"))
-                    .build();
-            list.add(copy);
         }
         return list;
     }

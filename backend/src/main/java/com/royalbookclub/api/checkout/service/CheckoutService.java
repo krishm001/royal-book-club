@@ -753,6 +753,162 @@ public class CheckoutService {
     }
 
     /**
+     * Cancel an active or pending checkout initiated by mistake.
+     * Restores the book copy availability and sets checkout status to CANCELLED.
+     */
+    public Checkout cancelCheckout(String checkoutId, String memberId) {
+        if (checkoutId == null || checkoutId.isBlank()) {
+            throw new IllegalArgumentException("Checkout ID is required to cancel checkout.");
+        }
+        log.info("Initiating checkout cancellation. ID: {}, Member: {}", checkoutId, memberId);
+
+        try {
+            firestore.runTransaction(transaction -> {
+                DocumentReference checkoutRef = firestore.collection(COLLECTION_NAME).document(checkoutId);
+                DocumentSnapshot checkoutDoc = transaction.get(checkoutRef).get();
+
+                if (!checkoutDoc.exists()) {
+                    throw new IllegalArgumentException("Checkout transaction not found: " + checkoutId);
+                }
+
+                String currentStatus = checkoutDoc.getString("status");
+                if ("CANCELLED".equals(currentStatus)) {
+                    log.info("Checkout {} is already cancelled.", checkoutId);
+                    return null;
+                }
+                if (!"CHECKED_OUT".equals(currentStatus) && !"REQUESTED_CHECKOUT".equals(currentStatus)) {
+                    throw new IllegalStateException("Only active or pending checkouts can be cancelled (current status: " + currentStatus + ")");
+                }
+
+                String holderId = checkoutDoc.getString("memberId");
+                if (memberId != null && !memberId.isBlank() && !memberId.equals(holderId) && !"ADMIN".equals(memberId) && !"SYSTEM".equals(memberId)) {
+                    throw new IllegalArgumentException("Unauthorized: You can only cancel your own checkouts.");
+                }
+
+                String resolvedBookId = checkoutDoc.getString("bookId");
+                DocumentSnapshot bookDoc = resolveBookDocument(resolvedBookId, transaction);
+                if (bookDoc != null && bookDoc.exists()) {
+                    DocumentReference bookRef = bookDoc.getReference();
+                    Long copyNo = checkoutDoc.getLong("copyNo");
+                    
+                    // Transition copy status back to AVAILABLE and clear currentCheckoutId
+                    transitionCopyStatus(bookDoc, copyNo != null ? copyNo.intValue() : null, checkoutId, "AVAILABLE", true, transaction, bookRef);
+
+                    // If it was fully CHECKED_OUT, increment availableCopies back
+                    if ("CHECKED_OUT".equals(currentStatus)) {
+                        Long available = bookDoc.getLong("availableCopies");
+                        Long total = bookDoc.getLong("totalCopies");
+                        long newAvailable = (available != null ? available : 0) + 1;
+                        if (total != null && newAvailable > total) {
+                            newAvailable = total;
+                        }
+                        transaction.update(bookRef, "availableCopies", newAvailable);
+                    }
+                }
+
+                Instant now = Instant.now();
+                transaction.update(checkoutRef,
+                        "status", "CANCELLED",
+                        "cancelledAt", toTimestamp(now),
+                        "cancelReason", "USER_INITIATED_ROLLBACK"
+                );
+
+                return null;
+            }).get();
+
+            return getCheckoutById(checkoutId)
+                    .orElseThrow(() -> new RuntimeException("Failed to load cancelled checkout: " + checkoutId));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Checkout cancellation interrupted for ID: {}", checkoutId, e);
+            throw new RuntimeException("Cancellation interrupted", e);
+        } catch (ExecutionException e) {
+            log.error("Checkout cancellation failed for ID: {}", checkoutId, e);
+            Throwable cause = e.getCause();
+            if (cause instanceof IllegalArgumentException || cause instanceof IllegalStateException) {
+                throw (RuntimeException) cause;
+            }
+            throw new RuntimeException("Failed to cancel checkout: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Revert an accidental book return.
+     * Restores the checkout record to CHECKED_OUT, re-locks the copy, and decrements available copies.
+     */
+    public Checkout cancelReturn(String checkoutId, String memberId) {
+        if (checkoutId == null || checkoutId.isBlank()) {
+            throw new IllegalArgumentException("Checkout ID is required to cancel return.");
+        }
+        log.info("Initiating return rollback/undo. ID: {}, Member: {}", checkoutId, memberId);
+
+        try {
+            firestore.runTransaction(transaction -> {
+                DocumentReference checkoutRef = firestore.collection(COLLECTION_NAME).document(checkoutId);
+                DocumentSnapshot checkoutDoc = transaction.get(checkoutRef).get();
+
+                if (!checkoutDoc.exists()) {
+                    throw new IllegalArgumentException("Checkout transaction not found: " + checkoutId);
+                }
+
+                String currentStatus = checkoutDoc.getString("status");
+                if ("CHECKED_OUT".equals(currentStatus)) {
+                    log.info("Checkout {} is already in CHECKED_OUT status.", checkoutId);
+                    return null;
+                }
+                if (!"RETURNED".equals(currentStatus) && !"REQUESTED_RETURN".equals(currentStatus)) {
+                    throw new IllegalStateException("Only recently returned or requested return checkouts can be undone (current status: " + currentStatus + ")");
+                }
+
+                String holderId = checkoutDoc.getString("memberId");
+                if (memberId != null && !memberId.isBlank() && !memberId.equals(holderId) && !"ADMIN".equals(memberId) && !"SYSTEM".equals(memberId)) {
+                    throw new IllegalArgumentException("Unauthorized: You can only cancel your own return.");
+                }
+
+                String resolvedBookId = checkoutDoc.getString("bookId");
+                DocumentSnapshot bookDoc = resolveBookDocument(resolvedBookId, transaction);
+                if (bookDoc != null && bookDoc.exists()) {
+                    DocumentReference bookRef = bookDoc.getReference();
+                    Long copyNo = checkoutDoc.getLong("copyNo");
+
+                    // Transition copy status back to CHECKED_OUT with checkoutId
+                    transitionCopyStatus(bookDoc, copyNo != null ? copyNo.intValue() : null, checkoutId, "CHECKED_OUT", false, transaction, bookRef);
+
+                    // If it was RETURNED, decrement availableCopies back
+                    if ("RETURNED".equals(currentStatus)) {
+                        Long available = bookDoc.getLong("availableCopies");
+                        long newAvailable = (available != null && available > 0) ? available - 1 : 0;
+                        transaction.update(bookRef, "availableCopies", newAvailable);
+                    }
+                }
+
+                transaction.update(checkoutRef,
+                        "status", "CHECKED_OUT",
+                        "returnedAt", null,
+                        "approvedAt", toTimestamp(Instant.now()),
+                        "approvedBy", "RETURN_ROLLBACK"
+                );
+
+                return null;
+            }).get();
+
+            return getCheckoutById(checkoutId)
+                    .orElseThrow(() -> new RuntimeException("Failed to load rolled-back checkout: " + checkoutId));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Return cancellation interrupted for ID: {}", checkoutId, e);
+            throw new RuntimeException("Return rollback interrupted", e);
+        } catch (ExecutionException e) {
+            log.error("Return cancellation failed for ID: {}", checkoutId, e);
+            Throwable cause = e.getCause();
+            if (cause instanceof IllegalArgumentException || cause instanceof IllegalStateException) {
+                throw (RuntimeException) cause;
+            }
+            throw new RuntimeException("Failed to cancel return: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * Atomically return a book and increment its copy count in catalog.
      *
      * @param request Return parameters
@@ -1532,18 +1688,11 @@ public class CheckoutService {
             selected.setStatus(targetStatus);
             selected.setCurrentCheckoutId(checkoutId);
             
-            // Serialize and update the copies list back to the Book
-            List<Map<String, Object>> serializedCopies = new ArrayList<>();
-            for (BookCopy copy : copies) {
-                Map<String, Object> m = new HashMap<>();
-                m.put("copyNo", copy.getCopyNo());
-                m.put("ntagUid", copy.getNtagUid());
-                m.put("status", copy.getStatus());
-                m.put("currentCheckoutId", copy.getCurrentCheckoutId());
-                m.put("qrId", copy.getQrId());
-                serializedCopies.add(m);
-            }
+            // Serialize and update the copies list back to the Book using centralized BookService conversion
+            List<Map<String, Object>> serializedCopies = bookService.copiesToListOfMaps(copies);
             transaction.update(bookRef, "copies", serializedCopies);
+            List<Long> qrIds = BookService.extractQrIdsFromCopies(copies);
+            transaction.update(bookRef, "qrIds", qrIds);
             return selected.getCopyNo();
         }
         return 1;
@@ -1585,17 +1734,10 @@ public class CheckoutService {
         }
 
         if (updated) {
-            List<Map<String, Object>> serializedCopies = new ArrayList<>();
-            for (BookCopy copy : copies) {
-                Map<String, Object> m = new HashMap<>();
-                m.put("copyNo", copy.getCopyNo());
-                m.put("ntagUid", copy.getNtagUid());
-                m.put("status", copy.getStatus());
-                m.put("currentCheckoutId", copy.getCurrentCheckoutId());
-                m.put("qrId", copy.getQrId());
-                serializedCopies.add(m);
-            }
+            List<Map<String, Object>> serializedCopies = bookService.copiesToListOfMaps(copies);
             transaction.update(bookRef, "copies", serializedCopies);
+            List<Long> qrIds = BookService.extractQrIdsFromCopies(copies);
+            transaction.update(bookRef, "qrIds", qrIds);
         }
     }
 

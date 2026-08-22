@@ -23,10 +23,14 @@ import com.royalbookclub.api.book.model.BookCopy;
 import com.royalbookclub.api.checkout.model.Checkout;
 import java.util.Arrays;
 
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class CheckoutServiceTest {
 
     @Mock
@@ -357,5 +361,144 @@ public class CheckoutServiceTest {
         // Verify successful execution even on mismatch because requestType is BARCODE
         assertNotNull(returnedCheckout);
         verify(transaction, atLeastOnce()).update(eq(checkoutRef), anyString(), any(), anyString(), any(), anyString(), any(), anyString(), any(), anyString(), any());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void testCancelCheckout_Success() throws Exception {
+        DocumentReference checkoutRef = mock(DocumentReference.class);
+        DocumentSnapshot checkoutDoc = mock(DocumentSnapshot.class);
+        DocumentReference bookRef = mock(DocumentReference.class);
+        QueryDocumentSnapshot bookDoc = mock(QueryDocumentSnapshot.class);
+        CollectionReference checkoutsCollection = mock(CollectionReference.class);
+        CollectionReference booksCollection = mock(CollectionReference.class);
+        Transaction transaction = mock(Transaction.class);
+        ApiFuture<DocumentSnapshot> futureDoc = mock(ApiFuture.class);
+
+        when(firestore.runTransaction(any())).thenAnswer(invocation -> {
+            Object func = invocation.getArgument(0);
+            java.lang.reflect.Method[] methods = func.getClass().getDeclaredMethods();
+            java.lang.reflect.Method targetMethod = null;
+            for (java.lang.reflect.Method m : methods) {
+                if ("updateCallback".equals(m.getName()) || (m.getParameterCount() == 1 && m.getParameterTypes()[0].equals(Transaction.class))) {
+                    targetMethod = m;
+                    break;
+                }
+            }
+            if (targetMethod != null) {
+                targetMethod.setAccessible(true);
+                targetMethod.invoke(func, transaction);
+            }
+            return ApiFutures.immediateFuture(null);
+        });
+
+        when(firestore.collection("checkouts")).thenReturn(checkoutsCollection);
+        when(checkoutsCollection.document("chk123")).thenReturn(checkoutRef);
+        when(transaction.get(checkoutRef)).thenReturn(futureDoc);
+        when(futureDoc.get()).thenReturn(checkoutDoc);
+        when(checkoutDoc.exists()).thenReturn(true);
+        when(checkoutDoc.getString("status")).thenReturn("CHECKED_OUT");
+        when(checkoutDoc.getString("memberId")).thenReturn("member123");
+        when(checkoutDoc.getString("bookId")).thenReturn("9783161484100");
+        when(checkoutDoc.getLong("copyNo")).thenReturn(1L);
+
+        when(firestore.collection("books")).thenReturn(booksCollection);
+        Query queryMock = mock(Query.class);
+        when(booksCollection.whereEqualTo(anyString(), anyString())).thenReturn(queryMock);
+        when(queryMock.limit(anyInt())).thenReturn(queryMock);
+
+        ApiFuture<QuerySnapshot> futureQuerySnap = mock(ApiFuture.class);
+        QuerySnapshot querySnap = mock(QuerySnapshot.class);
+        when(transaction.get(queryMock)).thenReturn(futureQuerySnap);
+        when(futureQuerySnap.get()).thenReturn(querySnap);
+        when(querySnap.isEmpty()).thenReturn(false);
+        when(querySnap.getDocuments()).thenReturn(Arrays.asList(bookDoc));
+        when(bookDoc.exists()).thenReturn(true);
+        when(bookDoc.getReference()).thenReturn(bookRef);
+        when(bookDoc.getLong("availableCopies")).thenReturn(2L);
+        when(bookDoc.getLong("totalCopies")).thenReturn(3L);
+
+        BookCopy copy1 = BookCopy.builder().copyNo(1).ntagUid("04A3B2C1D0E980").qrId(100000001L).status("CHECKED_OUT").currentCheckoutId("chk123").build();
+        when(bookService.getOrCreateBookCopies(bookDoc)).thenReturn(Arrays.asList(copy1));
+        when(bookService.copiesToListOfMaps(any())).thenReturn(Arrays.asList(copy1.toMap()));
+
+        ApiFuture<DocumentSnapshot> futureGet = mock(ApiFuture.class);
+        when(checkoutRef.get()).thenReturn(futureGet);
+        when(futureGet.get()).thenReturn(checkoutDoc);
+        when(checkoutDoc.getId()).thenReturn("chk123");
+
+        Checkout cancelled = checkoutService.cancelCheckout("chk123", "member123");
+        assertNotNull(cancelled);
+        verify(transaction).update(eq(checkoutRef), eq("status"), eq("CANCELLED"), eq("cancelledAt"), any(), eq("cancelReason"), any());
+        verify(transaction).update(eq(bookRef), eq("availableCopies"), eq(3L));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void testCancelReturn_Success() throws Exception {
+        DocumentReference checkoutRef = mock(DocumentReference.class);
+        DocumentSnapshot checkoutDoc = mock(DocumentSnapshot.class);
+        DocumentReference bookRef = mock(DocumentReference.class);
+        QueryDocumentSnapshot bookDoc = mock(QueryDocumentSnapshot.class);
+        CollectionReference checkoutsCollection = mock(CollectionReference.class);
+        CollectionReference booksCollection = mock(CollectionReference.class);
+        Transaction transaction = mock(Transaction.class);
+        ApiFuture<DocumentSnapshot> futureDoc = mock(ApiFuture.class);
+
+        when(firestore.runTransaction(any())).thenAnswer(invocation -> {
+            Object func = invocation.getArgument(0);
+            java.lang.reflect.Method[] methods = func.getClass().getDeclaredMethods();
+            java.lang.reflect.Method targetMethod = null;
+            for (java.lang.reflect.Method m : methods) {
+                if ("updateCallback".equals(m.getName()) || (m.getParameterCount() == 1 && m.getParameterTypes()[0].equals(Transaction.class))) {
+                    targetMethod = m;
+                    break;
+                }
+            }
+            if (targetMethod != null) {
+                targetMethod.setAccessible(true);
+                targetMethod.invoke(func, transaction);
+            }
+            return ApiFutures.immediateFuture(null);
+        });
+
+        when(firestore.collection("checkouts")).thenReturn(checkoutsCollection);
+        when(checkoutsCollection.document("chk123")).thenReturn(checkoutRef);
+        when(transaction.get(checkoutRef)).thenReturn(futureDoc);
+        when(futureDoc.get()).thenReturn(checkoutDoc);
+        when(checkoutDoc.exists()).thenReturn(true);
+        when(checkoutDoc.getString("status")).thenReturn("RETURNED");
+        when(checkoutDoc.getString("memberId")).thenReturn("member123");
+        when(checkoutDoc.getString("bookId")).thenReturn("9783161484100");
+        when(checkoutDoc.getLong("copyNo")).thenReturn(1L);
+
+        when(firestore.collection("books")).thenReturn(booksCollection);
+        Query queryMock = mock(Query.class);
+        when(booksCollection.whereEqualTo(anyString(), anyString())).thenReturn(queryMock);
+        when(queryMock.limit(anyInt())).thenReturn(queryMock);
+
+        ApiFuture<QuerySnapshot> futureQuerySnap = mock(ApiFuture.class);
+        QuerySnapshot querySnap = mock(QuerySnapshot.class);
+        when(transaction.get(queryMock)).thenReturn(futureQuerySnap);
+        when(futureQuerySnap.get()).thenReturn(querySnap);
+        when(querySnap.isEmpty()).thenReturn(false);
+        when(querySnap.getDocuments()).thenReturn(Arrays.asList(bookDoc));
+        when(bookDoc.exists()).thenReturn(true);
+        when(bookDoc.getReference()).thenReturn(bookRef);
+        when(bookDoc.getLong("availableCopies")).thenReturn(3L);
+
+        BookCopy copy1 = BookCopy.builder().copyNo(1).ntagUid("04A3B2C1D0E980").qrId(100000001L).status("AVAILABLE").build();
+        when(bookService.getOrCreateBookCopies(bookDoc)).thenReturn(Arrays.asList(copy1));
+        when(bookService.copiesToListOfMaps(any())).thenReturn(Arrays.asList(copy1.toMap()));
+
+        ApiFuture<DocumentSnapshot> futureGet = mock(ApiFuture.class);
+        when(checkoutRef.get()).thenReturn(futureGet);
+        when(futureGet.get()).thenReturn(checkoutDoc);
+        when(checkoutDoc.getId()).thenReturn("chk123");
+
+        Checkout restored = checkoutService.cancelReturn("chk123", "member123");
+        assertNotNull(restored);
+        verify(transaction).update(eq(checkoutRef), eq("status"), eq("CHECKED_OUT"), eq("returnedAt"), isNull(), eq("approvedAt"), any(), eq("approvedBy"), any());
+        verify(transaction).update(eq(bookRef), eq("availableCopies"), eq(2L));
     }
 }

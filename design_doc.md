@@ -391,3 +391,27 @@ This section details the architectural designs, database schema updates, and sta
   - Adds a "Select Current Location" button leveraging the browser's Geolocation API to auto-fill latitude and longitude fields.
   - Resolves Academic theme contrast issues (grey-on-dark-grey text, white-on-white text input settings).
   - Fixes blank location selection rendering on Android Webview devices by utilizing native, standards-compliant HTML select styling.
+
+#### 🖨️ Epic 13: QR Serialization Integrity, 65-up Printable Sticker Fabrication, & Streamlined Instant NFC Flow
+- **Lossless Copy Serialization Architecture (`BookCopy.java`, `BookService.java`, `CheckoutService.java`)**:
+  - Centralized, strongly-typed `toMap()` and defensive `fromMap(...)` methods in `BookCopy` guarantee lossless persistence of all copy-level attributes (`copyNo`, `ntagUid`, `qrId`, `status`, `currentCheckoutId`).
+  - Transactional copy status transitions in `CheckoutService` preserve `qrId` and `ntagUid` permanently during checkouts, returns, cancellations, and administrative approvals.
+  - Document-level `qrIds` array index is automatically maintained for fast `whereArrayContains` lookups.
+  - Transaction Rollback & Cancel Endpoints:
+    - `POST /api/v1/checkout/{id}/cancel`: Atomically rolls back a checkout transaction, resetting book availability and returning copy status to `AVAILABLE`.
+    - `POST /api/v1/checkout/{id}/cancel-return`: Atomically rolls back a return transaction, restoring `CHECKED_OUT` status and decrementing book available count.
+- **Admin Printable QR Sticker Sheet Generator (65-up A4 PDF)**:
+  - Accessible via Admin Dashboard (`/admin/qr-stickers`).
+  - Pixel-perfect A4 printable PDF generator (`210 mm × 297 mm`):
+    - Layout: 13 rows × 5 columns = 65 stickers per sheet.
+    - Margins: 3.0 mm left margin, 11.0 mm top margin, 2.0 mm column gap, 0.0 mm vertical gap.
+    - Sticker size: 39.0 mm width × 21.0 mm height (total column height across 13 rows: 273.0 mm; row pitch: 21.0 mm).
+    - Left side: 17.5 mm × 17.5 mm high-resolution QR code encoding `https://bookshelfnet.com/?qr=<counter>` (vertically centered).
+    - Middle section: Royal Book Club sparkle emblem logo (vertically centered, 5.2 mm × 5.2 mm, burgundy `#78101e`).
+    - Right side: Royal Book Club branding in `Playfair Display` serif typography ("Royal Book" / "Club") and `#<counter>` tag (vertically centered).
+  - Configurable starting counter (default `100000001`), sheet multiplier (1 to 10 sheets), target URL prefix, cutting guide toggle, and live interactive scaled canvas preview.
+- **Streamlined Instant NFC Checkout & Return Flow**:
+  - NFC active session countdown reduced from 5 minutes to 3 minutes (180,000 ms) in `BookDetailPage.jsx` and `App.jsx`.
+  - Removed intermediary confirmation modal: clicking instant NFC checkout/return directly triggers cryptographic verification and checkout/return execution.
+  - Post-action popup includes immediate "View Gatepass" (on checkout) or "Write a Book Review" (on return), alongside a "Cancel Checkout" / "Cancel Return" rollback button in case of accidental clicks, and a "Done" button.
+

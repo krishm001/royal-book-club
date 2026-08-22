@@ -1,0 +1,308 @@
+.qr-generator-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  color: var(--text-primary);
+}
+
+.qr-generator-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.qr-generator-header .header-badge-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.qr-generator-header h1 {
+  font-family: var(--font-heading);
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.qr-generator-header p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* Controls Grid */
+.qr-controls-card {
+  padding: 1.5rem 2rem;
+  background: var(--surface-elevated, rgba(26, 26, 46, 0.8));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-md);
+  margin-bottom: 2rem;
+  box-shadow: var(--card-shadow);
+}
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.control-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.control-field label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.control-field input,
+.control-field select {
+  background: rgba(15, 15, 35, 0.7);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: var(--transition-smooth);
+}
+
+.control-field input:focus,
+.control-field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.25);
+}
+
+.toggle-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 1.8rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-field input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.toggle-field span {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+/* Summary Bar */
+.generator-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--glass-border);
+}
+
+.summary-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.summary-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(212, 165, 116, 0.08);
+  border: 1px solid rgba(212, 165, 116, 0.2);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.summary-badge strong {
+  color: var(--accent);
+}
+
+.action-buttons-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.royal-btn-gold {
+  background: var(--accent-gradient);
+  color: #1a1a2e;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  padding: 10px 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
+}
+
+.royal-btn-gold:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+}
+
+.royal-btn-gold:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Interactive Preview Section */
+.preview-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.preview-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.preview-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zoom-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.zoom-btn:hover, .zoom-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.a4-preview-viewport {
+  background: rgba(10, 10, 20, 0.8);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-md);
+  padding: 2rem;
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+/* Realistic A4 Page container */
+.a4-sheet-canvas {
+  background: #ffffff;
+  color: #111111;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+  position: relative;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  transform-origin: top center;
+}
+
+/* Individual Sticker Tile on Sheet */
+.sticker-cell-tile {
+  position: absolute;
+  box-sizing: border-box;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 1px;
+}
+
+.sticker-cell-tile.bordered {
+  border: 1px dashed #d0d0d0;
+}
+
+.sticker-qr-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sticker-qr-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.sticker-logo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin: 0 3px;
+}
+
+.sticker-logo-wrapper svg,
+.sticker-logo-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.sticker-brand-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  flex-grow: 1;
+  text-align: left;
+  line-height: 1.1;
+  overflow: hidden;
+}
+
+.sticker-brand-line {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  color: #78101e;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.sticker-counter-tag {
+  font-family: 'Inter', sans-serif;
+  color: #777788;
+  font-weight: 500;
+  margin-top: 1px;
+  letter-spacing: 0.02em;
+}

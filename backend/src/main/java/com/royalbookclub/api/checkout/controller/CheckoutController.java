@@ -214,6 +214,40 @@ public class CheckoutController {
     }
 
     /**
+     * Cancel an active or pending checkout transaction.
+     */
+    @PostMapping("/{id}/cancel")
+    @Operation(summary = "Cancel checkout", description = "Cancels an active or pending checkout and restores book copy availability.")
+    public ResponseEntity<Checkout> cancelCheckout(
+            @PathVariable String id,
+            @RequestParam(required = false) String memberId,
+            @AuthenticationPrincipal User user) {
+        String resolvedMemberId = (memberId != null && !memberId.trim().isEmpty() && !"undefined".equals(memberId) && !"null".equals(memberId))
+                ? memberId.trim()
+                : (user != null ? user.getId() : null);
+        log.info("REST request to cancel checkout: {} by member: {}", id, resolvedMemberId);
+        Checkout checkout = checkoutService.cancelCheckout(id, resolvedMemberId);
+        return ResponseEntity.ok(checkout);
+    }
+
+    /**
+     * Revert / Cancel an accidental book return.
+     */
+    @PostMapping("/{id}/cancel-return")
+    @Operation(summary = "Cancel / Undo return", description = "Reverts an accidental book return, restoring checkout and copy state.")
+    public ResponseEntity<Checkout> cancelReturn(
+            @PathVariable String id,
+            @RequestParam(required = false) String memberId,
+            @AuthenticationPrincipal User user) {
+        String resolvedMemberId = (memberId != null && !memberId.trim().isEmpty() && !"undefined".equals(memberId) && !"null".equals(memberId))
+                ? memberId.trim()
+                : (user != null ? user.getId() : null);
+        log.info("REST request to cancel return for checkout: {} by member: {}", id, resolvedMemberId);
+        Checkout checkout = checkoutService.cancelReturn(id, resolvedMemberId);
+        return ResponseEntity.ok(checkout);
+    }
+
+    /**
      * Fetch active checkouts by member ID.
      */
     @GetMapping("/member/{memberId}")

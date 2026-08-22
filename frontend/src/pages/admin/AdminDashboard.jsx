@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, BookOpen, Users, PlusCircle, Award, Settings, Layers, Calendar, RefreshCw, ClipboardCheck } from 'lucide-react';
+import { Shield, BookOpen, Users, PlusCircle, Award, Settings, Layers, Calendar, RefreshCw, ClipboardCheck, QrCode } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { listAdminRequests } from '../../services/adminRequestApi';
 import { fetchCheckouts } from '../../services/libraryApi';
@@ -258,6 +258,18 @@ const AdminDashboard = ({ user }) => {
           <p>{t('admin.shelfAuditDesc', 'Perform volume checks, audit barcode logs, and run catalog reconciliation.')}</p>
           <Link to="/admin/audit" className="royal-btn action-panel-btn">
             {t('admin.launchAudit', 'Launch Shelf Audit')}
+          </Link>
+        </div>
+
+        {/* QR Code Sticker Workshop Panel */}
+        <div className="royal-card action-panel-card">
+          <div className="panel-icon-wrapper">
+            <QrCode size={28} className="gold-glow-icon" />
+          </div>
+          <h3>{t('admin.qrStickersTitle', 'QR Sticker Generator')}</h3>
+          <p>{t('admin.qrStickersDesc', 'Generate printable 65-up A4 sheets of book copy QR stickers with royal branding.')}</p>
+          <Link to="/admin/qr-stickers" className="royal-btn action-panel-btn">
+            {t('admin.launchStickers', 'Generate QR Stickers')}
           </Link>
         </div>
 

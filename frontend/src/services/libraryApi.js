@@ -186,3 +186,18 @@ export const validateQrReturn = async ({ checkoutId, qrPathName, memberId }) => 
   return response.data;
 };
 
+export const cancelCheckout = async (id, memberId) => {
+  const response = await api.post(`/api/v1/checkout/${encodeURIComponent(id)}/cancel`, null, {
+    params: { memberId }
+  });
+  return response.data;
+};
+
+export const cancelReturn = async (id, memberId) => {
+  const response = await api.post(`/api/v1/checkout/${encodeURIComponent(id)}/cancel-return`, null, {
+    params: { memberId }
+  });
+  return response.data;
+};
+
+
