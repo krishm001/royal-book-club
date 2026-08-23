@@ -10,7 +10,7 @@
   max-width: 860px;
   width: 100%;
   background: var(--surface);
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid var(--glass-border);
   border-radius: 16px;
   padding: 32px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);

@@ -434,7 +434,7 @@
   background: rgba(0, 0, 0, 0.2);
   border-radius: var(--border-radius-sm);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
   box-shadow: 0 4px 15px rgba(0,0,0,0.5);
 }
 

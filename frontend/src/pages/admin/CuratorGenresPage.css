@@ -38,7 +38,7 @@
 .genre-column-card {
   height: 100%;
   background: var(--surface) !important;
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--glass-border) !important;
   display: flex;
   flex-direction: column;
   gap: 25px;
@@ -50,7 +50,7 @@
   display: flex;
   align-items: center;
   gap: 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--glass-border);
   padding-bottom: 18px;
 }
 
@@ -122,8 +122,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(255, 255, 255, 0.01);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--glass-border);
   padding: 10px 18px;
   border-radius: var(--border-radius-sm);
   transition: var(--transition-smooth);

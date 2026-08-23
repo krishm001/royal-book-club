@@ -50,9 +50,9 @@
   align-items: center;
   justify-content: center;
   padding: 80px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--btn-secondary-bg);
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
   backdrop-filter: blur(10px);
 }
 
@@ -69,8 +69,8 @@
 }
 
 .settings-glass-form-card {
-  background: rgba(255, 255, 255, 0.01);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--glass-border);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   padding: 30px;
@@ -109,15 +109,15 @@
   justify-content: space-between;
   padding: 16px;
   background: rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
   border-radius: 10px;
   gap: 20px;
   transition: all 0.3s ease;
 }
 
 .gating-toggle-row:hover {
-  background: rgba(255, 255, 255, 0.02);
-  border-color: rgba(255, 255, 255, 0.06);
+  background: var(--btn-secondary-bg);
+  border-color: var(--glass-border);
 }
 
 .toggle-text-info {
@@ -160,13 +160,13 @@
 }
 
 .muted-toggle {
-  color: rgba(255, 255, 255, 0.15);
+  color: var(--toggle-inactive);
 }
 
 .settings-form-actions {
   display: flex;
   justify-content: flex-end;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--glass-border);
   padding-top: 20px;
 }
 
@@ -199,8 +199,8 @@
 
 /* Sidebar Styling */
 .settings-info-sidebar {
-  background: rgba(255, 255, 255, 0.01);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--glass-border);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   padding: 30px;
@@ -220,7 +220,7 @@
 
 .impact-check-box {
   background: rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--glass-border);
   padding: 16px;
   border-radius: 10px;
 }
@@ -280,7 +280,7 @@
 
 .settings-divider-custom {
   height: 1px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--btn-secondary-bg);
   margin: 20px 0;
 }
 
@@ -290,7 +290,7 @@
 }
 
 .gating-input {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--btn-secondary-bg);
   border: 1px solid rgba(212, 165, 116, 0.2);
   padding: 10px;
   border-radius: 4px;
@@ -306,7 +306,7 @@
 }
 
 .gating-input::placeholder {
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--text-muted);
 }
 
 /* Academic Theme Contrast & WebView Overrides */
@@ -373,8 +373,8 @@
 /* QR Validator Card Styles */
 .qr-validator-card {
   margin-top: 2.5rem;
-  background: var(--surface-elevated, rgba(255, 255, 255, 0.02));
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
+  background: var(--surface-elevated, var(--btn-secondary-bg));
+  border: 1px solid var(--border-color, var(--glass-border));
   border-radius: 16px;
   padding: 30px;
 }

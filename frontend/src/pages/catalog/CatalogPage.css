@@ -304,7 +304,7 @@
 }
 
 .btn-nfc {
-  border-color: rgba(255, 255, 255, 0.15) !important;
+  border-color: var(--glass-border) !important;
   color: var(--text-primary) !important;
 }
 
@@ -321,13 +321,13 @@
 }
 
 .btn-simulate {
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: var(--glass-border) !important;
+  background: var(--btn-secondary-bg) !important;
   color: var(--text-secondary) !important;
 }
 
 .btn-simulate:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: var(--btn-secondary-bg) !important;
   color: var(--text-primary) !important;
 }
 
@@ -343,7 +343,7 @@
   border: 1px solid rgba(212, 175, 55, 0.2);
   border-radius: 6px;
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-secondary);
   margin-top: 15px;
 }
 
@@ -386,7 +386,7 @@
 .top-simulation-drawer {
   width: 100%;
   background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border);
   border-radius: 8px;
   padding: 20px;
   margin-top: 20px;
@@ -435,8 +435,8 @@
 }
 
 .simulation-book-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 6px;
   padding: 10px 14px;
   display: flex;
@@ -447,7 +447,7 @@
 }
 
 .simulation-book-card:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--btn-secondary-bg);
   border-color: rgba(212, 175, 55, 0.15);
 }
 
@@ -505,7 +505,7 @@
 }
 
 .action-nfc {
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
   color: var(--text-secondary);
 }
 

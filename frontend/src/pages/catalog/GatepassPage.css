@@ -528,7 +528,7 @@
 .ledger-card-item {
   display: flex;
   gap: 16px;
-  background: var(--surface-elevated, rgba(255,255,255,0.02));
+  background: var(--surface-elevated, var(--btn-secondary-bg));
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 16px;
@@ -537,7 +537,7 @@
 
 .ledger-card-item:hover {
   border-color: var(--accent);
-  background: var(--surface-elevated-hover, rgba(255,255,255,0.04));
+  background: var(--surface-elevated-hover, var(--btn-secondary-bg));
 }
 
 .ledger-card-item.returned-item:hover {
@@ -795,7 +795,7 @@
 }
 
 .watermark-content p {
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--text-secondary);
   font-size: 0.8rem;
   margin: 0;
   letter-spacing: 0.05em;
@@ -804,7 +804,7 @@
 
 @media print {
   .gatepass-pending-watermark {
-    background: rgba(255, 255, 255, 0.1) !important;
+    background: var(--btn-secondary-bg) !important;
     border: 3px dashed #ab824a !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;

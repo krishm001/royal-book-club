@@ -298,7 +298,7 @@
 }
 
 .review-item {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--glass-border);
   padding-bottom: 20px;
 }
 
@@ -358,14 +358,14 @@
 
 /* Local override to ensure manual fallback buttons inside dark NFC overlay are visible in all themes */
 .nfc-actions-row .fallback-switch-btn {
-  background: rgba(255, 255, 255, 0.05) !important;
+  background: var(--btn-secondary-bg) !important;
   color: #f0e6d3 !important;
   border: 1px solid rgba(212, 165, 116, 0.4) !important;
   transition: all 0.3s ease !important;
 }
 
 .nfc-actions-row .fallback-switch-btn:hover {
-  background: rgba(255, 255, 255, 0.15) !important;
+  background: var(--btn-secondary-bg) !important;
   color: var(--text-primary) !important;
   border-color: rgba(212, 165, 116, 0.8) !important;
   transform: translateY(-2px) !important;

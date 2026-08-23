@@ -466,7 +466,7 @@
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-secondary);
   border: 1px solid var(--glass-border);
   letter-spacing: 0.05em;
   text-align: center;
@@ -513,8 +513,8 @@
 }
 
 .switch-camera-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--glass-border);
   color: #e2e2e9; /* Clear, high-contrast light-gray text that is completely theme-independent */
 }
 
@@ -533,8 +533,8 @@
 }
 
 .control-toggle-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--glass-border);
   color: #e2e2e9; /* High-contrast white/light-gray text that is completely theme-independent */
   border-radius: 16px;
   padding: 6px 14px;
@@ -549,7 +549,7 @@
 }
 
 .control-toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--btn-secondary-bg);
   color: var(--text-primary);
   border-color: var(--text-muted);
 }
@@ -570,8 +570,8 @@
 }
 
 .zoom-increment-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--glass-border);
   color: var(--text-secondary);
   border-radius: 50%;
   width: 26px;
@@ -585,7 +585,7 @@
 }
 
 .zoom-increment-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--btn-secondary-bg);
   color: var(--text-primary);
   border-color: var(--text-muted);
   transform: scale(1.05);
@@ -600,7 +600,7 @@
   flex-grow: 1;
   -webkit-appearance: none;
   appearance: none;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--btn-secondary-bg);
   height: 4px;
   border-radius: 2px;
   outline: none;
@@ -976,8 +976,8 @@
 }
 
 .nfc-write-book-details {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
   padding: 14px;
   margin: 18px 0;
@@ -993,7 +993,7 @@
   height: 76px;
   object-fit: cover;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
@@ -1039,7 +1039,7 @@
 
 .nfc-target-url-badge {
   margin-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--glass-border);
   padding-top: 10px;
   font-size: 0.75rem;
   text-align: left;
@@ -1078,12 +1078,12 @@
 }
 
 .nfc-modal-actions .secondary-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--glass-border);
 }
 
 .nfc-modal-actions .secondary-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--btn-secondary-bg);
   border-color: var(--text-muted);
 }
 
@@ -1103,8 +1103,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--glass-border);
   box-shadow: 0 0 25px rgba(255, 255, 255, 0.05);
   line-height: 1;
 }
@@ -1231,7 +1231,7 @@
 
 .search-drawer-header {
   padding: 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--glass-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1247,8 +1247,8 @@
 }
 
 .close-drawer-btn {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--glass-border);
   color: var(--text-secondary);
   width: 34px;
   height: 34px;
@@ -1367,8 +1367,8 @@
   display: flex;
   gap: 14px;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.02) !important;
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  background: var(--btn-secondary-bg) !important;
+  border: 1px solid var(--glass-border) !important;
   cursor: pointer;
   transition: all 0.25s ease;
 }
@@ -1385,8 +1385,8 @@
   height: 80px;
   border-radius: 6px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--glass-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1465,7 +1465,7 @@
   gap: 12px;
   margin-bottom: 20px;
   padding: 12px 14px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--btn-secondary-bg);
   border: 1px solid rgba(212, 165, 116, 0.12);
   border-radius: 8px;
   cursor: pointer;

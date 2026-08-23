@@ -28,8 +28,8 @@
 /* Glassmorphic Tabs */
 .royal-tabs-container {
   display: inline-flex;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--glass-border);
   padding: 6px;
   border-radius: 50px;
   backdrop-filter: blur(12px);
@@ -54,7 +54,7 @@
 
 .royal-tab-btn:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--btn-secondary-bg);
 }
 
 .royal-tab-btn.active {
@@ -107,8 +107,8 @@
 }
 
 .close-comp-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--glass-border);
   color: var(--text-secondary);
   border-radius: 50%;
   width: 32px;
@@ -195,7 +195,7 @@
   height: 45px;
   border-radius: 4px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
 }
 
 .flyer-upload-preview img {
@@ -243,7 +243,7 @@
 .comp-actions {
   display: flex;
   justify-content: flex-end;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--glass-border);
   padding-top: 18px;
 }
 
@@ -375,7 +375,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--glass-border);
   padding-top: 15px;
   margin-top: auto;
 }
@@ -479,7 +479,7 @@
 
 .debate-expanded-body {
   padding: 0 24px 24px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid var(--glass-border);
 }
 
 .debate-lead-concept {
@@ -514,8 +514,8 @@
 .debate-root-reply-group {
   margin-bottom: 24px;
   padding: 20px;
-  background: rgba(255, 255, 255, 0.01);
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
@@ -555,8 +555,8 @@
   border-top-left-radius: 12px !important;
   border-bottom-right-radius: 12px !important;
   border-top-right-radius: 12px !important;
-  background: rgba(255, 255, 255, 0.02) !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  background: var(--btn-secondary-bg) !important;
+  border: 1px solid var(--glass-border) !important;
 }
 
 .bubble-mine {
@@ -722,8 +722,8 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--glass-border);
   color: var(--text-secondary);
   padding: 4px 10px;
   border-radius: 50px;
@@ -846,7 +846,7 @@
 
 .picker-emoji-btn:hover {
   transform: scale(1.35) translateY(-3px);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--btn-secondary-bg);
 }
 
 [data-theme="academic"] .picker-emoji-btn:hover {
@@ -864,7 +864,7 @@
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.03);
+  border-top: 1px solid var(--glass-border);
   padding-top: 8px;
   width: 100%;
 }
@@ -878,7 +878,7 @@
   justify-content: flex-end;
   gap: 12px;
   margin-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.03);
+  border-top: 1px solid var(--glass-border);
   padding-top: 8px;
 }
 
@@ -922,7 +922,7 @@
   display: flex;
   gap: 10px;
   margin-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--glass-border);
   padding-top: 12px;
   width: 100%;
 }
@@ -1057,7 +1057,7 @@
     left: auto;
     right: 20px;
     top: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border);
     border-radius: 50%;
   }
 }
@@ -1140,7 +1140,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--btn-secondary-bg);
   border: 1px dashed rgba(212, 175, 55, 0.15);
   padding: 10px 15px;
   border-radius: var(--border-radius-sm);
@@ -1239,8 +1239,8 @@
 
 .comment-card {
   padding: 15px !important;
-  background: rgba(255, 255, 255, 0.01) !important;
-  border-color: rgba(255, 255, 255, 0.04) !important;
+  background: var(--btn-secondary-bg) !important;
+  border-color: var(--glass-border) !important;
 }
 
 .comment-card-header {
@@ -1344,7 +1344,7 @@ main:has(.discourses-page-container) {
     opacity: 1;
     margin-top: 10px;
     padding-top: 8px;
-    border-top: 1px solid rgba(255, 255, 255, 0.03);
+    border-top: 1px solid var(--glass-border);
   }
 
   /* Visual indicator for active long-press state */
@@ -1409,7 +1409,7 @@ main:has(.discourses-page-container) {
     border-left: none !important;
     border-right: none !important;
     border-top: none !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-bottom: 1px solid var(--glass-border) !important;
     border-radius: 0 !important;
     box-shadow: none !important;
     margin-bottom: 0 !important;
@@ -1418,7 +1418,7 @@ main:has(.discourses-page-container) {
   .bubble-mine, .bubble-other {
     background: transparent !important;
     border: none !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-bottom: 1px solid var(--glass-border) !important;
   }
 
   [data-theme="academic"] .debate-reply-card,
@@ -1449,7 +1449,7 @@ main:has(.discourses-page-container) {
     margin-bottom: 10px !important;
     border-left-width: 2px !important;
     padding: 6px 10px !important;
-    background: rgba(255, 255, 255, 0.03) !important;
+    background: var(--btn-secondary-bg) !important;
     border-radius: 4px !important;
   }
 
