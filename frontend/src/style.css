@@ -313,9 +313,8 @@ a:hover {
 .privacy-container,
 .terms-container {
   max-width: 100% !important;
-  padding-left: 32px !important;
-  padding-right: 32px !important;
-  margin: 0 auto;
+  padding: 1% 2% 2% 2% !important;
+  margin: 0 auto !important;
   width: 100%;
   box-sizing: border-box;
 }

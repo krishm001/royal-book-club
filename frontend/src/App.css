@@ -26,7 +26,9 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--glass-border);
-  padding: 15px 40px;
+  padding: 10px 2%;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .header-content {
@@ -36,13 +38,13 @@
   align-items: center;
   justify-content: space-between;
   position: relative;
-  padding: 0 40px;
+  padding: 0;
   box-sizing: border-box;
-  gap: 32px;
+  gap: 20px;
 }
 
 /* Brand Logo Styling */
-.brand-logo { margin-right: 32px; 
+.brand-logo { margin-right: 10px; 
   display: flex;
   align-items: center;
   gap: 12px;

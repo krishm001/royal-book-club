@@ -67,6 +67,7 @@ const ScrollToTop = () => {
 
 function App() {
   const { language, setLanguage, t, getLocalized } = useLanguage();
+
   const [user, setUser] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -647,7 +648,7 @@ function App() {
           <div className="shield-warning-icon" style={{ width: '70px', height: '70px', borderRadius: '50%', background: 'rgba(214, 40, 40, 0.1)', border: '1px solid rgba(214, 40, 40, 0.3)', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '24px' }}>
             <span style={{ fontSize: '2.5rem', color: '#d62828' }}>🛡️</span>
           </div>
-          <h2 style={{ fontFamily: 'Cinzel, serif', color: 'var(--accent, #d4af37)', letterSpacing: '0.05em', marginBottom: '16px', fontSize: '1.5rem' }}>NFC Security Alert</h2>
+          <h2 style={{ fontFamily: 'Cinzel, serif', color: 'var(--accent, #d4af37)', letterSpacing: '0.05em', marginBottom: '16px', fontSize: '1.5rem' }}>{t('nfc.securityAlert')}</h2>
           <p style={{ color: 'var(--text-primary, #ffffff)', fontSize: '1rem', lineHeight: '1.6', margin: '0 0 24px 0' }}>
             {nfcExpiryError}
           </p>
@@ -659,7 +660,7 @@ function App() {
             className="royal-btn" 
             style={{ padding: '10px 24px', fontSize: '0.9rem', minWidth: '160px' }}
           >
-            Acknowledge & Continue
+            {t('common.acknowledgeContinue')}
           </button>
         </div>
       </div>
@@ -810,7 +811,7 @@ function App() {
 
                 <div className="mobile-language-section" style={{ padding: '10px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)' }}>Language:</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)' }}>{t('common.language')}:</span>
                     <select
                       value={language}
                       onChange={(e) => { setLanguage(e.target.value, user); closeMobileMenu(); }}
@@ -946,7 +947,7 @@ function App() {
             <div className="consent-modal animate-scale-up">
               <div className="consent-modal-header">
                 <Sparkles className="gold-glow" size={32} />
-                <h2 className="gold-gradient-text">Activate Your Sovereign Portal</h2>
+                <h2 className="gold-gradient-text">{t('auth.activatePortal')}</h2>
               </div>
               <div className="consent-modal-body">
                 <p className="consent-intro">

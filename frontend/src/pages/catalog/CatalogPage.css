@@ -15,7 +15,8 @@
 
 .catalog-header {
   text-align: center;
-  margin-bottom: 20px; margin-top: 5px;
+  margin-bottom: 10px;
+  margin-top: 0;
 }
 
 .header-badge {
@@ -23,9 +24,9 @@
   align-items: center;
   background: var(--glow-color-secondary);
   border: 1px solid var(--glass-border);
-  padding: 6px 16px;
+  padding: 4px 14px;
   border-radius: 50px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .gold-glow-icon {
@@ -34,9 +35,10 @@
 }
 
 .catalog-title {
-  font-size: 2.8rem;
+  font-size: 2.5rem;
   font-weight: 800;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
+  margin-top: 0;
 }
 
 .catalog-subtitle {
