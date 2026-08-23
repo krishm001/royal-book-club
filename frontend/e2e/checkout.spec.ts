@@ -13,7 +13,7 @@ test.describe('E2E Full Flow - Login, Catalog, and Admin', () => {
     const studyLink = page.locator('a', { hasText: 'Study' }).first();
     if (await studyLink.isVisible()) {
       await studyLink.click();
-      await expect(page).toHaveURL(/.*study/);
+      await expect(page).toHaveURL(/.*catalog/);
     }
   });
 

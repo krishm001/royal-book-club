@@ -3,10 +3,10 @@
 This document outlines the End-to-End (E2E) testing strategy for the Royal Book Club ecosystem.
 
 ## 1. Overview
-The automation leverages **Playwright** running on Chromium to execute simulated user flows against the deployed web application (or local `localhost:5173`). Tests are integrated into GitHub Actions (`.github/workflows/e2e.yml`) and trigger automatically upon pushes and successful deployments.
+The automation leverages **Playwright** running on Chromium to execute simulated user flows against the deployed web application (or local `localhost:3000`). Tests are integrated into GitHub Actions (`.github/workflows/e2e.yml`) and trigger automatically upon pushes and successful deployments.
 
 ## 2. Test Environments
-* **Local Run**: `npx playwright test` uses the `BASE_URL` env variable, defaulting to `http://localhost:5173`.
+* **Local Run**: `npx playwright test` uses the `BASE_URL` env variable, defaulting to `http://localhost:3000`.
 * **CI/CD Production Run**: GitHub Actions uses the deployed production URL as `BASE_URL`. Test records (books, checkouts) are sandboxed.
 
 ## 3. Sandboxing Strategy (Production Safety)
