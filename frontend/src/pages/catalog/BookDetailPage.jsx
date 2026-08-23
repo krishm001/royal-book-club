@@ -501,7 +501,7 @@ const BookDetailPage = ({
     }
   }, [user, id]);
   useEffect(() => {
-    const handleOnboardingFocus = () => {
+    const handleOnboardingFocus = (e) => {
       console.info("Onboarding closed/completed, scrolling checkout action box into viewport focus.");
       setTimeout(() => {
         const el = document.getElementById('detail-checkout-action-card');
@@ -515,6 +515,11 @@ const BookDetailPage = ({
             el.classList.remove('glow-highlight');
           }, 3000);
         }
+        
+        if (e && e.type === 'onboarding_complete' && e.detail && e.detail.actionType) {
+           if (e.detail.actionType === 'checkout') handleCheckoutClick();
+           else if (e.detail.actionType === 'return') handleReturnClick();
+        }
       }, 100);
     };
     window.addEventListener('onboarding_closed', handleOnboardingFocus);
@@ -523,7 +528,7 @@ const BookDetailPage = ({
       window.removeEventListener('onboarding_closed', handleOnboardingFocus);
       window.removeEventListener('onboarding_complete', handleOnboardingFocus);
     };
-  }, []);
+  }, [book]); // Use book dependency to ensure functions have context
 
   // Center checkout action card in the viewport upon catalog details loading (Epic 1)
   useEffect(() => {

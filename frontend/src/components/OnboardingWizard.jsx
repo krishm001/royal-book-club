@@ -238,8 +238,8 @@ export default function OnboardingWizard({
             setStreet(d.street || '');
             setCity(d.city || '');
             setPinCode(d.pinCode || '');
-            setFirstName(d.firstName || '');
-            setLastName(d.lastName || '');
+            if (d.firstName) setFirstName(d.firstName);
+            if (d.lastName) setLastName(d.lastName);
             if (gatingSettings) {
               const hasConsent = !!d.consentAcceptedAt;
               if (hasConsent) {
@@ -475,7 +475,13 @@ export default function OnboardingWizard({
         displayName: `${firstName || ''} ${lastName || ''}`.trim()
       });
     } catch (err) {
-      setError(err.message || 'Registration failed');
+      let errorMsg = err.message || 'Registration failed';
+      if (err.code === 'auth/email-already-in-use' || (err.message && err.message.includes('email-already-in-use'))) {
+          errorMsg = "Sorry. This email is already in use.";
+      } else {
+          errorMsg = "Sorry for the glitch, Please contact Admin.";
+      }
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -487,7 +493,13 @@ export default function OnboardingWizard({
       await signInWithPopup(auth, provider);
     } catch (err) {
       console.error("Social login failed:", err);
-      setError(err.message || 'Authentication failed');
+      let errorMsg = err.message || 'Authentication failed';
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+          errorMsg = "Invalid email or password.";
+      } else {
+          errorMsg = "Sorry for the glitch, Please contact Admin.";
+      }
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -616,7 +628,7 @@ export default function OnboardingWizard({
             <Sparkles className="gold-glow" size={22} style={{
             color: 'var(--accent)'
           }} />
-            <h3 className="onboarding-title">{t('auto_3080', 'Royal Onboarding Archway')}</h3>
+            <h3 className="onboarding-title">{t('auto_3080', 'Royal Archway')}</h3>
           </div>
           <button onClick={onClose} className="onboarding-btn-secondary" style={{
           padding: '6px',
@@ -674,7 +686,7 @@ export default function OnboardingWizard({
                   <p style={{
               fontSize: '0.9rem',
               color: 'var(--text-secondary)',
-              marginBottom: '20px',
+              marginBottom: '10px',
               textAlign: 'center'
             }}>
                     {t('auto_3085', 'Create or verify your elite credentials to unlock catalog search, scans, and checkout mechanisms.')}
@@ -695,22 +707,7 @@ export default function OnboardingWizard({
                   fontWeight: 'bold'
                 }}>{t("str_5040", "in")}</span> {t('auto_3087', 'LinkedIn')}
                     </button>
-                    <button type="button" className="onboarding-social-btn" disabled style={{
-                opacity: 0.5,
-                cursor: 'not-allowed'
-              }} title={t("str_5041", "Meta login is currently unconfigured")}>
-                      <span style={{
-                  color: '#1877f2',
-                  fontWeight: 'bold'
-                }}>f</span> {t("str_5042", "Meta (Unavailable)")} </button>
-                    <button type="button" className="onboarding-social-btn" disabled style={{
-                opacity: 0.5,
-                cursor: 'not-allowed'
-              }} title={t("str_5043", "Twitter login is currently unconfigured")}>
-                      <span style={{
-                  color: '#1da1f2',
-                  fontWeight: 'bold'
-                }}>𝕏</span> {t("str_5044", "Twitter (Unavailable)")} </button>
+                    
                   </div>
 
                   <div className="onboarding-divider">{t('auto_3088', 'or use professional email')}</div>
@@ -752,22 +749,15 @@ export default function OnboardingWizard({
                   fontWeight: 'bold',
                   cursor: 'pointer',
                   textDecoration: 'underline'
-                }}>{t('auto_3091', 'Create Covenant Account')}</button>
+                }}>{t('auto_3091', 'Create Account')}</button>
                       </p>
                     </form> : <form onSubmit={handleEmailSignUp}>
-                      <div style={{
-                display: 'flex',
-                gap: '12px'
-              }}>
-                        <div className="onboarding-form-group" style={{
-                  flex: 1
-                }}>
+                      <div className="name-fields-row" style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                        <div className="onboarding-form-group">
                           <label>{t('auto_3092', 'First Name')}</label>
                           <input type="text" required className="onboarding-input" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder={t("str_5047", "Royal")} />
                         </div>
-                        <div className="onboarding-form-group" style={{
-                  flex: 1
-                }}>
+                        <div className="onboarding-form-group">
                           <label>{t('auto_3093', 'Last Name')}</label>
                           <input type="text" required className="onboarding-input" value={lastName} onChange={e => setLastName(e.target.value)} placeholder={t("str_5048", "Reader")} />
                         </div>
@@ -996,7 +986,7 @@ export default function OnboardingWizard({
                   borderRadius: '50%',
                   width: '80px',
                   height: '80px',
-                  marginBottom: '20px',
+                  marginBottom: '10px',
                   boxShadow: '0 0 20px rgba(212,165,116,0.2)'
                 }}>
                           <Mail size={40} className="gold-glow-icon animate-pulse" style={{

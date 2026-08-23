@@ -663,6 +663,15 @@ const CatalogPage = ({
             el.classList.remove('glow-highlight');
           }, 3000);
         }
+        
+        // Auto-resume action if event was complete
+        if (e.type === 'onboarding_complete' && target.actionType) {
+           const matchedBook = books.find(b => b.isbn === target.isbn);
+           if (matchedBook) {
+              if (target.actionType === 'checkout') handleCheckoutClick(matchedBook);
+              else if (target.actionType === 'return') handleReturnClick(matchedBook);
+           }
+        }
       }, 100);
     };
     window.addEventListener('onboarding_closed', handleOnboardingFocus);
@@ -671,7 +680,7 @@ const CatalogPage = ({
       window.removeEventListener('onboarding_closed', handleOnboardingFocus);
       window.removeEventListener('onboarding_complete', handleOnboardingFocus);
     };
-  }, []);
+  }, [books]); // Added books so it doesn't use stale closure
   const refreshCatalogState = async () => {
     try {
       const data = await fetchBooks();
