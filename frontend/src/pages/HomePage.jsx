@@ -338,13 +338,14 @@ const HomePage = ({ user, onSignIn, theme }) => {
 
     if (activeImage) {
       const gradient = (theme === 'dark' || theme === 'salon')
-        ? 'linear-gradient(to right, rgba(12, 15, 29, 0.9) 0%, rgba(12, 15, 29, 0.45) 100%)'
-        : 'linear-gradient(to right, rgba(250, 245, 235, 0.95) 0%, rgba(250, 245, 235, 0.5) 100%)';
+        ? 'linear-gradient(to right, rgba(12, 15, 29, 0.95) 0%, rgba(12, 15, 29, 0.2) 100%)'
+        : 'linear-gradient(to right, rgba(250, 245, 235, 0.95) 0%, rgba(250, 245, 235, 0.2) 100%)';
       return {
         backgroundImage: `${gradient}, url(${activeImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        padding: '40px 30px',
+        padding: '120px 60px',
+        minHeight: '600px',
         borderRadius: 'var(--border-radius-md)',
         border: '1px solid var(--glass-border)',
         boxShadow: '0 12px 40px rgba(0, 0, 0, 0.15)',

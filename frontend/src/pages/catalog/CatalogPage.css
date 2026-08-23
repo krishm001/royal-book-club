@@ -1,11 +1,21 @@
 /* Catalog Page Styles */
 .catalog-container {
-  padding-bottom: 60px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 4px 24px 60px 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .catalog-container {
+    padding: 10px 8px 30px 8px;
+  }
 }
 
 .catalog-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 20px; margin-top: 5px;
 }
 
 .header-badge {
@@ -15,7 +25,7 @@
   border: 1px solid var(--glass-border);
   padding: 6px 16px;
   border-radius: 50px;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 }
 
 .gold-glow-icon {
@@ -138,7 +148,7 @@
 
 .catalog-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 30px;
 }
 

@@ -1057,14 +1057,48 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
       window.alert(t('catalog.signInToCompleteTx'));
       return;
     }
-    const scannedCode = (decodedText || '').trim().replace(/[-\s]/g, '');
-    const cleanBookIsbn = (currentBook.isbn || '').trim().replace(/[-\s]/g, '');
+    const scannedCode = (decodedText || '').trim();
+    let qrId = null;
 
-    if (scannedCode === cleanBookIsbn) {
+    // Detect QR schema (e.g. ?qr=100000001 or standalone 9-digit ID)
+    const qrMatch = scannedCode.match(/qr=(\d+)/);
+    if (qrMatch) {
+      qrId = parseInt(qrMatch[1], 10);
+    } else if (/^\d+$/.test(scannedCode) && scannedCode.length <= 9) {
+      qrId = parseInt(scannedCode, 10);
+    }
+
+    const cleanBookIsbn = (currentBook.isbn || '').trim().replace(/[-\s]/g, '');
+    const cleanScannedCode = scannedCode.replace(/[-\s]/g, '');
+
+    // 1. Match primary ISBN
+    let isMatch = (cleanScannedCode === cleanBookIsbn);
+
+    // 2. Match alternative ISBNs
+    if (!isMatch && Array.isArray(currentBook.alternativeIsbns)) {
+      isMatch = currentBook.alternativeIsbns.some(alt => alt && alt.trim().replace(/[-\s]/g, '') === cleanScannedCode);
+    }
+
+    // 3. Match copy-level QR IDs
+    let matchedCopy = null;
+    if (!isMatch && Array.isArray(currentBook.copies)) {
+      matchedCopy = currentBook.copies.find(c => (qrId !== null && c.qrId === qrId) || String(c.qrId) === cleanScannedCode);
+      if (matchedCopy) {
+        isMatch = true;
+      }
+    }
+
+    if (isMatch) {
       try {
-        const targetUid = currentBook.ntagUid || '04:A3:B2:C1:D0:E9:80';
+        const targetUid = (matchedCopy && matchedCopy.ntagUid) || currentBook.ntagUid || '04:A3:B2:C1:D0:E9:80';
         if (nfcActionType === 'checkout') {
-          const res = await verifiedCheckout({ bookId: currentBook.isbn, memberId: user.uid || user.id, ntagUid: targetUid });
+          const res = await verifiedCheckout({
+            bookId: currentBook.isbn,
+            memberId: user.uid || user.id,
+            ntagUid: targetUid,
+            memberName: user?.displayName,
+            memberEmail: user?.email
+          });
           if (res) {
             setCreatedCheckoutId(res.id || res.data?.id);
             if (res.status === 'RETURNED' || res.data?.status === 'RETURNED') {
@@ -1077,9 +1111,11 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
             bookId: currentBook.isbn,
             memberId: user.uid || user.id,
             ntagUid: targetUid,
+            memberName: user?.displayName,
+            memberEmail: user?.email,
             returnLatitude: coords.latitude,
             returnLongitude: coords.longitude,
-            nfcOrBarcode: 'BARCODE'
+            nfcOrBarcode: matchedCopy ? 'QR' : 'BARCODE'
           });
           if (res) {
             setCreatedCheckoutId(res.id || res.data?.id);
@@ -1099,7 +1135,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
         }
       }
     } else {
-      setNfcError(`Security Mismatch: Scanned barcode (${decodedText}) does not match this book's ISBN (${currentBook.isbn}).`);
+      setNfcError(`Security Mismatch: Scanned code (${decodedText}) does not match this book's ISBN or registered copy QR codes.`);
     }
   };
 
@@ -1391,7 +1427,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
       {/* Sovereign Verification modal overlay */}
       {nfcModalOpen && selectedBook && (
         <div className="nfc-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-          <div className="royal-card nfc-modal-card animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '24px', background: 'rgba(26, 21, 16, 0.95)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
+          <div className="royal-card nfc-modal-card animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '24px', background: 'var(--surface)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
             <div className="nfc-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '10px' }}>
               <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.15rem', fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '0.05em' }}>
                 {nfcActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
@@ -1742,7 +1778,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
       {/* Fallback Request Ledger Submission Modal Overlay */}
       {fallbackModalOpen && selectedBook && (
         <div className="nfc-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-          <div className="royal-card nfc-modal-card fallback-modal-card animate-fade-in" style={{ width: '100%', maxWidth: '420px', padding: '30px', background: 'rgba(26, 21, 16, 0.95)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
+          <div className="royal-card nfc-modal-card fallback-modal-card animate-fade-in" style={{ width: '100%', maxWidth: '420px', padding: '30px', background: 'var(--surface)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
             <div className="nfc-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid rgba(212, 175, 55, 0.2)', paddingBottom: '12px' }}>
               <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.25rem', fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '0.05em' }}>
                 {nfcActionType === 'checkout' ? t('catalog.manualRequest') : t('catalog.manualRequest')}
@@ -1803,7 +1839,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
       {/* Top Barcode Scanner Viewfinder Modal Overlay */}
       {topScannerOpen && (
         <div className="scanner-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '20px' }}>
-          <div className="royal-card scanner-modal-card animate-fade-in" style={{ width: '100%', maxWidth: '480px', padding: '24px', background: 'rgba(26, 21, 16, 0.95)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', borderRadius: '12px' }}>
+          <div className="royal-card scanner-modal-card animate-fade-in" style={{ width: '100%', maxWidth: '480px', padding: '24px', background: 'var(--surface)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', borderRadius: '12px' }}>
             <div className="scanner-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(212, 175, 55, 0.2)', paddingBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Scan size={18} className="gold-glow-icon" />
@@ -1849,7 +1885,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
       {/* P2D Self-Checkout Modal Overlay */}
       {p2dModalOpen && p2dBook && (
         <div className="nfc-modal-overlay p2d-checkout-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '20px' }}>
-          <div className="royal-card nfc-modal-card p2d-checkout-modal animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '30px', background: 'rgba(26, 21, 16, 0.98)', border: '2px solid var(--accent)', boxShadow: '0 15px 50px rgba(0,0,0,0.6)', borderRadius: '12px' }}>
+          <div className="royal-card nfc-modal-card p2d-checkout-modal animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '30px', background: 'var(--surface)', border: '2px solid var(--accent)', boxShadow: '0 15px 50px rgba(0,0,0,0.6)', borderRadius: '12px' }}>
             <div className="nfc-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid rgba(212, 175, 55, 0.2)', paddingBottom: '12px' }}>
               <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.3rem', fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '0.05em' }}>
                 {p2dActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}

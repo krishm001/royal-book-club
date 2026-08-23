@@ -627,7 +627,7 @@ export default function CuratorCheckoutsPage({ user }) {
       </section>
 
       {showSandbox && (
-        <section className="royal-card curator-sandbox-card animate-fade-in" style={{ border: '1px solid rgba(212, 165, 116, 0.4)', padding: '24px', marginBottom: '30px', background: 'rgba(18, 18, 18, 0.95)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+        <section className="royal-card curator-sandbox-card animate-fade-in" style={{ border: '1px solid rgba(212, 165, 116, 0.4)', padding: '24px', marginBottom: '30px', background: 'var(--surface)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(212, 165, 116, 0.2)', paddingBottom: '12px', marginBottom: '20px' }}>
             <h2 style={{ fontSize: '1.15rem', color: '#d4a574', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
               <span>🛰️</span> Sovereign Geofencing & NFC Simulator Console

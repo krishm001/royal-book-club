@@ -36,11 +36,13 @@
   align-items: center;
   justify-content: space-between;
   position: relative;
-  padding: 0 24px;
+  padding: 0 40px;
+  box-sizing: border-box;
+  gap: 32px;
 }
 
 /* Brand Logo Styling */
-.brand-logo {
+.brand-logo { margin-right: 32px; 
   display: flex;
   align-items: center;
   gap: 12px;

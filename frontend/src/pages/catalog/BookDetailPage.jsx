@@ -1556,7 +1556,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                     <button 
                       onClick={() => handleInstantNfcAction('checkout')} 
                       className="royal-btn checkout-cta-btn pulse-button"
-                      style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 'bold' }}
+                      style={{ background: 'var(--accent)', color: 'var(--text-primary)', border: 'none', padding: '12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 'bold' }}
                     >
                       <Smartphone size={16} /> Instant NFC Checkout
                     </button>
@@ -1564,7 +1564,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                     <button 
                       onClick={() => handleInstantNfcAction('return')} 
                       className="royal-btn checkout-cta-btn pulse-button"
-                      style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 'bold' }}
+                      style={{ background: 'var(--accent)', color: 'var(--text-primary)', border: 'none', padding: '12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 'bold' }}
                     >
                       <Smartphone size={16} /> Instant NFC Return
                     </button>
@@ -1774,12 +1774,12 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       </div>
 
       {/* 🛡️ Luxury Physical Copies Inventory Tracker Grid */}
-      <div className="physical-copies-tracker-section royal-card animate-fade-in" style={{ marginTop: '30px', padding: '30px', border: '1px solid rgba(212, 175, 55, 0.15)', background: 'rgba(22, 22, 28, 0.65)', backdropFilter: 'blur(12px)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)' }}>
+      <div className="physical-copies-tracker-section royal-card animate-fade-in" style={{ marginTop: '30px', padding: '30px', border: '1px solid rgba(212, 175, 55, 0.15)', background: 'var(--glass-bg)', backdropFilter: 'blur(12px)', borderRadius: '16px', boxShadow: 'var(--glow-shadow)' }}>
         <h3 className="gold-gradient-text" style={{ fontFamily: '"Outfit", sans-serif', fontSize: '1.4rem', fontWeight: '700', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
           <BookOpen size={22} style={{ filter: 'drop-shadow(0 0 6px rgba(212, 175, 55, 0.5))' }} />
           <span>{t('catalog.physicalInventoryTracker', 'Physical Inventory & Copy Tracker')}</span>
         </h3>
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '24px', marginTop: '4px', lineHeight: '1.5' }}>
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', marginBottom: '24px', marginTop: '4px', lineHeight: '1.5' }}>
           {t('catalog.physicalInventoryDesc', 'Each physical volume of this title is separately indexed and trackable inside the Royal Book Club catalog ledger.')}
         </p>
 
@@ -1873,7 +1873,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                     ) : isCheckedOutByMe ? (
                       <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#d4af37', background: 'rgba(212, 175, 55, 0.1)', padding: '2px 8px', borderRadius: '10px', textTransform: 'uppercase' }}>Held By You</span>
                     ) : (
-                      <span style={{ fontSize: '0.72rem', fontWeight: '700', color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '10px', textTransform: 'uppercase' }}>In Circulation</span>
+                      <span style={{ fontSize: '0.72rem', fontWeight: '700', color: 'rgba(255,255,255,0.4)', background: 'var(--glass-bg)', padding: '2px 8px', borderRadius: '10px', textTransform: 'uppercase' }}>In Circulation</span>
                     )}
                   </div>
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.4' }}>
@@ -1991,13 +1991,13 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                         value={editingReviewText}
                         onChange={(e) => setEditingReviewText(e.target.value)}
                         rows={3}
-                        style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: '#fff' }}
+                        style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem', background: 'var(--glass-bg)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: 'var(--text-primary)' }}
                       />
                       <div className="review-edit-actions" style={{ display: 'flex', gap: '0.5rem' }}>
                         <button onClick={() => handleUpdateReviewSubmit(rev.id)} className="royal-btn small-btn save-btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}>
                           {t('common.update')}
                         </button>
-                        <button onClick={handleCancelEditReview} className="royal-btn small-btn cancel-btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)', color: '#ccc' }}>
+                        <button onClick={handleCancelEditReview} className="royal-btn small-btn cancel-btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', background: 'var(--glass-bg)', color: 'var(--text-secondary)' }}>
                           {t('common.cancel')}
                         </button>
                       </div>
@@ -2027,7 +2027,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
     {/* Sovereign Checkout/Return Verification Modal Overlay (rendered at root level to guarantee absolute viewport centering) */}
     {nfcModalOpen && (
       <div className="nfc-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-        <div className="royal-card nfc-modal-card animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '24px', background: 'rgba(26, 21, 16, 0.95)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', borderRadius: '8px' }}>
+        <div className="royal-card nfc-modal-card animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '24px', background: 'var(--surface)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', borderRadius: '8px' }}>
           <div className="panel-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '10px' }}>
             <h4 style={{ color: 'var(--accent)', fontSize: '1rem', fontWeight: '600', margin: 0, letterSpacing: '0.05em' }}>
               {nfcActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
@@ -2134,7 +2134,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                         fontSize: '0.85rem',
                         textDecoration: 'none',
                         background: 'var(--accent)',
-                        color: '#fff',
+                        color: 'var(--text-primary)',
                         borderRadius: '4px',
                         fontWeight: 'bold',
                       }}
@@ -2159,7 +2159,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                         padding: '8px 16px',
                         fontSize: '0.85rem',
                         background: 'var(--accent)',
-                        color: '#fff',
+                        color: 'var(--text-primary)',
                         borderRadius: '4px',
                         fontWeight: 'bold',
                         border: 'none',
@@ -2405,7 +2405,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                           background: 'rgba(0,0,0,0.3)',
                           border: '1px solid rgba(212, 175, 55, 0.3)',
                           borderRadius: '6px',
-                          color: '#fff',
+                          color: 'var(--text-primary)',
                           fontSize: '0.9rem'
                         }}
                       />
@@ -2430,7 +2430,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                               handleValidatorQrSubmit(null, 'royal-vault-alpha');
                             }}
                             className="mock-scan-shortcut-btn"
-                            style={{ padding: '4px 8px', fontSize: '0.72rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: '#fff', cursor: 'pointer' }}
+                            style={{ padding: '4px 8px', fontSize: '0.72rem', background: 'var(--glass-bg)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer' }}
                           >
                             Scan: royal-vault-alpha
                           </button>
@@ -2441,7 +2441,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                               handleValidatorQrSubmit(null, 'exit-spot-alpha');
                             }}
                             className="mock-scan-shortcut-btn"
-                            style={{ padding: '4px 8px', fontSize: '0.72rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: '#fff', cursor: 'pointer' }}
+                            style={{ padding: '4px 8px', fontSize: '0.72rem', background: 'var(--glass-bg)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer' }}
                           >
                             Scan: exit-spot-alpha
                           </button>
@@ -2479,7 +2479,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
 
     {instantConfirmOpen && (
       <div className="nfc-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-        <div className="inline-action-panel royal-card border-gold animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '24px', background: 'rgba(26, 21, 16, 0.95)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', borderRadius: '8px' }}>
+        <div className="inline-action-panel royal-card border-gold animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '24px', background: 'var(--surface)', border: '1px solid var(--accent)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', borderRadius: '8px' }}>
           <div className="panel-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(212, 175, 55, 0.15)', paddingBottom: '10px' }}>
             <h4 style={{ color: 'var(--accent)', fontSize: '1rem', fontWeight: '600', margin: 0, letterSpacing: '0.05em' }}>
               {instantActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
@@ -2541,7 +2541,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                         fontSize: '0.85rem',
                         textDecoration: 'none',
                         background: 'var(--accent)',
-                        color: '#fff',
+                        color: 'var(--text-primary)',
                         borderRadius: '4px',
                         fontWeight: 'bold',
                       }}
@@ -2566,7 +2566,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                         padding: '8px 16px',
                         fontSize: '0.85rem',
                         background: 'var(--accent)',
-                        color: '#fff',
+                        color: 'var(--text-primary)',
                         borderRadius: '4px',
                         fontWeight: 'bold',
                         border: 'none',
@@ -2619,7 +2619,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                 <h4 style={{ color: 'var(--text-primary)', margin: '0 0 8px 0', fontSize: '1rem' }}>Transaction Failed</h4>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '0 0 16px 0' }}>{instantError}</p>
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                  <button onClick={handleConfirmInstantAction} className="royal-btn" style={{ background: 'var(--accent)', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                  <button onClick={handleConfirmInstantAction} className="royal-btn" style={{ background: 'var(--accent)', color: 'var(--text-primary)', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>
                     Try Again
                   </button>
                   <button onClick={() => setInstantConfirmOpen(false)} className="royal-btn-secondary" style={{ padding: '8px 16px', borderRadius: '4px', fontSize: '0.85rem' }}>
