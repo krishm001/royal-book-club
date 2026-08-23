@@ -1,0 +1,94 @@
+[
+  {
+    "file": "components/OnboardingWizard.css",
+    "type": "CSS Rule",
+    "selector": ".onboarding-step-dot.active .onboarding-step-circle",
+    "bg": "var(--accent)",
+    "fg": "var(--text-primary)",
+    "issue": "Dark text on Crimson (Accent) background"
+  },
+  {
+    "file": "components/OnboardingWizard.css",
+    "type": "CSS Rule",
+    "selector": ".onboarding-btn-primary",
+    "bg": "var(--accent)",
+    "fg": "var(--text-primary)",
+    "issue": "Dark text on Crimson (Accent) background"
+  },
+  {
+    "file": "pages/admin/CuratorCheckoutsPage.css",
+    "type": "CSS Rule",
+    "selector": ".ledger-search-input",
+    "bg": "rgba(0, 0, 0, 0.2)",
+    "fg": "var(--text-primary)",
+    "issue": "Theme-aware dark text on hardcoded dark background"
+  },
+  {
+    "file": "pages/admin/CuratorCheckoutsPage.css",
+    "type": "CSS Rule",
+    "selector": ".ledger-filter-select",
+    "bg": "rgba(0, 0, 0, 0.2)",
+    "fg": "var(--text-primary)",
+    "issue": "Theme-aware dark text on hardcoded dark background"
+  },
+  {
+    "file": "pages/admin/CuratorGatheringsPage.css",
+    "type": "CSS Rule",
+    "selector": ".registry-table th",
+    "bg": "rgba(0, 0, 0, 0.15)",
+    "fg": "var(--accent)",
+    "issue": "Theme-aware dark text on hardcoded dark background"
+  },
+  {
+    "file": "pages/admin/CuratorGatheringsPage.css",
+    "type": "CSS Rule",
+    "selector": ".remove-gallery-img-btn",
+    "bg": "rgba(0, 0, 0, 0.6)",
+    "fg": "var(--text-primary)",
+    "issue": "Theme-aware dark text on hardcoded dark background"
+  },
+  {
+    "file": "pages/admin/CuratorGatheringsPage.jsx",
+    "type": "Inline JSX",
+    "bg": "linear-gradient(135deg, var(--gold), var(--accent))",
+    "fg": "var(--text-primary)",
+    "issue": "Dark text on Crimson (Accent) background"
+  },
+  {
+    "file": "pages/admin/CuratorHeroPage.jsx",
+    "type": "Inline JSX",
+    "bg": "linear-gradient(135deg, var(--gold), var(--accent))",
+    "fg": "var(--text-primary)",
+    "issue": "Dark text on Crimson (Accent) background"
+  },
+  {
+    "file": "pages/admin/CuratorHeroPage.jsx",
+    "type": "Inline JSX",
+    "bg": "linear-gradient(135deg, var(--gold), var(--accent))",
+    "fg": "var(--text-primary)",
+    "issue": "Dark text on Crimson (Accent) background"
+  },
+  {
+    "file": "pages/admin/CuratorHeroPage.jsx",
+    "type": "Inline JSX",
+    "bg": "linear-gradient(135deg, var(--gold), var(--accent))",
+    "fg": "var(--text-primary)",
+    "issue": "Dark text on Crimson (Accent) background"
+  },
+  {
+    "file": "pages/admin/CuratorModerationPage.css",
+    "type": "CSS Rule",
+    "selector": ".blocked-logs-table th",
+    "bg": "rgba(0, 0, 0, 0.1)",
+    "fg": "var(--accent)",
+    "issue": "Theme-aware dark text on hardcoded dark background"
+  },
+  {
+    "file": "pages/catalog/GatepassPage.css",
+    "type": "CSS Rule",
+    "selector": ".ledger-tab-btn.active",
+    "bg": "var(--accent)",
+    "fg": "var(--text-primary)",
+    "issue": "Dark text on Crimson (Accent) background"
+  }
+]

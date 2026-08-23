@@ -58,6 +58,5 @@ This project is divided into distinct, sequential development phases. Each agent
 
 **Under no circumstances** are you allowed to commit (`git commit`) and push (`git push`) code without first presenting the final file changes to the user and obtaining their explicit permission.
 1. Draft an `implementation_plan.md` (or update it) with your intended changes.
-2. If fixing an issue, write a script to detect and display the files that will be changed, and output the proposed edits in the plan.
+2. YOU MUST display the exact code changes (e.g., via `git diff`) to the user in the plan so they can review the actual code modifications before you commit.
 3. Wait for the user to reply "approved" (or similar) before committing.
-

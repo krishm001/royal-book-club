@@ -116,7 +116,7 @@
 .onboarding-step-dot.active .onboarding-step-circle {
   background: var(--accent);
   border-color: var(--accent);
-  color: var(--text-primary);
+  color: #ffffff;
   box-shadow: var(--glow-shadow);
 }
 
@@ -292,7 +292,7 @@
 .onboarding-btn-primary {
   background: var(--accent);
   border: 1px solid var(--accent);
-  color: var(--text-primary);
+  color: #ffffff;
 }
 
 .onboarding-btn-primary:hover {

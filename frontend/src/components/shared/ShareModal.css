@@ -183,7 +183,7 @@
 
 .share-copy-btn {
   background: var(--btn-primary-bg, var(--accent));
-  color: var(--btn-primary-text, #1a1a2e);
+  color: #ffffff;
   border: 1px solid var(--btn-primary-border, transparent);
   padding: 10px 16px;
   border-radius: var(--border-radius-sm);

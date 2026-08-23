@@ -428,7 +428,7 @@
   align-items: center;
   gap: 8px;
   background: linear-gradient(135deg, var(--accent) 0%, #ab824a 100%);
-  color: #121214 !important;
+  color: #ffffff !important;
   font-weight: 700;
   border: none;
   cursor: pointer;
@@ -617,13 +617,13 @@
 
 [data-theme="academic"] .profile-submit-btn {
   background: var(--accent-gradient) !important;
-  color: var(--text-primary) !important;
+  color: #ffffff !important;
   box-shadow: 0 4px 15px rgba(141, 18, 34, 0.2) !important;
 }
 
 [data-theme="academic"] .profile-submit-btn:hover:not(:disabled) {
   background: var(--accent-hover) !important;
-  color: var(--text-primary) !important;
+  color: #ffffff !important;
   box-shadow: 0 6px 20px rgba(141, 18, 34, 0.35) !important;
 }
 

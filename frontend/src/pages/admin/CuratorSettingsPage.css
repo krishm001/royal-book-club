@@ -175,7 +175,7 @@
   align-items: center;
   gap: 8px;
   background: linear-gradient(135deg, var(--accent) 0%, #ab824a 100%);
-  color: #121214 !important;
+  color: #ffffff !important;
   font-weight: 700;
   border: none;
   cursor: pointer;
