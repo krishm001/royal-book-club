@@ -1682,6 +1682,8 @@ const CatalogPage = ({
               overflow: 'hidden',
               background: "var(--surface-elevated)",
               borderRadius: '8px',
+        maxHeight: '90vh',
+        overflowY: 'auto',
               border: '1px solid rgba(212, 175, 55, 0.3)'
             }}>
                         <div id="card-barcode-reader" className="scanner-focus-ring-container" onClick={e => handleScannerClick(e, cardHtml5QrCodeRef.current)} style={{
@@ -2059,6 +2061,8 @@ const CatalogPage = ({
             maxWidth: '400px',
             background: "var(--surface-elevated)",
             borderRadius: '8px',
+        maxHeight: '90vh',
+        overflowY: 'auto',
             overflow: 'hidden',
             border: '1px solid var(--glass-border)'
           }}></div>
@@ -2306,6 +2310,8 @@ const CatalogPage = ({
               padding: '16px',
               background: "var(--glass-bg)",
               borderRadius: '8px',
+        maxHeight: '90vh',
+        overflowY: 'auto',
               border: '1px solid var(--glass-border)',
               marginBottom: '24px'
             }}>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, NavLink, Link, useLocation } from 'react-router-dom';
-import { BookOpen, Calendar, BookText, Home, User, Compass, Sparkles, LogOut, Menu, X, Shield, Palette } from 'lucide-react';
+import { Loader2, BookOpen, Calendar, BookText, Home, User, Compass, Sparkles, LogOut, Menu, X, Shield, Palette } from 'lucide-react';
 import { onAuthStateChanged, signInAnonymously, signOut } from 'firebase/auth';
 import { auth } from './config/firebase';
 import api from './api/apiClient';
@@ -82,6 +82,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [globalScannerLoading, setGlobalScannerLoading] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('royal-theme') || 'academic');
   const [footerQuote, setFooterQuote] = useState("A word, deeply read, becomes conviction. A conviction becomes a life. You do not read a great book. You are slowly, quietly, being rewritten by it.");
   const [footerAuthor, setFooterAuthor] = useState("Royal Reader Guild");
@@ -232,6 +233,8 @@ function App() {
               }
             } catch (err) {
               console.warn("[QR INTERCEPT] Failed to fetch book by copy QR ID:", pathName, err);
+            } finally {
+              setGlobalScannerLoading(false);
             }
           }
           console.info("[QR INTERCEPT] Redirecting custom QR validator path direct scan to sages guild hub:", pathName);
@@ -262,6 +265,8 @@ function App() {
               }
             } catch (err) {
               console.warn("[QR QUERY INTERCEPT] Failed to fetch book by copy QR ID:", qrCode, err);
+            } finally {
+              setGlobalScannerLoading(false);
             }
           }
           console.info("[QR QUERY INTERCEPT] Redirecting custom QR query parameter direct scan to sages guild hub:", qrCode);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2, Shield, Check, Loader2, QrCode, Camera, RotateCcw, Share2 } from 'lucide-react';
 import { fetchBookByIsbn, checkoutBook, fetchBookReviews, submitBookReview, requestCheckout, requestReturn, verifiedCheckout, verifiedReturn, fetchCheckoutsByMember, updateBookReview, deleteBookReview, fetchCheckouts, validateQrReturn, cancelCheckout, cancelReturn } from '../../services/libraryApi';
 import api from '../../api/apiClient';
@@ -15,9 +15,10 @@ const BookDetailPage = ({
   user,
   triggerOnboarding
 }) => {
-  const {
-    id
-  } = useParams();
+  const { id } = useParams();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const deepLinkQrId = searchParams.get('qrId');
   const {
     t
   } = useLanguage();
@@ -1458,6 +1459,8 @@ const BookDetailPage = ({
               padding: '16px',
               border: '1px dashed var(--accent)',
               borderRadius: '8px',
+        maxHeight: '90vh',
+        overflowY: 'auto',
               background: 'rgba(141, 18, 34, 0.05)',
               display: 'flex',
               flexDirection: 'column',
@@ -1530,6 +1533,8 @@ const BookDetailPage = ({
               padding: '16px',
               border: '1px dashed #d97706',
               borderRadius: '8px',
+        maxHeight: '90vh',
+        overflowY: 'auto',
               background: 'rgba(217, 119, 6, 0.05)',
               display: 'flex',
               flexDirection: 'column',
@@ -2253,7 +2258,9 @@ const BookDetailPage = ({
         background: 'var(--surface)',
         border: '1px solid var(--accent)',
         boxShadow: "0 10px 40px var(--card-shadow)",
-        borderRadius: '8px'
+        borderRadius: '8px',
+        maxHeight: '90vh',
+        overflowY: 'auto'
       }}>
           <div className="panel-header-row" style={{
           display: 'flex',
@@ -2574,6 +2581,8 @@ const BookDetailPage = ({
                 overflow: 'hidden',
                 background: "var(--surface-elevated)",
                 borderRadius: '8px',
+        maxHeight: '90vh',
+        overflowY: 'auto',
                 border: '1px solid rgba(212, 175, 55, 0.3)'
               }}>
                       <div id="detail-barcode-reader" style={{
@@ -2786,6 +2795,8 @@ const BookDetailPage = ({
                 overflow: 'hidden',
                 background: "var(--surface-elevated)",
                 borderRadius: '8px',
+        maxHeight: '90vh',
+        overflowY: 'auto',
                 border: '1px solid rgba(212, 175, 55, 0.3)'
               }}>
                       <div id="detail-qr-validator-reader" style={{
@@ -2963,7 +2974,9 @@ const BookDetailPage = ({
         background: 'var(--surface)',
         border: '1px solid var(--accent)',
         boxShadow: "0 10px 40px var(--card-shadow)",
-        borderRadius: '8px'
+        borderRadius: '8px',
+        maxHeight: '90vh',
+        overflowY: 'auto'
       }}>
           <div className="panel-header-row" style={{
           display: 'flex',
