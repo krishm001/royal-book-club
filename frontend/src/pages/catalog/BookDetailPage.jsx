@@ -1494,8 +1494,7 @@ const BookDetailPage = ({
                 color: 'var(--text-secondary)'
               }}>{t('auto_3469', 'You are holding the physical volume. Bypassing standard scans.')}</p>
                   {checkoutStatus === 'available' ? <button onClick={() => handleInstantNfcAction('checkout')} className="royal-btn checkout-cta-btn pulse-button" style={{
-                background: 'var(--accent)',
-                color: 'var(--text-primary)',
+                background: 'var(--accent)', color: '#ffffff',
                 border: 'none',
                 padding: '12px',
                 borderRadius: '4px',
@@ -1508,8 +1507,7 @@ const BookDetailPage = ({
               }}>
                       <Smartphone size={16} /> {t('auto_3470', 'Instant NFC Checkout')}
                     </button> : checkoutStatus === 'checked-out' ? <button onClick={() => handleInstantNfcAction('return')} className="royal-btn checkout-cta-btn pulse-button" style={{
-                background: 'var(--accent)',
-                color: 'var(--text-primary)',
+                background: 'var(--accent)', color: '#ffffff',
                 border: 'none',
                 padding: '12px',
                 borderRadius: '4px',
@@ -2382,8 +2380,7 @@ const BookDetailPage = ({
                 padding: '8px 16px',
                 fontSize: '0.85rem',
                 textDecoration: 'none',
-                background: 'var(--accent)',
-                color: 'var(--text-primary)',
+                background: 'var(--accent)', color: '#ffffff',
                 borderRadius: '4px',
                 fontWeight: 'bold'
               }}>
@@ -2404,8 +2401,7 @@ const BookDetailPage = ({
                 gap: '6px',
                 padding: '8px 16px',
                 fontSize: '0.85rem',
-                background: 'var(--accent)',
-                color: 'var(--text-primary)',
+                background: 'var(--accent)', color: '#ffffff',
                 borderRadius: '4px',
                 fontWeight: 'bold',
                 border: 'none',
@@ -3069,8 +3065,7 @@ const BookDetailPage = ({
                 padding: '8px 16px',
                 fontSize: '0.85rem',
                 textDecoration: 'none',
-                background: 'var(--accent)',
-                color: 'var(--text-primary)',
+                background: 'var(--accent)', color: '#ffffff',
                 borderRadius: '4px',
                 fontWeight: 'bold'
               }}>
@@ -3091,8 +3086,7 @@ const BookDetailPage = ({
                 gap: '6px',
                 padding: '8px 16px',
                 fontSize: '0.85rem',
-                background: 'var(--accent)',
-                color: 'var(--text-primary)',
+                background: 'var(--accent)', color: '#ffffff',
                 borderRadius: '4px',
                 fontWeight: 'bold',
                 border: 'none',
@@ -3148,8 +3142,7 @@ const BookDetailPage = ({
               justifyContent: 'center'
             }}>
                   <button onClick={handleConfirmInstantAction} className="royal-btn" style={{
-                background: 'var(--accent)',
-                color: 'var(--text-primary)',
+                background: 'var(--accent)', color: '#ffffff',
                 border: 'none',
                 padding: '8px 16px',
                 borderRadius: '4px',

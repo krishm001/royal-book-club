@@ -1461,8 +1461,7 @@ const CatalogPage = ({
               padding: '8px 16px',
               fontSize: '0.85rem',
               textDecoration: 'none',
-              background: 'var(--accent)',
-              color: '#1a1510',
+              background: 'var(--accent)', color: '#ffffff',
               borderRadius: '4px',
               fontWeight: 'bold'
             }}>
@@ -1475,8 +1474,7 @@ const CatalogPage = ({
               padding: '8px 16px',
               fontSize: '0.85rem',
               textDecoration: 'none',
-              background: 'var(--accent)',
-              color: '#1a1510',
+              background: 'var(--accent)', color: '#ffffff',
               borderRadius: '4px',
               fontWeight: 'bold'
             }}>
@@ -1565,8 +1563,7 @@ const CatalogPage = ({
               padding: '8px 16px',
               fontSize: '0.85rem',
               textDecoration: 'none',
-              background: 'var(--accent)',
-              color: '#1a1510',
+              background: 'var(--accent)', color: '#ffffff',
               borderRadius: '4px',
               fontWeight: 'bold'
             }}>
@@ -1579,8 +1576,7 @@ const CatalogPage = ({
               padding: '8px 16px',
               fontSize: '0.85rem',
               textDecoration: 'none',
-              background: 'var(--accent)',
-              color: '#1a1510',
+              background: 'var(--accent)', color: '#ffffff',
               borderRadius: '4px',
               fontWeight: 'bold'
             }}>
@@ -2261,8 +2257,7 @@ const CatalogPage = ({
                 padding: '8px 16px',
                 fontSize: '0.85rem',
                 textDecoration: 'none',
-                background: 'var(--accent)',
-                color: '#1a1510',
+                background: 'var(--accent)', color: '#ffffff',
                 borderRadius: '4px',
                 fontWeight: 'bold'
               }}>
@@ -2275,8 +2270,7 @@ const CatalogPage = ({
                 padding: '8px 16px',
                 fontSize: '0.85rem',
                 textDecoration: 'none',
-                background: 'var(--accent)',
-                color: '#1a1510',
+                background: 'var(--accent)', color: '#ffffff',
                 borderRadius: '4px',
                 fontWeight: 'bold'
               }}>
