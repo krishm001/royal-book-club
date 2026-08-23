@@ -232,7 +232,7 @@
 
 .delete-member-btn:hover:not(:disabled) {
   background: #ef4444;
-  color: #ffffff;
+  color: var(--text-primary);
   border-color: #ef4444;
   box-shadow: 0 0 15px rgba(239, 68, 68, 0.35);
   transform: translateY(-1px);
@@ -395,7 +395,7 @@
 
 .royal-btn-danger {
   background: #dc2626;
-  color: #ffffff;
+  color: var(--text-primary);
   border: 1px solid #dc2626;
   padding: 10px 20px;
   border-radius: 6px;

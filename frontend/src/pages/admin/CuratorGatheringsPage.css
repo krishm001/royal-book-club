@@ -310,7 +310,7 @@
   right: 4px;
   background: rgba(0, 0, 0, 0.6);
   border: none;
-  color: #ffffff;
+  color: var(--text-primary);
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -324,6 +324,6 @@
 
 .remove-gallery-img-btn:hover {
   background: #ff4a4a;
-  color: #ffffff;
+  color: var(--text-primary);
   transform: scale(1.1);
 }

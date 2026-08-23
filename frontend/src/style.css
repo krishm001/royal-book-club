@@ -114,7 +114,7 @@
 
   /* Theme-aware Genre and Toggle High-Contrast Variables */
   --genre-tag-bg: var(--accent);
-  --genre-tag-color: #ffffff;
+  --genre-tag-color: var(--text-primary);
   --genre-tag-border: var(--accent);
   --toggle-text: var(--text-primary);
   --toggle-inactive: #e0dcd3;

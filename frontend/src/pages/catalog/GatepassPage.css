@@ -402,7 +402,7 @@
 
 .ledger-tab-btn.active {
   background: var(--accent);
-  color: #ffffff !important;
+  color: var(--text-primary) !important;
   box-shadow: var(--shadow-sm);
 }
 

@@ -550,8 +550,8 @@
 
 .control-toggle-btn:hover {
   background: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
 }
 
 .control-toggle-btn.active {
@@ -587,7 +587,7 @@
 .zoom-increment-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.12);
   color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: var(--text-muted);
   transform: scale(1.05);
 }
 
@@ -1025,7 +1025,7 @@
 
 .book-mini-isbn {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
   font-family: monospace;
 }
 
@@ -1049,7 +1049,7 @@
 }
 
 .nfc-target-url-badge span {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
 }
 
 .nfc-target-url-badge code {
@@ -1084,7 +1084,7 @@
 
 .nfc-modal-actions .secondary-btn:hover {
   background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--text-muted);
 }
 
 /* iOS Safari Warning Modal Styles */
@@ -1096,7 +1096,7 @@
 
 .apple-logo-glow {
   font-size: 3.2rem;
-  color: #ffffff;
+  color: var(--text-primary);
   width: 80px;
   height: 80px;
   display: flex;
@@ -1447,14 +1447,14 @@
 }
 
 .result-pub-date {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
 }
 
 .result-isbn {
   display: block;
   font-family: monospace;
   font-size: 0.72rem;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-muted);
   margin-top: 4px;
 }
 

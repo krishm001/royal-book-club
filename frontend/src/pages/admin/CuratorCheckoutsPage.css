@@ -271,12 +271,12 @@
 
 .btn-reject:hover {
   background: #ef4444;
-  color: white;
+  color: var(--text-primary);
 }
 
 .btn-approve-return {
   background: #10b981;
-  color: white;
+  color: var(--text-primary);
   box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
 }
 
@@ -762,7 +762,7 @@
 
 .clear-checkout-btn:hover:not(:disabled) {
   background: #ef4444;
-  color: white;
+  color: var(--text-primary);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
   border-color: #ef4444;
 }

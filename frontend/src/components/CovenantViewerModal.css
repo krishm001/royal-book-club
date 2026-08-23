@@ -159,7 +159,7 @@
 
 /* Light theme / Academic theme override adjustments if needed */
 [data-theme="academic"] .covenant-accept-btn {
-  color: #ffffff; /* Contrast guarantee on maroon buttons */
+  color: var(--text-primary); /* Contrast guarantee on maroon buttons */
 }
 
 .covenant-accept-btn:hover {

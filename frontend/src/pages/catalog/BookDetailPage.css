@@ -366,7 +366,7 @@
 
 .nfc-actions-row .fallback-switch-btn:hover {
   background: rgba(255, 255, 255, 0.15) !important;
-  color: #ffffff !important;
+  color: var(--text-primary) !important;
   border-color: rgba(212, 165, 116, 0.8) !important;
   transform: translateY(-2px) !important;
 }
@@ -418,11 +418,11 @@
 }
 
 [data-theme="academic"] .verification-tab-btn:not(.active) {
-  color: rgba(245, 242, 235, 0.85) !important;
+  color: var(--text-primary) !important;
 }
 
 [data-theme="academic"] .verification-tab-btn:not(.active):hover:not(:disabled) {
-  color: #ffffff !important;
+  color: var(--text-primary) !important;
   background: rgba(212, 175, 55, 0.15) !important;
 }
 
@@ -434,15 +434,15 @@
 }
 
 [data-theme="academic"] .fallback-explanation {
-  color: rgba(245, 242, 235, 0.9) !important;
+  color: var(--text-primary) !important;
 }
 
 [data-theme="academic"] .fallback-form-summary p {
-  color: #ffffff !important;
+  color: var(--text-primary) !important;
 }
 
 [data-theme="academic"] .fallback-form-summary p:last-child {
-  color: rgba(245, 242, 235, 0.65) !important;
+  color: var(--text-primary) !important;
 }
 
 .tab-pane {
@@ -498,7 +498,7 @@
 
 .nfc-prompt-desc, .barcode-prompt-desc {
   font-size: 0.85rem !important;
-  color: rgba(255, 255, 255, 0.7) !important;
+  color: var(--text-primary) !important;
   line-height: 1.5 !important;
   margin: 12px 0 16px 0 !important;
 }

@@ -260,7 +260,7 @@
 .input-field-icon {
   position: absolute;
   left: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
   pointer-events: none;
 }
 
@@ -351,7 +351,7 @@
 
 .osm-suggestion-item:hover {
   background-color: rgba(var(--accent-rgb, 210, 165, 116), 0.12);
-  color: #fff;
+  color: var(--text-primary);
   padding-left: 18px; /* Smooth slide-in micro-interaction */
 }
 
@@ -574,7 +574,7 @@
 [data-theme="academic"] .royal-input {
   color: var(--text-primary) !important;
   border-color: rgba(88, 17, 26, 0.25) !important;
-  background-color: rgba(245, 242, 235, 0.8) !important;
+  background-color: var(--text-primary) !important;
 }
 
 [data-theme="academic"] .royal-input::placeholder {
@@ -587,7 +587,7 @@
 
 [data-theme="academic"] select.royal-input {
   color: var(--text-primary) !important;
-  background-color: rgba(245, 242, 235, 0.95) !important;
+  background-color: var(--text-primary) !important;
 }
 
 [data-theme="academic"] select.royal-input option {
@@ -597,7 +597,7 @@
 
 [data-theme="academic"] .royal-input:focus {
   border-color: var(--accent) !important;
-  background-color: #ffffff !important;
+  background-color: var(--text-primary) !important;
   box-shadow: 0 0 0 3px rgba(141, 18, 34, 0.15) !important;
 }
 
@@ -617,13 +617,13 @@
 
 [data-theme="academic"] .profile-submit-btn {
   background: var(--accent-gradient) !important;
-  color: #ffffff !important;
+  color: var(--text-primary) !important;
   box-shadow: 0 4px 15px rgba(141, 18, 34, 0.2) !important;
 }
 
 [data-theme="academic"] .profile-submit-btn:hover:not(:disabled) {
   background: var(--accent-hover) !important;
-  color: #ffffff !important;
+  color: var(--text-primary) !important;
   box-shadow: 0 6px 20px rgba(141, 18, 34, 0.35) !important;
 }
 

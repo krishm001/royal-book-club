@@ -175,13 +175,13 @@
   font-size: 1.8rem;
   font-family: var(--font-display);
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-primary);
   line-height: 1.25;
 }
 
 .live-subtitle {
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-primary);
   line-height: 1.5;
 }
 
@@ -280,13 +280,13 @@
   font-size: 0.75rem;
   font-weight: 700;
   border-radius: 50px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: var(--transition-fast);
 }
 
 .preview-toggle-tab:hover {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .preview-toggle-tab.active {
@@ -354,7 +354,7 @@
 }
 
 .curator-tab-btn:hover {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .curator-tab-btn.active {
@@ -713,7 +713,7 @@
 .remove-featured-btn {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
   cursor: pointer;
   font-size: 0.9rem;
   padding: 4px;
@@ -792,7 +792,7 @@
 
 .row-isbn {
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-muted);
 }
 
 .result-action-btn {
@@ -831,7 +831,7 @@
 
 .result-action-btn.remove:hover {
   background: #dc3545;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .featured-action-buttons {

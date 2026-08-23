@@ -204,7 +204,7 @@
 
 .share-copy-btn.copied {
   background: var(--success, #4ecca3) !important;
-  color: #ffffff !important;
+  color: var(--text-primary) !important;
   border-color: var(--success, #4ecca3) !important;
 }
 

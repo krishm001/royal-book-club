@@ -409,7 +409,7 @@
 .close-drawer-btn {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 4px;
 }
@@ -737,24 +737,24 @@
 }
 
 [data-theme="academic"] .verification-tab-btn:not(.active) {
-  color: rgba(245, 242, 235, 0.85);
+  color: var(--text-primary);
 }
 
 [data-theme="academic"] .verification-tab-btn:not(.active):hover:not(:disabled) {
-  color: #ffffff;
+  color: var(--text-primary);
   background: rgba(212, 175, 55, 0.15);
 }
 
 [data-theme="academic"] .fallback-explanation {
-  color: rgba(245, 242, 235, 0.9) !important;
+  color: var(--text-primary) !important;
 }
 
 [data-theme="academic"] .fallback-form-summary p {
-  color: rgba(245, 242, 235, 0.95) !important;
+  color: var(--text-primary) !important;
 }
 
 [data-theme="academic"] .fallback-form-summary p:last-child {
-  color: rgba(245, 242, 235, 0.7) !important;
+  color: var(--text-primary) !important;
 }
 
 .tab-pane {
