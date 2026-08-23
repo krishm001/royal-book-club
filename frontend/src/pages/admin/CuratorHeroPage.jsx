@@ -613,7 +613,7 @@ const CuratorHeroPage = ({
                 alignItems: 'center',
                 gap: '8px',
                 background: 'linear-gradient(135deg, var(--gold), var(--accent))',
-                color: '#000',
+                color: "var(--text-primary)",
                 fontWeight: '600',
                 padding: '10px 18px',
                 borderRadius: '6px',
@@ -810,7 +810,7 @@ const CuratorHeroPage = ({
                 alignItems: 'center',
                 gap: '8px',
                 background: 'linear-gradient(135deg, var(--gold), var(--accent))',
-                color: '#000',
+                color: "var(--text-primary)",
                 fontWeight: '600',
                 padding: '10px 18px',
                 borderRadius: '6px',
@@ -1130,7 +1130,7 @@ const CuratorHeroPage = ({
                 gap: '6px',
                 alignItems: 'center',
                 background: 'linear-gradient(135deg, var(--gold), var(--accent))',
-                color: '#000',
+                color: "var(--text-primary)",
                 fontWeight: '600',
                 border: 'none',
                 borderRadius: '6px',
@@ -1197,7 +1197,7 @@ const CuratorHeroPage = ({
 
                 {/* Quotes list */}
                 <div className="selected-books-shelf" style={{
-            background: 'rgba(0, 0, 0, 0.15)'
+            background: "var(--glass-bg)"
           }}>
                   <h4 className="shelf-title">{t("str_5280", "Quote Portfolio (")}{featuredQuotes.length} {t("str_5281", "active quotes)")}</h4>
                   {featuredQuotes.length === 0 ? <div className="empty-shelf-banner">
@@ -1210,7 +1210,7 @@ const CuratorHeroPage = ({
                       {featuredQuotes.map((quote, idx) => <div key={idx} style={{
                 display: 'flex',
                 flexDirection: 'column',
-                background: 'rgba(255, 255, 255, 0.02)',
+                background: "var(--glass-bg)",
                 border: '1px solid var(--glass-border)',
                 borderRadius: 'var(--border-radius-sm)',
                 padding: '16px',
@@ -1252,7 +1252,7 @@ const CuratorHeroPage = ({
                               <button type="button" style={{
                       background: 'transparent',
                       border: 'none',
-                      color: 'rgba(255, 255, 255, 0.4)',
+                      color: "var(--text-secondary)",
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center'

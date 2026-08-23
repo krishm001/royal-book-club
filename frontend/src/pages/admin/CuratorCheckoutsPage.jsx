@@ -578,7 +578,7 @@ export default function CuratorCheckoutsPage({
       padding: '24px',
       marginBottom: '30px',
       background: 'var(--surface)',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
+      boxShadow: "0 8px 32px var(--card-shadow)"
     }}>
           <div style={{
         display: 'flex',
@@ -622,7 +622,7 @@ export default function CuratorCheckoutsPage({
         }}>
               <h3 style={{
             fontSize: '1rem',
-            color: '#fff',
+            color: "var(--text-primary)",
             borderBottom: '1px solid rgba(255,255,255,0.05)',
             paddingBottom: '6px',
             margin: 0
@@ -635,14 +635,14 @@ export default function CuratorCheckoutsPage({
           }}>
                 <label style={{
               fontSize: '0.8rem',
-              color: 'rgba(255,255,255,0.6)'
+              color: "var(--text-secondary)"
             }}>{t('auto_3262', 'Select Book Volume')}</label>
                 <select value={simBookId} onChange={e => setSimBookId(e.target.value)} style={{
-              background: 'rgba(255,255,255,0.05)',
+              background: "var(--glass-bg)",
               border: '1px solid rgba(212,165,116,0.2)',
               padding: '10px',
               borderRadius: '4px',
-              color: '#fff',
+              color: "var(--text-primary)",
               fontSize: '0.9rem'
             }}>
                   <option value="" style={{
@@ -661,14 +661,14 @@ export default function CuratorCheckoutsPage({
           }}>
                 <label style={{
               fontSize: '0.8rem',
-              color: 'rgba(255,255,255,0.6)'
+              color: "var(--text-secondary)"
             }}>{t('auto_3264', 'NFC Chip UID')}</label>
                 <input type="text" value={simNfc} onChange={e => setSimNfc(e.target.value)} placeholder={t("str_5187", "e.g. 04:A3:B2:C1:D0:E9:80")} style={{
-              background: 'rgba(255,255,255,0.05)',
+              background: "var(--glass-bg)",
               border: '1px solid rgba(212,165,116,0.2)',
               padding: '10px',
               borderRadius: '4px',
-              color: '#fff',
+              color: "var(--text-primary)",
               fontSize: '0.9rem'
             }} />
               </div>
@@ -685,14 +685,14 @@ export default function CuratorCheckoutsPage({
             }}>
                   <label style={{
                 fontSize: '0.8rem',
-                color: 'rgba(255,255,255,0.6)'
+                color: "var(--text-secondary)"
               }}>{t('auto_3265', 'Simulated Latitude')}</label>
                   <input type="number" step="any" value={simLat} onChange={e => setSimLat(parseFloat(e.target.value) || 0)} style={{
-                background: 'rgba(255,255,255,0.05)',
+                background: "var(--glass-bg)",
                 border: '1px solid rgba(212,165,116,0.2)',
                 padding: '10px',
                 borderRadius: '4px',
-                color: '#fff',
+                color: "var(--text-primary)",
                 fontSize: '0.9rem'
               }} />
                 </div>
@@ -703,14 +703,14 @@ export default function CuratorCheckoutsPage({
             }}>
                   <label style={{
                 fontSize: '0.8rem',
-                color: 'rgba(255,255,255,0.6)'
+                color: "var(--text-secondary)"
               }}>{t('auto_3266', 'Simulated Longitude')}</label>
                   <input type="number" step="any" value={simLon} onChange={e => setSimLon(parseFloat(e.target.value) || 0)} style={{
-                background: 'rgba(255,255,255,0.05)',
+                background: "var(--glass-bg)",
                 border: '1px solid rgba(212,165,116,0.2)',
                 padding: '10px',
                 borderRadius: '4px',
-                color: '#fff',
+                color: "var(--text-primary)",
                 fontSize: '0.9rem'
               }} />
                 </div>
@@ -748,12 +748,12 @@ export default function CuratorCheckoutsPage({
           }}>
                 <h3 style={{
               fontSize: '1.05rem',
-              color: '#fff',
+              color: "var(--text-primary)",
               margin: 0
             }}>{t('auto_3268', 'Geofence Radar Live Coverage')}</h3>
                 <span style={{
               fontSize: '0.75rem',
-              color: 'rgba(255,255,255,0.4)',
+              color: "var(--text-secondary)",
               alignSelf: 'center'
             }}>{t('auto_3269', 'Click map to relocate Pin')}</span>
               </div>
@@ -955,7 +955,7 @@ export default function CuratorCheckoutsPage({
                   alignItems: 'center',
                   gap: '4px',
                   fontSize: '0.8rem',
-                  color: 'rgba(255,255,255,0.5)'
+                  color: "var(--text-secondary)"
                 }}>
                         <Clock size={12} />
                         <span>{r.requestedAt ? new Date(r.requestedAt).toLocaleDateString() : t('admin.today', 'Today')}</span>
@@ -994,9 +994,9 @@ export default function CuratorCheckoutsPage({
                             <QrCode size={10} /> {t('auto_3275', 'QR Verified')}
                           </span>}
                         {!r.locationVerified && !r.qrVerified && <span className="location-badge unverified" style={{
-                    color: 'rgba(255,255,255,0.4)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    background: 'rgba(255, 255, 255, 0.05)',
+                    color: "var(--text-secondary)",
+                    border: "1px solid var(--glass-border)",
+                    background: "var(--glass-bg)",
                     padding: '2px 8px',
                     borderRadius: '12px',
                     fontSize: '0.7rem',
@@ -1179,9 +1179,9 @@ export default function CuratorCheckoutsPage({
             fontWeight: 'bold'
           }}>{t("str_5189", "Select Book:")}</span>
             <select value={selectedBookId} onChange={e => setSelectedBookId(e.target.value)} style={{
-            background: 'rgba(0, 0, 0, 0.4)',
+            background: "var(--glass-bg)",
             border: '1px solid rgba(212, 165, 116, 0.3)',
-            color: '#fff',
+            color: "var(--text-primary)",
             padding: '8px 16px',
             borderRadius: '4px',
             fontSize: '0.85rem',
@@ -1202,7 +1202,7 @@ export default function CuratorCheckoutsPage({
         justifyContent: 'center',
         padding: '40px 20px',
         color: 'var(--text-secondary)',
-        border: '1px dashed rgba(255, 255, 255, 0.06)',
+        border: "1px dashed var(--glass-border)",
         borderRadius: '4px'
       }}>
             <BookOpen size={36} style={{
@@ -1227,7 +1227,7 @@ export default function CuratorCheckoutsPage({
             justifyContent: 'center',
             padding: '40px 20px',
             color: 'var(--text-secondary)',
-            border: '1px dashed rgba(255, 255, 255, 0.06)',
+            border: "1px dashed var(--glass-border)",
             borderRadius: '4px'
           }}>
                   <AlertCircle size={36} style={{
@@ -1261,14 +1261,14 @@ export default function CuratorCheckoutsPage({
               copyStatusText = 'Pending Return Verification';
             }
             return <div key={copy.copyNo} style={{
-              background: 'rgba(255, 255, 255, 0.02)',
+              background: "var(--glass-bg)",
               border: `1px solid ${copy.status === 'CHECKED_OUT' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(212, 165, 116, 0.15)'}`,
               borderRadius: '6px',
               padding: '16px',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
+              boxShadow: "0 4px 15px var(--card-shadow)"
             }}>
                       <div>
                         {/* Header: Copy # and Status */}
@@ -1281,7 +1281,7 @@ export default function CuratorCheckoutsPage({
                           <span style={{
                     fontSize: '1rem',
                     fontWeight: 'bold',
-                    color: '#fff'
+                    color: "var(--text-primary)"
                   }}>{t("str_5190", "Copy #")}{copy.copyNo}</span>
                           <span style={{
                     fontSize: '0.7rem',
@@ -1335,8 +1335,8 @@ export default function CuratorCheckoutsPage({
 
                         {/* Borrower Details if Loaned */}
                         {activeTx && <div style={{
-                  background: 'rgba(0, 0, 0, 0.2)',
-                  border: '1px solid rgba(255, 255, 255, 0.03)',
+                  background: "var(--glass-bg)",
+                  border: "1px solid var(--glass-border)",
                   borderRadius: '4px',
                   padding: '10px',
                   marginBottom: '16px'
@@ -1352,7 +1352,7 @@ export default function CuratorCheckoutsPage({
                             <div style={{
                     fontSize: '0.85rem',
                     fontWeight: 'bold',
-                    color: '#fff'
+                    color: "var(--text-primary)"
                   }}>{activeTx.memberName || 'Patron'}</div>
                             <div style={{
                     fontSize: '0.75rem',
@@ -1361,7 +1361,7 @@ export default function CuratorCheckoutsPage({
                   }}>{activeTx.memberEmail}</div>
                             <div style={{
                     fontSize: '0.7rem',
-                    color: 'rgba(255, 255, 255, 0.4)',
+                    color: "var(--text-secondary)",
                     fontFamily: 'monospace'
                   }}>{t("str_5193", "Tx:")} {activeTx.id.slice(0, 10)}...</div>
                           </div>}
@@ -1379,7 +1379,7 @@ export default function CuratorCheckoutsPage({
                     padding: '8px',
                     fontSize: '0.75rem',
                     background: 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)',
-                    color: 'white',
+                    color: "var(--text-primary)",
                     border: 'none',
                     borderRadius: '4px',
                     fontWeight: 'bold',
@@ -1418,7 +1418,7 @@ export default function CuratorCheckoutsPage({
                   color: 'rgba(255, 255, 255, 0.35)',
                   textAlign: 'center',
                   padding: '10px',
-                  border: '1px dashed rgba(255, 255, 255, 0.05)',
+                  border: "1px dashed var(--glass-border)",
                   borderRadius: '4px'
                 }}> {t("str_5194", "Ready on Shelf (No Overrides Needed)")} </div>}
                       </div>

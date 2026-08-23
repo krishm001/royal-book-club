@@ -586,7 +586,7 @@ const NfcCounterDashboard = ({
                   fontWeight: '600',
                   fontFamily: 'monospace',
                   fontSize: '0.9rem',
-                  color: '#ffffff'
+                  color: "var(--text-primary)"
                 }}>
                         {formatUidWithColons(item.ntagUid)}
                       </td>

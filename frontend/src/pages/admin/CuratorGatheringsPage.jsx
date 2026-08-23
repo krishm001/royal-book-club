@@ -407,7 +407,7 @@ const CuratorGatheringsPage = ({
             alignItems: 'center',
             gap: '8px',
             background: 'linear-gradient(135deg, var(--gold), var(--accent))',
-            color: '#000',
+            color: "var(--text-primary)",
             fontWeight: '600',
             padding: '10px 18px',
             borderRadius: '6px',

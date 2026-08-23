@@ -498,7 +498,7 @@ const CuratorInventoryAuditPage = ({
                   background: expandedBookIsbn === book.isbn ? 'rgba(212, 175, 55, 0.04)' : 'rgba(255,255,255,0.01)'
                 }}>
                         {book.coverUrl ? <img src={book.coverUrl} alt={book.title} className="book-cover-thumbnail" /> : <div className="book-cover-thumbnail" style={{
-                    background: 'rgba(255,255,255,0.05)',
+                    background: "var(--glass-bg)",
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center'
@@ -555,7 +555,7 @@ const CuratorInventoryAuditPage = ({
 
                       {/* Expanded Tray */}
                       {expandedBookIsbn === book.isbn && <div className="book-audit-tray animate-fade-in" onClick={e => e.stopPropagation()} style={{
-                  background: 'rgba(0, 0, 0, 0.25)',
+                  background: "var(--glass-bg)",
                   border: '1px solid rgba(212, 175, 55, 0.15)',
                   borderRadius: '10px',
                   padding: '16px',
@@ -635,11 +635,11 @@ const CuratorInventoryAuditPage = ({
                       minHeight: '60px',
                       fontSize: '0.8rem',
                       padding: '8px 12px',
-                      background: 'rgba(0, 0, 0, 0.2)',
+                      background: "var(--glass-bg)",
                       border: '1px solid rgba(212, 175, 55, 0.12)',
                       borderRadius: '8px',
                       resize: 'vertical',
-                      color: '#ffffff'
+                      color: "var(--text-primary)"
                     }} />
                           </div>
                         </div>}
@@ -787,8 +787,8 @@ const CuratorInventoryAuditPage = ({
 
             {/* Quick Tips */}
             <div className="audit-panel" style={{
-          background: 'rgba(255,255,255,0.01)',
-          border: '1px solid rgba(255,255,255,0.05)'
+          background: "var(--glass-bg)",
+          border: "1px solid var(--glass-border)"
         }}>
               <h4 style={{
             color: '#d4af37',

@@ -2235,7 +2235,7 @@ const BookDetailPage = ({
       left: 0,
       right: 0,
       bottom: 0,
-      background: 'rgba(0,0,0,0.85)',
+      background: "var(--glass-bg)",
       backdropFilter: 'blur(8px)',
       display: 'flex',
       alignItems: 'center',
@@ -2249,7 +2249,7 @@ const BookDetailPage = ({
         padding: '24px',
         background: 'var(--surface)',
         border: '1px solid var(--accent)',
-        boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+        boxShadow: "0 10px 40px var(--card-shadow)",
         borderRadius: '8px'
       }}>
           <div className="panel-header-row" style={{
@@ -2512,7 +2512,7 @@ const BookDetailPage = ({
 
                     <div className="nfc-meta-box" style={{
                 width: '100%',
-                background: 'rgba(0,0,0,0.2)',
+                background: "var(--glass-bg)",
                 border: '1px solid var(--glass-border)',
                 borderRadius: '4px',
                 padding: '8px 12px',
@@ -2571,7 +2571,7 @@ const BookDetailPage = ({
                 maxWidth: '320px',
                 height: '280px',
                 overflow: 'hidden',
-                background: '#000',
+                background: "var(--surface-elevated)",
                 borderRadius: '8px',
                 border: '1px solid rgba(212, 175, 55, 0.3)'
               }}>
@@ -2710,7 +2710,7 @@ const BookDetailPage = ({
 
                     <div className="fallback-form-summary royal-card" style={{
                 padding: '12px',
-                background: 'rgba(0,0,0,0.2)',
+                background: "var(--glass-bg)",
                 border: '1px solid var(--glass-border)',
                 borderRadius: '4px',
                 textAlign: 'left',
@@ -2783,7 +2783,7 @@ const BookDetailPage = ({
                 maxWidth: '280px',
                 height: '280px',
                 overflow: 'hidden',
-                background: '#000',
+                background: "var(--surface-elevated)",
                 borderRadius: '8px',
                 border: '1px solid rgba(212, 175, 55, 0.3)'
               }}>
@@ -2802,7 +2802,7 @@ const BookDetailPage = ({
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: 'rgba(0,0,0,0.6)',
+                  background: "var(--glass-bg)",
                   gap: '10px',
                   zIndex: 5
                 }}>
@@ -2837,7 +2837,7 @@ const BookDetailPage = ({
                       <input type="text" value={validatorQrPath} onChange={e => setValidatorQrPath(e.target.value)} placeholder={t('catalog.enterQrPathPlaceholder', 'e.g. exit-spot-alpha')} className="gating-input" style={{
                   width: '100%',
                   padding: '10px 14px',
-                  background: 'rgba(0,0,0,0.3)',
+                  background: "var(--glass-bg)",
                   border: '1px solid rgba(212, 175, 55, 0.3)',
                   borderRadius: '6px',
                   color: 'var(--text-primary)',
@@ -2947,7 +2947,7 @@ const BookDetailPage = ({
       left: 0,
       right: 0,
       bottom: 0,
-      background: 'rgba(0,0,0,0.85)',
+      background: "var(--glass-bg)",
       backdropFilter: 'blur(8px)',
       display: 'flex',
       alignItems: 'center',
@@ -2961,7 +2961,7 @@ const BookDetailPage = ({
         padding: '24px',
         background: 'var(--surface)',
         border: '1px solid var(--accent)',
-        boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+        boxShadow: "0 10px 40px var(--card-shadow)",
         borderRadius: '8px'
       }}>
           <div className="panel-header-row" style={{

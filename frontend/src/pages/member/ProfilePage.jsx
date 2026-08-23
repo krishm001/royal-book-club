@@ -585,7 +585,7 @@ const ProfilePage = ({
                 <div className="form-group" style={{
               marginBottom: '20px',
               padding: '12px',
-              background: 'rgba(255,255,255,0.02)',
+              background: "var(--glass-bg)",
               borderRadius: '8px',
               border: '1px solid rgba(212,165,116,0.1)'
             }}>

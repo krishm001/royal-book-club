@@ -651,9 +651,9 @@ const CuratorSettingsPage = ({
                 width: '100%',
                 borderRadius: '8px',
                 border: '1px solid rgba(212, 175, 55, 0.3)',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(212, 175, 55, 0.05)',
+                boxShadow: "0 8px 32px var(--card-shadow), inset 0 0 10px rgba(212, 175, 55, 0.05)",
                 marginBottom: '20px',
-                background: 'rgba(0,0,0,0.2)',
+                background: "var(--glass-bg)",
                 zIndex: 1
               }} />
 
@@ -1164,7 +1164,7 @@ const CuratorSettingsPage = ({
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0,0,0,0.85)',
+            background: "var(--glass-bg)",
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1172,8 +1172,8 @@ const CuratorSettingsPage = ({
             padding: '2rem'
           }}>
                   <div className="printable-placard" style={{
-              background: '#ffffff',
-              color: '#000000',
+              background: "var(--surface)",
+              color: "var(--text-primary)",
               width: '100%',
               maxWidth: '600px',
               padding: '3.5rem',
@@ -1182,7 +1182,7 @@ const CuratorSettingsPage = ({
               flexDirection: 'column',
               alignItems: 'center',
               position: 'relative',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+              boxShadow: "0 20px 50px var(--card-shadow)"
             }}>
                     
                     {/* Action buttons */}
@@ -1237,11 +1237,11 @@ const CuratorSettingsPage = ({
                     </div>
 
                     <div style={{
-                background: '#ffffff',
+                background: "var(--surface)",
                 border: '3px solid #d4af37',
                 padding: '1.5rem',
                 borderRadius: '16px',
-                boxShadow: '0 10px 25px rgba(0,0,0,0.05)',
+                boxShadow: "0 10px 25px var(--card-shadow)",
                 marginBottom: '2.5rem'
               }}>
                       <img src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://bookshelfnet.com/${selectedPlacardPath}`} alt={t("str_5339", "Return Validation QR Code")} style={{

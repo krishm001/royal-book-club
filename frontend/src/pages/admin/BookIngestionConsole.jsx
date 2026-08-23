@@ -1944,7 +1944,7 @@ const BookIngestionConsole = ({
             border: '1px solid rgba(212, 175, 55, 0.1)',
             padding: '8px',
             borderRadius: '6px',
-            background: 'rgba(0, 0, 0, 0.2)'
+            background: "var(--glass-bg)"
           }}>
                   {existingBooks.filter(b => {
               const q = dbSearchQuery.toLowerCase().trim();
@@ -2031,7 +2031,7 @@ const BookIngestionConsole = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'rgba(0, 0, 0, 0.2)'
+                background: "var(--glass-bg)"
               }}>
                           {b.coverUrl ? <img src={b.coverUrl} alt={b.title} className="result-item-cover" style={{
                   width: '100%',
@@ -2224,7 +2224,7 @@ const BookIngestionConsole = ({
                     flexDirection: 'column',
                     gap: '8px',
                     padding: '12px',
-                    background: 'rgba(0,0,0,0.15)',
+                    background: "var(--glass-bg)",
                     borderRadius: '8px',
                     border: '1px solid var(--glass-bg)'
                   }}>
@@ -2269,7 +2269,7 @@ const BookIngestionConsole = ({
                           flex: 1,
                           padding: '6px 8px',
                           fontSize: '0.8rem',
-                          background: 'rgba(0,0,0,0.25)',
+                          background: "var(--glass-bg)",
                           border: '1px solid var(--glass-border)'
                         }} value={ntagUids[index] || ''} onChange={e => {
                           const val = formatUidWithColons(e.target.value);
@@ -2314,7 +2314,7 @@ const BookIngestionConsole = ({
                           flex: 1,
                           padding: '6px 8px',
                           fontSize: '0.8rem',
-                          background: 'rgba(0,0,0,0.25)',
+                          background: "var(--glass-bg)",
                           border: '1px solid var(--glass-border)'
                         }} value={copyQrIds[index] || ''} onChange={e => {
                           const val = e.target.value.replace(/[^0-9]/g, '');
@@ -2654,7 +2654,7 @@ const BookIngestionConsole = ({
                 zIndex: 100,
                 background: 'var(--surface-elevated, var(--glass-bg, rgba(26, 21, 16, 0.98)))',
                 border: '1px solid var(--glass-border, rgba(212, 175, 55, 0.3))',
-                boxShadow: '0 8px 30px rgba(0,0,0,0.6)',
+                boxShadow: "0 8px 30px var(--card-shadow)",
                 borderRadius: '6px',
                 marginTop: '4px',
                 maxHeight: '220px',
@@ -2890,9 +2890,9 @@ const BookIngestionConsole = ({
                       position: 'absolute',
                       top: '4px',
                       right: '4px',
-                      background: 'rgba(0,0,0,0.6)',
+                      background: "var(--glass-bg)",
                       border: 'none',
-                      color: 'white',
+                      color: "var(--text-primary)",
                       borderRadius: '50%',
                       width: '24px',
                       height: '24px',
@@ -2918,7 +2918,7 @@ const BookIngestionConsole = ({
                 border: '1px solid var(--glass-border)',
                 padding: '6px',
                 borderRadius: '6px',
-                background: 'rgba(0,0,0,0.2)',
+                background: "var(--glass-bg)",
                 display: 'inline-block',
                 maxWidth: '100%'
               }}>
@@ -2932,9 +2932,9 @@ const BookIngestionConsole = ({
                   position: 'absolute',
                   top: '6px',
                   right: '6px',
-                  background: 'rgba(0,0,0,0.7)',
+                  background: "var(--glass-bg)",
                   border: 'none',
-                  color: 'white',
+                  color: "var(--text-primary)",
                   borderRadius: '50%',
                   width: '24px',
                   height: '24px',
@@ -3332,7 +3332,7 @@ const BookIngestionConsole = ({
                     color: 'var(--accent)'
                   }}>{t("str_5165", "Raw Mifare / APDU Programming Commands:")}</div>
                         <code style={{
-                    background: 'rgba(0, 0, 0, 0.2)',
+                    background: "var(--glass-bg)",
                     padding: '6px',
                     borderRadius: '4px',
                     fontSize: '0.7rem',
@@ -3562,7 +3562,7 @@ const BookIngestionConsole = ({
           maxHeight: '300px',
           overflowY: 'auto',
           padding: '12px',
-          background: 'rgba(0,0,0,0.3)',
+          background: "var(--glass-bg)",
           borderRadius: '8px',
           border: '1px solid var(--glass-border)',
           marginBottom: '20px',

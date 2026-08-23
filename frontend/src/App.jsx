@@ -638,7 +638,7 @@ function App() {
         borderRadius: '12px',
         background: 'var(--surface-elevated, rgba(15, 12, 8, 0.8))',
         backdropFilter: 'blur(12px)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        boxShadow: "0 8px 32px var(--card-shadow)",
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center'
