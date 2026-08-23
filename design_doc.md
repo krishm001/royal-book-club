@@ -415,3 +415,25 @@ This section details the architectural designs, database schema updates, and sta
   - Removed intermediary confirmation modal: clicking instant NFC checkout/return directly triggers cryptographic verification and checkout/return execution.
   - Post-action popup includes immediate "View Gatepass" (on checkout) or "Write a Book Review" (on return), alongside a "Cancel Checkout" / "Cancel Return" rollback button in case of accidental clicks, and a "Done" button.
 
+#### 🎨 Epic 14: Page Layout Upheaval, Theme Contrast Centralization, Above-the-Fold Loading, & Full i18n
+- **Catalog Card Barcode/QR Match Fix**:
+  - Enhanced `handleCardBarcodeScanned` in `CatalogPage.jsx` to parse `qr=(\d+)` URLs and standalone numeric copy QR IDs, matching against primary ISBN, `alternativeIsbns`, and `book.copies`. Eliminates false "Security Mismatch" errors when scanning copy QR codes directly from study listing cards.
+- **Universal Layout Optimization & Mobile Space Maximization**:
+  - Unified page containers (`max-width: 1300px`, auto margin, responsive padding) across Catalog, Book Details, Discourses, Admin Dashboard, Profile, and Events.
+  - Discourses courtyard debates widened to full viewport width with generous textarea composing areas and minimal margins on mobile devices.
+- **Academic & Salon Theme Contrast Centralization**:
+  - Centralized theme variables (`--btn-gold-*`, `--btn-primary-*`, `--btn-secondary-*`, `--surface-card-*`, `--surface-input-*`) in `style.css`.
+  - High-contrast pure white text (`#ffffff`) on deep crimson/maroon buttons (`#8d1222`) in Academic theme, eliminating dark-on-dark contrast issues.
+- **Above-the-Fold Deep Link Feedback**:
+  - Immediate full-screen royal resolving indicator in `App.jsx` when handling `?qr=` deep links.
+  - Immediate above-the-fold chronicle drawer loading spinner when deep-linking into `/discourses/:id`.
+- **Complete Internationalization (i18n)**:
+  - 100% translation coverage for English (`en.js`), Hindi (`hi.js`), and Kannada (`kn.js`) across all views including Admin Console subpages and QR Sticker Sheet Generator.
+
+#### 🔗 Epic 15: Universal Social & Link Sharing Suite
+- **Reusable `ShareModal` Component**:
+  - Native Web Share API integration (`navigator.share`) for mobile and supported desktop browsers.
+  - Direct 1-click sharing to WhatsApp, X (Twitter), Facebook / Meta, LinkedIn, and Email with formatted quotes and URLs.
+  - One-click copy link to clipboard with visual toast checkmark feedback.
+  - Integrated into Book Details Page (`BookDetailPage.jsx`) and Discourses / Courtyard Debates (`DiscoursesPage.jsx`).
+

@@ -1,0 +1,219 @@
+/* ShareModal Stylesheet */
+
+.share-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(4, 6, 18, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.share-modal-card {
+  background: var(--surface-card-bg, #16192d);
+  border: 1px solid var(--surface-card-border, rgba(212, 175, 55, 0.25));
+  border-radius: var(--border-radius-md, 14px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  max-width: 480px;
+  padding: 24px;
+  box-sizing: border-box;
+  animation: modal-pop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--text-primary);
+}
+
+@keyframes modal-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.share-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.share-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.share-title-wrap h3 {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.share-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.share-close-btn:hover {
+  color: var(--accent);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.share-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 18px;
+  line-height: 1.4;
+}
+
+/* Preview Card */
+.share-preview-card {
+  background: var(--surface-input-bg, rgba(15, 15, 35, 0.6));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 18px;
+}
+
+.share-preview-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.share-preview-url {
+  font-size: 0.78rem;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: monospace;
+}
+
+/* Native Share Button */
+.native-share-btn {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 16px;
+  padding: 10px 16px;
+  font-size: 0.88rem;
+}
+
+/* Channels Grid */
+.share-channels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.share-channel-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border-radius: var(--border-radius-sm);
+  background: var(--surface-input-bg, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--glass-border);
+  text-decoration: none;
+  transition: var(--transition-smooth);
+}
+
+.share-channel-btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  background: rgba(212, 175, 55, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.channel-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Copy Link Bar */
+.share-copy-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.share-url-input {
+  flex-grow: 1;
+  background: var(--surface-input-bg);
+  border: 1px solid var(--surface-input-border);
+  color: var(--surface-input-text);
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  border-radius: var(--border-radius-sm);
+  font-family: monospace;
+  outline: none;
+  min-width: 0;
+}
+
+.share-url-input:focus {
+  border-color: var(--accent);
+}
+
+.share-copy-btn {
+  background: var(--btn-primary-bg, var(--accent));
+  color: var(--btn-primary-text, #1a1a2e);
+  border: 1px solid var(--btn-primary-border, transparent);
+  padding: 10px 16px;
+  border-radius: var(--border-radius-sm);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: var(--transition-smooth);
+}
+
+.share-copy-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.share-copy-btn.copied {
+  background: var(--success, #4ecca3) !important;
+  color: #ffffff !important;
+  border-color: var(--success, #4ecca3) !important;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .share-modal-card {
+    padding: 18px 16px;
+  }
+  .share-channels-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
