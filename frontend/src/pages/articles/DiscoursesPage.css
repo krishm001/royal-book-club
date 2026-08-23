@@ -489,7 +489,7 @@
   margin-top: 20px;
   margin-bottom: 24px;
   padding: 15px 20px;
-  background: rgba(0, 0, 0, 0.15);
+  background: var(--glass-bg);
   border-left: 3px solid var(--accent);
   border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
 }

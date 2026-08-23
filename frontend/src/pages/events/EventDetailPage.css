@@ -403,7 +403,7 @@
 }
 
 .lightbox-caption {
-  color: var(--text-secondary);
+  color: #ffffff;
   font-family: var(--font-body);
   font-size: 0.85rem;
   text-transform: uppercase;

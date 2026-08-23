@@ -689,6 +689,7 @@
 
 /* Google Consent Modal Overlay */
 .consent-overlay {
+  color: #ffffff;
   position: fixed;
   top: 0;
   left: 0;
