@@ -1566,7 +1566,7 @@ const BookDetailPage = ({
               gap: '12px'
             }}>
                   <button onClick={handleCheckoutClick} className="royal-btn checkout-cta-btn" id="book-detail-checkout-btn">
-                    <ShoppingBag size={16} /> {t('catalog.secureSovereignCheckout')}
+                    <ShoppingBag size={16} /> {t('catalog.secureRoyalCheckout')}
                   </button>
                 </div> : checkoutStatus === 'checked-out' ? <div className="success-checkout-badge-row" style={{
               display: 'flex',
@@ -1732,7 +1732,7 @@ const BookDetailPage = ({
             <div className="spec-item">
               <span className="spec-label">{t('catalog.availability')}</span>
               <span className="spec-value">
-                {checkoutStatus === 'available' ? <span className="text-success"><BadgeCheck size={14} className="inline-icon" /> {t('catalog.inSalon')}</span> : <span className="text-warning"><Clock size={14} className="inline-icon" /> {t('catalog.inCirculation')}</span>}
+                {checkoutStatus === 'available' ? <span className="text-success"><BadgeCheck size={14} className="inline-icon" /> {t('catalog.inLibrary')}</span> : <span className="text-warning"><Clock size={14} className="inline-icon" /> {t('catalog.inCirculation')}</span>}
               </span>
             </div>
             <div className="spec-item">
@@ -2072,7 +2072,7 @@ const BookDetailPage = ({
                 margin: 0,
                 lineHeight: '1.4'
               }}>
-                    {isAvailable ? 'Ready for secure checkout inside the physical salon.' : isCheckedOutByMe ? `Request pending or active return via secure NFC.` : 'Currently checked out by another distinguished member.'}
+                    {isAvailable ? 'Ready for secure checkout inside the physical library.' : isCheckedOutByMe ? `Request pending or active return via secure NFC.` : 'Currently checked out by another distinguished member.'}
                   </p>
                 </div>;
           })}
@@ -2226,7 +2226,7 @@ const BookDetailPage = ({
       </section>
     </div>
 
-    {/* Sovereign Checkout/Return Verification Modal Overlay (rendered at root level to guarantee absolute viewport centering) */}
+    {/* Royal Checkout/Return Verification Modal Overlay (rendered at root level to guarantee absolute viewport centering) */}
     {nfcModalOpen && <div className="nfc-modal-overlay" style={{
       position: 'fixed',
       top: 0,
@@ -2265,7 +2265,7 @@ const BookDetailPage = ({
             margin: 0,
             letterSpacing: '0.05em'
           }}>
-              {nfcActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
+              {nfcActionType === 'checkout' ? t('catalog.royalCheckoutVerif') : t('catalog.royalReturnVerif')}
             </h4>
             <button onClick={handleCloseNfcModal} className="close-nfc-btn" style={{
             background: 'none',
@@ -2975,7 +2975,7 @@ const BookDetailPage = ({
             margin: 0,
             letterSpacing: '0.05em'
           }}>
-              {instantActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
+              {instantActionType === 'checkout' ? t('catalog.royalCheckoutVerif') : t('catalog.royalReturnVerif')}
             </h4>
             <button onClick={() => setInstantConfirmOpen(false)} className="close-nfc-btn" style={{
             background: 'none',
@@ -3006,7 +3006,7 @@ const BookDetailPage = ({
               color: 'var(--text-primary)',
               margin: '0 0 4px 0',
               fontSize: '1rem'
-            }}>{instantActionType === 'checkout' ? 'Sovereign Checkout Confirmed' : 'Sovereign Return Confirmed'}</h4>
+            }}>{instantActionType === 'checkout' ? 'Royal Checkout Confirmed' : 'Royal Return Confirmed'}</h4>
                 <p style={{
               color: 'var(--text-secondary)',
               fontSize: '0.8rem',
@@ -3175,7 +3175,7 @@ const BookDetailPage = ({
               margin: '0 0 8px 0',
               fontSize: '1.05rem'
             }}>
-                  {instantActionType === 'checkout' ? 'Executing Instant Sovereign Checkout...' : 'Executing Instant Sovereign Return...'}
+                  {instantActionType === 'checkout' ? 'Executing Instant Royal Checkout...' : 'Executing Instant Royal Return...'}
                 </h4>
                 <p style={{
               color: 'var(--text-secondary)',

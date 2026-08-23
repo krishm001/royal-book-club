@@ -137,7 +137,7 @@ const UserManagementPage = ({
         </div>
         <h1 className="user-mgmt-title glow-text">{t('admin.userRfidRegistries', 'User Registry & Smart-Access')}</h1>
         <p className="user-mgmt-subtitle">
-          {t('admin.userRfidDesc', 'Administer salon credentials, grant administrator access, and register hardware RFID access keys for smart-lock entry.')}
+          {t('admin.userRfidDesc', 'Administer library credentials, grant administrator access, and register hardware RFID access keys for smart-lock entry.')}
         </p>
       </header>
 
@@ -160,7 +160,7 @@ const UserManagementPage = ({
       <section className="user-registry-table-section royal-card">
         <div className="section-head-with-icon">
           <Users size={20} className="gold-glow-icon" />
-          <h3>{t('admin.registeredPatrons', 'Sovereign Patron Ledger')}</h3>
+          <h3>{t('admin.registeredPatrons', 'Royal Patron Ledger')}</h3>
         </div>
 
         {successMsg && <div className="success-banner animate-fade-in success-banner-mgmt">
@@ -237,7 +237,7 @@ const UserManagementPage = ({
           <div className="delete-modal-content royal-card" onClick={e => e.stopPropagation()}>
             <div className="delete-modal-header">
               <Shield className="gold-glow-icon" size={24} />
-              <h2 className="gold-gradient-text">{t('admin.sovereignRemovalProtocol', 'Sovereign Removal Protocol')}</h2>
+              <h2 className="gold-gradient-text">{t('admin.royalRemovalProtocol', 'Royal Removal Protocol')}</h2>
             </div>
             
             <div className="delete-modal-body">

@@ -1236,7 +1236,7 @@ const CatalogPage = ({
             <span className="sort-label">{t('catalog.sortBy')}</span>
             <select className="royal-select sort-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
               <option value="featured">{t('catalog.featuredCurations')}</option>
-              <option value="rating">{t('catalog.sovereignRating')}</option>
+              <option value="rating">{t('catalog.royalRating')}</option>
               <option value="year-desc">{t('catalog.chronologyNewest')}</option>
               <option value="year-asc">{t('catalog.chronologyOldest')}</option>
             </select>
@@ -1316,7 +1316,7 @@ const CatalogPage = ({
           </div>}
       </main>
 
-      {/* Sovereign Verification modal overlay */}
+      {/* Royal Verification modal overlay */}
       {nfcModalOpen && selectedBook && <div className="nfc-modal-overlay" style={{
       position: 'fixed',
       top: 0,
@@ -1355,7 +1355,7 @@ const CatalogPage = ({
             fontWeight: 600,
             letterSpacing: '0.05em'
           }}>
-                {nfcActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
+                {nfcActionType === 'checkout' ? t('catalog.royalCheckoutVerif') : t('catalog.royalReturnVerif')}
               </h3>
               <button onClick={handleCloseCardModal} className="close-nfc-btn" style={{
             background: 'none',
@@ -2146,7 +2146,7 @@ const CatalogPage = ({
             fontWeight: 600,
             letterSpacing: '0.05em'
           }}>
-                {p2dActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
+                {p2dActionType === 'checkout' ? t('catalog.royalCheckoutVerif') : t('catalog.royalReturnVerif')}
               </h3>
               <button onClick={() => setP2dModalOpen(false)} className="close-nfc-btn" style={{
             background: 'none',

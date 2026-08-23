@@ -25,7 +25,7 @@ const CuratorGatheringsPage = ({
   const [time, setTime] = useState('');
   const [location, setLocation] = useState('');
   const [address, setAddress] = useState('');
-  const [type, setType] = useState('Salon Meetup');
+  const [type, setType] = useState('Library Meetup');
   const [curator, setCurator] = useState('');
   const [capacity, setCapacity] = useState(50);
   const [imageUrl, setImageUrl] = useState('');
@@ -75,7 +75,7 @@ const CuratorGatheringsPage = ({
     setTime('');
     setLocation('');
     setAddress('');
-    setType('Salon Meetup');
+    setType('Library Meetup');
     setCurator(user?.displayName || '');
     setCapacity(50);
     setImageUrl('');
@@ -105,7 +105,7 @@ const CuratorGatheringsPage = ({
     setTime(event.time || '');
     setLocation(event.location || '');
     setAddress(event.address || '');
-    setType(event.type || 'Salon Meetup');
+    setType(event.type || 'Library Meetup');
     setCurator(event.curator || '');
     setCapacity(event.capacity || 50);
     setImageUrl(event.imageUrl || '');
@@ -299,7 +299,7 @@ const CuratorGatheringsPage = ({
           <Sparkles size={14} className="gold-glow-icon" />
           <span className="gold-gradient-text">{t('admin.gatheringCuration', 'GATHERING CURATION')}</span>
         </div>
-        <h1 className="curator-gatherings-title glow-text">{t('admin.gatheringsRegistry', 'Sovereign Gatherings Registry')}</h1>
+        <h1 className="curator-gatherings-title glow-text">{t('admin.gatheringsRegistry', 'Royal Gatherings Registry')}</h1>
         <p className="curator-gatherings-subtitle">
           {t('admin.gatheringsDesc', 'Schedule upcoming meetups, literary festivals, and symposiums. Manage flyer assets and seat reservations.')}
         </p>
@@ -307,7 +307,7 @@ const CuratorGatheringsPage = ({
 
       {isEditing ? <section className="event-edit-section royal-card animate-fade-in">
           <div className="edit-section-header">
-            <h3>{currentEvent ? t('admin.refineGathering', 'Refine Sovereign Gathering') : t('admin.establishGathering', 'Establish Gathering')}</h3>
+            <h3>{currentEvent ? t('admin.refineGathering', 'Refine Royal Gathering') : t('admin.establishGathering', 'Establish Gathering')}</h3>
             <button onClick={() => setIsEditing(false)} className="royal-btn-secondary mini-btn">{t('admin.cancel', 'Cancel')}</button>
           </div>
 
@@ -323,8 +323,8 @@ const CuratorGatheringsPage = ({
                 <select className="royal-input royal-select" value={type} onChange={e => setType(e.target.value)} required>
                   <option value="Litfest">{t('auto_3291', 'Literary Festival')}</option>
                   <option value="Discussion">{t('auto_3292', 'Discussion Panel')}</option>
-                  <option value="Salon Meetup">{t('auto_3293', 'Salon Meetup')}</option>
-                  <option value="Sovereign Dinner">{t('auto_3294', 'Sovereign Dinner')}</option>
+                  <option value="Library Meetup">{t('auto_3293', 'Library Meetup')}</option>
+                  <option value="Royal Dinner">{t('auto_3294', 'Royal Dinner')}</option>
                   <option value="Symposium">{t('auto_3295', 'Academic Symposium')}</option>
                 </select>
               </div>
@@ -349,7 +349,7 @@ const CuratorGatheringsPage = ({
 
             <div className="form-row-grid">
               <div className="form-group">
-                <label className="royal-label">{t("str_5199", "Sovereign Capacity (Patron seats)")}</label>
+                <label className="royal-label">{t("str_5199", "Royal Capacity (Patron seats)")}</label>
                 <input type="number" className="royal-input" placeholder="50" value={capacity} onChange={e => setCapacity(e.target.value)} required />
               </div>
 
@@ -436,7 +436,7 @@ const CuratorGatheringsPage = ({
               fontSize: '0.95rem'
             }}>{t("str_5205", "Hindi (\u0930\u093E\u091C\u0938\u094D\u0925\u093E\u0928\u0940 \u0930\u093E\u091C\u0938\u0940 \u0936\u0948\u0932\u0940)")}</h5>
                 <div className="form-group">
-                  <label className="royal-label">{t("str_5206", "Sovereign Title (Hindi)")}</label>
+                  <label className="royal-label">{t("str_5206", "Royal Title (Hindi)")}</label>
                   <input type="text" className="royal-input" value={titleHi} onChange={e => setTitleHi(e.target.value)} placeholder={t("str_5207", "e.g. \u0935\u093F\u0915\u094D\u091F\u094B\u0930\u093F\u092F\u0928 \u0938\u094C\u0902\u0926\u0930\u094D\u092F\u0936\u093E\u0938\u094D\u0924\u094D\u0930 \u0914\u0930 \u0935\u093E\u0907\u0932\u094D\u0921\u093F\u092F\u0928 \u0928\u0948\u0924\u093F\u0915\u0924\u093E")} />
                 </div>
                 <div className="form-group">
@@ -467,7 +467,7 @@ const CuratorGatheringsPage = ({
               fontSize: '0.95rem'
             }}>{t("str_5216", "Kannada (\u0CB6\u0CBE\u0CB8\u0CCD\u0CA4\u0CCD\u0CB0\u0CC0\u0CAF \u0CB6\u0CC8\u0CB2\u0CBF)")}</h5>
                 <div className="form-group">
-                  <label className="royal-label">{t("str_5217", "Sovereign Title (Kannada)")}</label>
+                  <label className="royal-label">{t("str_5217", "Royal Title (Kannada)")}</label>
                   <input type="text" className="royal-input" value={titleKn} onChange={e => setTitleKn(e.target.value)} placeholder={t("str_5218", "e.g. \u0CB5\u0CBF\u0C95\u0CCD\u0C9F\u0CCB\u0CB0\u0CBF\u0CAF\u0CA8\u0CCD \u0CB8\u0CCC\u0C82\u0CA6\u0CB0\u0CCD\u0CAF\u0CB6\u0CBE\u0CB8\u0CCD\u0CA4\u0CCD\u0CB0")} />
                 </div>
                 <div className="form-group">
@@ -538,13 +538,13 @@ const CuratorGatheringsPage = ({
         </section> : <section className="events-registry-list-section">
           <div className="registry-actions">
             <button onClick={handleCreateNew} className="royal-btn add-gathering-btn">
-              <Plus size={16} /> {t('admin.newGatheringBtn', 'New Salon Gathering')}
+              <Plus size={16} /> {t('admin.newGatheringBtn', 'New Library Gathering')}
             </button>
           </div>
 
           {loading ? <div className="loading-boundary">
               <div className="loader-mini"></div>
-              <p>{t('admin.indexingSalon', 'Re-indexing Salon registries...')}</p>
+              <p>{t('admin.indexingLibrary', 'Re-indexing Library registries...')}</p>
             </div> : events.length > 0 ? <div className="registry-table-wrapper royal-card">
               <table className="registry-table">
                 <thead>
@@ -596,7 +596,7 @@ const CuratorGatheringsPage = ({
               </table>
             </div> : <div className="royal-card no-gatherings-fallback">
               <Calendar size={48} className="fallback-icon" />
-              <h3>{t('admin.noGatherings', 'No Salon Gatherings Scheduled')}</h3>
+              <h3>{t('admin.noGatherings', 'No Library Gatherings Scheduled')}</h3>
               <p>{t('admin.noGatheringsDesc', 'No literary events or dinners have been recorded. Design a new gathering prospectus!')}</p>
             </div>}
         </section>}

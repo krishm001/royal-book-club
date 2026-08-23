@@ -270,9 +270,9 @@ const CuratorGenresPage = ({
           <Sparkles size={14} className="gold-glow-icon" />
           <span className="gold-gradient-text">{t('admin.houseConfiguration', 'HOUSE CONFIGURATION')}</span>
         </div>
-        <h1 className="curator-genres-title glow-text">{t('admin.housesRegistry', 'Sovereign Houses Registry')}</h1>
+        <h1 className="curator-genres-title glow-text">{t('admin.housesRegistry', 'Royal Houses Registry')}</h1>
         <p className="curator-genres-subtitle">
-          {t('admin.housesDesc', 'Define and partition sovereign literary Houses. Keep active lists condensed and refined to maintain high-society standards across the catalog and discourse porticos.')}
+          {t('admin.housesDesc', 'Define and partition royal literary Houses. Keep active lists condensed and refined to maintain high-society standards across the catalog and discourse porticos.')}
         </p>
       </header>
 
@@ -285,7 +285,7 @@ const CuratorGenresPage = ({
               <BookOpen size={20} className="gold-glow-icon" />
             </div>
             <div>
-              <h3>{t('admin.bookHouses', 'Book Salon Houses')}</h3>
+              <h3>{t('admin.bookHouses', 'Book Library Houses')}</h3>
               <p className="column-subtext">{t('admin.partitionsBooks', 'Partitions books under "Study" catalog')}</p>
             </div>
           </div>

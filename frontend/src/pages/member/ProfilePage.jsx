@@ -211,7 +211,7 @@ const ProfilePage = ({
         setEmailVerified(true);
         setMessage({
           type: 'success',
-          text: 'Sovereign email successfully verified and synchronized!'
+          text: 'Royal email successfully verified and synchronized!'
         });
       } else {
         setMessage({
@@ -597,7 +597,7 @@ const ProfilePage = ({
                 textTransform: 'uppercase',
                 letterSpacing: '1px'
               }}>
-                    {t('auto_3538', 'Sovereign Scholar Identity')}
+                    {t('auto_3538', 'Royal Scholar Identity')}
                   </label>
                   <div style={{
                 display: 'flex',
@@ -714,7 +714,7 @@ const ProfilePage = ({
                   </button>
                 </div>
 
-                {/* Sovereign Address Autocomplete Search Field */}
+                {/* Royal Address Autocomplete Search Field */}
                 <div className="form-group" ref={suggestionsContainerRef}>
                   <label htmlFor="googleAddressSearch">{t('profile.addressLookup')}</label>
                   <div className="input-with-icon-wrapper">

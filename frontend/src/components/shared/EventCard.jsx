@@ -7,7 +7,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 const EventCard = ({
   event = {
     id: 'event-1',
-    title: 'Sovereign Reader Autumn Litfest',
+    title: 'Royal Reader Autumn Litfest',
     description: 'An elegant evening of tea, sonnets, and philosophical debates on 19th-century gothic romance.',
     date: '2026-10-15',
     time: '18:00',
@@ -64,7 +64,7 @@ const EventCard = ({
     e.preventDefault();
     e.stopPropagation();
     if (!user) {
-      window.alert('Please enter the Royal Salon (sign in) before requesting an invitation.');
+      window.alert('Please enter the Royal Library (sign in) before requesting an invitation.');
       return;
     }
     if (rsvpState !== 'none') return;

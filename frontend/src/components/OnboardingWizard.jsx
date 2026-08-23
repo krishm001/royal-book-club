@@ -616,7 +616,7 @@ export default function OnboardingWizard({
             <Sparkles className="gold-glow" size={22} style={{
             color: 'var(--accent)'
           }} />
-            <h3 className="onboarding-title">{t('auto_3080', 'Sovereign Onboarding Archway')}</h3>
+            <h3 className="onboarding-title">{t('auto_3080', 'Royal Onboarding Archway')}</h3>
           </div>
           <button onClick={onClose} className="onboarding-btn-secondary" style={{
           padding: '6px',
@@ -763,7 +763,7 @@ export default function OnboardingWizard({
                   flex: 1
                 }}>
                           <label>{t('auto_3092', 'First Name')}</label>
-                          <input type="text" required className="onboarding-input" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder={t("str_5047", "Sovereign")} />
+                          <input type="text" required className="onboarding-input" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder={t("str_5047", "Royal")} />
                         </div>
                         <div className="onboarding-form-group" style={{
                   flex: 1
@@ -1009,7 +1009,7 @@ export default function OnboardingWizard({
                   fontSize: '1.2rem',
                   textTransform: 'uppercase',
                   letterSpacing: '1px'
-                }}>{t('auto_3103', 'Sovereign Verification Gating')}</h3>
+                }}>{t('auto_3103', 'Royal Verification Gating')}</h3>
                         <p style={{
                   fontSize: '0.9rem',
                   color: 'var(--text-primary)',

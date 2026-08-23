@@ -44,8 +44,8 @@ const ArticlesPage = ({
     const newArticle = {
       id: `article-${Date.now()}`,
       title: draftTitle || 'Untitled Dissertation',
-      excerpt: 'A freshly published sovereign literary critique.',
-      author: user?.displayName || 'Sovereign Patron',
+      excerpt: 'A freshly published royal literary critique.',
+      author: user?.displayName || 'Royal Patron',
       date: new Date().toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -69,7 +69,7 @@ const ArticlesPage = ({
         </div>
         <h1 className="articles-title glow-text">{t('auto_3458', 'Intellectual Archives')}</h1>
         <p className="articles-subtitle">
-          {t('auto_3459', 'Delve into deep literary critiques, symbolist philosophical theses, and classical research papers penned by our salon scholars.')}
+          {t('auto_3459', 'Delve into deep literary critiques, symbolist philosophical theses, and classical research papers penned by our library scholars.')}
         </p>
       </header>
 

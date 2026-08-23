@@ -43,10 +43,10 @@ const HelpPage = () => {
     icon: <Key size={20} />,
     image: secureAccountLoginImg
   }, {
-    title: t('sagesGuild.nfcStep3Title', 'Secure Sovereign Checkout'),
+    title: t('sagesGuild.nfcStep3Title', 'Checkout'),
     headline: t('sagesGuild.nfcStep3Headline', 'Authorize & Go'),
-    short: t('sagesGuild.nfcStep3Short', 'Click Secure Sovereign Checkout and collect Gatepass'),
-    verbatim: t('sagesGuild.nfcStep3Verbatim', "Once signed in, the book detail screen will dynamically render the physical copies. Simply click the golden 'Secure Sovereign Checkout' button. The secure ledger updates instantly in the cloud, and a digital Gatepass barcode will be written to your profile. You are now authorized to leave the salon with your physical volume!"),
+    short: t('sagesGuild.nfcStep3Short', 'Click Checkout and collect Gatepass'),
+    verbatim: t('sagesGuild.nfcStep3Verbatim', "Once signed in, the book detail screen will dynamically render the physical copies. Simply click the golden 'Checkout' button. The secure ledger updates instantly in the cloud, and a digital Gatepass barcode will be written to your profile. You are now authorized to leave the library with your physical volume!"),
     tips: t('sagesGuild.nfcStep3Tips', "Your profile will now list this book under your active loans with its live due dates."),
     icon: <CheckCircle2 size={20} />,
     image: instantLoanGuideImg
@@ -81,28 +81,28 @@ const HelpPage = () => {
     headline: t('sagesGuild.manHeadline1', 'Select Your Title'),
     short: t('sagesGuild.manShort1', 'Search catalog and open book details'),
     verbatim: t('sagesGuild.manVerbatim1', "If your device doesn't have an NFC reader or camera scanner, browse our digital catalog in the 'Study' section. Search by title, author, or genre to locate the desired volume. Click on the book card to open its full details."),
-    tips: t('sagesGuild.manTips1', "You can use search tags to easily find titles from specific salon houses."),
+    tips: t('sagesGuild.manTips1', "You can use search tags to easily find titles from specific library houses."),
     icon: <BookOpen size={20} />,
     image: null
   }, {
     title: t('sagesGuild.manTitle2', 'File Loan'),
     headline: t('sagesGuild.manHeadline2', 'Request Curator approval'),
-    short: t('sagesGuild.manShort2', 'Click Secure Sovereign Checkout'),
-    verbatim: t('sagesGuild.manVerbatim2', "Click the golden 'Secure Sovereign Checkout' button on the book details page. This files a digital loan request to our active desk curator queue. Ensure you are signed in first using Google, LinkedIn, or Email to map this request to your ledger profile."),
-    tips: t('sagesGuild.manTips2', "Curators monitor this queue in real-time inside the Entrance Salon."),
+    short: t('sagesGuild.manShort2', 'Click Checkout'),
+    verbatim: t('sagesGuild.manVerbatim2', "Click the golden 'Checkout' button on the book details page. This files a digital loan request to our active desk curator queue. Ensure you are signed in first using Google, LinkedIn, or Email to map this request to your ledger profile."),
+    tips: t('sagesGuild.manTips2', "Curators monitor this queue in real-time inside the Entrance Library."),
     icon: <ClipboardList size={20} />,
     image: null
   }, {
     title: t('sagesGuild.manTitle3', 'Collect Book'),
-    headline: t('sagesGuild.manHeadline3', 'Verify & Exit Salon'),
-    short: t('sagesGuild.manShort3', 'Wait for approval badge to exit salon'),
+    headline: t('sagesGuild.manHeadline3', 'Verify & Exit Library'),
+    short: t('sagesGuild.manShort3', 'Wait for approval badge to exit library'),
     verbatim: t('sagesGuild.manVerbatim3', "The desk curator will verify your request on their console instantly. Once approved, the book's stock is locked, and your Gatepass is immediately generated. You can collect your book and exit securely."),
     tips: t('sagesGuild.manTips3', "You will receive a notification badge once your loan request is approved."),
     icon: <CheckCircle2 size={20} />,
     image: null
   }];
   const gpsSteps = [{
-    title: t('sagesGuild.gpsTitle1', 'Stand in Salon'),
+    title: t('sagesGuild.gpsTitle1', 'Stand in Library'),
     headline: t('sagesGuild.gpsHeadline1', 'Enable Phone GPS'),
     short: t('sagesGuild.gpsShort1', 'Stand inside library and allow location permission'),
     verbatim: t('sagesGuild.gpsVerbatim1', "To perform an instant self-return, you must be physically standing inside the library. Ensure your smartphone's GPS/location services are enabled. When the application prompts for location sharing, click 'Allow' so we can verify your presence."),
@@ -131,7 +131,7 @@ const HelpPage = () => {
     headline: t('sagesGuild.qrHeadline1', 'Find Return QR Placard'),
     short: t('sagesGuild.qrShort1', 'Find Return QR placard on main desk'),
     verbatim: t('sagesGuild.qrVerbatim1', "If your GPS is failing, or coordinates verify as outside bounds, look at the main check-in counter desk in the library. Find the physical printed Return Validator QR placard. This placard contains a specialized security signature confirming physical desk presence."),
-    tips: t('sagesGuild.qrTips1', "Only physical printed placards inside the salon are valid for return verification."),
+    tips: t('sagesGuild.qrTips1', "Only physical printed placards inside the library are valid for return verification."),
     icon: <MapPin size={20} />,
     image: null
   }, {
@@ -159,7 +159,7 @@ const HelpPage = () => {
     a: t('sagesGuild.faqA2', "No! The Royal Book Club leverages advanced modern browser APIs. All checkout and return options occur completely on the browser, without app store downloads.")
   }, {
     q: t('sagesGuild.faqQ3', "What happens if geofencing return fails?"),
-    a: t('sagesGuild.faqA3', "If location coordinates fail due to bad indoor reception, use our QR Validator Bypass. Simply scan the physical QR placard sitting on the main salon desk to instantly finalize the return.")
+    a: t('sagesGuild.faqA3', "If location coordinates fail due to bad indoor reception, use our QR Validator Bypass. Simply scan the physical QR placard sitting on the main library desk to instantly finalize the return.")
   }];
   const handlePrint = () => {
     window.print();
@@ -219,7 +219,7 @@ const HelpPage = () => {
 
           {item.image && <div className="hop-detail-visual">
               <img src={item.image} alt={item.headline} className="royal-instructional-image" />
-              <div className="image-caption">{t('auto_3522', 'Sovereign Library Visual Guide')}</div>
+              <div className="image-caption">{t('auto_3522', 'Royal Library Visual Guide')}</div>
             </div>}
         </div>
       </div>;
@@ -364,7 +364,7 @@ const HelpPage = () => {
             
             <div className="gatepass-info-text">
               <h3>{t('sagesGuild.gatepassTitle', 'Entrance & Exit Gatepass')}</h3>
-              <p>{t('sagesGuild.gatepassDesc', 'When exiting the physical Entrance Salon, open your Gatepass page and scan the generated barcode. This clears the safety gate immediately.')}</p>
+              <p>{t('sagesGuild.gatepassDesc', 'When exiting the physical Entrance Library, open your Gatepass page and scan the generated barcode. This clears the safety gate immediately.')}</p>
               
               <div className="gatepass-bullet-points">
                 <div className="gatepass-bullet">
@@ -399,7 +399,7 @@ const HelpPage = () => {
       {/* Hidden Print Layout (Expanded sequentially) */}
       <div className="print-only-layout">
         <div className="print-header">
-          <h1>{t('auto_3533', 'Sovereign Library - Comprehensive Royal Guide')}</h1>
+          <h1>{t('auto_3533', 'Royal Library - Comprehensive Royal Guide')}</h1>
           <p>{t('auto_3534', 'Official instructional document for physical-digital circulation gateway')}</p>
         </div>
 

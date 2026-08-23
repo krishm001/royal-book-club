@@ -47,7 +47,7 @@ const EventsPage = ({ user }) => {
       <header className="events-header">
         <div className="header-badge">
           <Sparkles size={14} className="gold-glow-icon" />
-          <span className="gold-gradient-text">{t('assembly.literarySalons')}</span>
+          <span className="gold-gradient-text">{t('assembly.literaryLibrarys')}</span>
         </div>
         <h1 className="events-title glow-text">{t('assembly.intellectualBanquets')}</h1>
         <p className="events-subtitle">
@@ -59,7 +59,7 @@ const EventsPage = ({ user }) => {
       <section className="events-filter-bar royal-card">
         <div className="filter-title-wrapper">
           <Filter size={16} className="gold-glow-icon" />
-          <span>{t('assembly.selectSalonType')}:</span>
+          <span>{t('assembly.selectLibraryType')}:</span>
         </div>
         <div className="filter-tags-group">
           {types.map((type) => (
@@ -80,7 +80,7 @@ const EventsPage = ({ user }) => {
           <div className="royal-card no-events-card">
             <div className="loader-mini" style={{ marginBottom: '1rem', width: '24px', height: '24px', borderWidth: '3px' }}></div>
             <h3>{t('events.searchingRegistries', 'Searching the Royal Registries...')}</h3>
-            <p>{t('events.retrievingActive', 'Retrieving active salon dates and litfests.')}</p>
+            <p>{t('events.retrievingActive', 'Retrieving active library dates and litfests.')}</p>
           </div>
         ) : error ? (
           <div className="royal-card no-events-card">

@@ -109,7 +109,7 @@ const QrStickerGeneratorPage = ({
           color: 'var(--text-secondary)',
           margin: '1rem 0'
         }}>
-            {t('auto_3428', 'Only sovereign administrators are authorized to generate physical catalog assets.')}
+            {t('auto_3428', 'Only royal administrators are authorized to generate physical catalog assets.')}
           </p>
           <Link to="/admin" className="royal-btn">
             {t('auto_3429', 'Return to Entrance')}

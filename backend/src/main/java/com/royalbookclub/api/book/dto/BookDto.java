@@ -65,6 +65,8 @@ public class BookDto {
     @Builder.Default
     private List<Long> qrIds = new java.util.ArrayList<>();
     
+    private Boolean isTest;
+
     @Builder.Default
     private String language = "en";
 }

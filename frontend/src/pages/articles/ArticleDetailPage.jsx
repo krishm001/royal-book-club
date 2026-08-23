@@ -62,7 +62,7 @@ const ArticleDetailPage = ({
     if (!commentText.trim()) return;
     const newComment = {
       id: Date.now(),
-      author: user?.displayName || 'Sovereign Patron',
+      author: user?.displayName || 'Royal Patron',
       content: commentText,
       date: new Date().toLocaleDateString('en-US', {
         month: 'short',
@@ -128,7 +128,7 @@ const ArticleDetailPage = ({
               <Send size={14} /> {t('auto_3455', 'Submit')}
             </button>
           </form> : <div className="discussion-prompt-card">
-            <p>{t('auto_3456', 'Please enter the Royal Salon to participate in academic discussions.')}</p>
+            <p>{t('auto_3456', 'Please enter the Royal Library to participate in academic discussions.')}</p>
           </div>}
 
         {/* Comments list feed */}

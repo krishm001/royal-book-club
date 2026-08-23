@@ -37,5 +37,6 @@ public class Checkout {
     private Integer experienceRating; // 1 to 5 stars user experience rating
     private String returnValidationMethod; // "GEOFENCING", "QR_VALIDATOR", "MANUAL_CURATOR"
     private Boolean qrVerified;
+    private Boolean isTest;
 }
 

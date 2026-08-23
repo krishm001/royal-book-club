@@ -55,7 +55,7 @@
   --toggle-text: var(--text-secondary);
   --toggle-inactive: rgba(255, 255, 255, 0.1);
 
-  /* Centralized Button & Card Palette for Salon Theme */
+  /* Centralized Button & Card Palette for Library Theme */
   --btn-gold-bg: var(--accent-gradient);
   --btn-gold-text: #1a1a2e;
   --btn-gold-border: transparent;

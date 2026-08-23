@@ -2591,7 +2591,7 @@ const BookIngestionConsole = ({
               }}>
                     <label className="royal-input-label" style={{
                   margin: 0
-                }}>{t('admin.houseLabel', 'Assign Salon House')}</label>
+                }}>{t('admin.houseLabel', 'Assign Library House')}</label>
                     <button type="button" onClick={() => handleFetchField('genreTags')} className="royal-field-fetch-btn" title={t("str_5134", "Fetch Genre & Tags selectively from Open Library")} style={{
                   background: 'none',
                   border: 'none',
@@ -2717,7 +2717,7 @@ const BookIngestionConsole = ({
                 <div className="input-group">
                   <label className="royal-input-label">{t('admin.languageLabel', 'Volume Language')}</label>
                   <select className="royal-select" value={bookLanguage} onChange={e => setBookLanguage(e.target.value)} required>
-                    <option value="en">{t('common.english', 'English (Sovereign Dialect)')}</option>
+                    <option value="en">{t('common.english', 'English (Royal Dialect)')}</option>
                     <option value="hi">{t('common.hindi', 'Hindi (Rajasthani Royal Style)')}</option>
                     <option value="kn">{t('common.kannada', 'Kannada (Classical Royal Style)')}</option>
                   </select>

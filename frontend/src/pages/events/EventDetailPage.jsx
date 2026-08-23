@@ -41,7 +41,7 @@ const EventDetailPage = ({ user }) => {
         }
       } catch (err) {
         console.error('Failed to load event details', err);
-        setError(t('assembly.errorLoad', 'Unable to load gathering details. This salon might have been adjourned.'));
+        setError(t('assembly.errorLoad', 'Unable to load gathering details. This library might have been adjourned.'));
       } finally {
         setLoading(false);
       }
@@ -54,7 +54,7 @@ const EventDetailPage = ({ user }) => {
 
   const handleRsvp = async () => {
     if (!user) {
-      window.alert(t('assembly.signinRequired', 'Please enter the Royal Salon (sign in) before requesting an invitation.'));
+      window.alert(t('assembly.signinRequired', 'Please enter the Royal Library (sign in) before requesting an invitation.'));
       return;
     }
     if (rsvpState !== 'none') return;
@@ -270,7 +270,7 @@ const EventDetailPage = ({ user }) => {
                     <CheckCircle size={20} className="success-icon" />
                     <div>
                       <h4>{t('assembly.invitationAuthorized')}</h4>
-                      <p>{t('assembly.registeredFoyerDesc', 'Your name is registered on the salon ledger. Please present your digital token at the foyer.')}</p>
+                      <p>{t('assembly.registeredFoyerDesc', 'Your name is registered on the library ledger. Please present your digital token at the foyer.')}</p>
                     </div>
                   </div>
                   <button onClick={handleCancelRsvp} className="cancel-rsvp-trigger-btn" id="event-detail-cancel-rsvp-btn">

@@ -52,6 +52,8 @@ public class Book {
     @Builder.Default
     private List<Long> qrIds = new ArrayList<>();
 
+    private Boolean isTest;
+
     private Instant createdAt;
     private Instant updatedAt;
     

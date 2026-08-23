@@ -71,6 +71,9 @@ public class BookService {
             Map<String, Integer> pendingReturns = getPendingReturnsMap();
             for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
                 Book book = mapToBook(doc);
+                if (Boolean.TRUE.equals(book.getIsTest())) {
+                    continue;
+                }
                 int pendingCount = pendingReturns.getOrDefault(book.getIsbn(), 0);
                 if (pendingCount > 0) {
                     int currentAvailable = book.getAvailableCopies() != null ? book.getAvailableCopies() : 0;
@@ -304,6 +307,7 @@ public class BookService {
                         .createdAt(existing.getCreatedAt())
                         .updatedAt(now)
                         .language(bookDto.getLanguage() != null ? bookDto.getLanguage() : "en")
+                        .isTest(bookDto.getIsTest())
                         .build();
             } else {
                 // Insert operation
@@ -330,6 +334,7 @@ public class BookService {
                         .createdAt(now)
                         .updatedAt(now)
                         .language(bookDto.getLanguage() != null ? bookDto.getLanguage() : "en")
+                        .isTest(bookDto.getIsTest())
                         .build();
             }
 
@@ -949,6 +954,9 @@ public class BookService {
         map.put("qrIds", qrIds);
         map.put("alternativeIsbns", book.getAlternativeIsbns() != null ? book.getAlternativeIsbns() : new ArrayList<String>());
         map.put("id", book.getId());
+        if (book.getIsTest() != null) {
+            map.put("isTest", book.getIsTest());
+        }
         
         return map;
     }
@@ -988,6 +996,7 @@ public class BookService {
                 .copies(copies)
                 .qrIds(qrIds != null ? qrIds : new ArrayList<>())
                 .language(doc.getString("language") != null ? doc.getString("language") : "en")
+                .isTest(doc.getBoolean("isTest"))
                 .createdAt(createdTimestamp != null ? Instant.ofEpochSecond(createdTimestamp.getSeconds(), createdTimestamp.getNanos()) : null)
                 .updatedAt(updatedTimestamp != null ? Instant.ofEpochSecond(updatedTimestamp.getSeconds(), updatedTimestamp.getNanos()) : null)
                 .build();

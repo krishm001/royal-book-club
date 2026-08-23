@@ -21,7 +21,7 @@
   pointer-events: none;
 }
 
-[data-theme='salon'] .sages-hero-bg-glow {
+[data-theme='library'] .sages-hero-bg-glow {
   background: radial-gradient(circle, rgba(212, 175, 55, 0.25) 0%, rgba(0, 0, 0, 0) 70%);
 }
 
@@ -176,7 +176,7 @@
   margin-bottom: 1.5rem;
 }
 
-[data-theme='salon'] .royal-sub-tabs {
+[data-theme='library'] .royal-sub-tabs {
   background: #1e1e1e;
 }
 
@@ -200,7 +200,7 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
-[data-theme='salon'] .sub-tab-btn.active {
+[data-theme='library'] .sub-tab-btn.active {
   background: #2a2a2a;
   color: #d4af37;
 }
@@ -299,7 +299,7 @@
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-[data-theme='salon'] .train-node-circle {
+[data-theme='library'] .train-node-circle {
   background: #1a1a1a;
   border-color: #333333;
 }
@@ -449,7 +449,7 @@
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.03);
 }
 
-[data-theme='salon'] .hop-detail-visual {
+[data-theme='library'] .hop-detail-visual {
   background: #1a1a1a;
 }
 

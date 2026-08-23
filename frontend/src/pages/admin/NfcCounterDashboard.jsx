@@ -179,7 +179,7 @@ const NfcCounterDashboard = ({
           color: 'var(--accent, #d4af37)',
           marginBottom: '16px'
         }}>
-            {t('auto_3406', 'Sovereign Access Denied')}
+            {t('auto_3406', 'Royal Access Denied')}
           </h2>
           <p style={{
           color: 'var(--text-secondary, #b8b09f)'

@@ -13,10 +13,28 @@ export const LanguageProvider = ({ children }) => {
     return localStorage.getItem('royal-lang') || 'en';
   });
 
-  // Dynamic nested key lookup with automatic fallbacks
-  const t = (keyPath, defaultVal) => {
+  // Dynamic nested key lookup with automatic fallbacks and string interpolation
+  const t = (keyPath, defaultValOrOptions, optionsArg) => {
     if (!keyPath) return '';
     const keys = keyPath.split('.');
+    
+    let defaultVal = undefined;
+    let options = {};
+    if (typeof defaultValOrOptions === 'string') {
+      defaultVal = defaultValOrOptions;
+      if (typeof optionsArg === 'object') options = optionsArg;
+    } else if (typeof defaultValOrOptions === 'object' && defaultValOrOptions !== null) {
+      options = defaultValOrOptions;
+      if (options.defaultValue !== undefined) defaultVal = options.defaultValue;
+    }
+
+    // Helper to resolve string interpolation
+    const interpolate = (str) => {
+      if (typeof str !== 'string') return str;
+      return str.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, p1) => {
+        return options[p1] !== undefined ? options[p1] : match;
+      });
+    };
     
     // 1. Try active language
     let activeDict = translations[language] || translations.en;
@@ -31,7 +49,7 @@ export const LanguageProvider = ({ children }) => {
     }
 
     if (result !== null && typeof result === 'string') {
-      return result;
+      return interpolate(result);
     }
 
     // 2. Try English fallback
@@ -47,11 +65,11 @@ export const LanguageProvider = ({ children }) => {
     }
 
     if (fallbackResult !== null && typeof fallbackResult === 'string') {
-      return fallbackResult;
+      return interpolate(fallbackResult);
     }
 
     // 3. Last fallback: return defaultVal if provided, otherwise the raw key path
-    return defaultVal !== undefined ? defaultVal : keyPath;
+    return interpolate(defaultVal !== undefined ? defaultVal : keyPath);
   };
 
   const changeLanguage = async (newLang, currentUser = null) => {

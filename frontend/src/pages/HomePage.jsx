@@ -49,7 +49,7 @@ const HomePage = ({
     title: 'Words, Wisdom, Will.',
     subtitle: 'The wisest humans were not the most connected. They were the most read. They had no feed, no followers, no notifications. They had books. And they shaped the world.',
     backgroundImageUrl: '',
-    backgroundImageUrlSalon: '',
+    backgroundImageUrlLibrary: '',
     backgroundImageUrlAcademic: '',
     featuredBookIsbns: [],
     featuredQuotes: []
@@ -58,7 +58,7 @@ const HomePage = ({
     membersCount: 0,
     booksCount: 0,
     activeCheckoutsCount: 0,
-    upcomingSalonsCount: 0
+    upcomingLibrarysCount: 0
   });
   const [currentAssemblyImageIndex, setCurrentAssemblyImageIndex] = useState(0);
 
@@ -225,7 +225,7 @@ const HomePage = ({
     setCurrentAssemblyImageIndex(0);
   }, [currentShowcaseItem, currentShowcaseType]);
 
-  // Keep changing images from assemblies under "Upcoming Sovereign Assembly" (every 2.5 seconds)
+  // Keep changing images from assemblies under "Upcoming Royal Assembly" (every 2.5 seconds)
   useEffect(() => {
     if (currentShowcaseType !== 'assembly' || !currentShowcaseItem) return;
     const assemblyImages = [currentShowcaseItem.imageUrl, ...(currentShowcaseItem.imageUrls || [])].filter(Boolean);
@@ -289,7 +289,7 @@ const HomePage = ({
       const payload = {
         rating: reviewRating,
         comment: reviewComment,
-        memberName: user?.displayName || user?.name || 'Sovereign Member',
+        memberName: user?.displayName || user?.name || 'Royal Member',
         memberEmail: user?.email || '',
         memberId: user?.uid || user?.id || ''
       };
@@ -309,9 +309,9 @@ const HomePage = ({
     }
   };
   const getHeroBackgroundStyle = () => {
-    const activeImage = theme === 'dark' || theme === 'salon' ? heroConfig.backgroundImageUrlSalon || heroConfig.backgroundImageUrl : heroConfig.backgroundImageUrlAcademic || heroConfig.backgroundImageUrl;
+    const activeImage = theme === 'dark' || theme === 'library' ? heroConfig.backgroundImageUrlLibrary || heroConfig.backgroundImageUrl : heroConfig.backgroundImageUrlAcademic || heroConfig.backgroundImageUrl;
     if (activeImage) {
-      const gradient = theme === 'dark' || theme === 'salon' ? 'linear-gradient(to right, rgba(12, 15, 29, 0.95) 0%, rgba(12, 15, 29, 0.2) 100%)' : 'linear-gradient(to right, rgba(250, 245, 235, 0.95) 0%, rgba(250, 245, 235, 0.2) 100%)';
+      const gradient = theme === 'dark' || theme === 'library' ? 'linear-gradient(to right, rgba(12, 15, 29, 0.95) 0%, rgba(12, 15, 29, 0.2) 100%)' : 'linear-gradient(to right, rgba(250, 245, 235, 0.95) 0%, rgba(250, 245, 235, 0.2) 100%)';
       return {
         backgroundImage: `${gradient}, url(${activeImage})`,
         backgroundSize: 'cover',
@@ -333,8 +333,8 @@ const HomePage = ({
     count: liveStats.activeCheckoutsCount.toLocaleString(),
     icon: <Sparkles className="stat-icon" />
   }, {
-    label: t('home.upcomingSalons'),
-    count: liveStats.upcomingSalonsCount.toLocaleString(),
+    label: t('home.upcomingLibrarys'),
+    count: liveStats.upcomingLibrarysCount.toLocaleString(),
     icon: <Calendar className="stat-icon" />
   }];
   return <div className="homepage-container animate-fade-in">
@@ -479,12 +479,12 @@ const HomePage = ({
           </div>
         </div>
 
-        {/* Right Column: Upcoming Salons and Dissertations */}
+        {/* Right Column: Upcoming Librarys and Dissertations */}
         <div className="right-column">
           <div className="royal-card feed-card">
             <div className="feed-header">
               <h3 className="feed-title">
-                <Calendar size={18} className="gold-glow-icon" /> {t('home.upcomingSalons')}
+                <Calendar size={18} className="gold-glow-icon" /> {t('home.upcomingLibrarys')}
               </h3>
               <Link to="/events" className="feed-link">{t('auto_3125', 'See All')} <ChevronRight size={14} /></Link>
             </div>
@@ -569,7 +569,7 @@ const HomePage = ({
           color: 'var(--accent)',
           letterSpacing: '0.05em'
         }}>
-            {t('auto_3126', 'Sovereign Testimonials')}
+            {t('auto_3126', 'Royal Testimonials')}
           </h2>
         </div>
 

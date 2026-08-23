@@ -16,7 +16,7 @@ const AdminDashboard = ({ user }) => {
     membersCount: 0,
     booksCount: 0,
     activeCheckoutsCount: 0,
-    upcomingSalonsCount: 0
+    upcomingLibrarysCount: 0
   });
 
   const isAdmin = user && user.role === 'ADMIN';
@@ -66,7 +66,7 @@ const AdminDashboard = ({ user }) => {
     { label: t('admin.registeredPatrons'), count: liveStats.membersCount.toLocaleString(), change: t('admin.liveFromLedger'), icon: <Users className="stat-icon-gold" /> },
     { label: t('admin.archivedVolumes'), count: liveStats.booksCount.toLocaleString(), change: t('admin.catalogedItems'), icon: <BookOpen className="stat-icon-gold" /> },
     { label: t('admin.activeCheckouts'), count: liveStats.activeCheckoutsCount.toLocaleString(), change: t('admin.inCirculation'), icon: <Layers className="stat-icon-gold" /> },
-    { label: t('admin.scheduledMeetups'), count: liveStats.upcomingSalonsCount.toLocaleString(), change: t('admin.upcomingSalons'), icon: <Calendar className="stat-icon-gold" /> }
+    { label: t('admin.scheduledMeetups'), count: liveStats.upcomingLibrarysCount.toLocaleString(), change: t('admin.upcomingLibrarys'), icon: <Calendar className="stat-icon-gold" /> }
   ];
 
   if (!isAdmin) {
@@ -96,7 +96,7 @@ const AdminDashboard = ({ user }) => {
       <header className="admin-header">
         <div className="header-badge-admin">
           <Shield size={14} className="gold-glow-icon" />
-          <span className="gold-gradient-text">{t('admin.sovereignAdministration')}</span>
+          <span className="gold-gradient-text">{t('admin.royalAdministration')}</span>
         </div>
         <h1 className="admin-title glow-text">{t('admin.curatorCentralConsole')}</h1>
         <p className="admin-subtitle">
@@ -146,24 +146,24 @@ const AdminDashboard = ({ user }) => {
           </Link>
         </div>
 
-        {/* Sovereign Gatherings Panel */}
+        {/* Royal Gatherings Panel */}
         <div className="royal-card action-panel-card">
           <div className="panel-icon-wrapper">
             <Calendar size={28} className="gold-glow-icon" />
           </div>
-          <h3>{t('admin.sovereignGatherings')}</h3>
+          <h3>{t('admin.royalGatherings')}</h3>
           <p>{t('admin.gatheringsDesc')}</p>
           <Link to="/admin/gatherings" className="royal-btn action-panel-btn">
             {t('admin.manageGatherings')}
           </Link>
         </div>
 
-        {/* Salon Houses Panel */}
+        {/* Library Houses Panel */}
         <div className="royal-card action-panel-card">
           <div className="panel-icon-wrapper">
             <Layers size={28} className="gold-glow-icon" />
           </div>
-          <h3>{t('admin.sovereignHouses')}</h3>
+          <h3>{t('admin.royalHouses')}</h3>
           <p>{t('admin.housesDesc')}</p>
           <Link to="/admin/houses" className="royal-btn action-panel-btn">
             {t('admin.manageHouses')}

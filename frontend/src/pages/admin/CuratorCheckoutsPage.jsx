@@ -521,7 +521,7 @@ export default function CuratorCheckoutsPage({
         </Link>
         <div className="header-badge-curator">
           <Shield size={14} className="gold-glow-icon" />
-          <span className="gold-gradient-text">{t('admin.circulationLedger', 'Sovereign Circulation Ledger')}</span>
+          <span className="gold-gradient-text">{t('admin.circulationLedger', 'Royal Circulation Ledger')}</span>
         </div>
         <h1 className="curator-checkouts-title glow-text">{t('admin.patronCirculationDesk', 'Patron Circulation Desk')}</h1>
         <p className="curator-checkouts-subtitle">
@@ -596,7 +596,7 @@ export default function CuratorCheckoutsPage({
           gap: '10px',
           margin: 0
         }}>
-              <span>🛰️</span> {t('auto_3259', 'Sovereign Geofencing & NFC Simulator Console')}
+              <span>🛰️</span> {t('auto_3259', 'Royal Geofencing & NFC Simulator Console')}
             </h2>
             <span style={{
           fontSize: '0.75rem',

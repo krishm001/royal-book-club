@@ -228,7 +228,7 @@ const GatepassPage = ({
             {/* Active Checkouts Column */}
             <div className="ledger-col-pane">
               <h2 className="pane-title active-color">
-                <span className="status-indicator active-dot"></span> {t("str_5392", "Active Sovereignties (")}{activeCheckouts.length})
+                <span className="status-indicator active-dot"></span> {t("str_5392", "Active Royalties (")}{activeCheckouts.length})
               </h2>
               <div className="ledger-list-stack">
                 {activeCheckouts.length === 0 ? <div className="empty-ledger-state">

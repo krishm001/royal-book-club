@@ -382,7 +382,7 @@ const CuratorModerationPage = ({
         <header className="curator-moderation-header">
           <div className="header-badge-moderation">
             <Shield size={14} className="gold-glow-icon" />
-            <span className="gold-gradient-text">{t('admin.sovereignContentModeration', 'Sovereign Content Moderation').toUpperCase()}</span>
+            <span className="gold-gradient-text">{t('admin.royalContentModeration', 'Royal Content Moderation').toUpperCase()}</span>
           </div>
           <h1 className="moderation-page-title glow-text">{t('admin.moderationLedger', 'Content Moderation Ledger')}</h1>
           <p className="moderation-page-subtitle">

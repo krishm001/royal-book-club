@@ -26,10 +26,10 @@ const CuratorHeroPage = ({
   const [subtitleHi, setSubtitleHi] = useState('');
   const [titleKn, setTitleKn] = useState('');
   const [subtitleKn, setSubtitleKn] = useState('');
-  const [backgroundImageUrlSalon, setBackgroundImageUrlSalon] = useState('');
+  const [backgroundImageUrlLibrary, setBackgroundImageUrlLibrary] = useState('');
   const [backgroundImageUrlAcademic, setBackgroundImageUrlAcademic] = useState('');
-  const [coverFileSalon, setCoverFileSalon] = useState(null);
-  const [coverPreviewSalon, setCoverPreviewSalon] = useState('');
+  const [coverFileLibrary, setCoverFileLibrary] = useState(null);
+  const [coverPreviewLibrary, setCoverPreviewLibrary] = useState('');
   const [coverFileAcademic, setCoverFileAcademic] = useState(null);
   const [coverPreviewAcademic, setCoverPreviewAcademic] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -85,10 +85,10 @@ const CuratorHeroPage = ({
         setSubtitleHi(translations.hi?.subtitle || '');
         setTitleKn(translations.kn?.title || '');
         setSubtitleKn(translations.kn?.subtitle || '');
-        const salonImg = res.data.backgroundImageUrlSalon || res.data.backgroundImageUrl || '';
+        const libraryImg = res.data.backgroundImageUrlLibrary || res.data.backgroundImageUrl || '';
         const acadImg = res.data.backgroundImageUrlAcademic || res.data.backgroundImageUrl || '';
-        setBackgroundImageUrlSalon(salonImg);
-        setCoverPreviewSalon(salonImg);
+        setBackgroundImageUrlLibrary(libraryImg);
+        setCoverPreviewLibrary(libraryImg);
         setBackgroundImageUrlAcademic(acadImg);
         setCoverPreviewAcademic(acadImg);
         setFeaturedBookIsbns(res.data.featuredBookIsbns || []);
@@ -125,13 +125,13 @@ const CuratorHeroPage = ({
   };
 
   // File Handlers for Hero Images
-  const handleFileChangeSalon = e => {
+  const handleFileChangeLibrary = e => {
     const file = e.target.files[0];
     if (!file) return;
-    setCoverFileSalon(file);
+    setCoverFileLibrary(file);
     const reader = new FileReader();
     reader.onloadend = () => {
-      setCoverPreviewSalon(reader.result);
+      setCoverPreviewLibrary(reader.result);
     };
     reader.readAsDataURL(file);
   };
@@ -152,17 +152,17 @@ const CuratorHeroPage = ({
     if (isSaving) return;
     try {
       setIsSaving(true);
-      let uploadedUrlSalon = backgroundImageUrlSalon;
+      let uploadedUrlLibrary = backgroundImageUrlLibrary;
       let uploadedUrlAcademic = backgroundImageUrlAcademic;
-      if (coverFileSalon || coverFileAcademic) {
+      if (coverFileLibrary || coverFileAcademic) {
         setIsUploading(true);
       }
-      if (coverFileSalon) {
+      if (coverFileLibrary) {
         try {
-          uploadedUrlSalon = await uploadBookImage(coverFileSalon);
-          setBackgroundImageUrlSalon(uploadedUrlSalon);
+          uploadedUrlLibrary = await uploadBookImage(coverFileLibrary);
+          setBackgroundImageUrlLibrary(uploadedUrlLibrary);
         } catch (uploadErr) {
-          alert(`Salon Image Upload Failed: ${uploadErr.message}`);
+          alert(`Library Image Upload Failed: ${uploadErr.message}`);
           setIsSaving(false);
           setIsUploading(false);
           return;
@@ -184,8 +184,8 @@ const CuratorHeroPage = ({
         id: 'homeHero',
         title: title.trim(),
         subtitle: subtitle.trim(),
-        backgroundImageUrl: uploadedUrlAcademic || uploadedUrlSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
-        backgroundImageUrlSalon: uploadedUrlSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
+        backgroundImageUrl: uploadedUrlAcademic || uploadedUrlLibrary || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
+        backgroundImageUrlLibrary: uploadedUrlLibrary || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
         backgroundImageUrlAcademic: uploadedUrlAcademic || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1600&q=80',
         featuredBookIsbns: featuredBookIsbns,
         featuredQuotes: featuredQuotes,
@@ -205,7 +205,7 @@ const CuratorHeroPage = ({
       const res = await updateHeroConfig(payload);
       if (res && res.success) {
         alert('Home Hero configurations updated successfully!');
-        setCoverFileSalon(null);
+        setCoverFileLibrary(null);
         setCoverFileAcademic(null);
         loadHeroConfigData();
       }
@@ -228,8 +228,8 @@ const CuratorHeroPage = ({
         id: 'homeHero',
         title: title.trim(),
         subtitle: subtitle.trim(),
-        backgroundImageUrl: backgroundImageUrlAcademic || backgroundImageUrlSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
-        backgroundImageUrlSalon: backgroundImageUrlSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
+        backgroundImageUrl: backgroundImageUrlAcademic || backgroundImageUrlLibrary || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
+        backgroundImageUrlLibrary: backgroundImageUrlLibrary || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
         backgroundImageUrlAcademic: backgroundImageUrlAcademic || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1600&q=80',
         featuredBookIsbns: featuredBookIsbns,
         featuredQuotes: featuredQuotes,
@@ -382,11 +382,11 @@ const CuratorHeroPage = ({
         setSubtitleHi('');
         setTitleKn('');
         setSubtitleKn('');
-        setBackgroundImageUrlSalon('');
+        setBackgroundImageUrlLibrary('');
         setBackgroundImageUrlAcademic('');
-        setCoverPreviewSalon('');
+        setCoverPreviewLibrary('');
         setCoverPreviewAcademic('');
-        setCoverFileSalon(null);
+        setCoverFileLibrary(null);
         setCoverFileAcademic(null);
         setFeaturedBookIsbns([]);
         setFeaturedQuotes([]);
@@ -541,28 +541,28 @@ const CuratorHeroPage = ({
 
                 <form onSubmit={handleSave} className="hero-edit-form">
                   <div className="form-group">
-                    <label className="royal-label">{t('auto_3317', 'Sovereign Headline')}</label>
+                    <label className="royal-label">{t('auto_3317', 'Royal Headline')}</label>
                     <input type="text" className="royal-input" placeholder={t("str_5238", "e.g. Where Literature Reigns Supreme")} value={title} onChange={e => setTitle(e.target.value)} required />
                   </div>
 
                   <div className="form-group">
-                    <label className="royal-label">{t('auto_3318', 'Sovereign Sub-headline')}</label>
+                    <label className="royal-label">{t('auto_3318', 'Royal Sub-headline')}</label>
                     <textarea className="royal-input subtitle-textarea" placeholder={t("str_5239", "e.g. Enter a world of curated academic papers, fine leather volumes, and intimate fireside symposiums with world-class authors.")} value={subtitle} onChange={e => setSubtitle(e.target.value)} required rows={4} />
                   </div>
 
                   <div className="theme-images-upload-grid">
                     <div className="form-group">
-                      <label className="royal-label">{t("str_5240", "Salon Theme Banner (Dark/Gold)")}</label>
+                      <label className="royal-label">{t("str_5240", "Library Theme Banner (Dark/Gold)")}</label>
                       <div className="banner-upload-zone">
-                        <input type="file" id="hero-banner-salon" accept="image/*" onChange={handleFileChangeSalon} style={{
+                        <input type="file" id="hero-banner-library" accept="image/*" onChange={handleFileChangeLibrary} style={{
                     display: 'none'
                   }} />
-                        <label htmlFor="hero-banner-salon" className="banner-upload-trigger">
-                          <Upload size={14} /> {t('auto_3319', 'Salon Banner')}
+                        <label htmlFor="hero-banner-library" className="banner-upload-trigger">
+                          <Upload size={14} /> {t('auto_3319', 'Library Banner')}
                         </label>
                       </div>
-                      {coverPreviewSalon && <div className="banner-mini-preview">
-                          <img src={coverPreviewSalon} alt={t("str_5241", "Salon preview")} />
+                      {coverPreviewLibrary && <div className="banner-mini-preview">
+                          <img src={coverPreviewLibrary} alt={t("str_5241", "Library preview")} />
                         </div>}
                     </div>
 
@@ -643,11 +643,11 @@ const CuratorHeroPage = ({
                   fontSize: '0.95rem'
                 }}>{t("str_5245", "Hindi (\u0930\u093E\u091C\u0938\u094D\u0925\u093E\u0928\u0940 \u0930\u093E\u091C\u0938\u0940 \u0936\u0948\u0932\u0940)")}</h5>
                       <div className="form-group">
-                        <label className="royal-label">{t("str_5246", "Sovereign Headline (Hindi)")}</label>
+                        <label className="royal-label">{t("str_5246", "Royal Headline (Hindi)")}</label>
                         <input type="text" className="royal-input" value={titleHi} onChange={e => setTitleHi(e.target.value)} placeholder={t("str_5247", "e.g. \u091C\u0939\u093E\u0901 \u0938\u093E\u0939\u093F\u0924\u094D\u092F \u0938\u0930\u094D\u0935\u094B\u091A\u094D\u091A \u0930\u093E\u091C \u0915\u0930\u0924\u093E \u0939\u0948")} />
                       </div>
                       <div className="form-group">
-                        <label className="royal-label">{t("str_5248", "Sovereign Sub-headline (Hindi)")}</label>
+                        <label className="royal-label">{t("str_5248", "Royal Sub-headline (Hindi)")}</label>
                         <textarea className="royal-input subtitle-textarea" style={{
                     minHeight: '80px'
                   }} value={subtitleHi} onChange={e => setSubtitleHi(e.target.value)} placeholder={t("str_5249", "e.g. \u0909\u0924\u094D\u0915\u0943\u0937\u094D\u091F \u0905\u0915\u093E\u0926\u092E\u093F\u0915 \u0936\u094B\u0927\u092A\u0924\u094D\u0930\u094B\u0902, \u091A\u092E\u0921\u093C\u0947 \u0915\u0947 \u0938\u0941\u0930\u0941\u091A\u093F\u092A\u0942\u0930\u094D\u0923 \u0917\u094D\u0930\u0902\u0925\u094B\u0902...")} rows={3} />
@@ -662,11 +662,11 @@ const CuratorHeroPage = ({
                   fontSize: '0.95rem'
                 }}>{t("str_5250", "Kannada (\u0CB6\u0CBE\u0CB8\u0CCD\u0CA4\u0CCD\u0CB0\u0CC0\u0CAF \u0CB6\u0CC8\u0CB2\u0CBF)")}</h5>
                       <div className="form-group">
-                        <label className="royal-label">{t("str_5251", "Sovereign Headline (Kannada)")}</label>
+                        <label className="royal-label">{t("str_5251", "Royal Headline (Kannada)")}</label>
                         <input type="text" className="royal-input" value={titleKn} onChange={e => setTitleKn(e.target.value)} placeholder={t("str_5252", "e.g. \u0CB8\u0CBE\u0CB9\u0CBF\u0CA4\u0CCD\u0CAF\u0CB5\u0CC1 \u0CB8\u0CB0\u0CCD\u0CB5\u0CCB\u0C9A\u0CCD\u0C9A\u0CB5\u0CBE\u0C97\u0CBF \u0C86\u0CB3\u0CC1\u0CB5 \u0CB8\u0CCD\u0CA5\u0CB3")} />
                       </div>
                       <div className="form-group">
-                        <label className="royal-label">{t("str_5253", "Sovereign Sub-headline (Kannada)")}</label>
+                        <label className="royal-label">{t("str_5253", "Royal Sub-headline (Kannada)")}</label>
                         <textarea className="royal-input subtitle-textarea" style={{
                     minHeight: '80px'
                   }} value={subtitleKn} onChange={e => setSubtitleKn(e.target.value)} placeholder={t("str_5254", "e.g. \u0C95\u0CCD\u0CAF\u0CC1\u0CB0\u0CC7\u0C9F\u0CC6\u0CA1\u0CCD \u0CB6\u0CC8\u0C95\u0CCD\u0CB7\u0CA3\u0CBF\u0C95 \u0CAA\u0CCD\u0CB0\u0CAC\u0C82\u0CA7\u0C97\u0CB3\u0CC1...")} rows={3} />
@@ -693,8 +693,8 @@ const CuratorHeroPage = ({
                     <Eye size={14} /> {t('auto_3323', 'LIVE CURATOR PREVIEW')}
                   </div>
                   <div className="preview-theme-selector">
-                    <button type="button" className={`preview-toggle-tab ${activePreviewTheme === 'salon' ? 'active' : ''}`} onClick={() => setActivePreviewTheme('salon')}>
-                      {t('auto_3324', 'Salon View')}
+                    <button type="button" className={`preview-toggle-tab ${activePreviewTheme === 'library' ? 'active' : ''}`} onClick={() => setActivePreviewTheme('library')}>
+                      {t('auto_3324', 'Library View')}
                     </button>
                     <button type="button" className={`preview-toggle-tab ${activePreviewTheme === 'academic' ? 'active' : ''}`} onClick={() => setActivePreviewTheme('academic')}>
                       {t('auto_3325', 'Academic View')}
@@ -703,12 +703,12 @@ const CuratorHeroPage = ({
                 </div>
                 
                 <div className={`live-hero-preview-frame ${activePreviewTheme}`} style={{
-            backgroundImage: `url(${activePreviewTheme === 'salon' ? coverPreviewSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80' : coverPreviewAcademic || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1600&q=80'})`
+            backgroundImage: `url(${activePreviewTheme === 'library' ? coverPreviewLibrary || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80' : coverPreviewAcademic || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1600&q=80'})`
           }}>
                   <div className="live-preview-overlay"></div>
                   <div className="live-preview-content">
                     <span className="live-badge">
-                      {activePreviewTheme === 'salon' ? 'EXQUISITE LITERARY SALON' : 'ROYAL ACADEMIC STUDY'}
+                      {activePreviewTheme === 'library' ? 'EXQUISITE LITERARY SALON' : 'ROYAL ACADEMIC STUDY'}
                     </span>
                     <h1 className="live-title">{title || 'Where Literature Reigns Supreme'}</h1>
                     <p className="live-subtitle">{subtitle || 'Enter a world of curated academic papers, fine leather volumes, and intimate fireside symposiums.'}</p>
@@ -737,7 +737,7 @@ const CuratorHeroPage = ({
                   </p>
 
                   <div className="form-group">
-                    <label className="royal-label">{t('auto_3329', 'Sovereign Question')}</label>
+                    <label className="royal-label">{t('auto_3329', 'Royal Question')}</label>
                     <input type="text" className="royal-input" placeholder={t("str_5256", "e.g. Which masterwork should be selected for the Summer Read?")} value={pollQuestion} onChange={e => setPollQuestion(e.target.value)} required />
                   </div>
 
@@ -839,7 +839,7 @@ const CuratorHeroPage = ({
                   fontSize: '0.95rem'
                 }}>{t("str_5259", "Hindi (\u0930\u093E\u091C\u0938\u094D\u0925\u093E\u0928\u0940 \u0930\u093E\u091C\u0938\u0940 \u0936\u0948\u0932\u0940)")}</h5>
                       <div className="form-group">
-                        <label className="royal-label">{t("str_5260", "Sovereign Question (Hindi)")}</label>
+                        <label className="royal-label">{t("str_5260", "Royal Question (Hindi)")}</label>
                         <input type="text" className="royal-input" value={pollQuestionHi} onChange={e => setPollQuestionHi(e.target.value)} placeholder={t("str_5261", "e.g. \u0917\u094D\u0930\u0940\u0937\u094D\u092E\u0915\u093E\u0932\u0940\u0928 \u092A\u0920\u0928 \u0915\u0947 \u0932\u093F\u090F \u0915\u093F\u0938 \u0909\u0924\u094D\u0915\u0943\u0937\u094D\u091F \u0915\u0943\u0924\u093F \u0915\u093E \u091A\u092F\u0928 \u0915\u093F\u092F\u093E \u091C\u093E\u0928\u093E \u091A\u093E\u0939\u093F\u090F?")} />
                       </div>
                       <div className="form-group">
@@ -867,7 +867,7 @@ const CuratorHeroPage = ({
                   fontSize: '0.95rem'
                 }}>{t("str_5263", "Kannada (\u0CB6\u0CBE\u0CB8\u0CCD\u0CA4\u0CCD\u0CB0\u0CC0\u0CAF \u0CB6\u0CC8\u0CB2\u0CBF)")}</h5>
                       <div className="form-group">
-                        <label className="royal-label">{t("str_5264", "Sovereign Question (Kannada)")}</label>
+                        <label className="royal-label">{t("str_5264", "Royal Question (Kannada)")}</label>
                         <input type="text" className="royal-input" value={pollQuestionKn} onChange={e => setPollQuestionKn(e.target.value)} placeholder={t("str_5265", "e.g. \u0CAC\u0CC7\u0CB8\u0CBF\u0C97\u0CC6\u0CAF \u0C93\u0CA6\u0CBF\u0C97\u0CBE\u0C97\u0CBF \u0CAF\u0CBE\u0CB5 \u0CAE\u0CBE\u0CB8\u0CCD\u0C9F\u0CB0\u0CCD\u200C\u0CB5\u0CB0\u0CCD\u0C95\u0CCD \u0C85\u0CA8\u0CCD\u0CA8\u0CC1 \u0C86\u0CAF\u0CCD\u0C95\u0CC6 \u0CAE\u0CBE\u0CA1\u0CAC\u0CC7\u0C95\u0CC1?")} />
                       </div>
                       <div className="form-group">

@@ -74,7 +74,7 @@ const BookCard = ({
               {checkoutStatus === 'requested-return' && <span className="status-dot pulse"></span>}
               {checkoutStatus === 'checked-out-by-other' && <span className="status-dot red"></span>}
               
-              {checkoutStatus === 'available' && t('catalog.inSalon')}
+              {checkoutStatus === 'available' && t('catalog.inLibrary')}
               {checkoutStatus === 'checked-out' && t('catalog.inYourStudy')}
               {checkoutStatus === 'requested-checkout' && t('catalog.pendingCheckout')}
               {checkoutStatus === 'requested-return' && t('catalog.pendingReturn')}

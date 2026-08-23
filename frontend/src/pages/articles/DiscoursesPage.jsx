@@ -675,7 +675,7 @@ const DiscoursesPage = ({
               </div>;
       }) : <div className="no-replies-placeholder">
             <HelpCircle size={24} className="gold-glow-icon" />
-            <p>{t('discourses.noOpinionsVoiced', 'No opinions voiced yet. Share your sovereign intellectual stance first!')}</p>
+            <p>{t('discourses.noOpinionsVoiced', 'No opinions voiced yet. Share your royal intellectual stance first!')}</p>
           </div>}
       </div>;
   };
@@ -699,7 +699,7 @@ const DiscoursesPage = ({
                 
                 <div className="focal-body">
                   <div className="focal-meta-row">
-                    <span className="house-badge">{chronicleDetail.house || t('discourses.sovereignLore', 'Sovereign Lore')}</span>
+                    <span className="house-badge">{chronicleDetail.house || t('discourses.royalLore', 'Royal Lore')}</span>
                     <span className="focal-meta-item"><Calendar size={12} /> {new Date(chronicleDetail.createdAt).toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
@@ -771,7 +771,7 @@ const DiscoursesPage = ({
                           {isSubmittingComment ? t('discourses.transcribing', 'Transcribing...') : t('discourses.scribeInsight', 'Scribe Insight')} <Send size={12} />
                         </button>
                       </form> : <div className="comments-unauth-notice royal-card">
-                        <p>{t('discourses.verifiedPatronsNotice', 'Only verified salon patrons may record insights. Please enter the salon.')}</p>
+                        <p>{t('discourses.verifiedPatronsNotice', 'Only verified library patrons may record insights. Please enter the library.')}</p>
                       </div>}
 
                     <div className="comments-thread-list">
@@ -918,13 +918,13 @@ const DiscoursesPage = ({
 
               <form onSubmit={handlePublish} className="composition-form">
                 <div className="form-group">
-                  <label className="royal-label">{t('discourses.sovereignTitleLabel', 'Sovereign Title')}</label>
+                  <label className="royal-label">{t('discourses.royalTitleLabel', 'Royal Title')}</label>
                   <input type="text" className="royal-input" placeholder={formType === 'CHRONICLE' ? t('discourses.chronicleTitlePlaceholder', 'e.g. The Hedonistic Tapestry of Oscar Wilde') : t('discourses.debateTitlePlaceholder', 'e.g. Should Classicism remain the cornerstone of modern curation?')} value={title} onChange={e => setTitle(e.target.value)} required />
                 </div>
 
                 {formType === 'CHRONICLE' && <div className="form-row-grid">
                     <div className="form-group">
-                      <label className="royal-label">{t('discourses.salonHouseLabel', 'Salon House')}</label>
+                      <label className="royal-label">{t('discourses.libraryHouseLabel', 'Library House')}</label>
                       <select className="royal-input royal-select" value={selectedHouse} onChange={e => setSelectedHouse(e.target.value)} required>
                         {houses.map(h => <option key={h.id} value={h.name}>{h.name}</option>)}
                       </select>
@@ -963,7 +963,7 @@ const DiscoursesPage = ({
 
                 <div className="comp-actions">
                   <button type="submit" disabled={isPublishing || formType === 'CHRONICLE' && !content} className="royal-btn comp-submit-btn">
-                    {isPublishing ? isUploading ? t('discourses.uploadingCover', 'Uploading cover image...') : t('discourses.transcribingLore', 'Transcribing lore...') : editingDiscourse ? t('discourses.saveSovereignUpdates', 'Save Sovereign Updates') : t('discourses.publishToPortico', 'Publish to Portico')}
+                    {isPublishing ? isUploading ? t('discourses.uploadingCover', 'Uploading cover image...') : t('discourses.transcribingLore', 'Transcribing lore...') : editingDiscourse ? t('discourses.saveRoyalUpdates', 'Save Royal Updates') : t('discourses.publishToPortico', 'Publish to Portico')}
                   </button>
                 </div>
               </form>
@@ -982,14 +982,14 @@ const DiscoursesPage = ({
       <main className="discourses-main-feed">
         {loading ? <div className="loading-boundary">
             <div className="loader-mini"></div>
-            <p>{t('discourses.gatheringSovereignWords', 'Gathering sovereign words...')}</p>
+            <p>{t('discourses.gatheringRoyalWords', 'Gathering royal words...')}</p>
           </div> : filteredDiscourses.length > 0 ? <div className={activeTab === 'CHRONICLE' ? 'chronicles-grid' : 'debates-list'}>
             
             {/* Chronicles Tab Rendering */}
             {activeTab === 'CHRONICLE' && filteredDiscourses.map(disc => <div key={disc.id} className="chronicle-card royal-card glassmorphic animate-fade-in">
                 <div className="chron-cover-wrapper">
                   <img src={disc.coverUrl || 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80'} alt={disc.title} />
-                  <div className="chron-badge">{disc.house || t('discourses.sovereignLore', 'Sovereign Lore')}</div>
+                  <div className="chron-badge">{disc.house || t('discourses.royalLore', 'Royal Lore')}</div>
                 </div>
                 <div className="chron-content">
                   <div className="chron-meta">

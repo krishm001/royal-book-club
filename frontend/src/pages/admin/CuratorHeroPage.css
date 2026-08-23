@@ -311,18 +311,18 @@
   box-shadow: 0 4px 12px rgba(141, 14, 14, 0.3) !important;
 }
 
-/* Salon Preview Adjustments */
-.live-hero-preview-frame.salon .live-preview-overlay {
+/* Library Preview Adjustments */
+.live-hero-preview-frame.library .live-preview-overlay {
   background: radial-gradient(circle, rgba(12, 15, 29, 0.3) 0%, rgba(12, 15, 29, 0.85) 100%) !important;
 }
 
-.live-hero-preview-frame.salon .live-badge {
+.live-hero-preview-frame.library .live-badge {
   background: rgba(212, 175, 55, 0.1) !important;
   border: 1px solid rgba(212, 175, 55, 0.2) !important;
   color: var(--accent) !important;
 }
 
-.live-hero-preview-frame.salon .mini-btn-live {
+.live-hero-preview-frame.library .mini-btn-live {
   background: linear-gradient(135deg, #d4af37 0%, #aa8422 100%) !important;
   color: #0c0f1d !important;
   box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2) !important;

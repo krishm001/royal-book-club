@@ -219,6 +219,10 @@ public class CheckoutService {
                 checkoutData.put("approvedBy", "SYSTEM_DIRECT");
                 checkoutData.put("memberEmail", email);
                 checkoutData.put("memberName", name);
+                
+                if (bookDoc.getBoolean("isTest") != null) {
+                    checkoutData.put("isTest", bookDoc.getBoolean("isTest"));
+                }
 
                 transaction.set(checkoutRef, checkoutData);
                 return null;
@@ -307,6 +311,10 @@ public class CheckoutService {
                 checkoutData.put("ntagUid", request.getNtagUid());
                 checkoutData.put("memberEmail", email);
                 checkoutData.put("memberName", name);
+                
+                if (bookDoc.getBoolean("isTest") != null) {
+                    checkoutData.put("isTest", bookDoc.getBoolean("isTest"));
+                }
 
                 transaction.set(checkoutRef, checkoutData);
                 return null;
@@ -1463,7 +1471,11 @@ public class CheckoutService {
                     .get().get();
             List<Checkout> list = new ArrayList<>();
             for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                list.add(mapToCheckout(doc));
+                Checkout checkout = mapToCheckout(doc);
+                if (Boolean.TRUE.equals(checkout.getIsTest())) {
+                    continue;
+                }
+                list.add(checkout);
             }
             return list;
         } catch (Exception e) {
@@ -1480,7 +1492,11 @@ public class CheckoutService {
             QuerySnapshot querySnapshot = firestore.collection(COLLECTION_NAME).get().get();
             List<Checkout> list = new ArrayList<>();
             for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                list.add(mapToCheckout(doc));
+                Checkout checkout = mapToCheckout(doc);
+                if (Boolean.TRUE.equals(checkout.getIsTest())) {
+                    continue;
+                }
+                list.add(checkout);
             }
             return list;
         } catch (Exception e) {
@@ -1572,6 +1588,7 @@ public class CheckoutService {
                 .locationVerified(doc.getBoolean("locationVerified"))
                 .nfcOrBarcode(doc.getString("nfcOrBarcode"))
                 .returnValidationMethod(doc.getString("returnValidationMethod"))
+                .isTest(doc.getBoolean("isTest"))
                 .build();
     }
 

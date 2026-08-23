@@ -84,7 +84,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useState(() => localStorage.getItem('royal-theme') || 'academic');
   const [footerQuote, setFooterQuote] = useState("A word, deeply read, becomes conviction. A conviction becomes a life. You do not read a great book. You are slowly, quietly, being rewritten by it.");
-  const [footerAuthor, setFooterAuthor] = useState("Sovereign Reader Guild");
+  const [footerAuthor, setFooterAuthor] = useState("Royal Reader Guild");
   const [heroConfig, setHeroConfig] = useState(null);
   const [quoteIndex, setQuoteIndex] = useState(-1);
   const [consentLoading, setConsentLoading] = useState(false);
@@ -497,7 +497,7 @@ function App() {
     const randomQuote = quotes[quoteIndex];
     if (randomQuote) {
       let text = randomQuote;
-      let author = "Sovereign Reader Guild";
+      let author = "Royal Reader Guild";
       const separators = [" — ", " - ", " – "];
       for (const sep of separators) {
         if (randomQuote.includes(sep)) {
@@ -550,7 +550,7 @@ function App() {
               displayName: cleanName,
               email: firebaseUser.email || backendUser?.email || 'patron@royalbook.club',
               photoURL: firebaseUser.photoURL || backendUser?.photoUrl || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=150&q=80',
-              tier: backendUser?.role === 'ADMIN' ? 'Curator' : 'Sovereign Reader',
+              tier: backendUser?.role === 'ADMIN' ? 'Curator' : 'Royal Reader',
               role: backendUser?.role || 'MEMBER',
               consentAcceptedAt: backendUser?.consentAcceptedAt || null,
               isAnonymous: firebaseUser.isAnonymous
@@ -563,7 +563,7 @@ function App() {
               displayName: fallbackName,
               email: firebaseUser.email || 'patron@royalbook.club',
               photoURL: firebaseUser.photoURL || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=150&q=80',
-              tier: 'Sovereign Reader',
+              tier: 'Royal Reader',
               consentAcceptedAt: null,
               isAnonymous: firebaseUser.isAnonymous
             });
@@ -707,7 +707,7 @@ function App() {
         color: 'var(--accent, #d4af37)',
         letterSpacing: '0.05em',
         margin: 0
-      }}>{t('auto_3000', 'Verifying Sovereign Volume...')}</h2>
+      }}>{t('auto_3000', 'Verifying Royal Volume...')}</h2>
         <p style={{
         color: 'var(--text-secondary)',
         fontSize: '0.9rem',
@@ -784,7 +784,7 @@ function App() {
 
             {/* Theme Toggle & Profile / Auth Section */}
             <div className="theme-toggle-btn-container desktop-nav">
-              <button onClick={toggleTheme} className="theme-toggle-btn icon-only" title={`Switch to ${theme === 'dark' ? 'Academic Theme (Beige & Maroon)' : 'Salon Theme (Gold & Blue)'}`} id="theme-switcher-btn">
+              <button onClick={toggleTheme} className="theme-toggle-btn icon-only" title={`Switch to ${theme === 'dark' ? 'Academic Theme (Beige & Maroon)' : 'Library Theme (Gold & Blue)'}`} id="theme-switcher-btn">
                 <Palette size={16} />
               </button>
             </div>
@@ -910,7 +910,7 @@ function App() {
               justifyContent: 'center'
             }} id="mobile-theme-switcher-btn">
                     <Palette size={16} />
-                    <span>{t("str_5005", "Theme:")} {theme === 'dark' ? 'Salon (Gold)' : 'Academic (Maroon)'}</span>
+                    <span>{t("str_5005", "Theme:")} {theme === 'dark' ? 'Library (Gold)' : 'Academic (Maroon)'}</span>
                   </button>
                 </div>
 

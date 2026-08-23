@@ -81,7 +81,7 @@ const CuratorSettingsPage = ({
   const [showPrintPlacard, setShowPrintPlacard] = useState(false);
   const [selectedPlacardPath, setSelectedPlacardPath] = useState('');
   const [qrSectionMessage, setQrSectionMessage] = useState(null);
-  const [currentTheme, setCurrentTheme] = useState(document.documentElement.getAttribute('data-theme') || 'salon');
+  const [currentTheme, setCurrentTheme] = useState(document.documentElement.getAttribute('data-theme') || 'library');
   const [locationDetails, setLocationDetails] = useState(null);
   const [reverseGeocoding, setReverseGeocoding] = useState(false);
   const tileLayerRef = React.useRef(null);
@@ -126,7 +126,7 @@ const CuratorSettingsPage = ({
   });
   useEffect(() => {
     const observer = new MutationObserver(() => {
-      const theme = document.documentElement.getAttribute('data-theme') || 'salon';
+      const theme = document.documentElement.getAttribute('data-theme') || 'library';
       setCurrentTheme(theme);
     });
     observer.observe(document.documentElement, {
@@ -479,7 +479,7 @@ const CuratorSettingsPage = ({
         <header className="curator-settings-header">
           <div className="header-badge-settings">
             <Shield size={14} className="gold-glow-icon" />
-            <span className="gold-gradient-text">{t('admin.sovereignGatingConsole', 'SOVEREIGN GATING CONSOLE')}</span>
+            <span className="gold-gradient-text">{t('admin.royalGatingConsole', 'SOVEREIGN GATING CONSOLE')}</span>
           </div>
           <h1 className="settings-page-title glow-text">{t('admin.gatingControls', 'Self-Checkout Profile Gating')}</h1>
           <p className="settings-page-subtitle">
@@ -519,7 +519,7 @@ const CuratorSettingsPage = ({
                     <div className="toggle-text-info">
                       <span className="toggle-label">{t('admin.requireHouseNo', 'Require House / Suite / Apartment Number')}</span>
                       <span className="toggle-description">
-                        {t('admin.requireHouseNoDesc', 'Members must register their specific dwelling locator within their designated Sovereign House or community.')}
+                        {t('admin.requireHouseNoDesc', 'Members must register their specific dwelling locator within their designated Royal House or community.')}
                       </span>
                     </div>
                     <button type="button" className={`toggle-action-btn ${settings.houseNoMandatory ? 'active' : ''}`} onClick={() => handleToggle('houseNoMandatory')}>
@@ -1288,7 +1288,7 @@ const CuratorSettingsPage = ({
                 width: '100%',
                 paddingTop: '1.5rem',
                 textAlign: 'center'
-              }}> {t("str_5345", "Validator Path:")} <strong>{selectedPlacardPath}</strong> {t("str_5346", "\u2022 Secure Sovereign Ledger")} </div>
+              }}> {t("str_5345", "Validator Path:")} <strong>{selectedPlacardPath}</strong> {t("str_5346", "\u2022 Secure Royal Ledger")} </div>
                   </div>
                 </div>}
             </div>
