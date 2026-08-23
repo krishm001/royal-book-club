@@ -207,19 +207,21 @@ export const generateStickerPdf = async ({
         
         const textX = x + 24.6;
 
-        // Line 1: Royal Book
-        doc.setFontSize(6.5);
-        doc.text('Royal Book', textX, y + 8.4);
+        // Line 1: Royal
+        doc.setFontSize(10.5);
+        doc.text('Royal', textX, y + 7.0);
 
-        // Line 2: Club
-        doc.setFontSize(6.5);
-        doc.text('Club', textX, y + 11.8);
+        // Line 2: Book
+        doc.text('Book', textX, y + 11.2);
 
-        // Counter ID tag underneath
+        // Line 3: Club
+        doc.text('Club', textX, y + 15.4);
+
+        // Counter ID tag underneath (moved lower)
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(4.6);
         doc.setTextColor(115, 115, 125);
-        doc.text(`#${currentCounter}`, textX, y + 15.5);
+        doc.text(`#${currentCounter}`, textX, y + 19.0);
       }
     }
   }
