@@ -523,13 +523,13 @@ const ProfilePage = ({ user }) => {
           <div className="denied-icon-wrapper">
             <User size={48} className="denied-shield-icon" />
           </div>
-          <h2 className="denied-title gold-gradient-text">Identity Required</h2>
+          <h2 className="denied-title gold-gradient-text">{t('profile.identityRequired', 'Identity Required')}</h2>
           <p className="denied-message">
-            You must cross the threshold and enter the book club registry to view your personal scholar profile.
+            {t('profile.mustCrossThreshold', 'You must cross the threshold and enter the book club registry to view your personal scholar profile.')}
           </p>
           <div className="denied-actions">
             <Link to="/auth/signin" className="royal-btn return-home-btn">
-              Enter The Archway
+              {t('profile.enterArchway', 'Enter The Archway')}
             </Link>
           </div>
         </div>
@@ -579,7 +579,7 @@ const ProfilePage = ({ user }) => {
               <div className="status-text-content">
                 <h3 className="unlocked-title">{t('profile.statusUnlocked')}</h3>
                 <p className="unlocked-desc">
-                  All active administrative gating rules are fully satisfied. Your tap-to-checkout and manual request features are fully active in the Study catalog.
+                  {t('profile.allGatingSatisfied', 'All active administrative gating rules are fully satisfied. Your tap-to-checkout and manual request features are fully active in the Study catalog.')}
                 </p>
               </div>
             </div>
@@ -589,7 +589,7 @@ const ProfilePage = ({ user }) => {
         {loading ? (
           <div className="profile-loader-box">
             <Loader2 className="animate-spin gold-glow-icon" size={48} />
-            <p className="loader-text">Synchronizing credentials with Firestore Ledger...</p>
+            <p className="loader-text">{t('profile.synchronizingCredentials', 'Synchronizing credentials with Firestore Ledger...')}</p>
           </div>
         ) : (
           <div className="profile-form-grid">
@@ -876,9 +876,9 @@ const ProfilePage = ({ user }) => {
                           {emailVerified ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
                         </div>
                         <div className="checklist-text">
-                          <span className="checklist-label" style={{ fontWeight: 600 }}>Email Verification</span>
+                          <span className="checklist-label" style={{ fontWeight: 600 }}>{t('profile.emailVerification', 'Email Verification')}</span>
                           <span className="checklist-requirement">
-                            Mandatory Field
+                            {t('profile.mandatoryField', 'Mandatory Field')}
                           </span>
                         </div>
                       </div>

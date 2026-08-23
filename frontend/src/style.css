@@ -54,6 +54,22 @@
   --genre-tag-border: var(--accent);
   --toggle-text: var(--text-secondary);
   --toggle-inactive: rgba(255, 255, 255, 0.1);
+
+  /* Centralized Button & Card Palette for Salon Theme */
+  --btn-gold-bg: var(--accent-gradient);
+  --btn-gold-text: #1a1a2e;
+  --btn-gold-border: transparent;
+  --btn-primary-bg: var(--accent);
+  --btn-primary-text: #1a1a2e;
+  --btn-primary-border: transparent;
+  --btn-secondary-bg: rgba(255, 255, 255, 0.05);
+  --btn-secondary-text: var(--accent);
+  --btn-secondary-border: var(--glass-border);
+  --surface-card-bg: var(--surface-elevated, rgba(26, 26, 46, 0.8));
+  --surface-card-border: var(--glass-border);
+  --surface-input-bg: rgba(15, 15, 35, 0.75);
+  --surface-input-text: var(--text-primary);
+  --surface-input-border: var(--glass-border);
 }
 
 [data-theme="academic"] {
@@ -78,21 +94,21 @@
 
   /* Glassmorphism & Borders adapted for Warm Paper & Maroon accents */
   --glass-bg: rgba(234, 229, 220, 0.7);
-  --glass-border: rgba(88, 17, 26, 0.12);
-  --glass-border-hover: rgba(88, 17, 26, 0.22);
-  --card-shadow: 0 8px 32px 0 rgba(88, 17, 26, 0.06);
+  --glass-border: rgba(88, 17, 26, 0.15);
+  --glass-border-hover: rgba(88, 17, 26, 0.3);
+  --card-shadow: 0 8px 32px 0 rgba(88, 17, 26, 0.08);
   --glow-shadow: 0 0 15px rgba(88, 17, 26, 0.12);
   --glow-shadow-intense: 0 0 25px rgba(88, 17, 26, 0.22);
 
   /* Gradients for Academic Theme */
   --accent-gradient: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
   --accent-gradient-90: linear-gradient(90deg, var(--secondary) 0%, var(--accent) 50%, var(--secondary) 100%);
-  --accent-gradient-text: linear-gradient(135deg, var(--accent) 0%, var(--text-primary) 50%, var(--secondary) 100%);
+  --accent-gradient-text: linear-gradient(135deg, var(--accent) 0%, var(--primary) 50%, var(--secondary) 100%);
 
   /* Adaptive backgrounds for Academic Theme */
   --book-cover-bg: var(--surface-elevated);
   --badge-bg: var(--surface);
-  --input-focus-bg: rgba(234, 229, 220, 0.95);
+  --input-focus-bg: #ffffff;
   --glow-color: rgba(88, 17, 26, 0.15);
   --glow-color-secondary: rgba(88, 17, 26, 0.05);
 
@@ -102,6 +118,22 @@
   --genre-tag-border: var(--accent);
   --toggle-text: var(--text-primary);
   --toggle-inactive: #e0dcd3;
+
+  /* Centralized Button & Card Palette for Academic Theme (High-Contrast White on Crimson) */
+  --btn-gold-bg: linear-gradient(135deg, #8d1222 0%, #58111a 100%);
+  --btn-gold-text: #ffffff;
+  --btn-gold-border: rgba(141, 18, 34, 0.4);
+  --btn-primary-bg: #8d1222;
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: #8d1222;
+  --btn-secondary-bg: #eae5dc;
+  --btn-secondary-text: #58111a;
+  --btn-secondary-border: rgba(88, 17, 26, 0.25);
+  --surface-card-bg: #ffffff;
+  --surface-card-border: rgba(88, 17, 26, 0.15);
+  --surface-input-bg: #ffffff;
+  --surface-input-text: #2c1a1c;
+  --surface-input-border: rgba(88, 17, 26, 0.25);
 }
 
 * {
@@ -218,6 +250,37 @@ a:hover {
   transform: translateY(-2px);
 }
 
+.royal-btn-gold,
+.btn-gold {
+  background: var(--btn-gold-bg);
+  color: var(--btn-gold-text);
+  border: 1px solid var(--btn-gold-border, transparent);
+  font-weight: 700;
+  border-radius: var(--border-radius-sm);
+  padding: 10px 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+}
+
+.royal-btn-gold:hover:not(:disabled),
+.btn-gold:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+}
+
+.royal-btn-gold:disabled,
+.btn-gold:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .royal-btn-disabled {
   background: var(--secondary) !important;
   color: var(--text-secondary) !important;
@@ -225,6 +288,63 @@ a:hover {
   box-shadow: none !important;
   transform: none !important;
   border: none !important;
+}
+
+/* Universal Page Containers & Responsive Layout */
+.catalog-container,
+.book-detail-container,
+.homepage-container,
+.discourses-page-container,
+.admin-dashboard-container,
+.curator-checkouts-container,
+.curator-gatherings-container,
+.curator-genres-container,
+.curator-hero-container,
+.audit-container,
+.curator-moderation-container,
+.curator-settings-container,
+.nfc-dashboard-container,
+.qr-generator-container,
+.profile-container,
+.events-container,
+.event-detail-container,
+.gatepass-container,
+.help-container,
+.privacy-container,
+.terms-container {
+  max-width: 100% !important;
+  padding-left: 32px !important;
+  padding-right: 32px !important;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .catalog-container,
+  .book-detail-container,
+  .homepage-container,
+  .discourses-page-container,
+  .admin-dashboard-container,
+  .curator-checkouts-container,
+  .curator-gatherings-container,
+  .curator-genres-container,
+  .curator-hero-container,
+  .audit-container,
+  .curator-moderation-container,
+  .curator-settings-container,
+  .nfc-dashboard-container,
+  .qr-generator-container,
+  .profile-container,
+  .events-container,
+  .event-detail-container,
+  .gatepass-container,
+  .help-container,
+  .privacy-container,
+  .terms-container {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
 }
 
 /* Inputs & Form Fields */

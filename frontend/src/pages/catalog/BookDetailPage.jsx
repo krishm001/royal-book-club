@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2, Shield, Check, Loader2, QrCode, Camera, RotateCcw } from 'lucide-react';
+import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2, Shield, Check, Loader2, QrCode, Camera, RotateCcw, Share2 } from 'lucide-react';
 import { fetchBookByIsbn, checkoutBook, fetchBookReviews, submitBookReview, requestCheckout, requestReturn, verifiedCheckout, verifiedReturn, fetchCheckoutsByMember, updateBookReview, deleteBookReview, fetchCheckouts, validateQrReturn, cancelCheckout, cancelReturn } from '../../services/libraryApi';
 import api from '../../api/apiClient';
 import { auth } from '../../config/firebase';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { isNfcTagMatched } from './CatalogPage';
+import ShareModal from '../../components/shared/ShareModal';
 import './BookDetailPage.css';
 
 const SafeHtml5Qrcode = Html5Qrcode;
@@ -58,6 +59,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
   const [instantConfirmOpen, setInstantConfirmOpen] = useState(false);
   const [instantActionType, setInstantActionType] = useState('checkout');
   const [instantSuccess, setInstantSuccess] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [instantError, setInstantError] = useState('');
 
   // Load gating settings on mount
@@ -1662,12 +1664,35 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
             )}
           </div>
 
-          <div className="genre-rating-row">
-            <span className="detail-genre-tag">{book.genre || book.publishDate || 'Library Edition'}</span>
-            <div className="detail-stars">
-              <Star size={16} fill="var(--accent)" stroke="var(--accent)" />
-              <span className="rating-num">{book.rating || '—'} / 5.0</span>
+          <div className="genre-rating-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span className="detail-genre-tag">{book.genre || book.publishDate || 'Library Edition'}</span>
+              <div className="detail-stars">
+                <Star size={16} fill="var(--accent)" stroke="var(--accent)" />
+                <span className="rating-num">{book.rating || '—'} / 5.0</span>
+              </div>
             </div>
+            <button 
+              onClick={() => setShareModalOpen(true)}
+              className="share-trigger-badge-btn"
+              title={t('share.shareTitle', 'Share Book')}
+              style={{
+                background: 'rgba(212, 175, 55, 0.1)',
+                border: '1px solid var(--glass-border)',
+                color: 'var(--accent)',
+                borderRadius: '50px',
+                padding: '4px 14px',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'var(--transition-smooth)'
+              }}
+            >
+              <Share2 size={13} />
+              <span>{t('share.shareBtn', 'Share')}</span>
+            </button>
           </div>
 
           <h1 className="detail-book-title glow-text">{book.title}</h1>
@@ -1752,10 +1777,10 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
       <div className="physical-copies-tracker-section royal-card animate-fade-in" style={{ marginTop: '30px', padding: '30px', border: '1px solid rgba(212, 175, 55, 0.15)', background: 'rgba(22, 22, 28, 0.65)', backdropFilter: 'blur(12px)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)' }}>
         <h3 className="gold-gradient-text" style={{ fontFamily: '"Outfit", sans-serif', fontSize: '1.4rem', fontWeight: '700', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
           <BookOpen size={22} style={{ filter: 'drop-shadow(0 0 6px rgba(212, 175, 55, 0.5))' }} />
-          <span>Physical Inventory & Copy Tracker</span>
+          <span>{t('catalog.physicalInventoryTracker', 'Physical Inventory & Copy Tracker')}</span>
         </h3>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '24px', marginTop: '4px', lineHeight: '1.5' }}>
-          Each physical volume of this title is separately indexed and trackable inside the Royal Book Club catalog ledger.
+          {t('catalog.physicalInventoryDesc', 'Each physical volume of this title is separately indexed and trackable inside the Royal Book Club catalog ledger.')}
         </p>
 
         {user && user.role === 'ADMIN' ? (
@@ -1764,10 +1789,10 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
             <table className="royal-admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(212, 175, 55, 0.2)' }}>
-                  <th style={{ padding: '12px 16px', color: 'var(--accent)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>Copy Number</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--accent)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>NFC Tag UID</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--accent)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>Status</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--accent)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>Current Holder / Member ID</th>
+                  <th style={{ padding: '12px 16px', color: 'var(--accent)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>{t('admin.copyNumber', 'Copy Number')}</th>
+                  <th style={{ padding: '12px 16px', color: 'var(--accent)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>{t('admin.nfcTagUid', 'NFC Tag UID')}</th>
+                  <th style={{ padding: '12px 16px', color: 'var(--accent)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>{t('admin.status', 'Status')}</th>
+                  <th style={{ padding: '12px 16px', color: 'var(--accent)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>{t('admin.currentHolder', 'Current Holder / Member ID')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -2616,6 +2641,17 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
           </div>
         </div>
       </div>
+    )}
+
+    {book && (
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        title={book.title}
+        text={`Explore "${book.title}" by ${book.authors ? book.authors.join(', ') : 'Royal Book Club'} at Royal Book Club`}
+        url={window.location.href}
+        type="book"
+      />
     )}
     </>
   );

@@ -89,7 +89,7 @@ const GatepassPage = ({ user }) => {
     return (
       <div className="gatepass-loading-container">
         <div className="royal-spinner"></div>
-        <p>Retrieving secure digital ledger gatepass...</p>
+        <p>{t('gatepass.retrieving', 'Retrieving secure digital ledger gatepass...')}</p>
       </div>
     );
   }
@@ -98,10 +98,10 @@ const GatepassPage = ({ user }) => {
     return (
       <div className="gatepass-error-container">
         <div className="error-card">
-          <h2>Access Denied</h2>
+          <h2>{t('gatepass.accessDenied', 'Access Denied')}</h2>
           <p>{error}</p>
           <Link to="/catalog" className="royal-btn">
-            <ArrowLeft size={16} /> Return to Study
+            <ArrowLeft size={16} /> {t('common.returnToStudy', 'Return to Study')}
           </Link>
         </div>
       </div>
@@ -184,8 +184,8 @@ const GatepassPage = ({ user }) => {
           <div className="header-meta">
             <Shield className="header-shield" size={32} />
             <div>
-              <h1>Consolidated Gatepass Ledger</h1>
-              <p className="subtitle">Security Clearance & Volume Transit Registry</p>
+              <h1>{t('gatepass.consolidatedLedger', 'Consolidated Gatepass Ledger')}</h1>
+              <p className="subtitle">{t('gatepass.securityClearance', 'Security Clearance & Volume Transit Registry')}</p>
             </div>
           </div>
           <div className="ledger-tabs no-print">
@@ -193,13 +193,13 @@ const GatepassPage = ({ user }) => {
               className={`ledger-tab-btn ${ledgerTab === 'transits' ? 'active' : ''}`}
               onClick={() => setLedgerTab('transits')}
             >
-              <Activity size={14} /> Daily Transits
+              <Activity size={14} /> {t('gatepass.dailyTransits', 'Daily Transits')}
             </button>
             <button 
               className={`ledger-tab-btn ${ledgerTab === 'sync' ? 'active' : ''}`}
               onClick={() => setLedgerTab('sync')}
             >
-              <Clock size={14} /> Book Registry Sync
+              <Clock size={14} /> {t('gatepass.bookRegistrySync', 'Book Registry Sync')}
             </button>
           </div>
         </div>
@@ -207,11 +207,11 @@ const GatepassPage = ({ user }) => {
         {/* Stats strip */}
         <div className="ledger-stats-strip">
           <div className="stat-panel active-transits">
-            <span className="stat-label">Active Transits</span>
+            <span className="stat-label">{t('gatepass.activeTransits', 'Active Transits')}</span>
             <span className="stat-value">{activeCheckouts.length}</span>
           </div>
           <div className="stat-panel restored-vols">
-            <span className="stat-label">Restored to Study</span>
+            <span className="stat-label">{t('gatepass.restoredToStudy', 'Restored to Study')}</span>
             <span className="stat-value">{returnedCheckouts.length}</span>
           </div>
         </div>
@@ -506,7 +506,7 @@ const GatepassPage = ({ user }) => {
               <div className="detail-item">
                 <User size={16} className="detail-icon" />
                 <div className="detail-info">
-                  <span className="detail-label">Scholar Name</span>
+                  <span className="detail-label">{t('gatepass.scholarName', 'Scholar Name')}</span>
                   <span className="detail-value">{checkout.memberName || user?.displayName || "Verified Member"}</span>
                 </div>
               </div>
@@ -514,7 +514,7 @@ const GatepassPage = ({ user }) => {
               <div className="detail-item">
                 <Bookmark size={16} className="detail-icon" />
                 <div className="detail-info">
-                  <span className="detail-label">Scholar Email</span>
+                  <span className="detail-label">{t('gatepass.scholarEmail', 'Scholar Email')}</span>
                   <span className="detail-value">{checkout.memberEmail || "N/A"}</span>
                 </div>
               </div>
@@ -522,7 +522,7 @@ const GatepassPage = ({ user }) => {
               <div className="detail-item">
                 <Calendar size={16} className="detail-icon" />
                 <div className="detail-info">
-                  <span className="detail-label">{isPendingApproval ? "Request Date" : "Checkout Date"}</span>
+                  <span className="detail-label">{isPendingApproval ? t('gatepass.requestDate', 'Request Date') : t('gatepass.checkoutDate', 'Checkout Date')}</span>
                   <span className="detail-value">{formattedDate(isPendingApproval ? checkout.requestedAt : checkout.checkedOutAt)}</span>
                 </div>
               </div>
@@ -530,9 +530,9 @@ const GatepassPage = ({ user }) => {
               <div className="detail-item">
                 <Calendar size={16} className="detail-icon" />
                 <div className="detail-info">
-                  <span className="detail-label">Due Date</span>
+                  <span className="detail-label">{t('gatepass.dueDate', 'Due Date')}</span>
                   <span className={`detail-value ${!isReturned && !isPendingApproval ? 'due-alert' : ''}`} style={isPendingApproval ? { color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' } : {}}>
-                    {isPendingApproval ? "Pending Approval" : (isReturned ? formattedDate(checkout.returnedAt) : formattedDate(checkout.dueDate))}
+                    {isPendingApproval ? t('gatepass.pendingApproval', 'Pending Approval') : (isReturned ? formattedDate(checkout.returnedAt) : formattedDate(checkout.dueDate))}
                   </span>
                 </div>
               </div>

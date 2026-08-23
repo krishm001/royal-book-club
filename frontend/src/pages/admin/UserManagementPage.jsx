@@ -175,14 +175,14 @@ const UserManagementPage = ({ user }) => {
         {loading ? (
           <div style={{ padding: '20px', textAlign: 'center' }}>{t('common.loading', 'Loading members...')}</div>
         ) : members.length === 0 ? (
-          <div style={{ padding: '20px', textAlign: 'center' }}>No members found.</div>
+          <div style={{ padding: '20px', textAlign: 'center' }}>{t('admin.noMembersFound', 'No members found.')}</div>
         ) : (
           <div className="ledger-table-container">
             <table className="ledger-table">
               <thead>
                 <tr>
                   <th>{t('admin.patron', 'Scholar Name')}</th>
-                  <th>Email Address</th>
+                  <th>{t('auth.emailAddress', 'Email Address')}</th>
                   <th>{t('admin.role', 'Role Rank')}</th>
                   <th>{t('admin.nfcUidLabel', 'RFID Key Ring')}</th>
                   <th className="actions-header">{t('admin.actions', 'Access Controls')}</th>
@@ -207,7 +207,7 @@ const UserManagementPage = ({ user }) => {
                           <Radio size={12} className="pulse-signal" /> {member.rfidToken}
                         </span>
                       ) : (
-                        <span className="rfid-empty-tag">No Token Keyed</span>
+                        <span className="rfid-empty-tag">{t('admin.noTokenKeyed', 'No Token Keyed')}</span>
                       )}
                     </td>
                     <td className="actions-cell">
@@ -217,10 +217,10 @@ const UserManagementPage = ({ user }) => {
                           className="royal-btn-secondary mini-table-btn"
                           id={`toggle-role-btn-${member.id}`}
                           disabled={user?.uid === member.id && member.role === 'ADMIN'}
-                          title={user?.uid === member.id && member.role === 'ADMIN' ? 'You cannot change your own admin rank' : ''}
+                          title={user?.uid === member.id && member.role === 'ADMIN' ? t('admin.cannotChangeSelf', 'You cannot change your own admin rank') : ''}
                         >
                           {user?.uid === member.id
-                            ? 'Current Admin'
+                            ? t('admin.currentAdmin', 'Current Admin')
                             : member.role === 'ADMIN' ? t('admin.demoteAdmin', 'Demote') : t('admin.promoteAdmin', 'Promote to Admin')}
                         </button>
                         <button 
@@ -235,7 +235,7 @@ const UserManagementPage = ({ user }) => {
                           className="royal-btn-danger-outline mini-table-btn delete-member-btn"
                           id={`delete-user-btn-${member.id}`}
                           disabled={user?.uid === member.id}
-                          title={user?.uid === member.id ? 'You cannot delete yourself' : 'Permanently delete member'}
+                          title={user?.uid === member.id ? t('admin.cannotDeleteSelf', 'You cannot delete yourself') : t('admin.permanentlyDeleteMember', 'Permanently delete member')}
                         >
                           <Trash2 size={14} />
                         </button>

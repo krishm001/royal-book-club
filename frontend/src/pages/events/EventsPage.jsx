@@ -79,12 +79,12 @@ const EventsPage = ({ user }) => {
         {loading ? (
           <div className="royal-card no-events-card">
             <div className="loader-mini" style={{ marginBottom: '1rem', width: '24px', height: '24px', borderWidth: '3px' }}></div>
-            <h3>Searching the Royal Registries...</h3>
-            <p>Retrieving active salon dates and litfests.</p>
+            <h3>{t('events.searchingRegistries', 'Searching the Royal Registries...')}</h3>
+            <p>{t('events.retrievingActive', 'Retrieving active salon dates and litfests.')}</p>
           </div>
         ) : error ? (
           <div className="royal-card no-events-card">
-            <h3>Registry Search Failure</h3>
+            <h3>{t('events.registrySearchFailure', 'Registry Search Failure')}</h3>
             <p>{error}</p>
           </div>
         ) : filteredEvents.length > 0 ? (
@@ -96,8 +96,8 @@ const EventsPage = ({ user }) => {
         ) : (
           <div className="royal-card no-events-card">
             <Calendar size={48} className="no-events-icon" />
-            <h3>No Gatherings Scheduled</h3>
-            <p>There are currently no elite events scheduled under this specific category. Check back soon.</p>
+            <h3>{t('events.noGatherings', 'No Gatherings Scheduled')}</h3>
+            <p>{t('events.noEventsDesc', 'There are currently no elite events scheduled under this specific category. Check back soon.')}</p>
           </div>
         )}
       </main>
