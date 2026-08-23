@@ -467,11 +467,11 @@
   }
   
   .desktop-nav {
-    display: none;
+    display: none !important;
   }
   
   .auth-section {
-    display: none;
+    display: none !important;
   }
   
   .mobile-toggle-btn {
@@ -930,3 +930,18 @@
   }
 }
 
+
+@media (max-width: 600px) {
+  .brand-tagline {
+    display: none;
+  }
+  .brand-title {
+    font-size: 1.1rem;
+  }
+  .royal-header {
+    padding: 10px 15px;
+  }
+  .header-content {
+    gap: 10px;
+  }
+}

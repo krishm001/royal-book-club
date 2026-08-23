@@ -344,12 +344,6 @@ const HomePage = ({ user, onSignIn, theme }) => {
         backgroundImage: `${gradient}, url(${activeImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        padding: '120px 60px',
-        minHeight: '600px',
-        borderRadius: 'var(--border-radius-md)',
-        border: '1px solid var(--glass-border)',
-        boxShadow: '0 12px 40px rgba(0, 0, 0, 0.15)',
-        marginBottom: '20px'
       };
     }
     return {};
