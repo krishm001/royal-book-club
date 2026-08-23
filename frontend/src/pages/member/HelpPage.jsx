@@ -234,7 +234,7 @@ const HelpPage = () => {
     return (
       <div className="hop-detail-panel fade-in">
         <div className="hop-detail-header">
-          <span className="hop-detail-badge">STEP-BY-STEP DETAIL</span>
+          <span className="hop-detail-badge">{t('auto_3520', 'STEP-BY-STEP DETAIL')}</span>
           <h2>{item.headline}</h2>
         </div>
 
@@ -250,7 +250,7 @@ const HelpPage = () => {
               <div className="hop-tips-alert">
                 <AlertCircle size={18} className="tips-icon" />
                 <div className="tips-content">
-                  <strong>PRO TIPS & GUIDANCE</strong>
+                  <strong>{t('auto_3521', 'PRO TIPS & GUIDANCE')}</strong>
                   <p>{item.tips}</p>
                 </div>
               </div>
@@ -260,7 +260,7 @@ const HelpPage = () => {
           {item.image && (
             <div className="hop-detail-visual">
               <img src={item.image} alt={item.headline} className="royal-instructional-image" />
-              <div className="image-caption">Sovereign Library Visual Guide</div>
+              <div className="image-caption">{t('auto_3522', 'Sovereign Library Visual Guide')}</div>
             </div>
           )}
         </div>
@@ -282,7 +282,7 @@ const HelpPage = () => {
 
           <button className="print-guide-btn" onClick={handlePrint}>
             <Printer size={16} />
-            <span>Print Royal Guide</span>
+            <span>{t('auto_3523', 'Print Royal Guide')}</span>
           </button>
         </div>
         
@@ -365,8 +365,8 @@ const HelpPage = () => {
             {/* Train Stepper Container */}
             <div className="train-stepper-panel royal-card glassmorphic-panel">
               <div className="stepper-meta">
-                <span className="stepper-title-gradient">TRAIN HOPS STEPPER</span>
-                <p>Click on any station hop to unlock detailed verbatim guides, micro-tips, and illustrations.</p>
+                <span className="stepper-title-gradient">{t('auto_3524', 'TRAIN HOPS STEPPER')}</span>
+                <p>{t('auto_3525', 'Click on any station hop to unlock detailed verbatim guides, micro-tips, and illustrations.')}</p>
               </div>
 
               {checkoutMethod === 'nfc' && (
@@ -414,8 +414,8 @@ const HelpPage = () => {
             {/* Train Stepper Container */}
             <div className="train-stepper-panel royal-card glassmorphic-panel">
               <div className="stepper-meta">
-                <span className="stepper-title-gradient">TRAIN HOPS STEPPER</span>
-                <p>Click on any station hop to unlock detailed location bypass parameters, coordinates, and instructions.</p>
+                <span className="stepper-title-gradient">{t('auto_3526', 'TRAIN HOPS STEPPER')}</span>
+                <p>{t('auto_3527', 'Click on any station hop to unlock detailed location bypass parameters, coordinates, and instructions.')}</p>
               </div>
 
               {returnMethod === 'gps' && (
@@ -439,8 +439,8 @@ const HelpPage = () => {
           <div className="sages-gatepass-panel fade-in">
             <div className="gatepass-visual-card">
               <div className="gatepass-header">
-                <div className="gatepass-logo">ROYAL BOOK CLUB</div>
-                <div className="gatepass-status">SECURE</div>
+                <div className="gatepass-logo">{t('auto_3528', 'ROYAL BOOK CLUB')}</div>
+                <div className="gatepass-status">{t('auto_3529', 'SECURE')}</div>
               </div>
               <div className="gatepass-body">
                 <div className="barcode-mock">
@@ -464,15 +464,15 @@ const HelpPage = () => {
               <div className="gatepass-bullet-points">
                 <div className="gatepass-bullet">
                   <CheckCircle2 size={16} />
-                  <span>Generates automatically post-approval</span>
+                  <span>{t('auto_3530', 'Generates automatically post-approval')}</span>
                 </div>
                 <div className="gatepass-bullet">
                   <CheckCircle2 size={16} />
-                  <span>Valid for 15 minutes at exit gateway</span>
+                  <span>{t('auto_3531', 'Valid for 15 minutes at exit gateway')}</span>
                 </div>
                 <div className="gatepass-bullet">
                   <CheckCircle2 size={16} />
-                  <span>Stored securely on local scholar ledger</span>
+                  <span>{t('auto_3532', 'Stored securely on local scholar ledger')}</span>
                 </div>
               </div>
             </div>
@@ -499,12 +499,12 @@ const HelpPage = () => {
       {/* Hidden Print Layout (Expanded sequentially) */}
       <div className="print-only-layout">
         <div className="print-header">
-          <h1>Sovereign Library - Comprehensive Royal Guide</h1>
-          <p>Official instructional document for physical-digital circulation gateway</p>
+          <h1>{t('auto_3533', 'Sovereign Library - Comprehensive Royal Guide')}</h1>
+          <p>{t('auto_3534', 'Official instructional document for physical-digital circulation gateway')}</p>
         </div>
 
         <section className="print-section">
-          <h2>1. NFC INSTANT CHECKOUT</h2>
+          <h2>{t('auto_3535', '1. NFC INSTANT CHECKOUT')}</h2>
           {nfcSteps.map((step, idx) => (
             <div key={idx} className="print-step">
               <h3>Step {idx + 1}: {step.title} — {step.short}</h3>
@@ -520,7 +520,7 @@ const HelpPage = () => {
         </section>
 
         <section className="print-section">
-          <h2>2. BARCODE SCAN CHECKOUT</h2>
+          <h2>{t('auto_3536', '2. BARCODE SCAN CHECKOUT')}</h2>
           {barcodeSteps.map((step, idx) => (
             <div key={idx} className="print-step">
               <h3>Step {idx + 1}: {step.title} — {step.short}</h3>
@@ -536,7 +536,7 @@ const HelpPage = () => {
         </section>
 
         <section className="print-section">
-          <h2>3. GEOFENCED SELF-RETURN</h2>
+          <h2>{t('auto_3537', '3. GEOFENCED SELF-RETURN')}</h2>
           {gpsSteps.map((step, idx) => (
             <div key={idx} className="print-step">
               <h3>Step {idx + 1}: {step.title} — {step.short}</h3>

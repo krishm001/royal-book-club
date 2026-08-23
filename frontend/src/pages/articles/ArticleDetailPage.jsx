@@ -1,9 +1,12 @@
+import { useLanguage } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Sparkles, MessageSquare, Send, Calendar, Clock, Award, ShieldAlert } from 'lucide-react';
 import './ArticleDetailPage.css';
 
 const ArticleDetailPage = ({ user }) => {
+  const { t } = useLanguage();
+
   const { id } = useParams();
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState([
@@ -23,10 +26,10 @@ const ArticleDetailPage = ({ user }) => {
       category: 'Critique',
       coverUrl: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=1200&q=80',
       bodyHtml: `
-        <p>Oscar Wilde’s only novel, <em>The Picture of Dorian Gray</em>, stands as the ultimate aesthetic testament of late Victorian London. It represents not simply a gothic tale of decay, but an aggressive intellectual defense of the Decadent movement, where art reigns superior to life, and sensation is the highest virtue.</p>
+        <p>{t('auto_3442', 'Oscar Wilde’s only novel,')} <em>{t('auto_3443', 'The Picture of Dorian Gray')}</em>{t('auto_3444', ', stands as the ultimate aesthetic testament of late Victorian London. It represents not simply a gothic tale of decay, but an aggressive intellectual defense of the Decadent movement, where art reigns superior to life, and sensation is the highest virtue.')}</p>
         <p>At the center of this hedonistic tapestry is the charming philosopher, Lord Henry Wotton. It is Wotton who delivers the poisonous, honeyed ideas that serve as Dorian’s roadmap to corruption. "To define is to limit," Wotton declares, establishing a philosophy where boundaries—moral, societal, or religious—are viewed as artificial chains on human experience.</p>
         <blockquote>"The only way to get rid of a temptation is to yield to it. Resist it, and your soul grows sick with longing for the things it has forbidden to itself." — Lord Henry Wotton</blockquote>
-        <p>Yet, Wilde’s genius lies in the tragic irony of Dorian’s descent. While Dorian remains outwardly pristine, a physical manifestation of Wotton’s aesthetic ideals, his portrait records the genuine weight of his sins. The artwork becomes the objective reality, proving that morality cannot be entirely bypassed for pure sensory indulgence. In the end, Wilde demonstrates that the pursuit of absolute hedonism, separated from responsibility, inevitably destroys the self.</p>
+        <p>{t('auto_3445', 'Yet, Wilde’s genius lies in the tragic irony of Dorian’s descent. While Dorian remains outwardly pristine, a physical manifestation of Wotton’s aesthetic ideals, his portrait records the genuine weight of his sins. The artwork becomes the objective reality, proving that morality cannot be entirely bypassed for pure sensory indulgence. In the end, Wilde demonstrates that the pursuit of absolute hedonism, separated from responsibility, inevitably destroys the self.')}</p>
       `
     },
     {
@@ -39,8 +42,8 @@ const ArticleDetailPage = ({ user }) => {
       category: 'Research',
       coverUrl: 'https://images.unsplash.com/photo-1461360370896-922624d12aa1?auto=format&fit=crop&w=1200&q=80',
       bodyHtml: `
-        <p>Dante Alighieri’s <em>Divine Comedy</em> is not simply a poetic masterpiece; it is a stunning exercise in theological architecture and cosmic geometry. The journey through the three realms of the afterlife is structured with mathematical precision, reflecting the medieval scholastic belief in an orderly, rational universe designed by a divine architect.</p>
-        <p>The <em>Inferno</em>, in particular, is mapped as a subterranean, funnel-shaped abyss located directly beneath Jerusalem. Formed by the fall of Lucifer, this funnel consists of nine concentric, descending circles. As Virgil and Dante descend, the circles contract, representing the increasing density of sin and the corresponding constriction of human freedom.</p>
+        <p>{t('auto_3446', 'Dante Alighieri’s')} <em>{t('auto_3447', 'Divine Comedy')}</em> {t('auto_3448', 'is not simply a poetic masterpiece; it is a stunning exercise in theological architecture and cosmic geometry. The journey through the three realms of the afterlife is structured with mathematical precision, reflecting the medieval scholastic belief in an orderly, rational universe designed by a divine architect.')}</p>
+        <p>{t('auto_3449', 'The')} <em>{t('auto_3450', 'Inferno')}</em>{t('auto_3451', ', in particular, is mapped as a subterranean, funnel-shaped abyss located directly beneath Jerusalem. Formed by the fall of Lucifer, this funnel consists of nine concentric, descending circles. As Virgil and Dante descend, the circles contract, representing the increasing density of sin and the corresponding constriction of human freedom.')}</p>
         <p>Dante’s geometric symmetry extends to the structure of the poem itself. The Comedy consists of 100 cantos, divided into three canticles (Inferno, Purgatorio, Paradiso), each containing 33 cantos (with Inferno having an additional introductory canto). The number three, of course, honors the Holy Trinity, while ten represents scholastic perfection. This alignment of geometric space with poetic meter creates a literary cathedral, where form and faith become indistinguishable.</p>
       `
     }
@@ -67,7 +70,7 @@ const ArticleDetailPage = ({ user }) => {
     <div className="article-detail-container animate-fade-in">
       {/* Back to feed */}
       <Link to="/articles" className="back-link">
-        <ArrowLeft size={16} /> Return to Dissertations
+        <ArrowLeft size={16} /> {t('auto_3452', 'Return to Dissertations')}
       </Link>
 
       {/* Main Article Card */}
@@ -95,7 +98,7 @@ const ArticleDetailPage = ({ user }) => {
         <div className="author-signature-block">
           <Award className="signature-icon gold-glow-icon" />
           <div className="signature-details">
-            <span className="signature-label">PUBLISHED BY</span>
+            <span className="signature-label">{t('auto_3453', 'PUBLISHED BY')}</span>
             <span className="signature-name gold-gradient-text">{article.author}</span>
           </div>
         </div>
@@ -110,7 +113,7 @@ const ArticleDetailPage = ({ user }) => {
       {/* Discussion Thread Section */}
       <section className="article-discussion-section royal-card">
         <h3 className="discussion-heading">
-          <MessageSquare size={20} className="gold-glow-icon" /> Academic Discourse
+          <MessageSquare size={20} className="gold-glow-icon" /> {t('auto_3454', 'Academic Discourse')}
         </h3>
 
         {/* Comment input form */}
@@ -125,12 +128,12 @@ const ArticleDetailPage = ({ user }) => {
               required
             />
             <button type="submit" className="royal-btn comment-submit-btn" id="article-detail-comment-btn">
-              <Send size={14} /> Submit
+              <Send size={14} /> {t('auto_3455', 'Submit')}
             </button>
           </form>
         ) : (
           <div className="discussion-prompt-card">
-            <p>Please enter the Royal Salon to participate in academic discussions.</p>
+            <p>{t('auto_3456', 'Please enter the Royal Salon to participate in academic discussions.')}</p>
           </div>
         )}
 

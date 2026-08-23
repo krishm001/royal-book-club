@@ -90,7 +90,7 @@ const PollWidget = ({ user, onSignIn }) => {
       <div className="royal-card poll-widget" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '250px' }}>
         <div style={{ textAlign: 'center', color: 'var(--accent)' }}>
           <RefreshCw className="animate-spin" size={28} style={{ margin: '0 auto 12px' }} />
-          <p style={{ fontSize: '0.85rem', letterSpacing: '0.05em' }}>Consulting the Guild Scrolls...</p>
+          <p style={{ fontSize: '0.85rem', letterSpacing: '0.05em' }}>{t('auto_3123', 'Consulting the Guild Scrolls...')}</p>
         </div>
       </div>
     );

@@ -190,13 +190,13 @@ const NfcCounterDashboard = ({ user }) => {
             <Shield size={48} style={{ color: '#d62828' }} />
           </div>
           <h2 style={{ fontFamily: 'Cinzel, serif', color: 'var(--accent, #d4af37)', marginBottom: '16px' }}>
-            Sovereign Access Denied
+            {t('auto_3406', 'Sovereign Access Denied')}
           </h2>
           <p style={{ color: 'var(--text-secondary, #b8b09f)' }}>
-            This panel is restricted exclusively to authorized curators of the Royal Library.
+            {t('auto_3407', 'This panel is restricted exclusively to authorized curators of the Royal Library.')}
           </p>
           <Link to="/" className="royal-btn" style={{ marginTop: '24px', display: 'inline-block' }}>
-            Return to Entrance
+            {t('auto_3408', 'Return to Entrance')}
           </Link>
         </div>
       </div>
@@ -210,7 +210,7 @@ const NfcCounterDashboard = ({ user }) => {
       {/* Header breadcrumb */}
       <div className="dashboard-back-row" style={{ marginBottom: '32px' }}>
         <Link to="/admin" className="back-to-console-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent, #d4af37)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: '600' }}>
-          <ArrowLeft size={16} /> Back to Curator Console
+          <ArrowLeft size={16} /> {t('auto_3409', 'Back to Curator Console')}
         </Link>
       </div>
 
@@ -218,14 +218,14 @@ const NfcCounterDashboard = ({ user }) => {
         <div className="header-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '50px', background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.2)', marginBottom: '16px' }}>
           <Shield size={12} style={{ color: 'var(--accent, #d4af37)' }} />
           <span style={{ fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--accent, #d4af37)' }}>
-            Physical Security Diagnostics
+            {t('auto_3410', 'Physical Security Diagnostics')}
           </span>
         </div>
         <h1 style={{ fontFamily: 'Cinzel, serif', fontSize: '2.4rem', fontWeight: 'bold', margin: '0 0 12px 0', color: 'var(--text-primary, #ffffff)' }}>
-          NFC Tag Counter & Sequence Audit
+          {t('auto_3411', 'NFC Tag Counter & Sequence Audit')}
         </h1>
         <p style={{ color: 'var(--text-secondary, #b8b09f)', maxWidth: '750px', margin: '0 auto', fontSize: '1rem', lineHeight: '1.6' }}>
-          Monitor hardware tap counters on NTAG213 masterworks. Execute sequence reset commands to synchronize and self-heal local tap verification sessions.
+          {t('auto_3412', 'Monitor hardware tap counters on NTAG213 masterworks. Execute sequence reset commands to synchronize and self-heal local tap verification sessions.')}
         </p>
       </header>
 
@@ -235,7 +235,7 @@ const NfcCounterDashboard = ({ user }) => {
         {/* Search and Filters card */}
         <div className="royal-card control-panel-card" style={{ padding: '20px 24px' }}>
           <h3 style={{ margin: '0 0 16px 0', fontSize: '1.15rem', color: 'var(--accent, #d4af37)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Sliders size={18} /> Filter Diagnostics Ledger
+            <Sliders size={18} /> {t('auto_3413', 'Filter Diagnostics Ledger')}
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             
@@ -284,10 +284,10 @@ const NfcCounterDashboard = ({ user }) => {
         <div className="royal-card control-panel-card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
             <h3 style={{ margin: '0 0 12px 0', fontSize: '1.15rem', color: 'var(--accent, #d4af37)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Shield size={18} /> Administrative Commands
+              <Shield size={18} /> {t('auto_3414', 'Administrative Commands')}
             </h3>
             <p style={{ margin: '0 0 16px 0', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-              Resetting physical counters forces a cloud sequence synchronization. Obsolete local caches on patron smartphones will automatically self-heal and accept the newly synchronized sequence.
+              {t('auto_3415', 'Resetting physical counters forces a cloud sequence synchronization. Obsolete local caches on patron smartphones will automatically self-heal and accept the newly synchronized sequence.')}
             </p>
           </div>
 
@@ -297,7 +297,7 @@ const NfcCounterDashboard = ({ user }) => {
               className="royal-btn-secondary"
               style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.85rem' }}
             >
-              <RefreshCw size={14} className={loading ? 'spin-icon' : ''} /> Refresh Ledger
+              <RefreshCw size={14} className={loading ? 'spin-icon' : ''} /> {t('auto_3416', 'Refresh Ledger')}
             </button>
             
             <button 
@@ -340,13 +340,13 @@ const NfcCounterDashboard = ({ user }) => {
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 0', gap: '16px' }}>
             <RefreshCw size={36} className="spin-icon" style={{ color: 'var(--accent, #d4af37)' }} />
-            <p style={{ margin: 0, color: 'var(--text-secondary, #b8b09f)', fontSize: '0.9rem' }}>Auditing physical NFC registers from cloud Firestore...</p>
+            <p style={{ margin: 0, color: 'var(--text-secondary, #b8b09f)', fontSize: '0.9rem' }}>{t('auto_3417', 'Auditing physical NFC registers from cloud Firestore...')}</p>
           </div>
         ) : filteredCounters.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 0', gap: '12px' }}>
             <AlertTriangle size={36} style={{ color: 'var(--accent, #d4af37)', opacity: 0.6 }} />
-            <p style={{ margin: 0, color: 'var(--text-primary, #ffffff)', fontSize: '1rem', fontWeight: 'bold' }}>No NFC Counter Logs Found</p>
-            <p style={{ margin: 0, color: 'var(--text-secondary, #b8b09f)', fontSize: '0.85rem' }}>No active tag counters match the selected search query or filters.</p>
+            <p style={{ margin: 0, color: 'var(--text-primary, #ffffff)', fontSize: '1rem', fontWeight: 'bold' }}>{t('auto_3418', 'No NFC Counter Logs Found')}</p>
+            <p style={{ margin: 0, color: 'var(--text-secondary, #b8b09f)', fontSize: '0.85rem' }}>{t('auto_3419', 'No active tag counters match the selected search query or filters.')}</p>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -361,12 +361,12 @@ const NfcCounterDashboard = ({ user }) => {
                       style={{ cursor: 'pointer', accentColor: 'var(--accent, #d4af37)' }}
                     />
                   </th>
-                  <th style={{ padding: '16px 20px', color: 'var(--accent, #d4af37)', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.1em' }}>Hardware UID</th>
-                  <th style={{ padding: '16px 20px', color: 'var(--accent, #d4af37)', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.1em' }}>Paired Masterwork</th>
-                  <th style={{ padding: '16px 20px', color: 'var(--accent, #d4af37)', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.1em', textAlign: 'center' }}>Tap Counter</th>
-                  <th style={{ padding: '16px 20px', color: 'var(--accent, #d4af37)', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.1em' }}>First Seen At</th>
-                  <th style={{ padding: '16px 20px', color: 'var(--accent, #d4af37)', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.1em' }}>Last Diagnostic Reset</th>
-                  <th style={{ padding: '16px 20px', color: 'var(--accent, #d4af37)', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.1em', textAlign: 'center' }}>Actions</th>
+                  <th style={{ padding: '16px 20px', color: 'var(--accent, #d4af37)', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.1em' }}>{t('auto_3420', 'Hardware UID')}</th>
+                  <th style={{ padding: '16px 20px', color: 'var(--accent, #d4af37)', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.1em' }}>{t('auto_3421', 'Paired Masterwork')}</th>
+                  <th style={{ padding: '16px 20px', color: 'var(--accent, #d4af37)', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.1em', textAlign: 'center' }}>{t('auto_3422', 'Tap Counter')}</th>
+                  <th style={{ padding: '16px 20px', color: 'var(--accent, #d4af37)', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.1em' }}>{t('auto_3423', 'First Seen At')}</th>
+                  <th style={{ padding: '16px 20px', color: 'var(--accent, #d4af37)', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.1em' }}>{t('auto_3424', 'Last Diagnostic Reset')}</th>
+                  <th style={{ padding: '16px 20px', color: 'var(--accent, #d4af37)', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.1em', textAlign: 'center' }}>{t('auto_3425', 'Actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -409,7 +409,7 @@ const NfcCounterDashboard = ({ user }) => {
                         {item.lastResetAt ? (
                           <span style={{ color: '#00fa9a', fontWeight: '600' }}>{new Date(item.lastResetAt).toLocaleString()}</span>
                         ) : (
-                          <span style={{ opacity: 0.5 }}>Never Reset</span>
+                          <span style={{ opacity: 0.5 }}>{t('auto_3426', 'Never Reset')}</span>
                         )}
                       </td>
                       <td style={{ padding: '16px 20px', textAlign: 'center' }}>

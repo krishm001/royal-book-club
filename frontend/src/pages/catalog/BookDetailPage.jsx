@@ -1545,20 +1545,20 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                 <div className="nfc-instant-checkout-container" style={{ margin: '0 0 16px 0', padding: '16px', border: '1px dashed var(--accent)', borderRadius: '8px', background: 'rgba(141, 18, 34, 0.05)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Sparkles size={16} className="gold-glow" style={{ color: 'var(--accent)' }} />
-                    <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>NFC Physical Sync Active</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{t('auto_3468', 'NFC Physical Sync Active')}</span>
                     <div className="nfc-countdown-clock" style={{ marginLeft: 'auto', background: 'rgba(212, 175, 55, 0.15)', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '3px 8px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Clock size={12} className="animate-pulse" />
                       <span>{Math.floor(timeLeft / 60).toString().padStart(2, '0')}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
                     </div>
                   </div>
-                  <p style={{ fontSize: '0.8rem', margin: 0, color: 'var(--text-secondary)' }}>You are holding the physical volume. Bypassing standard scans.</p>
+                  <p style={{ fontSize: '0.8rem', margin: 0, color: 'var(--text-secondary)' }}>{t('auto_3469', 'You are holding the physical volume. Bypassing standard scans.')}</p>
                   {checkoutStatus === 'available' ? (
                     <button 
                       onClick={() => handleInstantNfcAction('checkout')} 
                       className="royal-btn checkout-cta-btn pulse-button"
                       style={{ background: 'var(--accent)', color: 'var(--text-primary)', border: 'none', padding: '12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 'bold' }}
                     >
-                      <Smartphone size={16} /> Instant NFC Checkout
+                      <Smartphone size={16} /> {t('auto_3470', 'Instant NFC Checkout')}
                     </button>
                   ) : checkoutStatus === 'checked-out' ? (
                     <button 
@@ -1566,7 +1566,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                       className="royal-btn checkout-cta-btn pulse-button"
                       style={{ background: 'var(--accent)', color: 'var(--text-primary)', border: 'none', padding: '12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 'bold' }}
                     >
-                      <Smartphone size={16} /> Instant NFC Return
+                      <Smartphone size={16} /> {t('auto_3471', 'Instant NFC Return')}
                     </button>
                   ) : null}
                 </div>
@@ -1574,7 +1574,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                 <div className="nfc-instant-checkout-container" style={{ margin: '0 0 16px 0', padding: '16px', border: '1px dashed #d97706', borderRadius: '8px', background: 'rgba(217, 119, 6, 0.05)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <AlertTriangle size={16} style={{ color: '#d97706' }} />
-                    <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#d97706' }}>NFC Verification Warning</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#d97706' }}>{t('auto_3472', 'NFC Verification Warning')}</span>
                   </div>
                   <p style={{ fontSize: '0.82rem', margin: 0, color: 'var(--text-primary)', lineHeight: '1.4' }}>
                     {nfcSession.verificationStatus === 'REUSED' 
@@ -1583,7 +1583,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                     }
                   </p>
                   <p style={{ fontSize: '0.78rem', margin: 0, color: 'var(--text-secondary)' }}>
-                    Please proceed with <strong>Regular Manual Checkout</strong> below.
+                    {t('auto_3473', 'Please proceed with')} <strong>{t('auto_3474', 'Regular Manual Checkout')}</strong> {t('auto_3475', 'below.')}
                   </p>
                 </div>
               )
@@ -1613,7 +1613,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                   <Clock size={20} style={{ color: 'var(--accent)' }} className="spin-icon" />
                   <div>
                     <h4 style={{ color: 'var(--accent)', fontSize: '0.95rem', fontWeight: '600' }}>{t('catalog.checkoutRequestPending')}</h4>
-                    <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>{t('catalog.awaitingCuratorApproval')}</p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{t('catalog.awaitingCuratorApproval')}</p>
                   </div>
                 </div>
               ) : checkoutStatus === 'requested-return' ? (
@@ -1621,7 +1621,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                   <Clock size={20} style={{ color: 'var(--accent)' }} className="spin-icon" />
                   <div>
                     <h4 style={{ color: 'var(--accent)', fontSize: '0.95rem', fontWeight: '600' }}>{t('catalog.returnRequestPending')}</h4>
-                    <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>{t('catalog.awaitingReturnReview')}</p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{t('catalog.awaitingReturnReview')}</p>
                   </div>
                 </div>
               ) : (
@@ -1629,7 +1629,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                   <Clock size={20} style={{ color: '#ff7b72' }} />
                   <div>
                     <h4 style={{ color: '#ff7b72', fontSize: '0.95rem', fontWeight: '600' }}>{t('catalog.inCirculation')}</h4>
-                    <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>{t('catalog.checkedOutByOtherScholar')}</p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{t('catalog.checkedOutByOtherScholar')}</p>
                   </div>
                 </div>
               )
@@ -1659,7 +1659,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                   transition: 'all 0.2s ease-in-out'
                 }}
               >
-                <Shield size={14} /> View Security Gatepass
+                <Shield size={14} /> {t('auto_3476', 'View Security Gatepass')}
               </Link>
             )}
           </div>
@@ -1818,11 +1818,11 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                   const badge = statusColors[currentStatus] || statusColors['AVAILABLE'];
 
                   return (
-                    <tr key={copy.copyNo} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)', transition: 'background 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.01)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
+                    <tr key={copy.copyNo} style={{ borderBottom: '1px solid var(--glass-border)', transition: 'background 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--glass-bg)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
                       <td style={{ padding: '16px', fontSize: '0.9rem', fontWeight: '600' }}>
                         Copy #{copy.copyNo}
                       </td>
-                      <td style={{ padding: '16px', fontSize: '0.85rem', fontFamily: 'monospace', color: copy.ntagUid ? 'var(--accent)' : 'rgba(255,255,255,0.4)' }}>
+                      <td style={{ padding: '16px', fontSize: '0.85rem', fontFamily: 'monospace', color: copy.ntagUid ? 'var(--accent)' : 'var(--text-muted)' }}>
                         {copy.ntagUid ? copy.ntagUid.toUpperCase() : 'Sequential Tracking (No Tag)'}
                       </td>
                       <td style={{ padding: '16px' }}>
@@ -1834,13 +1834,13 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                       <td style={{ padding: '16px', fontSize: '0.85rem' }}>
                         {matchedCheckout ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            <span style={{ fontWeight: '600', color: '#ffffff' }}>{matchedCheckout.memberName || 'NFC Verified Patron'}</span>
+                            <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{matchedCheckout.memberName || 'NFC Verified Patron'}</span>
                             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{matchedCheckout.memberEmail || `ID: ${matchedCheckout.memberId}`}</span>
                           </div>
                         ) : copy.status === 'CHECKED_OUT' ? (
-                          <span style={{ color: 'rgba(255,255,255,0.6)', fontStyle: 'italic' }}>In Circulation (Active record loading...)</span>
+                          <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>In Circulation (Active record loading...)</span>
                         ) : (
-                          <span style={{ color: 'rgba(255,255,255,0.3)' }}>—</span>
+                          <span style={{ color: 'var(--glass-border-hover)' }}>—</span>
                         )}
                       </td>
                     </tr>
@@ -1865,15 +1865,15 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
               const isAvailable = copy.status === 'AVAILABLE' && !isCheckedOutByMe;
 
               return (
-                <div key={copy.copyNo} style={{ padding: '16px', background: isAvailable ? 'rgba(78, 202, 92, 0.03)' : isCheckedOutByMe ? 'rgba(212, 175, 55, 0.05)' : 'rgba(255, 255, 255, 0.01)', border: isAvailable ? '1px solid rgba(78, 202, 92, 0.15)' : isCheckedOutByMe ? '1px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'transform 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; }}>
+                <div key={copy.copyNo} style={{ padding: '16px', background: isAvailable ? 'rgba(78, 202, 92, 0.03)' : isCheckedOutByMe ? 'rgba(212, 175, 55, 0.05)' : 'var(--glass-bg)', border: isAvailable ? '1px solid rgba(78, 202, 92, 0.15)' : isCheckedOutByMe ? '1px solid rgba(212, 175, 55, 0.3)' : '1px solid var(--glass-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'transform 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.9rem', fontWeight: '700' }}>Copy #{copy.copyNo}</span>
                     {isAvailable ? (
-                      <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#4eca5c', background: 'rgba(78, 202, 92, 0.1)', padding: '2px 8px', borderRadius: '10px', textTransform: 'uppercase' }}>Available</span>
+                      <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#4eca5c', background: 'rgba(78, 202, 92, 0.1)', padding: '2px 8px', borderRadius: '10px', textTransform: 'uppercase' }}>{t('auto_3477', 'Available')}</span>
                     ) : isCheckedOutByMe ? (
-                      <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#d4af37', background: 'rgba(212, 175, 55, 0.1)', padding: '2px 8px', borderRadius: '10px', textTransform: 'uppercase' }}>Held By You</span>
+                      <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#d4af37', background: 'rgba(212, 175, 55, 0.1)', padding: '2px 8px', borderRadius: '10px', textTransform: 'uppercase' }}>{t('auto_3478', 'Held By You')}</span>
                     ) : (
-                      <span style={{ fontSize: '0.72rem', fontWeight: '700', color: 'rgba(255,255,255,0.4)', background: 'var(--glass-bg)', padding: '2px 8px', borderRadius: '10px', textTransform: 'uppercase' }}>In Circulation</span>
+                      <span style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--text-muted)', background: 'var(--glass-bg)', padding: '2px 8px', borderRadius: '10px', textTransform: 'uppercase' }}>{t('auto_3479', 'In Circulation')}</span>
                     )}
                   </div>
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.4' }}>
@@ -1991,7 +1991,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                         value={editingReviewText}
                         onChange={(e) => setEditingReviewText(e.target.value)}
                         rows={3}
-                        style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem', background: 'var(--glass-bg)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: 'var(--text-primary)' }}
+                        style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: '4px', color: 'var(--text-primary)' }}
                       />
                       <div className="review-edit-actions" style={{ display: 'flex', gap: '0.5rem' }}>
                         <button onClick={() => handleUpdateReviewSubmit(rev.id)} className="royal-btn small-btn save-btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}>
@@ -2032,7 +2032,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
             <h4 style={{ color: 'var(--accent)', fontSize: '1rem', fontWeight: '600', margin: 0, letterSpacing: '0.05em' }}>
               {nfcActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
             </h4>
-            <button onClick={handleCloseNfcModal} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}>
+            <button onClick={handleCloseNfcModal} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}>
               <X size={16} />
             </button>
           </div>
@@ -2086,12 +2086,12 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
             {nfcSuccess ? (
               <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0', width: '100%' }}>
                 <CheckCircle size={48} className="text-success gold-glow-icon" style={{ marginBottom: '12px' }} />
-                <h4 style={{ color: 'rgba(255, 255, 255, 0.95)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.verifConfirmed')}</h4>
-                <p style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.ledgerUpdated')}</p>
+                <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.verifConfirmed')}</h4>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.ledgerUpdated')}</p>
 
                 {/* Interactive Rating Control */}
                 <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(212, 175, 55, 0.04)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '6px' }}>
-                  <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
+                  <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
                     {ratingSubmitted ? "Thank you for your feedback!" : "How was your experience today?"}
                   </p>
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
@@ -2113,7 +2113,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                         <Star
                           size={24}
                           fill={starValue <= checkoutRating ? "var(--accent)" : "none"}
-                          stroke={starValue <= checkoutRating ? "var(--accent)" : "rgba(255,255,255,0.3)"}
+                          stroke={starValue <= checkoutRating ? "var(--accent)" : "var(--glass-border-hover)"}
                         />
                       </button>
                     ))}
@@ -2139,7 +2139,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                         fontWeight: 'bold',
                       }}
                     >
-                      <Shield size={14} /> View Gatepass
+                      <Shield size={14} /> {t('auto_3480', 'View Gatepass')}
                     </Link>
                   )}
                   {nfcActionType === 'return' && (
@@ -2166,7 +2166,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                         cursor: 'pointer',
                       }}
                     >
-                      <Sparkles size={14} /> Write a Book Review
+                      <Sparkles size={14} /> {t('auto_3481', 'Write a Book Review')}
                     </button>
                   )}
                   <button
@@ -2178,20 +2178,20 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                       borderRadius: '4px',
                     }}
                   >
-                    Done
+                    {t('auto_3482', 'Done')}
                   </button>
                 </div>
               </div>
             ) : fallbackSuccess ? (
               <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0', width: '100%' }}>
                 <CheckCircle size={48} className="gold-glow-icon" style={{ color: 'var(--accent)', marginBottom: '12px' }} />
-                <h4 style={{ color: 'rgba(255, 255, 255, 0.95)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.scribeRequestSaved')}</h4>
-                <p style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.requestSubmittedDesc')}</p>
+                <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.scribeRequestSaved')}</h4>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>{t('catalog.requestSubmittedDesc')}</p>
                 
                 {/* Interactive Rating Control */}
                 {createdCheckoutId && (
                   <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(212, 175, 55, 0.04)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '6px' }}>
-                    <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
+                    <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
                       {ratingSubmitted ? "Thank you for your feedback!" : "How was your experience today?"}
                     </p>
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
@@ -2213,7 +2213,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                           <Star
                             size={24}
                             fill={starValue <= checkoutRating ? "var(--accent)" : "none"}
-                            stroke={starValue <= checkoutRating ? "var(--accent)" : "rgba(255,255,255,0.3)"}
+                            stroke={starValue <= checkoutRating ? "var(--accent)" : "var(--glass-border-hover)"}
                           />
                         </button>
                       ))}
@@ -2231,7 +2231,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                       borderRadius: '4px',
                     }}
                   >
-                    Done
+                    {t('auto_3483', 'Done')}
                   </button>
                 </div>
               </div>
@@ -2244,12 +2244,12 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                       <div className="pulse-ring"></div>
                     </div>
                     
-                    <p className="nfc-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+                    <p className="nfc-prompt-desc" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
                       {t('catalog.holdNfcTagDesc')}
                     </p>
 
-                    <div className="nfc-meta-box" style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', padding: '8px 12px', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>{t('catalog.targetVolumeId')}</span>
+                    <div className="nfc-meta-box" style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', borderRadius: '4px', padding: '8px 12px', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('catalog.targetVolumeId')}</span>
                       <code style={{ color: 'var(--accent)', fontFamily: 'monospace', fontWeight: 'bold' }}>{book.ntagUid}</code>
                     </div>
 
@@ -2282,11 +2282,11 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                       {t('catalog.iphoneAutofocusTip')}
                     </p>
 
-                    <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.7)', lineHeight: '1.5', margin: '0 0 10px 0' }}>
+                    <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: '0 0 10px 0' }}>
                       {t('catalog.alignBarcodePrompt')}
                     </p>
 
-                    <p style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.5)', marginTop: '0', marginBottom: '16px' }}>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0', marginBottom: '16px' }}>
                       {t('catalog.cantScanBarcode')}{' '}
                       <button type="button" onClick={() => handleTabChange('manual')} style={{ background: 'none', border: 'none', color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', padding: 0, font: 'inherit' }}>
                         {t('catalog.submitManualRequest')}
@@ -2320,7 +2320,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
 
                 {activeTab === 'manual' && (
                   <div className="tab-pane manual-tab-pane animate-fade-in" style={{ width: '100%' }}>
-                    <p className="fallback-explanation" style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.7)', lineHeight: '1.5', margin: '0 0 16px 0', textAlign: 'left' }}>
+                    <p className="fallback-explanation" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: '0 0 16px 0', textAlign: 'left' }}>
                       {nfcActionType === 'checkout'
                         ? t('catalog.fallbackExplanationCheckout')
                         : t('catalog.fallbackExplanationReturn')}
@@ -2333,10 +2333,10 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                       </div>
                     )}
 
-                    <div className="fallback-form-summary royal-card" style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '16px' }}>
+                    <div className="fallback-form-summary royal-card" style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '16px' }}>
                       <h5 style={{ color: 'var(--accent)', fontWeight: '600', marginBottom: '4px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('catalog.volumeDetails')}</h5>
-                      <p style={{ fontSize: '0.85rem', fontWeight: '700', color: '#ffffff', margin: 0 }}>{book.title}</p>
-                      <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.6)', margin: '2px 0 0 0' }}>ISBN: {book.isbn}</p>
+                      <p style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>{book.title}</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>ISBN: {book.isbn}</p>
                     </div>
 
                     <div className="fallback-actions-row" style={{ display: 'flex', gap: '12px', width: '100%' }}>
@@ -2364,7 +2364,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
 
                 {activeTab === 'validator_qr' && (
                   <div className="tab-pane qr-validator-tab-pane animate-fade-in" style={{ width: '100%' }}>
-                    <p style={{ fontSize: '0.82rem', color: 'rgba(255, 255, 255, 0.75)', lineHeight: '1.5', marginBottom: '16px', textAlign: 'left' }}>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '16px', textAlign: 'left' }}>
                       {t('catalog.qrValidatorExpl', 'Point your camera at the Return Validator QR Code on the library placard, or enter/simulate the scanned path below.')}
                     </p>
 
@@ -2430,7 +2430,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                               handleValidatorQrSubmit(null, 'royal-vault-alpha');
                             }}
                             className="mock-scan-shortcut-btn"
-                            style={{ padding: '4px 8px', fontSize: '0.72rem', background: 'var(--glass-bg)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer' }}
+                            style={{ padding: '4px 8px', fontSize: '0.72rem', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer' }}
                           >
                             Scan: royal-vault-alpha
                           </button>
@@ -2441,7 +2441,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                               handleValidatorQrSubmit(null, 'exit-spot-alpha');
                             }}
                             className="mock-scan-shortcut-btn"
-                            style={{ padding: '4px 8px', fontSize: '0.72rem', background: 'var(--glass-bg)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer' }}
+                            style={{ padding: '4px 8px', fontSize: '0.72rem', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer' }}
                           >
                             Scan: exit-spot-alpha
                           </button>
@@ -2484,7 +2484,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
             <h4 style={{ color: 'var(--accent)', fontSize: '1rem', fontWeight: '600', margin: 0, letterSpacing: '0.05em' }}>
               {instantActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
             </h4>
-            <button onClick={() => setInstantConfirmOpen(false)} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: '4px' }}>
+            <button onClick={() => setInstantConfirmOpen(false)} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}>
               <X size={16} />
             </button>
           </div>
@@ -2494,11 +2494,11 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
               <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0', width: '100%' }}>
                 <CheckCircle size={48} className="text-success gold-glow-icon" style={{ marginBottom: '12px' }} />
                 <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>{instantActionType === 'checkout' ? 'Sovereign Checkout Confirmed' : 'Sovereign Return Confirmed'}</h4>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>The digital transaction ledger has been updated successfully.</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>{t('auto_3484', 'The digital transaction ledger has been updated successfully.')}</p>
 
                 {/* Interactive Rating Control */}
                 <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(212, 175, 55, 0.04)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '6px' }}>
-                  <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
+                  <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
                     {ratingSubmitted ? "Thank you for your feedback!" : "How was your experience today?"}
                   </p>
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
@@ -2520,7 +2520,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                         <Star
                           size={24}
                           fill={starValue <= checkoutRating ? "var(--accent)" : "none"}
-                          stroke={starValue <= checkoutRating ? "var(--accent)" : "rgba(255,255,255,0.3)"}
+                          stroke={starValue <= checkoutRating ? "var(--accent)" : "var(--glass-border-hover)"}
                         />
                       </button>
                     ))}
@@ -2546,7 +2546,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                         fontWeight: 'bold',
                       }}
                     >
-                      <Shield size={14} /> View Gatepass
+                      <Shield size={14} /> {t('auto_3485', 'View Gatepass')}
                     </Link>
                   )}
                   {instantActionType === 'return' && (
@@ -2573,7 +2573,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                         cursor: 'pointer',
                       }}
                     >
-                      <Sparkles size={14} /> Write a Book Review
+                      <Sparkles size={14} /> {t('auto_3486', 'Write a Book Review')}
                     </button>
                   )}
 
@@ -2609,21 +2609,21 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                       borderRadius: '4px',
                     }}
                   >
-                    Done
+                    {t('auto_3487', 'Done')}
                   </button>
                 </div>
               </div>
             ) : instantError ? (
               <div className="nfc-error-state animate-fade-in" style={{ padding: '10px 0', width: '100%' }}>
                 <AlertTriangle size={48} style={{ color: 'var(--error, #ff7b72)', marginBottom: '12px' }} />
-                <h4 style={{ color: 'var(--text-primary)', margin: '0 0 8px 0', fontSize: '1rem' }}>Transaction Failed</h4>
+                <h4 style={{ color: 'var(--text-primary)', margin: '0 0 8px 0', fontSize: '1rem' }}>{t('auto_3488', 'Transaction Failed')}</h4>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '0 0 16px 0' }}>{instantError}</p>
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                   <button onClick={handleConfirmInstantAction} className="royal-btn" style={{ background: 'var(--accent)', color: 'var(--text-primary)', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>
-                    Try Again
+                    {t('auto_3489', 'Try Again')}
                   </button>
                   <button onClick={() => setInstantConfirmOpen(false)} className="royal-btn-secondary" style={{ padding: '8px 16px', borderRadius: '4px', fontSize: '0.85rem' }}>
-                    Close
+                    {t('auto_3490', 'Close')}
                   </button>
                 </div>
               </div>
@@ -2634,7 +2634,7 @@ const BookDetailPage = ({ user, triggerOnboarding }) => {
                   {instantActionType === 'checkout' ? 'Executing Instant Sovereign Checkout...' : 'Executing Instant Sovereign Return...'}
                 </h4>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', margin: 0 }}>
-                  Cryptographically validating NFC physical signature and updating catalog ledger...
+                  {t('auto_3491', 'Cryptographically validating NFC physical signature and updating catalog ledger...')}
                 </p>
               </div>
             )}

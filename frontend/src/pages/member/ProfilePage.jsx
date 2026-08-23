@@ -608,7 +608,7 @@ const ProfilePage = ({ user }) => {
                 {/* Account Email Status (Epic 1) */}
                 <div className="form-group" style={{ marginBottom: '20px', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(212,165,116,0.1)' }}>
                   <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    Sovereign Scholar Identity
+                    {t('auto_3538', 'Sovereign Scholar Identity')}
                   </label>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -631,17 +631,17 @@ const ProfilePage = ({ user }) => {
                         }}>
                           {emailVerified ? (
                             <>
-                              <CheckCircle size={12} /> Verified
+                              <CheckCircle size={12} /> {t('auto_3539', 'Verified')}
                             </>
                           ) : (
                             <>
-                              <AlertTriangle size={12} /> Pending Verification
+                              <AlertTriangle size={12} /> {t('auto_3540', 'Pending Verification')}
                             </>
                           )}
                         </span>
                         {settings.enforceEmailVerification && (
                           <span style={{ fontSize: '0.65rem', fontWeight: 700, background: 'rgba(212,165,116,0.15)', color: 'var(--accent)', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>
-                            Enforced
+                            {t('auto_3541', 'Enforced')}
                           </span>
                         )}
                       </div>
@@ -899,7 +899,7 @@ const ProfilePage = ({ user }) => {
                             className="royal-btn"
                             style={{ padding: '4px 10px', fontSize: '0.75rem', height: 'auto', minWidth: 'auto', textTransform: 'uppercase' }}
                           >
-                            Check Now
+                            {t('auto_3542', 'Check Now')}
                           </button>
                         </div>
                       )}

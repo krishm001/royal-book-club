@@ -1,3 +1,4 @@
+import { useLanguage } from '../../i18n/LanguageContext';
 import React, { useState } from 'react';
 import { BookText, Sparkles, Search, ChevronRight, PenTool } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -5,6 +6,8 @@ import RichTextEditor from '../../components/shared/RichTextEditor';
 import './ArticlesPage.css';
 
 const ArticlesPage = ({ user }) => {
+  const { t } = useLanguage();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [isDrafting, setIsDrafting] = useState(false);
   const [articles, setArticles] = useState([
@@ -69,11 +72,11 @@ const ArticlesPage = ({ user }) => {
       <header className="articles-header">
         <div className="header-badge">
           <Sparkles size={14} className="gold-glow-icon" />
-          <span className="gold-gradient-text">SOVEREIGN ESSAYS & DISSERTATIONS</span>
+          <span className="gold-gradient-text">{t('auto_3457', 'SOVEREIGN ESSAYS & DISSERTATIONS')}</span>
         </div>
-        <h1 className="articles-title glow-text">Intellectual Archives</h1>
+        <h1 className="articles-title glow-text">{t('auto_3458', 'Intellectual Archives')}</h1>
         <p className="articles-subtitle">
-          Delve into deep literary critiques, symbolist philosophical theses, and classical research papers penned by our salon scholars.
+          {t('auto_3459', 'Delve into deep literary critiques, symbolist philosophical theses, and classical research papers penned by our salon scholars.')}
         </p>
       </header>
 
@@ -82,13 +85,13 @@ const ArticlesPage = ({ user }) => {
         <section className="drafting-section-control">
           {!isDrafting ? (
             <button onClick={() => setIsDrafting(true)} className="royal-btn draft-trigger-btn" id="draft-dissertation-btn">
-              <PenTool size={16} /> Compose New Dissertation
+              <PenTool size={16} /> {t('auto_3460', 'Compose New Dissertation')}
             </button>
           ) : (
             <div className="royal-card dynamic-drafting-card animate-fade-in">
               <div className="draft-header">
-                <h3>New Literary Submission</h3>
-                <button onClick={() => setIsDrafting(false)} className="cancel-draft-btn">Cancel</button>
+                <h3>{t('auto_3461', 'New Literary Submission')}</h3>
+                <button onClick={() => setIsDrafting(false)} className="cancel-draft-btn">{t('auto_3462', 'Cancel')}</button>
               </div>
               <RichTextEditor onPublish={handlePublishArticle} />
             </div>
@@ -131,7 +134,7 @@ const ArticlesPage = ({ user }) => {
                   <div className="article-list-footer">
                     <span className="art-author-info">by <strong className="gold-gradient-text">{art.author}</strong></span>
                     <Link to={`/articles/${art.id}`} className="read-more-btn" id={`read-more-btn-${art.id}`}>
-                      Read Essay <ChevronRight size={14} />
+                      {t('auto_3463', 'Read Essay')} <ChevronRight size={14} />
                     </Link>
                   </div>
                 </div>
@@ -141,8 +144,8 @@ const ArticlesPage = ({ user }) => {
         ) : (
           <div className="royal-card no-articles-card">
             <BookText size={48} className="no-articles-icon" />
-            <h3>No Essays Found</h3>
-            <p>No dissertations were found matching your terms. Be the first to publish a new critique!</p>
+            <h3>{t('auto_3464', 'No Essays Found')}</h3>
+            <p>{t('auto_3465', 'No dissertations were found matching your terms. Be the first to publish a new critique!')}</p>
           </div>
         )}
       </main>

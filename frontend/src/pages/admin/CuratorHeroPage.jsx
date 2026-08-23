@@ -530,13 +530,13 @@ const CuratorHeroPage = ({ user }) => {
           <div className="denied-icon-wrapper">
             <Shield size={48} className="denied-shield-icon" />
           </div>
-          <h2 className="denied-title gold-gradient-text">Privileged Sanctuary</h2>
+          <h2 className="denied-title gold-gradient-text">{t('auto_3307', 'Privileged Sanctuary')}</h2>
           <p className="denied-message">
-            Your current credentials do not grant access to the Curator Console. Curation of the Royal Library is reserved for assigned Curators.
+            {t('auto_3308', 'Your current credentials do not grant access to the Curator Console. Curation of the Royal Library is reserved for assigned Curators.')}
           </p>
           <div className="denied-actions">
             <Link to="/" className="royal-btn return-home-btn">
-              Return to Entrance Hall
+              {t('auto_3309', 'Return to Entrance Hall')}
             </Link>
           </div>
         </div>
@@ -548,13 +548,13 @@ const CuratorHeroPage = ({ user }) => {
     <div className="curator-hero-container animate-fade-in">
       <header className="curator-hero-header">
         <Link to="/admin" className="back-link">
-          <ArrowLeft size={16} /> Curator Console
+          <ArrowLeft size={16} /> {t('auto_3310', 'Curator Console')}
         </Link>
         <div className="header-badge-curator">
           <Sparkles size={14} className="gold-glow-icon" />
-          <span className="gold-gradient-text">PORTAL CURATION</span>
+          <span className="gold-gradient-text">{t('auto_3311', 'PORTAL CURATION')}</span>
         </div>
-        <h1 className="curator-hero-title glow-text">Portal Theme & Plebiscites</h1>
+        <h1 className="curator-hero-title glow-text">{t('auto_3312', 'Portal Theme & Plebiscites')}</h1>
         <p className="curator-hero-subtitle">
           Customize the aesthetic homepage banners, title statements, or configure real-time community book polls (Guild Plebiscites) for patrons.
         </p>
@@ -566,7 +566,7 @@ const CuratorHeroPage = ({ user }) => {
           className={`curator-tab-btn ${activeTab === 'hero' ? 'active' : ''}`}
           onClick={() => setActiveTab('hero')}
         >
-          <Type size={16} /> Landing Hero Editor
+          <Type size={16} /> {t('auto_3313', 'Landing Hero Editor')}
         </button>
         <button 
           className={`curator-tab-btn ${activeTab === 'polls' ? 'active' : ''}`}
@@ -581,14 +581,14 @@ const CuratorHeroPage = ({ user }) => {
           className={`curator-tab-btn ${activeTab === 'featured' ? 'active' : ''}`}
           onClick={() => setActiveTab('featured')}
         >
-          <Sparkles size={16} /> Featured Selections
+          <Sparkles size={16} /> {t('auto_3314', 'Featured Selections')}
         </button>
       </div>
 
       {loading ? (
         <div className="loading-boundary">
           <div className="loader-mini"></div>
-          <p>Unrolling parchment settings...</p>
+          <p>{t('auto_3315', 'Unrolling parchment settings...')}</p>
         </div>
       ) : (
         <div className="curator-tab-content-wrapper">
@@ -599,12 +599,12 @@ const CuratorHeroPage = ({ user }) => {
               {/* Form Side */}
               <section className="royal-card editor-form-card">
                 <div className="form-card-header">
-                  <h3><Type size={18} className="gold-glow-icon" /> Aesthetic Parameters</h3>
+                  <h3><Type size={18} className="gold-glow-icon" /> {t('auto_3316', 'Aesthetic Parameters')}</h3>
                 </div>
 
                 <form onSubmit={handleSave} className="hero-edit-form">
                   <div className="form-group">
-                    <label className="royal-label">Sovereign Headline</label>
+                    <label className="royal-label">{t('auto_3317', 'Sovereign Headline')}</label>
                     <input
                       type="text"
                       className="royal-input"
@@ -616,7 +616,7 @@ const CuratorHeroPage = ({ user }) => {
                   </div>
 
                   <div className="form-group">
-                    <label className="royal-label">Sovereign Sub-headline</label>
+                    <label className="royal-label">{t('auto_3318', 'Sovereign Sub-headline')}</label>
                     <textarea
                       className="royal-input subtitle-textarea"
                       placeholder="e.g. Enter a world of curated academic papers, fine leather volumes, and intimate fireside symposiums with world-class authors."
@@ -639,7 +639,7 @@ const CuratorHeroPage = ({ user }) => {
                           style={{ display: 'none' }}
                         />
                         <label htmlFor="hero-banner-salon" className="banner-upload-trigger">
-                          <Upload size={14} /> Salon Banner
+                          <Upload size={14} /> {t('auto_3319', 'Salon Banner')}
                         </label>
                       </div>
                       {coverPreviewSalon && (
@@ -660,7 +660,7 @@ const CuratorHeroPage = ({ user }) => {
                           style={{ display: 'none' }}
                         />
                         <label htmlFor="hero-banner-academic" className="banner-upload-trigger">
-                          <Upload size={14} /> Academic Banner
+                          <Upload size={14} /> {t('auto_3320', 'Academic Banner')}
                         </label>
                       </div>
                       {coverPreviewAcademic && (
@@ -674,7 +674,7 @@ const CuratorHeroPage = ({ user }) => {
                   <div className="translation-section-header-block" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '25px 0 15px' }}>
                     <div className="translation-section-divider" style={{ margin: 0 }}>
                       <h4 className="translation-header gold-gradient-text" style={{ margin: '0 0 4px', fontSize: '1.1rem', letterSpacing: '1px', display: 'flex', alignItems: 'center' }}>
-                        <Sparkles size={14} style={{ marginRight: '6px' }} /> HI / KN LOCALIZATION OVERRIDES
+                        <Sparkles size={14} style={{ marginRight: '6px' }} /> {t('auto_3321', 'HI / KN LOCALIZATION OVERRIDES')}
                       </h4>
                       <p style={{ fontSize: '0.85rem', opacity: 0.7, margin: 0 }}>
                         Optional: Supply dynamic Rajasthani Hindi and Classical Kannada overrides for the Hero Title and Subtitle.
@@ -776,7 +776,7 @@ const CuratorHeroPage = ({ user }) => {
                       className="royal-btn-secondary reset-hero-btn"
                       title="Reset to Defaults"
                     >
-                      <RotateCcw size={16} /> Reset defaults
+                      <RotateCcw size={16} /> {t('auto_3322', 'Reset defaults')}
                     </button>
                   </div>
                 </form>
@@ -786,7 +786,7 @@ const CuratorHeroPage = ({ user }) => {
               <section className="live-preview-section">
                 <div className="preview-label">
                   <div className="preview-label-text">
-                    <Eye size={14} /> LIVE CURATOR PREVIEW
+                    <Eye size={14} /> {t('auto_3323', 'LIVE CURATOR PREVIEW')}
                   </div>
                   <div className="preview-theme-selector">
                     <button 
@@ -794,14 +794,14 @@ const CuratorHeroPage = ({ user }) => {
                       className={`preview-toggle-tab ${activePreviewTheme === 'salon' ? 'active' : ''}`}
                       onClick={() => setActivePreviewTheme('salon')}
                     >
-                      Salon View
+                      {t('auto_3324', 'Salon View')}
                     </button>
                     <button 
                       type="button" 
                       className={`preview-toggle-tab ${activePreviewTheme === 'academic' ? 'active' : ''}`}
                       onClick={() => setActivePreviewTheme('academic')}
                     >
-                      Academic View
+                      {t('auto_3325', 'Academic View')}
                     </button>
                   </div>
                 </div>
@@ -823,7 +823,7 @@ const CuratorHeroPage = ({ user }) => {
                     </span>
                     <h1 className="live-title">{title || 'Where Literature Reigns Supreme'}</h1>
                     <p className="live-subtitle">{subtitle || 'Enter a world of curated academic papers, fine leather volumes, and intimate fireside symposiums.'}</p>
-                    <button className="royal-btn mini-btn-live">Enter the Study</button>
+                    <button className="royal-btn mini-btn-live">{t('auto_3326', 'Enter the Study')}</button>
                   </div>
                 </div>
               </section>
@@ -836,16 +836,16 @@ const CuratorHeroPage = ({ user }) => {
               {/* Creator Form */}
               <section className="royal-card editor-form-card">
                 <div className="form-card-header">
-                  <h3><PlusCircle size={18} className="gold-glow-icon" /> Deploy New Plebiscite</h3>
+                  <h3><PlusCircle size={18} className="gold-glow-icon" /> {t('auto_3327', 'Deploy New Plebiscite')}</h3>
                 </div>
 
                 <form onSubmit={handleCreatePollSubmit} className="hero-edit-form">
                   <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '8px' }}>
-                    Publish a community poll to gather patron feedback on seasonal books or discussion topics. Automatically archives the current active poll.
+                    {t('auto_3328', 'Publish a community poll to gather patron feedback on seasonal books or discussion topics. Automatically archives the current active poll.')}
                   </p>
 
                   <div className="form-group">
-                    <label className="royal-label">Sovereign Question</label>
+                    <label className="royal-label">{t('auto_3329', 'Sovereign Question')}</label>
                     <input
                       type="text"
                       className="royal-input"
@@ -889,14 +889,14 @@ const CuratorHeroPage = ({ user }) => {
                       }}
                     />
                     <label htmlFor="members-only-toggle" className="royal-label" style={{ margin: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Lock size={14} style={{ color: 'var(--accent)' }} /> Restrict to authenticated Guild Members only
+                      <Lock size={14} style={{ color: 'var(--accent)' }} /> {t('auto_3330', 'Restrict to authenticated Guild Members only')}
                     </label>
                   </div>
 
                   <div className="translation-section-header-block" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '25px 0 15px' }}>
                     <div className="translation-section-divider" style={{ margin: 0 }}>
                       <h4 className="translation-header gold-gradient-text" style={{ margin: '0 0 4px', fontSize: '1.1rem', letterSpacing: '1px', display: 'flex', alignItems: 'center' }}>
-                        <Sparkles size={14} style={{ marginRight: '6px' }} /> HI / KN LOCALIZATION OVERRIDES
+                        <Sparkles size={14} style={{ marginRight: '6px' }} /> {t('auto_3331', 'HI / KN LOCALIZATION OVERRIDES')}
                       </h4>
                       <p style={{ fontSize: '0.85rem', opacity: 0.7, margin: 0 }}>
                         Optional: Supply dynamic Rajasthani Hindi and Classical Kannada overrides for the plebiscite question and options.
@@ -1011,7 +1011,7 @@ const CuratorHeroPage = ({ user }) => {
               <section className="live-preview-section">
                 <div className="preview-label">
                   <div className="preview-label-text">
-                    <Clock size={14} /> HISTORICAL PLEBISCITES ARCHIVE
+                    <Clock size={14} /> {t('auto_3332', 'HISTORICAL PLEBISCITES ARCHIVE')}
                   </div>
                 </div>
 
@@ -1019,7 +1019,7 @@ const CuratorHeroPage = ({ user }) => {
                   {loadingHistory ? (
                     <div style={{ textAlign: 'center', padding: '40px', color: 'var(--accent)' }}>
                       <RotateCcw className="animate-spin" size={24} style={{ margin: '0 auto 10px' }} />
-                      <p style={{ fontSize: '0.85rem' }}>Reading historic annals...</p>
+                      <p style={{ fontSize: '0.85rem' }}>{t('auto_3333', 'Reading historic annals...')}</p>
                     </div>
                   ) : historyError ? (
                     <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
@@ -1027,7 +1027,7 @@ const CuratorHeroPage = ({ user }) => {
                     </div>
                   ) : pollHistory.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)', border: '1px dashed var(--glass-border)', borderRadius: 'var(--border-radius-sm)' }}>
-                      <p style={{ fontSize: '0.85rem' }}>No historical plebiscites recorded in the Scribes ledger.</p>
+                      <p style={{ fontSize: '0.85rem' }}>{t('auto_3334', 'No historical plebiscites recorded in the Scribes ledger.')}</p>
                     </div>
                   ) : (
                     pollHistory.map((item) => {
@@ -1045,11 +1045,11 @@ const CuratorHeroPage = ({ user }) => {
                               <span className={item.membersOnly ? 'badge-gated' : 'badge-public'}>
                                 {item.membersOnly ? (
                                   <>
-                                    <Lock size={10} /> Members
+                                    <Lock size={10} /> {t('auto_3335', 'Members')}
                                   </>
                                 ) : (
                                   <>
-                                    <Unlock size={10} /> Public
+                                    <Unlock size={10} /> {t('auto_3336', 'Public')}
                                   </>
                                 )}
                               </span>
@@ -1057,14 +1057,14 @@ const CuratorHeroPage = ({ user }) => {
                             
                             {item.active ? (
                               <span className="live-poll-badge">
-                                <Check size={14} /> Currently Live
+                                <Check size={14} /> {t('auto_3337', 'Currently Live')}
                               </span>
                             ) : (
                               <button 
                                 onClick={() => handleReactivatePoll(item.id)}
                                 className="activate-poll-btn"
                               >
-                                <Clock size={12} /> Reactivate
+                                <Clock size={12} /> {t('auto_3338', 'Reactivate')}
                               </button>
                             )}
                           </div>
@@ -1119,7 +1119,7 @@ const CuratorHeroPage = ({ user }) => {
                 </div>
                 
                 <p className="curator-hero-subtitle-hint">
-                  Search through the library archives and highlight up to five volumes to showcase on the homepage. They will rotate automatically to inspire our patrons.
+                  {t('auto_3339', 'Search through the library archives and highlight up to five volumes to showcase on the homepage. They will rotate automatically to inspire our patrons.')}
                 </p>
 
                 {/* Selected List */}
@@ -1127,7 +1127,7 @@ const CuratorHeroPage = ({ user }) => {
                   <h4 className="shelf-title">Current Curated Selection ({featuredBookIsbns.length} / 5)</h4>
                   {featuredBookIsbns.length === 0 ? (
                     <div className="empty-shelf-banner">
-                      <p>The showcase is empty. Select books below to feature them.</p>
+                      <p>{t('auto_3340', 'The showcase is empty. Select books below to feature them.')}</p>
                     </div>
                   ) : (
                     <div className="selected-books-grid">
@@ -1160,7 +1160,7 @@ const CuratorHeroPage = ({ user }) => {
                 </div>
 
                 <div className="featured-search-group">
-                  <label className="royal-label">Search Library Archives</label>
+                  <label className="royal-label">{t('auto_3341', 'Search Library Archives')}</label>
                   <input
                     type="text"
                     className="royal-input"
@@ -1197,7 +1197,7 @@ const CuratorHeroPage = ({ user }) => {
                               className="result-action-btn remove"
                               onClick={() => setFeaturedBookIsbns(featuredBookIsbns.filter(id => id !== book.isbn))}
                             >
-                              Remove Selection
+                              {t('auto_3342', 'Remove Selection')}
                             </button>
                           ) : (
                             <button 
@@ -1212,7 +1212,7 @@ const CuratorHeroPage = ({ user }) => {
                                 setFeaturedBookIsbns([...featuredBookIsbns, book.isbn]);
                               }}
                             >
-                              Feature Book
+                              {t('auto_3343', 'Feature Book')}
                             </button>
                           )}
                         </div>
@@ -1236,7 +1236,7 @@ const CuratorHeroPage = ({ user }) => {
               {/* Quotes Curation Card */}
               <section className="royal-card featured-editor-card" style={{ marginTop: '30px' }}>
                 <div className="form-card-header">
-                  <h3><FileText size={18} className="gold-glow-icon" /> Curate Quote Portfolio</h3>
+                  <h3><FileText size={18} className="gold-glow-icon" /> {t('auto_3344', 'Curate Quote Portfolio')}</h3>
                 </div>
                 
                 <p className="curator-hero-subtitle-hint">
@@ -1275,7 +1275,7 @@ const CuratorHeroPage = ({ user }) => {
                       disabled={isTranslatingNewQuote}
                     >
                       <Sparkles size={14} className={isTranslatingNewQuote ? "animate-spin" : ""} />
-                      Translate
+                      {t('auto_3345', 'Translate')}
                     </button>
                   </div>
 
@@ -1327,7 +1327,7 @@ const CuratorHeroPage = ({ user }) => {
                       setNewQuoteKn('');
                     }}
                   >
-                    <Plus size={16} /> Add to Curation Portfolio
+                    <Plus size={16} /> {t('auto_3346', 'Add to Curation Portfolio')}
                   </button>
                 </div>
 
@@ -1375,7 +1375,7 @@ const CuratorHeroPage = ({ user }) => {
                                 onClick={() => handleTranslateQuoteInline(idx)}
                                 title="Translate this quote to Hindi & Kannada"
                               >
-                                <Sparkles size={12} /> Translate Inline
+                                <Sparkles size={12} /> {t('auto_3347', 'Translate Inline')}
                               </button>
                               <button
                                 type="button"
@@ -1394,7 +1394,7 @@ const CuratorHeroPage = ({ user }) => {
                           {/* Editable translations inline */}
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px' }}>
                             <div>
-                              <span style={{ fontSize: '0.75rem', color: 'var(--accent)', display: 'block', marginBottom: '4px' }}>Hindi Translation</span>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--accent)', display: 'block', marginBottom: '4px' }}>{t('auto_3348', 'Hindi Translation')}</span>
                               <input
                                 type="text"
                                 className="royal-input"
@@ -1409,7 +1409,7 @@ const CuratorHeroPage = ({ user }) => {
                               />
                             </div>
                             <div>
-                              <span style={{ fontSize: '0.75rem', color: 'var(--accent)', display: 'block', marginBottom: '4px' }}>Kannada Translation</span>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--accent)', display: 'block', marginBottom: '4px' }}>{t('auto_3349', 'Kannada Translation')}</span>
                               <input
                                 type="text"
                                 className="royal-input"

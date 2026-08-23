@@ -248,7 +248,7 @@ const CuratorInventoryAuditPage = ({ user }) => {
       <div className="audit-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <RefreshCw className="spin-icon" size={40} style={{ color: '#d4af37', marginBottom: '12px' }} />
-          <p>Syncing physical ledger configurations...</p>
+          <p>{t('auto_3350', 'Syncing physical ledger configurations...')}</p>
         </div>
       </div>
     );
@@ -265,12 +265,12 @@ const CuratorInventoryAuditPage = ({ user }) => {
       {/* Premium Glass Header Card */}
       <div className="audit-header-card">
         <div className="audit-title-section">
-          <h1>Curator Shelf Audit</h1>
-          <p>Verify physical book volumes, reconcile ledger stocks, and update catalog counts automatically.</p>
+          <h1>{t('auto_3351', 'Curator Shelf Audit')}</h1>
+          <p>{t('auto_3352', 'Verify physical book volumes, reconcile ledger stocks, and update catalog counts automatically.')}</p>
         </div>
         <Link to="/admin" className="royal-btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ArrowLeft size={16} />
-          <span>Exit Dashboard</span>
+          <span>{t('auto_3353', 'Exit Dashboard')}</span>
         </Link>
       </div>
 
@@ -295,10 +295,9 @@ const CuratorInventoryAuditPage = ({ user }) => {
           <div className="audit-empty-icon">
             <ClipboardCheck size={40} />
           </div>
-          <h2>No Active Shelf Audit</h2>
+          <h2>{t('auto_3354', 'No Active Shelf Audit')}</h2>
           <p>
-            Start a fresh catalog reconciliation session. This compiles expected volume records 
-            across the library shelves, ready for physical scan validation.
+            {t('auto_3355', 'Start a fresh catalog reconciliation session. This compiles expected volume records              across the library shelves, ready for physical scan validation.')}
           </p>
           <button 
             type="button" 
@@ -308,7 +307,7 @@ const CuratorInventoryAuditPage = ({ user }) => {
             style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1rem', padding: '12px 28px' }}
           >
             {actionLoading ? <RefreshCw className="spin-icon" size={18} /> : <Play size={18} />}
-            <span>Begin New Physical Audit</span>
+            <span>{t('auto_3356', 'Begin New Physical Audit')}</span>
           </button>
         </div>
       ) : (
@@ -323,10 +322,10 @@ const CuratorInventoryAuditPage = ({ user }) => {
               <div className="audit-panel scanner-card">
                 <h3 style={{ color: '#d4af37', fontFamily: '"Outfit", sans-serif', fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
                   <Sparkles size={18} />
-                  <span>Real-time Shelf Scanning Terminal</span>
+                  <span>{t('auto_3357', 'Real-time Shelf Scanning Terminal')}</span>
                 </h3>
                 <p style={{ fontSize: '0.85rem', opacity: 0.75, lineHeight: '1.5' }}>
-                  Scan physical book barcodes, enter ISBN values manually, or tap pre-programmed NTAG213 volume cards to register item locations.
+                  {t('auto_3358', 'Scan physical book barcodes, enter ISBN values manually, or tap pre-programmed NTAG213 volume cards to register item locations.')}
                 </p>
 
                 <form onSubmit={handleScanItemSubmit} className="scanner-flex-row">
@@ -344,7 +343,7 @@ const CuratorInventoryAuditPage = ({ user }) => {
                     className="royal-btn"
                     style={{ padding: '0 24px' }}
                   >
-                    <span>Validate Code</span>
+                    <span>{t('auto_3359', 'Validate Code')}</span>
                   </button>
                   <button
                     type="button"
@@ -366,7 +365,7 @@ const CuratorInventoryAuditPage = ({ user }) => {
                 {isNfcReading && (
                   <div style={{ marginTop: '14px', background: 'rgba(212,175,55,0.04)', border: '1px dashed rgba(212,175,55,0.2)', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
                     <Smartphone size={24} className="gold-glow-icon animate-pulse" style={{ color: '#d4af37', marginBottom: '6px' }} />
-                    <p style={{ fontSize: '0.8rem', opacity: 0.8, margin: 0 }}>Tap catalog tag to browser device NFC antenna...</p>
+                    <p style={{ fontSize: '0.8rem', opacity: 0.8, margin: 0 }}>{t('auto_3360', 'Tap catalog tag to browser device NFC antenna...')}</p>
                   </div>
                 )}
               </div>
@@ -377,7 +376,7 @@ const CuratorInventoryAuditPage = ({ user }) => {
               <div className="panel-header">
                 <h3>
                   <BookOpen size={18} />
-                  <span>Curation Ledger Reconciliation status</span>
+                  <span>{t('auto_3361', 'Curation Ledger Reconciliation status')}</span>
                 </h3>
                 <span style={{ fontSize: '0.85rem', opacity: 0.7 }}>{books.length} Catalogue entries</span>
               </div>
@@ -459,7 +458,7 @@ const CuratorInventoryAuditPage = ({ user }) => {
                           <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span>{book.title}</span>
                             {(auditNotes[book.isbn] || '').trim() && (
-                              <span style={{ fontSize: '0.65rem', background: 'rgba(212, 175, 55, 0.15)', color: '#d4af37', padding: '1px 6px', borderRadius: '4px', border: '1px solid rgba(212, 175, 55, 0.2)' }}>Note</span>
+                              <span style={{ fontSize: '0.65rem', background: 'rgba(212, 175, 55, 0.15)', color: '#d4af37', padding: '1px 6px', borderRadius: '4px', border: '1px solid rgba(212, 175, 55, 0.2)' }}>{t('auto_3362', 'Note')}</span>
                             )}
                           </h4>
                           <p style={{ marginBottom: '2px' }}>{Array.isArray(book.authors) ? book.authors.join(', ') : book.author}</p>
@@ -471,11 +470,11 @@ const CuratorInventoryAuditPage = ({ user }) => {
                             Scanned: {scannedCountForThis} / Expected: {book.totalCopies || 0}
                           </span>
                           {isFullyAudited ? (
-                            <span className="status-badge scanned-badge">Verified</span>
+                            <span className="status-badge scanned-badge">{t('auto_3363', 'Verified')}</span>
                           ) : isPartiallyAudited ? (
-                            <span className="status-badge scanned-badge" style={{ color: '#fbbf24', borderColor: '#fbbf24' }}>Partial</span>
+                            <span className="status-badge scanned-badge" style={{ color: '#fbbf24', borderColor: '#fbbf24' }}>{t('auto_3364', 'Partial')}</span>
                           ) : (
-                            <span className="status-badge missing-badge">Missing</span>
+                            <span className="status-badge missing-badge">{t('auto_3365', 'Missing')}</span>
                           )}
                         </div>
                       </div>
@@ -495,7 +494,7 @@ const CuratorInventoryAuditPage = ({ user }) => {
                             gap: '12px' 
                           }}
                         >
-                          <span style={{ fontSize: '0.85rem', color: '#d4af37', fontWeight: '600', fontFamily: '"Outfit", sans-serif' }}>Copy Checklist Verification</span>
+                          <span style={{ fontSize: '0.85rem', color: '#d4af37', fontWeight: '600', fontFamily: '"Outfit", sans-serif' }}>{t('auto_3366', 'Copy Checklist Verification')}</span>
                           
                           {/* Checklist items */}
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px' }}>
@@ -573,12 +572,12 @@ const CuratorInventoryAuditPage = ({ user }) => {
             {/* Session Stats card */}
             <div className="audit-panel" style={{ background: 'rgba(212, 175, 55, 0.03)', border: '1px solid rgba(212, 175, 55, 0.15)' }}>
               <div className="panel-header">
-                <h3>Reconciliation Stats</h3>
+                <h3>{t('auto_3367', 'Reconciliation Stats')}</h3>
               </div>
 
               <div className="audit-progress-block">
                 <div className="progress-labels">
-                  <span>Audit Progress</span>
+                  <span>{t('auto_3368', 'Audit Progress')}</span>
                   <span style={{ fontWeight: '600', color: '#d4af37' }}>{progressPercent}%</span>
                 </div>
                 <div className="progress-bar-container">
@@ -616,12 +615,12 @@ const CuratorInventoryAuditPage = ({ user }) => {
                   style={{ width: '100%', marginTop: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                 >
                   {actionLoading ? <RefreshCw className="spin-icon" size={16} /> : <StopCircle size={16} />}
-                  <span>Finalize & Reconcile Catalog</span>
+                  <span>{t('auto_3369', 'Finalize & Reconcile Catalog')}</span>
                 </button>
               ) : (
                 <div style={{ marginTop: '24px', textAlign: 'center' }}>
                   <p style={{ fontSize: '0.85rem', color: '#34d399', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                    <CheckCircle2 size={16} /> Session Reconciled successfully.
+                    <CheckCircle2 size={16} /> {t('auto_3370', 'Session Reconciled successfully.')}
                   </p>
                   <button
                     type="button"
@@ -629,7 +628,7 @@ const CuratorInventoryAuditPage = ({ user }) => {
                     className="royal-btn-secondary"
                     style={{ width: '100%', marginTop: '12px' }}
                   >
-                    Start New Audit
+                    {t('auto_3371', 'Start New Audit')}
                   </button>
                 </div>
               )}
@@ -639,9 +638,9 @@ const CuratorInventoryAuditPage = ({ user }) => {
             <div className="audit-panel" style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.05)' }}>
               <h4 style={{ color: '#d4af37', fontFamily: '"Outfit", sans-serif', fontSize: '0.9rem', fontWeight: '600', margin: '0 0 10px 0' }}>Shelf audit instructions:</h4>
               <ul style={{ fontSize: '0.78rem', opacity: 0.75, paddingLeft: '16px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', lineHeight: '1.4' }}>
-                <li>Bulk scan physical tags sequentially from shelf slots using Web NFC.</li>
-                <li>Books expected in catalog but missing in physical scan counts will have total/available volumes decremented automatically.</li>
-                <li>Finalizing permanently writes adjustments to database. All active loans remain unaffected.</li>
+                <li>{t('auto_3372', 'Bulk scan physical tags sequentially from shelf slots using Web NFC.')}</li>
+                <li>{t('auto_3373', 'Books expected in catalog but missing in physical scan counts will have total/available volumes decremented automatically.')}</li>
+                <li>{t('auto_3374', 'Finalizing permanently writes adjustments to database. All active loans remain unaffected.')}</li>
               </ul>
             </div>
 

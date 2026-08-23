@@ -99,12 +99,12 @@ const QrStickerGeneratorPage = ({ user }) => {
     return (
       <div className="admin-access-denied-container animate-fade-in" style={{ padding: '4rem 1rem', textAlign: 'center' }}>
         <div className="royal-card denied-card" style={{ maxWidth: '480px', margin: '0 auto', padding: '2rem' }}>
-          <h2 className="gold-gradient-text">Curator Access Mandated</h2>
+          <h2 className="gold-gradient-text">{t('auto_3427', 'Curator Access Mandated')}</h2>
           <p style={{ color: 'var(--text-secondary)', margin: '1rem 0' }}>
-            Only sovereign administrators are authorized to generate physical catalog assets.
+            {t('auto_3428', 'Only sovereign administrators are authorized to generate physical catalog assets.')}
           </p>
           <Link to="/admin" className="royal-btn">
-            Return to Entrance
+            {t('auto_3429', 'Return to Entrance')}
           </Link>
         </div>
       </div>
@@ -121,19 +121,18 @@ const QrStickerGeneratorPage = ({ user }) => {
       {/* Header Navigation */}
       <div style={{ marginBottom: '1.5rem' }}>
         <Link to="/admin" className="royal-btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
-          <ArrowLeft size={14} /> Back to Curator Console
+          <ArrowLeft size={14} /> {t('auto_3430', 'Back to Curator Console')}
         </Link>
       </div>
 
       <header className="qr-generator-header">
         <div className="header-badge-admin">
           <QrCode size={14} className="gold-glow-icon" />
-          <span className="gold-gradient-text">Physical Catalog Fabrication</span>
+          <span className="gold-gradient-text">{t('auto_3431', 'Physical Catalog Fabrication')}</span>
         </div>
-        <h1 className="glow-text">QR Code Sticker Sheet Generator</h1>
+        <h1 className="glow-text">{t('auto_3432', 'QR Code Sticker Sheet Generator')}</h1>
         <p>
-          Generate precision-formatted 65-up A4 printable sticker sheets for physical volumes.
-          Each sticker encodes a direct catalog deep link with Royal Book Club branding.
+          {t('auto_3433', 'Generate precision-formatted 65-up A4 printable sticker sheets for physical volumes.           Each sticker encodes a direct catalog deep link with Royal Book Club branding.')}
         </p>
       </header>
 
@@ -141,7 +140,7 @@ const QrStickerGeneratorPage = ({ user }) => {
       <section className="royal-card qr-controls-card">
         <div className="controls-grid">
           <div className="control-field">
-            <label htmlFor="start-count-input">Starting QR Counter ID</label>
+            <label htmlFor="start-count-input">{t('auto_3434', 'Starting QR Counter ID')}</label>
             <input
               id="start-count-input"
               type="number"
@@ -169,7 +168,7 @@ const QrStickerGeneratorPage = ({ user }) => {
           </div>
 
           <div className="control-field">
-            <label htmlFor="url-prefix-input">URL Target Prefix</label>
+            <label htmlFor="url-prefix-input">{t('auto_3435', 'URL Target Prefix')}</label>
             <input
               id="url-prefix-input"
               type="text"
@@ -185,7 +184,7 @@ const QrStickerGeneratorPage = ({ user }) => {
               checked={showCutLines}
               onChange={(e) => setShowCutLines(e.target.checked)}
             />
-            <span>Draw Cutting & Alignment Guides</span>
+            <span>{t('auto_3436', 'Draw Cutting & Alignment Guides')}</span>
           </label>
         </div>
 
@@ -199,7 +198,7 @@ const QrStickerGeneratorPage = ({ user }) => {
               <QrCode size={14} /> Sequence: <strong>#{startCount} — #{endCount}</strong>
             </div>
             <div className="summary-badge">
-              <Info size={14} /> Grid: <strong>13 rows × 5 cols</strong> (39 × 21.0 mm)
+              <Info size={14} /> Grid: <strong>{t('auto_3437', '13 rows × 5 cols')}</strong> (39 × 21.0 mm)
             </div>
           </div>
 
@@ -221,7 +220,7 @@ const QrStickerGeneratorPage = ({ user }) => {
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
               <Printer size={16} />
-              <span>Print Directly</span>
+              <span>{t('auto_3438', 'Print Directly')}</span>
             </button>
           </div>
         </div>
@@ -265,7 +264,7 @@ const QrStickerGeneratorPage = ({ user }) => {
             {loadingPreview ? (
               <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', color: '#666' }}>
                 <div className="royal-spinner" style={{ width: '40px', height: '40px', margin: '0 auto 12px' }}></div>
-                <p style={{ margin: 0, fontWeight: '600' }}>Rendering 65 stickers...</p>
+                <p style={{ margin: 0, fontWeight: '600' }}>{t('auto_3439', 'Rendering 65 stickers...')}</p>
               </div>
             ) : (
               previewStickers.map((sticker) => {
@@ -317,8 +316,8 @@ const QrStickerGeneratorPage = ({ user }) => {
 
                     {/* Right: Branding (Playfair Display serif font, deep burgundy) */}
                     <div className="sticker-brand-col">
-                      <div className="sticker-brand-line" style={{ fontSize: '7.2px' }}>Royal Book</div>
-                      <div className="sticker-brand-line" style={{ fontSize: '7.2px' }}>Club</div>
+                      <div className="sticker-brand-line" style={{ fontSize: '7.2px' }}>{t('auto_3440', 'Royal Book')}</div>
+                      <div className="sticker-brand-line" style={{ fontSize: '7.2px' }}>{t('auto_3441', 'Club')}</div>
                       <div className="sticker-counter-tag" style={{ fontSize: '5.2px' }}>#{sticker.count}</div>
                     </div>
                   </div>

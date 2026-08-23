@@ -259,7 +259,7 @@ const GatepassPage = ({ user }) => {
                 {activeCheckouts.length === 0 ? (
                   <div className="empty-ledger-state">
                     <BookOpen size={24} />
-                    <p>No active transits recorded for this timeframe.</p>
+                    <p>{t('auto_3502', 'No active transits recorded for this timeframe.')}</p>
                   </div>
                 ) : (
                   activeCheckouts.map(c => {
@@ -280,7 +280,7 @@ const GatepassPage = ({ user }) => {
                           </div>
                           <div className="card-actions no-print">
                             <Link to={`/gatepass/${c.id}`} className="royal-btn-secondary gatepass-mini-btn">
-                              View Gatepass
+                              {t('auto_3503', 'View Gatepass')}
                             </Link>
                           </div>
                         </div>
@@ -301,7 +301,7 @@ const GatepassPage = ({ user }) => {
                 {returnedCheckouts.length === 0 ? (
                   <div className="empty-ledger-state">
                     <CheckCircle size={24} />
-                    <p>No books restored to the Study today.</p>
+                    <p>{t('auto_3504', 'No books restored to the Study today.')}</p>
                   </div>
                 ) : (
                   returnedCheckouts.map(c => {
@@ -322,7 +322,7 @@ const GatepassPage = ({ user }) => {
                           </div>
                           <div className="card-actions no-print">
                             <Link to={`/gatepass/${c.id}`} className="royal-btn-secondary gatepass-mini-btn">
-                              View Gatepass
+                              {t('auto_3505', 'View Gatepass')}
                             </Link>
                           </div>
                         </div>
@@ -337,24 +337,24 @@ const GatepassPage = ({ user }) => {
           /* Book Registry Sync View (Book-Centric Timestamps Sync) */
           <div className="ledger-sync-view">
             <h2 className="pane-title sync-header-title">
-              <Sparkles size={16} /> Volume Timestamp Synchronization Registry
+              <Sparkles size={16} /> {t('auto_3506', 'Volume Timestamp Synchronization Registry')}
             </h2>
             <div className="sync-table-container">
               <table className="sync-ledger-table">
                 <thead>
                   <tr>
-                    <th>Volume Details</th>
-                    <th>Status</th>
-                    <th>Latest Outflow</th>
-                    <th>Latest Restoration</th>
-                    <th className="no-print">Clearance</th>
+                    <th>{t('auto_3507', 'Volume Details')}</th>
+                    <th>{t('auto_3508', 'Status')}</th>
+                    <th>{t('auto_3509', 'Latest Outflow')}</th>
+                    <th>{t('auto_3510', 'Latest Restoration')}</th>
+                    <th className="no-print">{t('auto_3511', 'Clearance')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {syncedBooksList.length === 0 ? (
                     <tr>
                       <td colSpan="5" style={{ textAlign: 'center', padding: '30px' }}>
-                        No volume activities found in the ledger.
+                        {t('auto_3512', 'No volume activities found in the ledger.')}
                       </td>
                     </tr>
                   ) : (
@@ -401,7 +401,7 @@ const GatepassPage = ({ user }) => {
                         <td className="no-print">
                           {item.status !== 'AVAILABLE' && item.activeCheckoutId && (
                             <Link to={`/gatepass/${item.activeCheckoutId}`} className="sync-view-gatepass-link">
-                              View Gatepass
+                              {t('auto_3513', 'View Gatepass')}
                             </Link>
                           )}
                         </td>
@@ -425,10 +425,10 @@ const GatepassPage = ({ user }) => {
     <div className="gatepass-outer-wrapper animate-fade-in">
       <div className="gatepass-actions-header no-print">
         <Link to="/profile" className="back-link">
-          <ArrowLeft size={16} /> Back to Profile Ledger
+          <ArrowLeft size={16} /> {t('auto_3514', 'Back to Profile Ledger')}
         </Link>
         <button onClick={handlePrint} className="royal-btn print-action-btn">
-          <Printer size={16} /> Print Gatepass
+          <Printer size={16} /> {t('auto_3515', 'Print Gatepass')}
         </button>
       </div>
 
@@ -448,10 +448,10 @@ const GatepassPage = ({ user }) => {
             <Clock className="gold-glow-icon animate-pulse" size={24} style={{ color: '#d4af37' }} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
               <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#d4af37', fontFamily: '"Outfit", sans-serif', letterSpacing: '0.5px' }}>
-                PENDING ADMINISTRATIVE APPROVAL
+                {t('auto_3516', 'PENDING ADMINISTRATIVE APPROVAL')}
               </span>
-              <span style={{ fontSize: '0.74rem', color: 'rgba(255, 255, 255, 0.75)', fontWeight: '500' }}>
-                PROVISIONAL GATEPASS — SECURE EXIT CLEARANCE IS NOT ACTIVE
+              <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontWeight: '500' }}>
+                {t('auto_3517', 'PROVISIONAL GATEPASS — SECURE EXIT CLEARANCE IS NOT ACTIVE')}
               </span>
             </div>
           </div>
@@ -473,8 +473,8 @@ const GatepassPage = ({ user }) => {
           <div className="gatepass-header">
             <Shield className="header-badge" />
             <div className="header-titles">
-              <h1>The Royal Book Club</h1>
-              <h2>OFFICIAL DIGITAL GATEPASS</h2>
+              <h1>{t('auto_3518', 'The Royal Book Club')}</h1>
+              <h2>{t('auto_3519', 'OFFICIAL DIGITAL GATEPASS')}</h2>
               <span className="serial-num">TXN ID: {checkout.id}</span>
             </div>
           </div>
@@ -531,7 +531,7 @@ const GatepassPage = ({ user }) => {
                 <Calendar size={16} className="detail-icon" />
                 <div className="detail-info">
                   <span className="detail-label">{t('gatepass.dueDate', 'Due Date')}</span>
-                  <span className={`detail-value ${!isReturned && !isPendingApproval ? 'due-alert' : ''}`} style={isPendingApproval ? { color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' } : {}}>
+                  <span className={`detail-value ${!isReturned && !isPendingApproval ? 'due-alert' : ''}`} style={isPendingApproval ? { color: 'var(--text-muted)', fontStyle: 'italic' } : {}}>
                     {isPendingApproval ? t('gatepass.pendingApproval', 'Pending Approval') : (isReturned ? formattedDate(checkout.returnedAt) : formattedDate(checkout.dueDate))}
                   </span>
                 </div>

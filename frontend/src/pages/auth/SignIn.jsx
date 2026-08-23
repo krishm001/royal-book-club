@@ -78,10 +78,10 @@ export default function SignIn() {
         <div className="social-grid">
           <button type="button" className="onboarding-social-btn" onClick={() => handleSocialSignIn(googleProvider)}>
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: '16px', height: '16px' }} />
-            Google
+            {t('auto_3466', 'Google')}
           </button>
           <button type="button" className="onboarding-social-btn" onClick={handleLinkedInSignIn}>
-            <span style={{ color: '#0077b5', fontWeight: 'bold' }}>in</span> LinkedIn
+            <span style={{ color: '#0077b5', fontWeight: 'bold' }}>in</span> {t('auto_3467', 'LinkedIn')}
           </button>
 
           <button type="button" className="onboarding-social-btn" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }} title="Meta login is currently unconfigured">

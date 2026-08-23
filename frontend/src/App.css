@@ -945,3 +945,26 @@
     gap: 10px;
   }
 }
+
+@media (max-width: 1400px) {
+  .nav-link {
+    padding: 8px 10px;
+    font-size: 0.85rem;
+    gap: 4px;
+  }
+  .desktop-nav {
+    gap: 4px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .brand-tagline {
+    display: none;
+  }
+}
+
+@media (max-width: 1024px) {
+  .desktop-nav {
+    display: none !important;
+  }
+}

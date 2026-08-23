@@ -671,8 +671,8 @@ function App() {
     return (
       <div className="gatepass-loading-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-gradient, #0f0c08)', color: 'var(--text-primary, #ffffff)' }}>
         <div className="royal-spinner" style={{ width: '50px', height: '50px', marginBottom: '20px' }}></div>
-        <h2 style={{ fontFamily: 'Cinzel, serif', color: 'var(--accent, #d4af37)', letterSpacing: '0.05em', margin: 0 }}>Verifying Sovereign Volume...</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '12px' }}>Retrieving digital ledger credentials from NFC physical hotspots.</p>
+        <h2 style={{ fontFamily: 'Cinzel, serif', color: 'var(--accent, #d4af37)', letterSpacing: '0.05em', margin: 0 }}>{t('auto_3000', 'Verifying Sovereign Volume...')}</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '12px' }}>{t('auto_3001', 'Retrieving digital ledger credentials from NFC physical hotspots.')}</p>
       </div>
     );
   }
@@ -819,7 +819,7 @@ function App() {
                       style={{ width: '120px' }}
                       id="mobile-language-selector"
                     >
-                      <option value="en">English</option>
+                      <option value="en">{t('auto_3002', 'English')}</option>
                       <option value="hi">हिन्दी</option>
                       <option value="kn">ಕನ್ನಡ</option>
                     </select>
@@ -917,9 +917,9 @@ function App() {
             <div className="footer-brand">
               <div className="footer-logo">
                 <Sparkles className="gold-glow" size={20} />
-                <span className="gold-gradient-text">The Royal Book Club</span>
+                <span className="gold-gradient-text">{t('auto_3003', 'The Royal Book Club')}</span>
               </div>
-              <p>Constantly surpassing our bad faith towards absolute freedom by cultivating intellectual community since 2026.</p>
+              <p>{t('auto_3004', 'Constantly surpassing our bad faith towards absolute freedom by cultivating intellectual community since 2026.')}</p>
             </div>
             <div className="footer-links">
               <h4>{t('common.theLibrary')}</h4>
@@ -951,18 +951,18 @@ function App() {
               </div>
               <div className="consent-modal-body">
                 <p className="consent-intro">
-                  Welcome, seeker of wisdom. Before stepping into the <strong>Royal Book Club</strong>, we require you to accept our covenant of privacy and terms.
+                  {t('auto_3005', 'Welcome, seeker of wisdom. Before stepping into the')} <strong>{t('auto_3006', 'Royal Book Club')}</strong>{t('auto_3007', ', we require you to accept our covenant of privacy and terms.')}
                 </p>
                 <div className="consent-scroll-box">
-                  <h4>Covenant Highlights</h4>
+                  <h4>{t('auto_3008', 'Covenant Highlights')}</h4>
                   <ul>
-                    <li><strong>Your Personal Sanctuary:</strong> We never sell, rent, or trade your personal data. Your email is used solely for secure access and club communications.</li>
+                    <li><strong>Your Personal Sanctuary:</strong> {t('auto_3009', 'We never sell, rent, or trade your personal data. Your email is used solely for secure access and club communications.')}</li>
                     <li><strong>Address Registry & Borrowing:</strong> Members may optionally supply a phone number and postal address (including house number) on their profile. This registry is required for active book checkouts.</li>
-                    <li><strong>Overdue Outreach:</strong> In the rare event that a checked-out volume is overdue, we reserve the right to contact you directly using your registered email or phone.</li>
-                    <li><strong>Future Upgrades:</strong> A member profile photo is a future requirement, currently not active.</li>
+                    <li><strong>Overdue Outreach:</strong> {t('auto_3010', 'In the rare event that a checked-out volume is overdue, we reserve the right to contact you directly using your registered email or phone.')}</li>
+                    <li><strong>Future Upgrades:</strong> {t('auto_3011', 'A member profile photo is a future requirement, currently not active.')}</li>
                   </ul>
                   <p className="consent-links-text">
-                    Please read our full, detailed <a href="#/privacy" onClick={(e) => { e.preventDefault(); setCovenantViewer('privacy'); }} style={{ color: 'var(--accent)', textDecoration: 'underline', fontWeight: '600', cursor: 'pointer' }}>Privacy Notice</a> and <a href="#/terms" onClick={(e) => { e.preventDefault(); setCovenantViewer('terms'); }} style={{ color: 'var(--accent)', textDecoration: 'underline', fontWeight: '600', cursor: 'pointer' }}>Terms & Conditions</a>.
+                    {t('auto_3012', 'Please read our full, detailed')} <a href="#/privacy" onClick={(e) => { e.preventDefault(); setCovenantViewer('privacy'); }} style={{ color: 'var(--accent)', textDecoration: 'underline', fontWeight: '600', cursor: 'pointer' }}>{t('auto_3013', 'Privacy Notice')}</a> {t('auto_3014', 'and')} <a href="#/terms" onClick={(e) => { e.preventDefault(); setCovenantViewer('terms'); }} style={{ color: 'var(--accent)', textDecoration: 'underline', fontWeight: '600', cursor: 'pointer' }}>{t('auto_3015', 'Terms & Conditions')}</a>.
                   </p>
                 </div>
                 <div className="consent-checkbox-field">
@@ -973,7 +973,7 @@ function App() {
                       onChange={(e) => setConsentChecked(e.target.checked)}
                     />
                     <span>
-                      I agree to the <a href="#/terms" onClick={(e) => { e.preventDefault(); setCovenantViewer('terms'); }} style={{ color: 'var(--accent)', textDecoration: 'underline', fontWeight: '600', cursor: 'pointer' }}>Terms & Conditions</a> and have read the <a href="#/privacy" onClick={(e) => { e.preventDefault(); setCovenantViewer('privacy'); }} style={{ color: 'var(--accent)', textDecoration: 'underline', fontWeight: '600', cursor: 'pointer' }}>Privacy Notice</a>. I provide my explicit consent to royalbookclub.com to process my email and account information for book club activities.
+                      {t('auto_3016', 'I agree to the')} <a href="#/terms" onClick={(e) => { e.preventDefault(); setCovenantViewer('terms'); }} style={{ color: 'var(--accent)', textDecoration: 'underline', fontWeight: '600', cursor: 'pointer' }}>{t('auto_3017', 'Terms & Conditions')}</a> {t('auto_3018', 'and have read the')} <a href="#/privacy" onClick={(e) => { e.preventDefault(); setCovenantViewer('privacy'); }} style={{ color: 'var(--accent)', textDecoration: 'underline', fontWeight: '600', cursor: 'pointer' }}>{t('auto_3019', 'Privacy Notice')}</a>{t('auto_3020', '. I provide my explicit consent to royalbookclub.com to process my email and account information for book club activities.')}
                     </span>
                   </label>
                 </div>
@@ -983,7 +983,7 @@ function App() {
                   onClick={handleSignOut} 
                   className="royal-btn-secondary leave-sanctuary-btn"
                 >
-                  Leave Sanctuary
+                  {t('auto_3021', 'Leave Sanctuary')}
                 </button>
                 <button 
                   onClick={handleAcceptGoogleConsent} 

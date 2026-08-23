@@ -495,7 +495,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
               <h3 className="feed-title">
                 <Calendar size={18} className="gold-glow-icon" /> {t('home.upcomingSalons')}
               </h3>
-              <Link to="/events" className="feed-link">See All <ChevronRight size={14} /></Link>
+              <Link to="/events" className="feed-link">{t('auto_3125', 'See All')} <ChevronRight size={14} /></Link>
             </div>
             <div className="feed-list">
               {activeEvents.length > 0 ? (
@@ -561,7 +561,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
           <MessageSquare size={22} className="gold-glow-icon" />
           <h2 className="glow-text" style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.75rem', fontWeight: 600, color: 'var(--accent)', letterSpacing: '0.05em' }}>
-            Sovereign Testimonials
+            {t('auto_3126', 'Sovereign Testimonials')}
           </h2>
         </div>
 
@@ -573,7 +573,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
               <div>
                 <Quote size={40} style={{ color: 'var(--accent)', opacity: 0.12, position: 'absolute', top: '24px', left: '24px' }} />
                 <h3 style={{ margin: '0 0 20px 0', fontFamily: 'var(--font-display)', color: 'var(--accent)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.02em', borderBottom: '1px solid var(--glass-border)', paddingBottom: '10px' }}>
-                  Curated Perspectives
+                  {t('auto_3127', 'Curated Perspectives')}
                 </h3>
 
                 {approvedReviews.length > 0 ? (
@@ -597,8 +597,8 @@ const HomePage = ({ user, onSignIn, theme }) => {
                   </div>
                 ) : (
                   <div style={{ minHeight: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                    <p style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>No curations have been certified yet.</p>
-                    <p style={{ margin: 0, fontSize: '0.8rem' }}>Be the first to leave a testimonial using the form!</p>
+                    <p style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>{t('auto_3128', 'No curations have been certified yet.')}</p>
+                    <p style={{ margin: 0, fontSize: '0.8rem' }}>{t('auto_3129', 'Be the first to leave a testimonial using the form!')}</p>
                   </div>
                 )}
               </div>
@@ -624,14 +624,14 @@ const HomePage = ({ user, onSignIn, theme }) => {
             {/* Testimonial Form Box */}
             <div className="royal-card review-form-card" style={{ padding: '30px', background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)' }}>
               <h3 style={{ margin: '0 0 20px 0', fontFamily: 'var(--font-display)', color: 'var(--accent)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.02em', borderBottom: '1px solid var(--glass-border)', paddingBottom: '10px' }}>
-                Inscribe Your Testimonial
+                {t('auto_3130', 'Inscribe Your Testimonial')}
               </h3>
 
               {user ? (
                 <form onSubmit={handleReviewSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Rating
+                      {t('auto_3131', 'Rating')}
                     </label>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       {[1, 2, 3, 4, 5].map((starVal) => (
@@ -655,7 +655,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
 
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Commentary
+                      {t('auto_3132', 'Commentary')}
                     </label>
                     <textarea
                       value={reviewComment}
@@ -718,10 +718,10 @@ const HomePage = ({ user, onSignIn, theme }) => {
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '180px', textAlign: 'center', padding: '20px', background: 'var(--surface)', border: '1px dashed var(--glass-border-hover)', borderRadius: '6px' }}>
                   <Sparkles size={28} className="gold-glow-icon" style={{ marginBottom: '12px' }} />
                   <p style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                    Only registered members can submit testimonies. Sign in to contribute your evaluation to the chronicle.
+                    {t('auto_3133', 'Only registered members can submit testimonies. Sign in to contribute your evaluation to the chronicle.')}
                   </p>
                   <button onClick={onSignIn} className="royal-btn" style={{ padding: '8px 20px', fontSize: '0.8rem' }}>
-                    Sign In
+                    {t('auto_3134', 'Sign In')}
                   </button>
                 </div>
               )}

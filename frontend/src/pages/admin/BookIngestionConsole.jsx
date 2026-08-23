@@ -1882,7 +1882,7 @@ const BookIngestionConsole = ({ user }) => {
             </Link>
             <div className="header-badge-admin">
               <Shield size={14} className="gold-glow-icon" />
-              <span className="gold-gradient-text">ADMIN ACQUISITION</span>
+              <span className="gold-gradient-text">{t('auto_3203', 'ADMIN ACQUISITION')}</span>
             </div>
             <h1 className="ingestion-title glow-text">{t('admin.bookIngestionConsole', 'Acquisition Ingestion Console')}</h1>
             <p className="ingestion-subtitle">
@@ -1896,11 +1896,11 @@ const BookIngestionConsole = ({ user }) => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Search size={18} style={{ color: 'var(--accent)' }} />
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                  Search & Edit Local Ledger Database
+                  {t('auto_3204', 'Search & Edit Local Ledger Database')}
                 </h3>
               </div>
               <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                Search and retrieve existing physical and digital volumes from the local database by Title, Author, Keyword, ISBN, QR Code, or NFC Tag ID.
+                {t('auto_3205', 'Search and retrieve existing physical and digital volumes from the local database by Title, Author, Keyword, ISBN, QR Code, or NFC Tag ID.')}
               </p>
               
               <div className="db-search-input-group" style={{ marginTop: '8px' }}>
@@ -1920,7 +1920,7 @@ const BookIngestionConsole = ({ user }) => {
                       onClick={() => setDbSearchQuery('')}
                       style={{ padding: '0 16px' }}
                     >
-                      Clear
+                      {t('auto_3206', 'Clear')}
                     </button>
                   )}
                 </div>
@@ -1960,7 +1960,7 @@ const BookIngestionConsole = ({ user }) => {
                     style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'center', padding: '10px 16px', border: '1px solid var(--accent, rgba(212, 175, 55, 0.45))', background: 'rgba(212, 175, 55, 0.05)', color: 'var(--text-primary, #ffffff)' }}
                   >
                     <Compass size={16} style={{ color: 'var(--accent)' }} />
-                    <span style={{ fontSize: '0.85rem' }}>Search External Metadata</span>
+                    <span style={{ fontSize: '0.85rem' }}>{t('auto_3207', 'Search External Metadata')}</span>
                   </button>
                 </div>
               </div>
@@ -2033,7 +2033,7 @@ const BookIngestionConsole = ({ user }) => {
                       
                       return false;
                     }).map((b) => (
-                      <div key={b.id || b.isbn} className="db-search-result-item" onClick={() => { handleSelectExistingBook(b); setDbSearchQuery(''); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                      <div key={b.id || b.isbn} className="db-search-result-item" onClick={() => { handleSelectExistingBook(b); setDbSearchQuery(''); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s' }}>
                         <div className="result-item-cover-wrapper" style={{ width: '36px', height: '48px', overflow: 'hidden', borderRadius: '3px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0, 0, 0, 0.2)' }}>
                           {b.coverUrl ? (
                             <img src={b.coverUrl} alt={b.title} className="result-item-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -2049,12 +2049,12 @@ const BookIngestionConsole = ({ user }) => {
                           <span className="result-item-isbn" style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: 'var(--accent, #d4af37)' }}>ISBN: {b.isbn}</span>
                         </div>
                         <button type="button" className="royal-btn-secondary select-db-book-btn" style={{ fontSize: '0.75rem', padding: '4px 10px' }}>
-                          Edit
+                          {t('auto_3208', 'Edit')}
                         </button>
                       </div>
                     ))
                   ) : (
-                    <p className="no-db-results-text" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center', margin: '20px 0' }}>No matching database records found.</p>
+                    <p className="no-db-results-text" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center', margin: '20px 0' }}>{t('auto_3209', 'No matching database records found.')}</p>
                   )}
                 </div>
               ) : null}
@@ -2067,11 +2067,11 @@ const BookIngestionConsole = ({ user }) => {
                         <Sparkles size={14} /> <strong>Active Editing Mode: "{manualTitle}"</strong>
                       </p>
                       <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                        Overwrites current record on save.
+                        {t('auto_3210', 'Overwrites current record on save.')}
                       </p>
                     </div>
                     <button type="button" className="royal-btn-secondary" style={{ fontSize: '0.8rem', padding: '6px 12px' }} onClick={handleResetForm}>
-                      Cancel & Add New Instead
+                      {t('auto_3211', 'Cancel & Add New Instead')}
                     </button>
                   </div>
                 </div>
@@ -2082,7 +2082,7 @@ const BookIngestionConsole = ({ user }) => {
           <div className="ingestion-grid" style={{ display: 'block', maxWidth: '800px', margin: '0 auto' }}>
             <div className="royal-card form-intake-card">
               <h3>{t('admin.manualIngestion', 'Single Volume Intake')}</h3>
-              <p className="section-p-desc">Register an individual book volume. Query metadata by ISBN or input details manually.</p>
+              <p className="section-p-desc">{t('auto_3212', 'Register an individual book volume. Query metadata by ISBN or input details manually.')}</p>
 
               <div className="intake-top-actions">
                 <div className="isbn-query-column">
@@ -2122,7 +2122,7 @@ const BookIngestionConsole = ({ user }) => {
                         title="Search Metadata by Title, Author, Keyword"
                       >
                         <Compass size={14} />
-                        <span>Search</span>
+                        <span>{t('auto_3213', 'Search')}</span>
                       </button>
                     </div>
                   </div>
@@ -2137,16 +2137,16 @@ const BookIngestionConsole = ({ user }) => {
                       onChange={(e) => setAlternativeIsbnsInput(e.target.value)}
                     />
                     <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginTop: '4px' }}>
-                      Add any mistakenly printed alternative ISBN barcodes. These map to the parent book document, not specific copies.
+                      {t('auto_3214', 'Add any mistakenly printed alternative ISBN barcodes. These map to the parent book document, not specific copies.')}
                     </span>
                   </div>
                 </div>
 
                 <div className="nfc-query-column" style={{ position: 'relative' }}>
-                  <div className="multi-copy-tags-container royal-card" style={{ padding: '16px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '12px' }}>
+                  <div className="multi-copy-tags-container royal-card" style={{ padding: '16px', background: 'var(--glass-bg)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '12px' }}>
                     <h4 style={{ color: '#d4af37', fontFamily: '"Outfit", sans-serif', fontSize: '0.95rem', fontWeight: '600', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Smartphone size={15} />
-                      <span>Physical Volume Copy Registry ({totalCopies} {totalCopies === 1 ? 'Copy' : 'Copies'})</span>
+                      <span>{t('admin.physicalVolumeRegistry', { count: totalCopies })}</span>
                     </h4>
                     <p style={{ fontSize: '0.78rem', opacity: 0.7, marginBottom: '14px', lineHeight: '1.4' }}>
                       Pair physical NFC tags (NTAG213) and unique copy-level QR sticker IDs parallel to each volume copy.
@@ -2154,11 +2154,11 @@ const BookIngestionConsole = ({ user }) => {
                     
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '250px', overflowY: 'auto', paddingRight: '4px' }}>
                       {Array.from({ length: totalCopies }).map((_, index) => (
-                        <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'rgba(0,0,0,0.15)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                        <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'rgba(0,0,0,0.15)', borderRadius: '8px', border: '1px solid var(--glass-bg)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--accent)' }}>Copy #{index + 1}</span>
                             {copyQrIds[index] && (
-                              <span style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: 'rgba(255, 255, 255, 0.4)' }}>
+                              <span style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
                                 QR Schema: https://bookshelfnet.com/qr={copyQrIds[index]}
                               </span>
                             )}
@@ -2171,7 +2171,7 @@ const BookIngestionConsole = ({ user }) => {
                               <input
                                 type="text"
                                 className="royal-input"
-                                style={{ flex: 1, padding: '6px 8px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)' }}
+                                style={{ flex: 1, padding: '6px 8px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.25)', border: '1px solid var(--glass-border)' }}
                                 value={ntagUids[index] || ''}
                                 onChange={(e) => {
                                   const val = formatUidWithColons(e.target.value);
@@ -2206,7 +2206,7 @@ const BookIngestionConsole = ({ user }) => {
                                 pattern="[0-9]*"
                                 maxLength={9}
                                 className="royal-input"
-                                style={{ flex: 1, padding: '6px 8px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)' }}
+                                style={{ flex: 1, padding: '6px 8px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.25)', border: '1px solid var(--glass-border)' }}
                                 value={copyQrIds[index] || ''}
                                 onChange={(e) => {
                                   const val = e.target.value.replace(/[^0-9]/g, '');
@@ -2226,7 +2226,7 @@ const BookIngestionConsole = ({ user }) => {
                                 style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 8px', fontSize: '0.75rem', border: '1px solid rgba(212, 175, 55, 0.35)', background: 'transparent' }}
                               >
                                 <Camera size={11} />
-                                <span>Scan</span>
+                                <span>{t('auto_3215', 'Scan')}</span>
                               </button>
                             </div>
                           </div>
@@ -2246,7 +2246,7 @@ const BookIngestionConsole = ({ user }) => {
                         style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '0.8rem', border: '1px solid var(--accent, rgba(212, 175, 55, 0.45))', background: 'rgba(212, 175, 55, 0.05)', borderRadius: '6px', color: 'var(--accent, #d4af37)', fontWeight: 'bold', cursor: 'pointer' }}
                       >
                         <Plus size={13} />
-                        <span>Add Copy</span>
+                        <span>{t('auto_3216', 'Add Copy')}</span>
                       </button>
                       {totalCopies > 1 && (
                         <button
@@ -2259,10 +2259,10 @@ const BookIngestionConsole = ({ user }) => {
                             setCopyQrIds(prev => prev.slice(0, -1));
                           }}
                           className="royal-btn-secondary"
-                          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '0.8rem', border: '1px solid rgba(255, 255, 255, 0.15)', background: 'transparent', borderRadius: '6px', color: 'var(--text-secondary, #9a9ab0)', cursor: 'pointer' }}
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '0.8rem', border: '1px solid var(--glass-border)', background: 'transparent', borderRadius: '6px', color: 'var(--text-secondary, #9a9ab0)', cursor: 'pointer' }}
                         >
                           <Minus size={13} />
-                          <span>Remove Last Copy</span>
+                          <span>{t('auto_3217', 'Remove Last Copy')}</span>
                         </button>
                       )}
                     </div>
@@ -2285,7 +2285,7 @@ const BookIngestionConsole = ({ user }) => {
                           className="royal-btn-secondary"
                           style={{ marginTop: '12px', fontSize: '0.8rem', padding: '6px 14px' }}
                         >
-                          Cancel Scan
+                          {t('auto_3218', 'Cancel Scan')}
                         </button>
                       </div>
                     )}
@@ -2293,7 +2293,7 @@ const BookIngestionConsole = ({ user }) => {
 
                   {nfcSuccess && (
                     <p className="nfc-success-text" style={{ fontSize: '0.85rem', color: 'var(--success)', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Check size={14} /> NTAG213 serial number bound successfully.
+                      <Check size={14} /> {t('auto_3219', 'NTAG213 serial number bound successfully.')}
                     </p>
                   )}
 
@@ -2305,7 +2305,7 @@ const BookIngestionConsole = ({ user }) => {
                 </div>
               </div>
 
-              <div className="form-divider"><span>OR MANUAL ENTRY</span></div>
+              <div className="form-divider"><span>{t('auto_3220', 'OR MANUAL ENTRY')}</span></div>
 
               <form onSubmit={handleIngestionSubmit} className="manual-intake-form">
                 {infoMessage && (
@@ -2326,7 +2326,7 @@ const BookIngestionConsole = ({ user }) => {
                       onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
                     >
                       <Sparkles size={11} className="gold-glow-icon" />
-                      <span>Fetch Title</span>
+                      <span>{t('auto_3221', 'Fetch Title')}</span>
                     </button>
                   </div>
                   <input
@@ -2352,7 +2352,7 @@ const BookIngestionConsole = ({ user }) => {
                       onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
                     >
                       <Sparkles size={11} className="gold-glow-icon" />
-                      <span>Fetch Author</span>
+                      <span>{t('auto_3222', 'Fetch Author')}</span>
                     </button>
                   </div>
                   <input
@@ -2378,7 +2378,7 @@ const BookIngestionConsole = ({ user }) => {
                       onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
                     >
                       <Sparkles size={11} className="gold-glow-icon" />
-                      <span>Fetch Publisher</span>
+                      <span>{t('auto_3223', 'Fetch Publisher')}</span>
                     </button>
                   </div>
                   <input
@@ -2402,7 +2402,7 @@ const BookIngestionConsole = ({ user }) => {
                       onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
                     >
                       <Sparkles size={11} className="gold-glow-icon" />
-                      <span>Fetch Publish Date</span>
+                      <span>{t('auto_3224', 'Fetch Publish Date')}</span>
                     </button>
                   </div>
                   <input
@@ -2427,7 +2427,7 @@ const BookIngestionConsole = ({ user }) => {
                       onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
                     >
                       <Sparkles size={11} className="gold-glow-icon" />
-                      <span>Fetch Genre & Tags</span>
+                      <span>{t('auto_3225', 'Fetch Genre & Tags')}</span>
                     </button>
                   </div>
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -2513,7 +2513,7 @@ const BookIngestionConsole = ({ user }) => {
                         ))
                       ) : (
                         <div style={{ padding: '8px 12px', fontSize: '0.85rem', color: 'var(--text-secondary)', textAlign: 'left' }}>
-                          No matching genres found
+                          {t('auto_3226', 'No matching genres found')}
                         </div>
                       )}
                       {genreSearchQuery.trim() && !houses.some(h => (h || '').toLowerCase().trim() === genreSearchQuery.toLowerCase().trim()) && (
@@ -2605,7 +2605,7 @@ const BookIngestionConsole = ({ user }) => {
                           style={{
                             background: 'none',
                             border: 'none',
-                            color: 'rgba(255,255,255,0.4)',
+                            color: 'var(--text-muted)',
                             padding: 0,
                             cursor: 'pointer',
                             fontSize: '12px',
@@ -2617,7 +2617,7 @@ const BookIngestionConsole = ({ user }) => {
                             lineHeight: 1
                           }}
                           onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
                         >
                           ×
                         </button>
@@ -2642,7 +2642,7 @@ const BookIngestionConsole = ({ user }) => {
                       }}
                     />
                   </div>
-                  <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px', display: 'block' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
                     Type a tag and press comma (`,`) or `Enter` to commit. Hitting `Backspace` on empty input deletes the last tag.
                   </span>
                 </div>
@@ -2660,7 +2660,7 @@ const BookIngestionConsole = ({ user }) => {
                       onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
                     >
                       <Sparkles size={11} className="gold-glow-icon" />
-                      <span>Fetch Cover</span>
+                      <span>{t('auto_3227', 'Fetch Cover')}</span>
                     </button>
                   </div>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
@@ -2690,7 +2690,7 @@ const BookIngestionConsole = ({ user }) => {
                           className="royal-btn"
                           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flex: '1 1 calc(50% - 4px)' }}
                         >
-                          <Camera size={14} /> Snap Photo
+                          <Camera size={14} /> {t('auto_3228', 'Snap Photo')}
                         </button>
                         {selectedImageFile && (
                           <button
@@ -2741,7 +2741,7 @@ const BookIngestionConsole = ({ user }) => {
                     placeholder="Paste direct image URL (https://...)"
                   />
                   {coverUrl && (
-                    <div style={{ position: 'relative', marginTop: '12px', border: '1px solid rgba(255,255,255,0.05)', padding: '6px', borderRadius: '6px', background: 'rgba(0,0,0,0.2)', display: 'inline-block', maxWidth: '100%' }}>
+                    <div style={{ position: 'relative', marginTop: '12px', border: '1px solid var(--glass-border)', padding: '6px', borderRadius: '6px', background: 'rgba(0,0,0,0.2)', display: 'inline-block', maxWidth: '100%' }}>
                       <img src={coverUrl} alt="Cover Preview" style={{ maxWidth: '100%', maxHeight: '180px', borderRadius: '4px', display: 'block' }} />
                       <button
                         type="button"
@@ -2782,7 +2782,7 @@ const BookIngestionConsole = ({ user }) => {
                       onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
                     >
                       <Sparkles size={11} className="gold-glow-icon" />
-                      <span>Fetch Description</span>
+                      <span>{t('auto_3229', 'Fetch Description')}</span>
                     </button>
                   </div>
                   <textarea
@@ -2807,7 +2807,7 @@ const BookIngestionConsole = ({ user }) => {
                         onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
                       >
                         <Sparkles size={11} className="gold-glow-icon" />
-                        <span>Fetch Pages</span>
+                        <span>{t('auto_3230', 'Fetch Pages')}</span>
                       </button>
                     </div>
                     <input
@@ -2859,7 +2859,7 @@ const BookIngestionConsole = ({ user }) => {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Cpu size={16} className="nfc-write-icon" />
-                      Write details to physical NFC tag on save
+                      {t('auto_3231', 'Write details to physical NFC tag on save')}
                     </label>
                   </div>
                 )}
@@ -2873,7 +2873,7 @@ const BookIngestionConsole = ({ user }) => {
 
               {ingestionSuccess && (
                 <div className="success-banner animate-fade-in">
-                  <CheckCircle size={18} /> Volume successfully registered in Cloud Firestore ledger!
+                  <CheckCircle size={18} /> {t('auto_3232', 'Volume successfully registered in Cloud Firestore ledger!')}
                 </div>
               )}
 
@@ -2906,11 +2906,11 @@ const BookIngestionConsole = ({ user }) => {
                 <div style={{ display: 'flex', gap: '12px', marginTop: '16px', justifyContent: 'center' }}>
                   {(cameraMode === 'isbn' || cameraMode === 'copy_qr') && (
                     <button onClick={handleSimulateIsbnScan} className="royal-btn">
-                      Simulate Scan
+                      {t('auto_3233', 'Simulate Scan')}
                     </button>
                   )}
                   <button onClick={stopCamera} className="royal-btn-secondary">
-                    Close
+                    {t('auto_3234', 'Close')}
                   </button>
                 </div>
               </div>
@@ -2943,7 +2943,7 @@ const BookIngestionConsole = ({ user }) => {
 
                 {cameraMode === 'cover' && (
                   <div className="camera-under-view-controls">
-                    <span className="camera-help-text-below">Position cover inside the gold boundaries</span>
+                    <span className="camera-help-text-below">{t('auto_3235', 'Position cover inside the gold boundaries')}</span>
                     
                     <div className="camera-advanced-controls">
                       <div className="camera-controls-row">
@@ -2965,7 +2965,7 @@ const BookIngestionConsole = ({ user }) => {
                             title="Switch Camera Sensor (Ultra-wide / Main)"
                           >
                             <RefreshCw size={13} />
-                            <span>Switch Sensor</span>
+                            <span>{t('auto_3236', 'Switch Sensor')}</span>
                           </button>
                         )}
                       </div>
@@ -3006,7 +3006,7 @@ const BookIngestionConsole = ({ user }) => {
                 {cameraMode === 'cover' && (
                   <div className="camera-controls-bar">
                     <button onClick={captureCoverPhoto} className="royal-btn capture-action-btn">
-                      <Camera size={16} /> Snap Cover Photo
+                      <Camera size={16} /> {t('auto_3237', 'Snap Cover Photo')}
                     </button>
                   </div>
                 )}
@@ -3024,7 +3024,7 @@ const BookIngestionConsole = ({ user }) => {
               <h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Cpu size={18} className="spin-icon" style={{ color: 'var(--accent)' }} />
-                  <span>Physical-to-Digital NFC Writer</span>
+                  <span>{t('auto_3238', 'Physical-to-Digital NFC Writer')}</span>
                 </div>
               </h3>
               <button 
@@ -3049,7 +3049,7 @@ const BookIngestionConsole = ({ user }) => {
                 {nfcWriteLoading && !nfcWriteSuccess && !nfcWriteError && (
                   <p className="status-message loading" style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
                     <span>
-                      <RefreshCw size={14} className="spin-icon" /> Broadcasting NDEF URL payload...
+                      <RefreshCw size={14} className="spin-icon" /> {t('auto_3239', 'Broadcasting NDEF URL payload...')}
                     </span>
                     <span style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 'bold' }}>
                       Please tap your physical tag. Auto-closing in {writeCountdown}s...
@@ -3058,18 +3058,18 @@ const BookIngestionConsole = ({ user }) => {
                 )}
                 {nfcWriteSuccess && (
                   <p className="status-message success">
-                    <CheckCircle size={14} style={{ color: '#d4a574' }} /> NFC Tag written & registered!
+                    <CheckCircle size={14} style={{ color: '#d4a574' }} /> {t('auto_3240', 'NFC Tag written & registered!')}
                   </p>
                 )}
                 {nfcWriteError && (
                   <div className="status-error-box">
-                    <p className="error-title">NDEF Writer Error</p>
+                    <p className="error-title">{t('auto_3241', 'NDEF Writer Error')}</p>
                     <p className="error-desc">{nfcWriteError}</p>
                   </div>
                 )}
                 {!nfcWriteLoading && !nfcWriteSuccess && !nfcWriteError && (
                   <p className="status-message info" style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center' }}>
-                    <span>Ready to write... Align tag near back of device.</span>
+                    <span>{t('auto_3242', 'Ready to write... Align tag near back of device.')}</span>
                     <span style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 'bold' }}>
                       Auto-closing in {writeCountdown}s...
                     </span>
@@ -3104,7 +3104,7 @@ const BookIngestionConsole = ({ user }) => {
                 <div className="ntag-hw-config-section" style={{
                   marginTop: '12px',
                   padding: '12px',
-                  background: 'rgba(255, 255, 255, 0.03)',
+                  background: 'var(--glass-bg)',
                   border: '1px solid rgba(212, 165, 116, 0.2)',
                   borderRadius: '6px',
                   fontSize: '0.75rem',
@@ -3112,7 +3112,7 @@ const BookIngestionConsole = ({ user }) => {
                 }}>
                   <div style={{ fontWeight: '600', color: 'var(--accent)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <Cpu size={12} />
-                    <span>NTAG213 Hardware Counter Mirror Guide</span>
+                    <span>{t('auto_3243', 'NTAG213 Hardware Counter Mirror Guide')}</span>
                   </div>
                   <p style={{ color: 'var(--text-secondary)', marginBottom: '8px' }}>
                     Web NFC standard is sandboxed and cannot execute raw configuration register writes (Pages 29h-2Ch). After writing the NDEF URL using this browser console, use an NFC developer tool (such as NXP TagWriter) to issue these exact sector commands to enable the automatic counter:
@@ -3149,15 +3149,15 @@ const BookIngestionConsole = ({ user }) => {
                     
                     return (
                       <div className="ntag-registers-table" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--glass-border)', paddingBottom: '4px' }}>
                           <span style={{ color: 'var(--text-secondary)' }}>Placeholder Position Offset:</span>
                           <strong>Byte {absoluteOffset}</strong>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--glass-border)', paddingBottom: '4px' }}>
                           <span style={{ color: 'var(--text-secondary)' }}>Configuration Target Page:</span>
                           <strong>Page {mirrorPage} ({pageHex})</strong>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--glass-border)', paddingBottom: '4px' }}>
                           <span style={{ color: 'var(--text-secondary)' }}>Target Byte Position:</span>
                           <strong>Byte {mirrorByte}</strong>
                         </div>
@@ -3171,7 +3171,7 @@ const BookIngestionConsole = ({ user }) => {
                           fontFamily: 'monospace',
                           display: 'block',
                           whiteSpace: 'pre-wrap',
-                          border: '1px solid rgba(255,255,255,0.05)'
+                          border: '1px solid var(--glass-border)'
                         }}>
                           {`// Command 1: Configure Page 29h (MIRROR=${mirrorHex.substring(0, 2)}, RFUI=00, MIRROR_PAGE=${pageHex.substring(0, 2)}, AUTH0=FF)\n`}
                           {`A2 29 ${mirrorHex.substring(0, 2)} 00 ${pageHex.substring(0, 2)} FF\n\n`}
@@ -3194,7 +3194,7 @@ const BookIngestionConsole = ({ user }) => {
                     style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                   >
                     <RefreshCw size={14} className={nfcWriteLoading ? "spin-icon" : ""} />
-                    <span>Restart Write</span>
+                    <span>{t('auto_3244', 'Restart Write')}</span>
                   </button>
 
                   <button 
@@ -3204,7 +3204,7 @@ const BookIngestionConsole = ({ user }) => {
                     style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', borderColor: 'rgba(255, 107, 107, 0.4)', color: '#ff6b6b' }}
                   >
                     <X size={14} />
-                    <span>Cancel & Void</span>
+                    <span>{t('auto_3245', 'Cancel & Void')}</span>
                   </button>
                 </div>
                 
@@ -3216,7 +3216,7 @@ const BookIngestionConsole = ({ user }) => {
                   style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                 >
                   <Check size={14} />
-                  <span>Skip Tag & Save Ledger Directly</span>
+                  <span>{t('auto_3246', 'Skip Tag & Save Ledger Directly')}</span>
                 </button>
               </div>
             </div>
@@ -3232,7 +3232,7 @@ const BookIngestionConsole = ({ user }) => {
               <h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Shield size={18} style={{ color: 'var(--accent)' }} />
-                  <span>iOS Safari NFC Restriction Warning</span>
+                  <span>{t('auto_3247', 'iOS Safari NFC Restriction Warning')}</span>
                 </div>
               </h3>
               <button onClick={() => setIosWarningModalOpen(false)} className="close-camera-btn">
@@ -3246,9 +3246,9 @@ const BookIngestionConsole = ({ user }) => {
               </div>
 
               <div className="warning-body">
-                <h4 style={{ color: 'var(--accent)', marginBottom: '8px', textAlign: 'center' }}>Secure Cloud Sync Successful</h4>
+                <h4 style={{ color: 'var(--accent)', marginBottom: '8px', textAlign: 'center' }}>{t('auto_3248', 'Secure Cloud Sync Successful')}</h4>
                 <p style={{ fontSize: '0.9rem', lineHeight: '1.45', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                  Apple iOS / Safari limits programmatic tag writing inside public web applications due to native security sandbox restrictions.
+                  {t('auto_3249', 'Apple iOS / Safari limits programmatic tag writing inside public web applications due to native security sandbox restrictions.')}
                 </p>
                 <div className="ios-badge-explanation">
                   <p>
@@ -3266,7 +3266,7 @@ const BookIngestionConsole = ({ user }) => {
                 className="royal-btn"
                 style={{ width: '100%', marginTop: '16px' }}
               >
-                Acknowledge & Continue
+                {t('auto_3250', 'Acknowledge & Continue')}
               </button>
             </div>
           </div>
@@ -3280,7 +3280,7 @@ const BookIngestionConsole = ({ user }) => {
             <div className="search-drawer-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Compass size={20} className="gold-glow-icon" />
-                <h3 className="drawer-title">Search Google Books</h3>
+                <h3 className="drawer-title">{t('auto_3251', 'Search Google Books')}</h3>
               </div>
               <button onClick={() => setIsSearchDrawerOpen(false)} className="close-drawer-btn">
                 <X size={18} />
@@ -3288,7 +3288,7 @@ const BookIngestionConsole = ({ user }) => {
             </div>
 
             <div className="search-drawer-body">
-              <p className="drawer-help-text">Search millions of volumes by title, author, or keyword to auto-populate the intake console.</p>
+              <p className="drawer-help-text">{t('auto_3252', 'Search millions of volumes by title, author, or keyword to auto-populate the intake console.')}</p>
               
               <form onSubmit={handleMetadataSearch} className="drawer-search-form">
                 <div className="search-input-wrapper">
@@ -3316,7 +3316,7 @@ const BookIngestionConsole = ({ user }) => {
                 {isSearchingMetadata && (
                   <div className="drawer-searching-loader">
                     <RefreshCw className="spin-icon gold-glow-icon" size={24} />
-                    <p>Consulting Google Books archives...</p>
+                    <p>{t('auto_3253', 'Consulting Google Books archives...')}</p>
                   </div>
                 )}
 
@@ -3365,7 +3365,7 @@ const BookIngestionConsole = ({ user }) => {
             <div className="camera-modal-header" style={{ marginBottom: '16px' }}>
               <h3 style={{ fontSize: '1.25rem', color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Sparkles size={18} className="gold-glow-icon" />
-                <span>Registry Subjects Analysis</span>
+                <span>{t('auto_3254', 'Registry Subjects Analysis')}</span>
               </h3>
               <button onClick={() => setSubjectPromptOpen(false)} className="close-camera-btn">
                 <X size={18} />
@@ -3374,11 +3374,11 @@ const BookIngestionConsole = ({ user }) => {
             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.5' }}>
               The Open Library API returned the following subject tags. We have automatically matched close-matches (ignoring case, spaces, and hyphens) against pre-existing genres and tags:
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '300px', overflowY: 'auto', padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '20px', scrollbarWidth: 'thin' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '300px', overflowY: 'auto', padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid var(--glass-border)', marginBottom: '20px', scrollbarWidth: 'thin' }}>
               {promptSubjects.map((subj, idx) => (
                 <div 
                   key={idx} 
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '6px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', gap: '12px' }}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '6px', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', gap: '12px' }}
                 >
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, textAlign: 'left' }}>
                     <span style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-primary)' }}>
@@ -3395,8 +3395,8 @@ const BookIngestionConsole = ({ user }) => {
                       </span>
                     )}
                     {subj.status === 'no-match' && (
-                      <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
-                        No match found. Appended to manual tags list.
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        {t('auto_3255', 'No match found. Appended to manual tags list.')}
                       </span>
                     )}
                   </div>
@@ -3410,7 +3410,7 @@ const BookIngestionConsole = ({ user }) => {
                       onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212, 165, 116, 0.15)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(212, 165, 116, 0.05)'; }}
                     >
-                      + Create Genre
+                      {t('auto_3256', '+ Create Genre')}
                     </button>
                   ) : (
                     <span style={{ fontSize: '1.1rem' }}>
@@ -3427,7 +3427,7 @@ const BookIngestionConsole = ({ user }) => {
                 className="royal-btn"
                 style={{ fontSize: '0.85rem', padding: '8px 16px' }}
               >
-                Acknowledge & Close
+                {t('auto_3257', 'Acknowledge & Close')}
               </button>
             </div>
           </div>

@@ -549,7 +549,7 @@ export default function CuratorCheckoutsPage({ user }) {
       case 'CHECKED_OUT':
         return (
           <span className="ledger-status-badge badge-checkedout">
-            <Smartphone size={12} /> {t('admin.checkedOutBadge', 'Checked Out')} {ntagUid && <span className="nfc-dot" title={`Verified via NTAG213: ${ntagUid}`}>NFC</span>}
+            <Smartphone size={12} /> {t('admin.checkedOutBadge', 'Checked Out')} {ntagUid && <span className="nfc-dot" title={`Verified via NTAG213: ${ntagUid}`}>{t('auto_3258', 'NFC')}</span>}
           </span>
         );
       case 'RETURNED':
@@ -630,24 +630,24 @@ export default function CuratorCheckoutsPage({ user }) {
         <section className="royal-card curator-sandbox-card animate-fade-in" style={{ border: '1px solid rgba(212, 165, 116, 0.4)', padding: '24px', marginBottom: '30px', background: 'var(--surface)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(212, 165, 116, 0.2)', paddingBottom: '12px', marginBottom: '20px' }}>
             <h2 style={{ fontSize: '1.15rem', color: '#d4a574', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
-              <span>🛰️</span> Sovereign Geofencing & NFC Simulator Console
+              <span>🛰️</span> {t('auto_3259', 'Sovereign Geofencing & NFC Simulator Console')}
             </h2>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', background: 'rgba(212, 165, 116, 0.1)', color: '#d4a574', padding: '4px 10px', borderRadius: '12px', fontWeight: 'bold' }}>Active Sandbox</span>
+            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', background: 'rgba(212, 165, 116, 0.1)', color: '#d4a574', padding: '4px 10px', borderRadius: '12px', fontWeight: 'bold' }}>{t('auto_3260', 'Active Sandbox')}</span>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
             {/* Simulation controls */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <h3 style={{ fontSize: '1rem', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px', margin: 0 }}>Simulate Patron Return</h3>
+              <h3 style={{ fontSize: '1rem', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px', margin: 0 }}>{t('auto_3261', 'Simulate Patron Return')}</h3>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>Select Book Volume</label>
+                <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>{t('auto_3262', 'Select Book Volume')}</label>
                 <select 
                   value={simBookId} 
                   onChange={(e) => setSimBookId(e.target.value)}
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(212,165,116,0.2)', padding: '10px', borderRadius: '4px', color: '#fff', fontSize: '0.9rem' }}
                 >
-                  <option value="" style={{ background: '#121212' }}>-- Select a Book --</option>
+                  <option value="" style={{ background: '#121212' }}>{t('auto_3263', '-- Select a Book --')}</option>
                   {books.map(b => (
                     <option key={b.isbn} value={b.isbn} style={{ background: '#121212' }}>{b.title} ({b.isbn})</option>
                   ))}
@@ -655,7 +655,7 @@ export default function CuratorCheckoutsPage({ user }) {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>NFC Chip UID</label>
+                <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>{t('auto_3264', 'NFC Chip UID')}</label>
                 <input 
                   type="text" 
                   value={simNfc} 
@@ -667,7 +667,7 @@ export default function CuratorCheckoutsPage({ user }) {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>Simulated Latitude</label>
+                  <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>{t('auto_3265', 'Simulated Latitude')}</label>
                   <input 
                     type="number" 
                     step="any"
@@ -677,7 +677,7 @@ export default function CuratorCheckoutsPage({ user }) {
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>Simulated Longitude</label>
+                  <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>{t('auto_3266', 'Simulated Longitude')}</label>
                   <input 
                     type="number" 
                     step="any"
@@ -704,15 +704,15 @@ export default function CuratorCheckoutsPage({ user }) {
                   boxShadow: '0 4px 15px rgba(212, 165, 116, 0.4)'
                 }}
               >
-                Simulate NFC return request
+                {t('auto_3267', 'Simulate NFC return request')}
               </button>
             </div>
 
             {/* Geofence circular coverage canvas */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
               <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px' }}>
-                <h3 style={{ fontSize: '1.05rem', color: '#fff', margin: 0 }}>Geofence Radar Live Coverage</h3>
-                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', alignSelf: 'center' }}>Click map to relocate Pin</span>
+                <h3 style={{ fontSize: '1.05rem', color: '#fff', margin: 0 }}>{t('auto_3268', 'Geofence Radar Live Coverage')}</h3>
+                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', alignSelf: 'center' }}>{t('auto_3269', 'Click map to relocate Pin')}</span>
               </div>
               <canvas 
                 ref={canvasRef} 
@@ -729,16 +729,16 @@ export default function CuratorCheckoutsPage({ user }) {
               />
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', fontSize: '0.7rem' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#d4a574' }}>
-                  <span style={{ width: '6px', height: '6px', background: '#d4a574', borderRadius: '3px', display: 'inline-block' }}></span> Library Center
+                  <span style={{ width: '6px', height: '6px', background: '#d4a574', borderRadius: '3px', display: 'inline-block' }}></span> {t('auto_3270', 'Library Center')}
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(0,191,255,0.9)' }}>
-                  <span style={{ width: '6px', height: '6px', background: 'rgba(0,191,255,0.9)', borderRadius: '3px', display: 'inline-block' }}></span> Simulated Pin
+                  <span style={{ width: '6px', height: '6px', background: 'rgba(0,191,255,0.9)', borderRadius: '3px', display: 'inline-block' }}></span> {t('auto_3271', 'Simulated Pin')}
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#4caf50' }}>
-                  <span style={{ width: '6px', height: '6px', background: '#4caf50', borderRadius: '3px', display: 'inline-block' }}></span> Verified Return
+                  <span style={{ width: '6px', height: '6px', background: '#4caf50', borderRadius: '3px', display: 'inline-block' }}></span> {t('auto_3272', 'Verified Return')}
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#f44336' }}>
-                  <span style={{ width: '6px', height: '6px', background: '#f44336', borderRadius: '3px', display: 'inline-block' }}></span> Unverified Return
+                  <span style={{ width: '6px', height: '6px', background: '#f44336', borderRadius: '3px', display: 'inline-block' }}></span> {t('auto_3273', 'Unverified Return')}
                 </span>
               </div>
             </div>
@@ -864,17 +864,17 @@ export default function CuratorCheckoutsPage({ user }) {
                       <div className="compact-location-badge" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                         {r.locationVerified && (
                           <span className="location-badge verified" style={{ color: '#52c41a', border: '1px solid #52c41a', background: 'rgba(82, 196, 26, 0.1)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <MapPin size={10} /> Location Verified
+                            <MapPin size={10} /> {t('auto_3274', 'Location Verified')}
                           </span>
                         )}
                         {r.qrVerified && (
                           <span className="qr-badge verified" style={{ color: '#52c41a', border: '1px solid #52c41a', background: 'rgba(82, 196, 26, 0.1)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <QrCode size={10} /> QR Verified
+                            <QrCode size={10} /> {t('auto_3275', 'QR Verified')}
                           </span>
                         )}
                         {!r.locationVerified && !r.qrVerified && (
                           <span className="location-badge unverified" style={{ color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255, 255, 255, 0.05)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <MapPin size={10} /> Unverified Location
+                            <MapPin size={10} /> {t('auto_3276', 'Unverified Location')}
                           </span>
                         )}
                       </div>
@@ -1064,10 +1064,10 @@ export default function CuratorCheckoutsPage({ user }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '15px', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
           <div>
             <h3 style={{ fontSize: '1.25rem', fontFamily: 'var(--font-display)', fontWeight: 700, margin: 0, color: '#d4a574' }}>
-              🛡️ Physical Copy Tracking & Circulation Overrides
+              {t('auto_3277', '🛡️ Physical Copy Tracking & Circulation Overrides')}
             </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
-              Track active checkouts, copy-level smart IDs, and enforce administrative overrides for individual volumes.
+              {t('auto_3278', 'Track active checkouts, copy-level smart IDs, and enforce administrative overrides for individual volumes.')}
             </p>
           </div>
 
@@ -1088,7 +1088,7 @@ export default function CuratorCheckoutsPage({ user }) {
                 maxWidth: '280px'
               }}
             >
-              <option value="">-- Choose Book Volume --</option>
+              <option value="">{t('auto_3279', '-- Choose Book Volume --')}</option>
               {books.map(b => (
                 <option key={b.isbn} value={b.isbn}>{b.title} ({b.isbn})</option>
               ))}
@@ -1099,7 +1099,7 @@ export default function CuratorCheckoutsPage({ user }) {
         {!selectedBookId ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', color: 'var(--text-secondary)', border: '1px dashed rgba(255, 255, 255, 0.06)', borderRadius: '4px' }}>
             <BookOpen size={36} style={{ color: 'rgba(212, 165, 116, 0.4)', marginBottom: '12px' }} />
-            <p style={{ margin: 0, fontSize: '0.9rem' }}>Select a book volume above to inspect and manage its physical copies independently.</p>
+            <p style={{ margin: 0, fontSize: '0.9rem' }}>{t('auto_3280', 'Select a book volume above to inspect and manage its physical copies independently.')}</p>
           </div>
         ) : (
           (() => {
@@ -1113,7 +1113,7 @@ export default function CuratorCheckoutsPage({ user }) {
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', color: 'var(--text-secondary)', border: '1px dashed rgba(255, 255, 255, 0.06)', borderRadius: '4px' }}>
                   <AlertCircle size={36} style={{ color: '#ef4444', marginBottom: '12px' }} />
-                  <p style={{ margin: 0, fontSize: '0.9rem' }}>No individual copies have been registered for this volume in the database yet.</p>
+                  <p style={{ margin: 0, fontSize: '0.9rem' }}>{t('auto_3281', 'No individual copies have been registered for this volume in the database yet.')}</p>
                 </div>
               );
             }
@@ -1188,7 +1188,7 @@ export default function CuratorCheckoutsPage({ user }) {
                         {/* Borrower Details if Loaned */}
                         {activeTx && (
                           <div style={{ background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.03)', borderRadius: '4px', padding: '10px', marginBottom: '16px' }}>
-                            <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#d4a574', fontWeight: 'bold', marginBottom: '6px' }}>Current Borrower</div>
+                            <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#d4a574', fontWeight: 'bold', marginBottom: '6px' }}>{t('auto_3282', 'Current Borrower')}</div>
                             <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#fff' }}>{activeTx.memberName || 'Patron'}</div>
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>{activeTx.memberEmail}</div>
                             <div style={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.4)', fontFamily: 'monospace' }}>Tx: {activeTx.id.slice(0, 10)}...</div>
@@ -1216,7 +1216,7 @@ export default function CuratorCheckoutsPage({ user }) {
                                   cursor: 'pointer'
                                 }}
                               >
-                                Approve Return
+                                {t('auto_3283', 'Approve Return')}
                               </button>
                             )}
                             {activeTx.status === 'REQUESTED_CHECKOUT' && (
@@ -1235,7 +1235,7 @@ export default function CuratorCheckoutsPage({ user }) {
                                   cursor: 'pointer'
                                 }}
                               >
-                                Approve Checkout
+                                {t('auto_3284', 'Approve Checkout')}
                               </button>
                             )}
                             <button
@@ -1253,7 +1253,7 @@ export default function CuratorCheckoutsPage({ user }) {
                               }}
                             >
                               <X size={12} />
-                              Forcibly Return Copy
+                              {t('auto_3285', 'Forcibly Return Copy')}
                             </button>
                           </div>
                         ) : (

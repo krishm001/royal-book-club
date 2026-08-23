@@ -790,7 +790,7 @@ const CuratorSettingsPage = ({ user }) => {
                         </div>
                       </div>
                       {locationDetails.displayName && (
-                        <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', marginTop: '12px', paddingTop: '10px', fontSize: '0.78rem', color: 'var(--text-secondary, #9a9ab0)', lineHeight: '1.4' }}>
+                        <div style={{ borderTop: '1px solid var(--glass-border)', marginTop: '12px', paddingTop: '10px', fontSize: '0.78rem', color: 'var(--text-secondary, #9a9ab0)', lineHeight: '1.4' }}>
                           <strong>Full Display Address:</strong> {locationDetails.displayName}
                         </div>
                       )}
@@ -798,7 +798,7 @@ const CuratorSettingsPage = ({ user }) => {
                   )}
 
                   {reverseGeocoding && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: '1px dashed rgba(255,255,255,0.05)', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', padding: '10px 14px', background: 'var(--glass-bg)', borderRadius: '6px', border: '1px dashed var(--glass-border)', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                       <Loader2 size={14} className="animate-spin" style={{ color: 'var(--accent)' }} />
                       <span>Reverse geocoding coordinates via OpenStreetMap...</span>
                     </div>

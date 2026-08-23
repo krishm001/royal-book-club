@@ -1338,7 +1338,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
       </section>
 
       {/* Dynamic Premium Tag Filter Row */}
-      <div className="catalog-tags-filter-row" style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '12px 16px', marginBottom: '20px', scrollbarWidth: 'none', msOverflowStyle: 'none', background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(212, 175, 55, 0.08)', borderRadius: '12px', backdropFilter: 'blur(10px)' }}>
+      <div className="catalog-tags-filter-row" style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '12px 16px', marginBottom: '20px', scrollbarWidth: 'none', msOverflowStyle: 'none', background: 'var(--glass-bg)', border: '1px solid rgba(212, 175, 55, 0.08)', borderRadius: '12px', backdropFilter: 'blur(10px)' }}>
         <button
           type="button"
           onClick={() => setSelectedTag(null)}
@@ -1348,8 +1348,8 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
             borderRadius: '20px',
             fontSize: '0.8rem',
             fontWeight: '500',
-            border: '1px solid ' + (!selectedTag ? 'var(--accent, #d4af37)' : 'rgba(255, 255, 255, 0.1)'),
-            background: !selectedTag ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid ' + (!selectedTag ? 'var(--accent, #d4af37)' : 'var(--glass-border)'),
+            background: !selectedTag ? 'rgba(212, 175, 55, 0.15)' : 'var(--glass-bg)',
             color: !selectedTag ? 'var(--accent, #d4af37)' : 'var(--text-secondary, #9a9ab0)',
             cursor: 'pointer',
             whiteSpace: 'nowrap',
@@ -1357,7 +1357,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
             boxShadow: !selectedTag ? '0 0 10px rgba(212, 175, 55, 0.2)' : 'none'
           }}
         >
-          All Tags
+          {t('auto_3492', 'All Tags')}
         </button>
         {Array.from(new Set(books.flatMap(b => Array.isArray(b.tags) ? b.tags : []))).filter(Boolean).map(tag => (
           <button
@@ -1370,8 +1370,8 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
               borderRadius: '20px',
               fontSize: '0.8rem',
               fontWeight: '500',
-              border: '1px solid ' + (selectedTag === tag ? 'var(--accent, #d4af37)' : 'rgba(255, 255, 255, 0.1)'),
-              background: selectedTag === tag ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid ' + (selectedTag === tag ? 'var(--accent, #d4af37)' : 'var(--glass-border)'),
+              background: selectedTag === tag ? 'rgba(212, 175, 55, 0.15)' : 'var(--glass-bg)',
               color: selectedTag === tag ? 'var(--accent, #d4af37)' : 'var(--text-secondary, #9a9ab0)',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
@@ -1432,7 +1432,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
               <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.15rem', fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '0.05em' }}>
                 {nfcActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
               </h3>
-              <button onClick={handleCloseCardModal} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}>
+              <button onClick={handleCloseCardModal} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}>
                 <X size={18} />
               </button>
             </div>
@@ -1469,13 +1469,13 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
               {nfcSuccess ? (
                 <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <CheckCircle size={48} className="text-success gold-glow-icon" style={{ marginBottom: '12px', color: 'var(--accent)' }} />
-                  <h4 style={{ color: 'rgba(255, 255, 255, 0.95)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.verifConfirmed')}</h4>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.8rem', margin: '0 0 20px 0' }}>{t('catalog.ledgerUpdated')}</p>
+                  <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.verifConfirmed')}</h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '0 0 20px 0' }}>{t('catalog.ledgerUpdated')}</p>
 
                   {/* Rating control */}
                   {createdCheckoutId && (
                     <div style={{ width: '100%', marginBottom: '20px', padding: '15px', background: 'rgba(212, 175, 55, 0.04)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '6px' }}>
-                      <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
+                      <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
                         {ratingSubmitted ? "Thank you for your feedback!" : "How was your experience today?"}
                       </p>
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
@@ -1497,7 +1497,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                             <Star
                               size={24}
                               fill={starValue <= checkoutRating ? "var(--accent)" : "none"}
-                              stroke={starValue <= checkoutRating ? "var(--accent)" : "rgba(255,255,255,0.3)"}
+                              stroke={starValue <= checkoutRating ? "var(--accent)" : "var(--glass-border-hover)"}
                             />
                           </button>
                         ))}
@@ -1524,7 +1524,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                           fontWeight: 'bold',
                         }}
                       >
-                        <Shield size={14} /> View Gatepass
+                        <Shield size={14} /> {t('auto_3493', 'View Gatepass')}
                       </Link>
                     )}
                     {nfcActionType === 'return' && selectedBook && (
@@ -1544,7 +1544,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                           fontWeight: 'bold',
                         }}
                       >
-                        <Sparkles size={14} /> Write a Book Review
+                        <Sparkles size={14} /> {t('auto_3494', 'Write a Book Review')}
                       </Link>
                     )}
                     <button
@@ -1556,20 +1556,20 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                         borderRadius: '4px',
                       }}
                     >
-                      Done
+                      {t('auto_3495', 'Done')}
                     </button>
                   </div>
                 </div>
               ) : fallbackSuccess ? (
                 <div className="nfc-success-animation animate-fade-in" style={{ padding: '10px 0', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <CheckCircle size={48} className="gold-glow-icon" style={{ color: 'var(--accent)', marginBottom: '12px' }} />
-                  <h4 style={{ color: 'rgba(255, 255, 255, 0.95)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.scribeRequestSaved')}</h4>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.8rem', margin: '0 0 20px 0' }}>{t('catalog.requestSubmittedDesc')}</p>
+                  <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '1rem' }}>{t('catalog.scribeRequestSaved')}</h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '0 0 20px 0' }}>{t('catalog.requestSubmittedDesc')}</p>
 
                   {/* Rating control */}
                   {createdCheckoutId && (
                     <div style={{ width: '100%', marginBottom: '20px', padding: '15px', background: 'rgba(212, 175, 55, 0.04)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '6px' }}>
-                      <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
+                      <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
                         {ratingSubmitted ? "Thank you for your feedback!" : "How was your experience today?"}
                       </p>
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
@@ -1591,7 +1591,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                             <Star
                               size={24}
                               fill={starValue <= checkoutRating ? "var(--accent)" : "none"}
-                              stroke={starValue <= checkoutRating ? "var(--accent)" : "rgba(255,255,255,0.3)"}
+                              stroke={starValue <= checkoutRating ? "var(--accent)" : "var(--glass-border-hover)"}
                             />
                           </button>
                         ))}
@@ -1618,7 +1618,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                           fontWeight: 'bold',
                         }}
                       >
-                        <Shield size={14} /> View Gatepass
+                        <Shield size={14} /> {t('auto_3496', 'View Gatepass')}
                       </Link>
                     )}
                     {nfcActionType === 'return' && selectedBook && (
@@ -1638,7 +1638,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                           fontWeight: 'bold',
                         }}
                       >
-                        <Sparkles size={14} /> Write a Book Review
+                        <Sparkles size={14} /> {t('auto_3497', 'Write a Book Review')}
                       </Link>
                     )}
                     <button
@@ -1650,7 +1650,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                         borderRadius: '4px',
                       }}
                     >
-                      Done
+                      {t('auto_3498', 'Done')}
                     </button>
                   </div>
                 </div>
@@ -1663,12 +1663,12 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                         <div className="pulse-ring"></div>
                       </div>
                       
-                      <p className="nfc-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+                      <p className="nfc-prompt-desc" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
                         {t('catalog.holdNfcTagDesc')}
                       </p>
 
-                      <div className="nfc-meta-box" style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', padding: '8px 12px', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>{t('catalog.targetVolumeId')}</span>
+                      <div className="nfc-meta-box" style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', borderRadius: '4px', padding: '8px 12px', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>{t('catalog.targetVolumeId')}</span>
                         <code style={{ color: 'var(--accent)', fontFamily: 'monospace', fontWeight: 'bold' }}>{selectedBook.ntagUid}</code>
                       </div>
 
@@ -1701,11 +1701,11 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                         {t('catalog.iphoneAutofocusTip')}
                       </p>
 
-                      <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5', margin: '0 0 10px 0' }}>
+                      <p className="barcode-prompt-desc" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: '0 0 10px 0' }}>
                         {t('catalog.alignBarcodePrompt')}
                       </p>
 
-                      <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0', marginBottom: '16px' }}>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0', marginBottom: '16px' }}>
                         {t('catalog.cantScanBarcode')} <button type="button" onClick={() => handleCardTabChange('manual')} style={{ background: 'none', border: 'none', color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', padding: 0, font: 'inherit' }}>{t('catalog.submitManualRequest')}</button>
                       </p>
 
@@ -1736,16 +1736,16 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
 
                   {activeTab === 'manual' && (
                     <div className="tab-pane manual-tab-pane animate-fade-in" style={{ width: '100%' }}>
-                      <p className="fallback-explanation" style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.7)', lineHeight: '1.5', margin: '0 0 16px 0', textAlign: 'left' }}>
+                      <p className="fallback-explanation" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: '0 0 16px 0', textAlign: 'left' }}>
                         {nfcActionType === 'checkout'
                           ? t('catalog.fallbackExplanationCheckout')
                           : t('catalog.fallbackExplanationReturn')}
                       </p>
 
-                      <div className="fallback-form-summary royal-card" style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '16px' }}>
+                      <div className="fallback-form-summary royal-card" style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '16px' }}>
                         <h5 style={{ color: 'var(--accent)', fontWeight: '600', marginBottom: '4px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('catalog.volumeDetails')}</h5>
-                        <p style={{ fontSize: '0.85rem', fontWeight: '700', color: '#ffffff', margin: 0 }}>{selectedBook.title}</p>
-                        <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.6)', margin: '2px 0 0 0' }}>{t('catalog.isbn')}: {selectedBook.isbn}</p>
+                        <p style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>{selectedBook.title}</p>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>{t('catalog.isbn')}: {selectedBook.isbn}</p>
                       </div>
 
                       <div className="fallback-actions-row" style={{ display: 'flex', gap: '12px', width: '100%' }}>
@@ -1783,7 +1783,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
               <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.25rem', fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '0.05em' }}>
                 {nfcActionType === 'checkout' ? t('catalog.manualRequest') : t('catalog.manualRequest')}
               </h3>
-              <button onClick={() => setFallbackModalOpen(false)} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}>
+              <button onClick={() => setFallbackModalOpen(false)} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}>
                 <X size={18} />
               </button>
             </div>
@@ -1803,7 +1803,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                       : t('catalog.fallbackExplanationReturn')}
                   </p>
 
-                  <div className="fallback-form-summary royal-card" style={{ padding: '16px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '24px' }}>
+                  <div className="fallback-form-summary royal-card" style={{ padding: '16px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: '4px', textAlign: 'left', width: '100%', marginBottom: '24px' }}>
                     <h5 style={{ color: 'var(--accent)', fontWeight: '600', marginBottom: '6px', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('catalog.volumeDetails')}</h5>
                     <p style={{ fontSize: '0.95rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>{selectedBook.title}</p>
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>{t('catalog.isbn')}: {selectedBook.isbn}</p>
@@ -1847,13 +1847,13 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                   {t('catalog.scanBarcode')}
                 </h3>
               </div>
-              <button onClick={stopTopBarcodeScanner} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}>
+              <button onClick={stopTopBarcodeScanner} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}>
                 <X size={18} />
               </button>
             </div>
 
             <div className="scanner-modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div id="top-barcode-reader" className="scanner-focus-ring-container" onClick={(e) => handleScannerClick(e, topHtml5QrCodeRef.current)} style={{ width: '100%', maxWidth: '400px', background: '#000', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}></div>
+              <div id="top-barcode-reader" className="scanner-focus-ring-container" onClick={(e) => handleScannerClick(e, topHtml5QrCodeRef.current)} style={{ width: '100%', maxWidth: '400px', background: '#000', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--glass-border)' }}></div>
               
               <p className="scanner-iphone-tip" style={{ fontSize: '0.78rem', color: 'var(--accent)', background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.2)', padding: '6px 10px', borderRadius: '4px', marginTop: '12px', marginBottom: '0', maxWidth: '400px', textAlign: 'center', lineHeight: '1.4', width: '100%' }}>
                 {t('catalog.iphoneAutofocusTip')}
@@ -1865,7 +1865,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                   <span>{topScannerError}</span>
                 </div>
               ) : (
-                <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginTop: '16px', textAlign: 'center', marginHorizontal: '12px' }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '16px', textAlign: 'center', marginHorizontal: '12px' }}>
                   {t('catalog.alignBarcodePrompt')}
                 </p>
               )}
@@ -1890,7 +1890,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
               <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.3rem', fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '0.05em' }}>
                 {p2dActionType === 'checkout' ? t('catalog.sovereignCheckoutVerif') : t('catalog.sovereignReturnVerif')}
               </h3>
-              <button onClick={() => setP2dModalOpen(false)} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}>
+              <button onClick={() => setP2dModalOpen(false)} className="close-nfc-btn" style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}>
                 <X size={18} />
               </button>
             </div>
@@ -1911,14 +1911,14 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                       ? `"${p2dBook.title}" ${t('catalog.borrowedByMe').toLowerCase()}`
                       : `"${p2dBook.title}" ${t('catalog.returned').toLowerCase()}`}
                   </p>
-                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', margin: '0 0 20px 0' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: '0 0 20px 0' }}>
                     {t('catalog.nfcUid')}: <code>{p2dBook.ntagUid || 'P2D-VERIFIED'}</code>
                   </p>
 
                   {/* Rating control */}
                   {createdCheckoutId && (
                     <div style={{ width: '100%', marginBottom: '20px', padding: '15px', background: 'rgba(212, 175, 55, 0.04)', border: '1px solid rgba(212, 175, 55, 0.15)', borderRadius: '6px' }}>
-                      <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
+                      <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
                         {ratingSubmitted ? "Thank you for your feedback!" : "How was your experience today?"}
                       </p>
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
@@ -1940,7 +1940,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                             <Star
                               size={24}
                               fill={starValue <= checkoutRating ? "var(--accent)" : "none"}
-                              stroke={starValue <= checkoutRating ? "var(--accent)" : "rgba(255,255,255,0.3)"}
+                              stroke={starValue <= checkoutRating ? "var(--accent)" : "var(--glass-border-hover)"}
                             />
                           </button>
                         ))}
@@ -1967,7 +1967,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                           fontWeight: 'bold',
                         }}
                       >
-                        <Shield size={14} /> View Gatepass
+                        <Shield size={14} /> {t('auto_3499', 'View Gatepass')}
                       </Link>
                     )}
                     {p2dActionType === 'return' && p2dBook && (
@@ -1987,7 +1987,7 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                           fontWeight: 'bold',
                         }}
                       >
-                        <Sparkles size={14} /> Write a Book Review
+                        <Sparkles size={14} /> {t('auto_3500', 'Write a Book Review')}
                       </Link>
                     )}
                     <button
@@ -2002,13 +2002,13 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                         borderRadius: '4px',
                       }}
                     >
-                      Done
+                      {t('auto_3501', 'Done')}
                     </button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <div className="p2d-book-showcase" style={{ display: 'flex', gap: '16px', alignItems: 'center', textAlign: 'left', width: '100%', padding: '16px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '24px' }}>
+                  <div className="p2d-book-showcase" style={{ display: 'flex', gap: '16px', alignItems: 'center', textAlign: 'left', width: '100%', padding: '16px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid var(--glass-border)', marginBottom: '24px' }}>
                     {p2dBook.coverUrl && (
                       <div className="p2d-cover-wrapper" style={{ width: '60px', height: '90px', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--accent)', flexShrink: 0 }}>
                         <img src={p2dBook.coverUrl} alt={p2dBook.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -2017,11 +2017,11 @@ const CatalogPage = ({ user, triggerOnboarding }) => {
                     <div className="p2d-book-details">
                       <span className="p2d-book-title" style={{ display: 'block', fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '4px' }}>{p2dBook.title}</span>
                       <span className="p2d-book-author" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>{t('common.genre')}: {Array.isArray(p2dBook.authors) ? p2dBook.authors.join(', ') : p2dBook.author || 'Unknown Author'}</span>
-                      <span className="p2d-book-isbn" style={{ display: 'block', fontSize: '0.75rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)' }}>{t('catalog.isbn')}: {p2dBook.isbn}</span>
+                      <span className="p2d-book-isbn" style={{ display: 'block', fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--text-muted)' }}>{t('catalog.isbn')}: {p2dBook.isbn}</span>
                     </div>
                   </div>
 
-                  <p className="p2d-action-desc" style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)', lineHeight: '1.6', marginBottom: '24px' }}>
+                  <p className="p2d-action-desc" style={{ fontSize: '0.9rem', color: 'var(--text-primary)', lineHeight: '1.6', marginBottom: '24px' }}>
                     {p2dActionType === 'checkout' ? t('catalog.physicalCheckoutPrompt') : t('catalog.physicalReturnPrompt')}
                   </p>
 

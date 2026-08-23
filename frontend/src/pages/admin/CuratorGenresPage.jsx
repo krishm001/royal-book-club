@@ -258,13 +258,13 @@ const CuratorGenresPage = ({ user }) => {
           <div className="denied-icon-wrapper">
             <Shield size={48} className="denied-shield-icon" />
           </div>
-          <h2 className="denied-title gold-gradient-text">Privileged Sanctuary</h2>
+          <h2 className="denied-title gold-gradient-text">{t('auto_3304', 'Privileged Sanctuary')}</h2>
           <p className="denied-message">
-            Your current credentials do not grant access to the Curator House configuration. Curation of the Royal Library is reserved for assigned Curators.
+            {t('auto_3305', 'Your current credentials do not grant access to the Curator House configuration. Curation of the Royal Library is reserved for assigned Curators.')}
           </p>
           <div className="denied-actions">
             <Link to="/" className="royal-btn return-home-btn">
-              Return to Entrance Hall
+              {t('auto_3306', 'Return to Entrance Hall')}
             </Link>
           </div>
         </div>

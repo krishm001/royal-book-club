@@ -1,3 +1,4 @@
+import { useLanguage } from '../../i18n/LanguageContext';
 import React from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -18,7 +19,9 @@ import './RichTextEditor.css';
 
 const RichTextEditor = ({ 
   value = '', 
-  onChange = () => {}, 
+  onChange = () => {
+  const { t } = useLanguage();
+}, 
   placeholder = 'Begin your literary draft here...', 
   minHeight = '200px' 
 }) => {
@@ -41,7 +44,7 @@ const RichTextEditor = ({
     return (
       <div className="editor-loading-placeholder">
         <div className="loader-mini"></div>
-        <span>Preparing parchment and ink...</span>
+        <span>{t('auto_3124', 'Preparing parchment and ink...')}</span>
       </div>
     );
   }

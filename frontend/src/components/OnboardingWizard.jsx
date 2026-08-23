@@ -672,7 +672,7 @@ export default function OnboardingWizard({
         <div className="onboarding-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Sparkles className="gold-glow" size={22} style={{ color: 'var(--accent)' }} />
-            <h3 className="onboarding-title">Sovereign Onboarding Archway</h3>
+            <h3 className="onboarding-title">{t('auto_3080', 'Sovereign Onboarding Archway')}</h3>
           </div>
           <button onClick={onClose} className="onboarding-btn-secondary" style={{ padding: '6px', borderRadius: '50%', display: 'flex' }}>
             <X size={18} />
@@ -691,15 +691,15 @@ export default function OnboardingWizard({
           <div className="onboarding-step-indicator">
             <div className={`onboarding-step-dot ${step === 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
               <div className="onboarding-step-circle">{step > 1 ? <Check size={14} /> : '1'}</div>
-              <span className="onboarding-step-label">Gatekeeper</span>
+              <span className="onboarding-step-label">{t('auto_3081', 'Gatekeeper')}</span>
             </div>
             <div className={`onboarding-step-dot ${step === 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}>
               <div className="onboarding-step-circle">{step > 2 ? <Check size={14} /> : '2'}</div>
-              <span className="onboarding-step-label">Terms Consent</span>
+              <span className="onboarding-step-label">{t('auto_3082', 'Terms Consent')}</span>
             </div>
             <div className={`onboarding-step-dot ${step === 3 ? 'active' : ''}`}>
               <div className="onboarding-step-circle">3</div>
-              <span className="onboarding-step-label">Profile Setup</span>
+              <span className="onboarding-step-label">{t('auto_3083', 'Profile Setup')}</span>
             </div>
           </div>
 
@@ -707,24 +707,24 @@ export default function OnboardingWizard({
           {profileLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '50px 20px', gap: '12px' }}>
               <Loader2 className="animate-spin gold-glow-icon" size={32} />
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Retrieving personal archive coordinates...</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{t('auto_3084', 'Retrieving personal archive coordinates...')}</p>
             </div>
           ) : (
             <>
               {step === 1 && (
                 <div className="onboarding-step-panel animate-fade-in">
                   <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '20px', textAlign: 'center' }}>
-                    Create or verify your elite credentials to unlock catalog search, scans, and checkout mechanisms.
+                    {t('auto_3085', 'Create or verify your elite credentials to unlock catalog search, scans, and checkout mechanisms.')}
                   </p>
 
                   {/* Social Login buttons */}
                   <div className="social-grid">
                     <button type="button" className="onboarding-social-btn" onClick={() => handleSocialSignIn(googleProvider)}>
                       <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: '16px', height: '16px' }} />
-                      Google
+                      {t('auto_3086', 'Google')}
                     </button>
                     <button type="button" className="onboarding-social-btn" onClick={handleLinkedInSignIn}>
-                      <span style={{ color: '#0077b5', fontWeight: 'bold' }}>in</span> LinkedIn
+                      <span style={{ color: '#0077b5', fontWeight: 'bold' }}>in</span> {t('auto_3087', 'LinkedIn')}
                     </button>
                     <button type="button" className="onboarding-social-btn" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }} title="Meta login is currently unconfigured">
                       <span style={{ color: '#1877f2', fontWeight: 'bold' }}>f</span> Meta (Unavailable)
@@ -734,16 +734,16 @@ export default function OnboardingWizard({
                     </button>
                   </div>
 
-                  <div className="onboarding-divider">or use professional email</div>
+                  <div className="onboarding-divider">{t('auto_3088', 'or use professional email')}</div>
 
                   {authMode === 'signin' ? (
                     <form onSubmit={handleEmailSignIn}>
                       <div className="onboarding-form-group">
-                        <label>Email Address</label>
+                        <label>{t('auto_3089', 'Email Address')}</label>
                         <input type="email" required className="onboarding-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@domain.com" />
                       </div>
                       <div className="onboarding-form-group">
-                        <label>Passphrase</label>
+                        <label>{t('auto_3090', 'Passphrase')}</label>
                         <input type="password" required className="onboarding-input" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
                       </div>
                       {error && <div style={{ color: 'var(--error)', fontSize: '0.85rem', marginBottom: '12px' }}><ShieldAlert size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'text-bottom' }} /> {error}</div>}
@@ -751,40 +751,40 @@ export default function OnboardingWizard({
                         {loading ? <Loader2 size={16} className="animate-spin" /> : 'Enter Archway'}
                       </button>
                       <p style={{ textAlign: 'center', fontSize: '0.82rem', marginTop: '16px', color: 'var(--text-secondary)' }}>
-                        New reader? <button type="button" onClick={() => setAuthFormMode('signup')} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline' }}>Create Covenant Account</button>
+                        New reader? <button type="button" onClick={() => setAuthFormMode('signup')} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline' }}>{t('auto_3091', 'Create Covenant Account')}</button>
                       </p>
                     </form>
                   ) : (
                     <form onSubmit={handleEmailSignUp}>
                       <div style={{ display: 'flex', gap: '12px' }}>
                         <div className="onboarding-form-group" style={{ flex: 1 }}>
-                          <label>First Name</label>
+                          <label>{t('auto_3092', 'First Name')}</label>
                           <input type="text" required className="onboarding-input" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Sovereign" />
                         </div>
                         <div className="onboarding-form-group" style={{ flex: 1 }}>
-                          <label>Last Name</label>
+                          <label>{t('auto_3093', 'Last Name')}</label>
                           <input type="text" required className="onboarding-input" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Reader" />
                         </div>
                       </div>
                       <div className="onboarding-form-group">
-                        <label>Email Address</label>
+                        <label>{t('auto_3094', 'Email Address')}</label>
                         <input type="email" required className="onboarding-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@domain.com" />
                       </div>
                       <div className="onboarding-form-group">
-                        <label>Create Passphrase</label>
+                        <label>{t('auto_3095', 'Create Passphrase')}</label>
                         <input type="password" required className="onboarding-input" value={password} onChange={e => setPassword(e.target.value)} placeholder="Minimum 6 characters" />
                       </div>
                       {error && <div style={{ color: 'var(--error)', fontSize: '0.85rem', marginBottom: '12px' }}><ShieldAlert size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'text-bottom' }} /> {error}</div>}
                       {emailVerifySent && (
                         <div style={{ background: 'rgba(46, 125, 50, 0.1)', border: '1px solid var(--success)', borderRadius: '6px', padding: '10px 14px', color: 'var(--success)', fontSize: '0.85rem', marginBottom: '12px' }}>
-                          Verification link dispatched! Please check your email inbox to verify.
+                          {t('auto_3096', 'Verification link dispatched! Please check your email inbox to verify.')}
                         </div>
                       )}
                       <button type="submit" disabled={loading} className="onboarding-btn onboarding-btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '10px' }}>
                         {loading ? <Loader2 size={16} className="animate-spin" /> : 'Register & Send Verification Link'}
                       </button>
                       <p style={{ textAlign: 'center', fontSize: '0.82rem', marginTop: '16px', color: 'var(--text-secondary)' }}>
-                        Have account? <button type="button" onClick={() => setAuthFormMode('signin')} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline' }}>Sign In</button>
+                        Have account? <button type="button" onClick={() => setAuthFormMode('signin')} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline' }}>{t('auto_3097', 'Sign In')}</button>
                       </p>
                     </form>
                   )}
@@ -794,7 +794,7 @@ export default function OnboardingWizard({
               {step === 2 && (
                 <div className="onboarding-step-panel animate-fade-in">
                   <p style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 600, marginBottom: '16px', textAlign: 'center' }}>
-                    Terms & Privacy Consent
+                    {t('auto_3098', 'Terms & Privacy Consent')}
                   </p>
 
                   <div className="onboarding-disclaimer-wrapper" style={{ 
@@ -833,7 +833,7 @@ export default function OnboardingWizard({
 
                   <div className="onboarding-footer" style={{ padding: '20px 0 0 0', marginTop: '20px' }}>
                     <button type="button" onClick={prevStep} className="onboarding-btn onboarding-btn-secondary">
-                      <ChevronLeft size={16} /> Back
+                      <ChevronLeft size={16} /> {t('auto_3099', 'Back')}
                     </button>
                     <button type="button" onClick={handleAcceptCovenant} disabled={!covenantAccepted || loading} className="onboarding-btn onboarding-btn-primary">
                       {loading ? <Loader2 size={16} className="animate-spin" /> : 'Confirm Covenant'} <ChevronRight size={16} />
@@ -853,7 +853,7 @@ export default function OnboardingWizard({
                           <AlertTriangle size={18} />
                         </div>
                         <div className="status-text-content">
-                          <h3 className="gated-title" style={{ fontSize: '0.95rem', margin: 0, fontWeight: 700 }}>Self-Checkout Locked</h3>
+                          <h3 className="gated-title" style={{ fontSize: '0.95rem', margin: 0, fontWeight: 700 }}>{t('auto_3100', 'Self-Checkout Locked')}</h3>
                           <p className="gated-desc" style={{ fontSize: '0.8rem', margin: '2px 0 0 0', color: 'var(--text-secondary)' }}>
                             Missing required gating fields: <strong style={{ color: 'var(--accent)' }}>{missingFields.join(', ')}</strong>.
                           </p>
@@ -865,9 +865,9 @@ export default function OnboardingWizard({
                           <CheckCircle size={18} />
                         </div>
                         <div className="status-text-content">
-                          <h3 className="unlocked-title" style={{ fontSize: '0.95rem', margin: 0, fontWeight: 700 }}>Self-Checkout Unlocked</h3>
+                          <h3 className="unlocked-title" style={{ fontSize: '0.95rem', margin: 0, fontWeight: 700 }}>{t('auto_3101', 'Self-Checkout Unlocked')}</h3>
                           <p className="unlocked-desc" style={{ fontSize: '0.8rem', margin: '2px 0 0 0', color: 'var(--text-secondary)' }}>
-                            All administrative gating rules are fully satisfied. You can use instant self-checkout!
+                            {t('auto_3102', 'All administrative gating rules are fully satisfied. You can use instant self-checkout!')}
                           </p>
                         </div>
                       </div>
@@ -882,7 +882,7 @@ export default function OnboardingWizard({
                         <div className="pulsing-mail-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(212,165,116,0.1)', borderRadius: '50%', width: '80px', height: '80px', marginBottom: '20px', boxShadow: '0 0 20px rgba(212,165,116,0.2)' }}>
                           <Mail size={40} className="gold-glow-icon animate-pulse" style={{ color: 'var(--accent)' }} />
                         </div>
-                        <h3 className="section-title-royal" style={{ color: 'var(--accent)', marginTop: '0', fontSize: '1.2rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Sovereign Verification Gating</h3>
+                        <h3 className="section-title-royal" style={{ color: 'var(--accent)', marginTop: '0', fontSize: '1.2rem', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('auto_3103', 'Sovereign Verification Gating')}</h3>
                         <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', margin: '12px 0 24px 0', maxWidth: '440px', lineHeight: '1.6' }}>
                           An administrator has enforced mandatory email verification for secure self-checkout. 
                           Please check your inbox (<strong>{auth.currentUser?.email}</strong>) and click the verification link to unblock checkout.
@@ -903,7 +903,7 @@ export default function OnboardingWizard({
                             className="royal-btn"
                             style={{ padding: '10px 20px', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}
                           >
-                            Check Verification Now
+                            {t('auto_3104', 'Check Verification Now')}
                           </button>
                         </div>
                       </div>
@@ -914,11 +914,11 @@ export default function OnboardingWizard({
                     {/* Left Form Column */}
                     <div className="royal-card form-card-glass" style={{ padding: '0', background: 'transparent', border: 'none', boxShadow: 'none' }}>
                       <form onSubmit={handleSaveProfile} className="profile-form">
-                        <h3 className="section-title-royal" style={{ fontSize: '0.9rem', marginBottom: '15px' }}>Personal Coordinates</h3>
+                        <h3 className="section-title-royal" style={{ fontSize: '0.9rem', marginBottom: '15px' }}>{t('auto_3105', 'Personal Coordinates')}</h3>
                         
                         <div className="form-row">
                           <div className="form-group flex-1">
-                            <label htmlFor="firstName" style={{ fontSize: '0.75rem' }}>First Name</label>
+                            <label htmlFor="firstName" style={{ fontSize: '0.75rem' }}>{t('auto_3106', 'First Name')}</label>
                             <input
                               type="text"
                               id="firstName"
@@ -929,7 +929,7 @@ export default function OnboardingWizard({
                             />
                           </div>
                           <div className="form-group flex-1">
-                            <label htmlFor="lastName" style={{ fontSize: '0.75rem' }}>Last Name</label>
+                            <label htmlFor="lastName" style={{ fontSize: '0.75rem' }}>{t('auto_3107', 'Last Name')}</label>
                             <input
                               type="text"
                               id="lastName"
@@ -962,8 +962,8 @@ export default function OnboardingWizard({
                         <hr className="royal-divider" />
 
                         <div className="address-section-header">
-                          <h3 className="section-title-royal" style={{ fontSize: '0.9rem', marginBottom: '5px' }}>Address Registry</h3>
-                          <p className="address-section-sub" style={{ fontSize: '0.78rem' }}>Verify physical billing address to fulfill checkout regulations.</p>
+                          <h3 className="section-title-royal" style={{ fontSize: '0.9rem', marginBottom: '5px' }}>{t('auto_3108', 'Address Registry')}</h3>
+                          <p className="address-section-sub" style={{ fontSize: '0.78rem' }}>{t('auto_3109', 'Verify physical billing address to fulfill checkout regulations.')}</p>
                         </div>
 
                         {/* Geolocation Address Extraction Button */}
@@ -977,11 +977,11 @@ export default function OnboardingWizard({
                           >
                             {detectingLocation ? (
                               <>
-                                <Loader2 className="animate-spin mr-2" size={14} /> Locating...
+                                <Loader2 className="animate-spin mr-2" size={14} /> {t('auto_3110', 'Locating...')}
                               </>
                             ) : (
                               <>
-                                <MapPin size={14} className="gold-glow-icon mr-2" /> Detect My Location
+                                <MapPin size={14} className="gold-glow-icon mr-2" /> {t('auto_3111', 'Detect My Location')}
                               </>
                             )}
                           </button>
@@ -989,7 +989,7 @@ export default function OnboardingWizard({
 
                         {/* Autocomplete Search Field */}
                         <div className="form-group" ref={suggestionsContainerRef} style={{ position: 'relative' }}>
-                          <label htmlFor="googleAddressSearch" style={{ fontSize: '0.75rem' }}>Address Lookup</label>
+                          <label htmlFor="googleAddressSearch" style={{ fontSize: '0.75rem' }}>{t('auto_3112', 'Address Lookup')}</label>
                           <div className="input-with-icon-wrapper">
                             <Search className="input-field-icon" size={14} style={{ left: '12px' }} />
                             <input
@@ -1090,7 +1090,7 @@ export default function OnboardingWizard({
 
                         <div className="onboarding-footer" style={{ padding: '20px 0 0 0', marginTop: '20px', borderTop: '1px solid var(--glass-border)', background: 'transparent' }}>
                           <button type="button" onClick={prevStep} className="onboarding-btn onboarding-btn-secondary">
-                            <ChevronLeft size={16} /> Back
+                            <ChevronLeft size={16} /> {t('auto_3113', 'Back')}
                           </button>
                           <button type="submit" disabled={loading} className="onboarding-btn onboarding-btn-primary">
                             {loading ? <Loader2 size={16} className="animate-spin" /> : 'Complete Setup'}
@@ -1102,9 +1102,9 @@ export default function OnboardingWizard({
                     {/* Right Checklist Column */}
                     <div className="right-column-container" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                       <div className="royal-card checklist-card-glass" style={{ padding: '20px', background: 'var(--surface-elevated)' }}>
-                        <h3 className="section-title-royal" style={{ fontSize: '0.9rem', marginBottom: '10px' }}>Gating Diagnostics</h3>
+                        <h3 className="section-title-royal" style={{ fontSize: '0.9rem', marginBottom: '10px' }}>{t('auto_3114', 'Gating Diagnostics')}</h3>
                         <p className="checklist-subtitle" style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '15px' }}>
-                          Verify remaining credential checkmarks to unlock direct-tap self checkout features.
+                          {t('auto_3115', 'Verify remaining credential checkmarks to unlock direct-tap self checkout features.')}
                         </p>
 
                         <div className="checklist-items" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1114,9 +1114,9 @@ export default function OnboardingWizard({
                                 {emailVerified ? <CheckCircle size={14} /> : <AlertTriangle size={14} />}
                               </div>
                               <div className="checklist-text">
-                                <span className="checklist-label" style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block' }}>Email Verification</span>
+                                <span className="checklist-label" style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block' }}>{t('auto_3116', 'Email Verification')}</span>
                                 <span className="checklist-requirement" style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                                  Mandatory Field
+                                  {t('auto_3117', 'Mandatory Field')}
                                 </span>
                               </div>
                             </div>
@@ -1127,7 +1127,7 @@ export default function OnboardingWizard({
                               {phone.trim() ? <CheckCircle size={14} /> : gatingSettings?.phoneMandatory ? <AlertTriangle size={14} /> : <CheckCircle size={14} style={{ opacity: 0.3 }} />}
                             </div>
                             <div className="checklist-text">
-                              <span className="checklist-label" style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block' }}>Phone Number</span>
+                              <span className="checklist-label" style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block' }}>{t('auto_3118', 'Phone Number')}</span>
                               <span className="checklist-requirement" style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
                                 {gatingSettings?.phoneMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
                               </span>
@@ -1139,7 +1139,7 @@ export default function OnboardingWizard({
                               {houseNo.trim() ? <CheckCircle size={14} /> : gatingSettings?.houseNoMandatory ? <AlertTriangle size={14} /> : <CheckCircle size={14} style={{ opacity: 0.3 }} />}
                             </div>
                             <div className="checklist-text">
-                              <span className="checklist-label" style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block' }}>House/Suite #</span>
+                              <span className="checklist-label" style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block' }}>{t('auto_3119', 'House/Suite #')}</span>
                               <span className="checklist-requirement" style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
                                 {gatingSettings?.houseNoMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
                               </span>
@@ -1151,7 +1151,7 @@ export default function OnboardingWizard({
                               {street.trim() ? <CheckCircle size={14} /> : gatingSettings?.streetMandatory ? <AlertTriangle size={14} /> : <CheckCircle size={14} style={{ opacity: 0.3 }} />}
                             </div>
                             <div className="checklist-text">
-                              <span className="checklist-label" style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block' }}>Street Address</span>
+                              <span className="checklist-label" style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block' }}>{t('auto_3120', 'Street Address')}</span>
                               <span className="checklist-requirement" style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
                                 {gatingSettings?.streetMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
                               </span>
@@ -1163,7 +1163,7 @@ export default function OnboardingWizard({
                               {city.trim() ? <CheckCircle size={14} /> : gatingSettings?.cityMandatory ? <AlertTriangle size={14} /> : <CheckCircle size={14} style={{ opacity: 0.3 }} />}
                             </div>
                             <div className="checklist-text">
-                              <span className="checklist-label" style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block' }}>Municipal City</span>
+                              <span className="checklist-label" style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block' }}>{t('auto_3121', 'Municipal City')}</span>
                               <span className="checklist-requirement" style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
                                 {gatingSettings?.cityMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
                               </span>
@@ -1175,7 +1175,7 @@ export default function OnboardingWizard({
                               {pinCode.trim() ? <CheckCircle size={14} /> : gatingSettings?.pinCodeMandatory ? <AlertTriangle size={14} /> : <CheckCircle size={14} style={{ opacity: 0.3 }} />}
                             </div>
                             <div className="checklist-text">
-                              <span className="checklist-label" style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block' }}>PIN Code</span>
+                              <span className="checklist-label" style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block' }}>{t('auto_3122', 'PIN Code')}</span>
                               <span className="checklist-requirement" style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
                                 {gatingSettings?.pinCodeMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
                               </span>

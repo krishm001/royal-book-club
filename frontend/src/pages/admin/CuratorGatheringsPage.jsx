@@ -315,13 +315,13 @@ const CuratorGatheringsPage = ({ user }) => {
           <div className="denied-icon-wrapper">
             <Shield size={48} className="denied-shield-icon" />
           </div>
-          <h2 className="denied-title gold-gradient-text">Privileged Sanctuary</h2>
+          <h2 className="denied-title gold-gradient-text">{t('auto_3286', 'Privileged Sanctuary')}</h2>
           <p className="denied-message">
-            Your current credentials do not grant access to the Curator Curation registry. Curation of the Royal Library is reserved for assigned Curators.
+            {t('auto_3287', 'Your current credentials do not grant access to the Curator Curation registry. Curation of the Royal Library is reserved for assigned Curators.')}
           </p>
           <div className="denied-actions">
             <Link to="/" className="royal-btn return-home-btn">
-              Return to Entrance Hall
+              {t('auto_3288', 'Return to Entrance Hall')}
             </Link>
           </div>
         </div>
@@ -354,7 +354,7 @@ const CuratorGatheringsPage = ({ user }) => {
 
           <form onSubmit={handleSave} className="event-edit-form">
             <div className="form-group">
-              <label className="royal-label">Gathering Prospectus Title</label>
+              <label className="royal-label">{t('auto_3289', 'Gathering Prospectus Title')}</label>
               <input
                 type="text"
                 className="royal-input"
@@ -367,23 +367,23 @@ const CuratorGatheringsPage = ({ user }) => {
 
             <div className="form-row-grid">
               <div className="form-group">
-                <label className="royal-label">Event Type</label>
+                <label className="royal-label">{t('auto_3290', 'Event Type')}</label>
                 <select 
                   className="royal-input royal-select"
                   value={type}
                   onChange={(e) => setType(e.target.value)}
                   required
                 >
-                  <option value="Litfest">Literary Festival</option>
-                  <option value="Discussion">Discussion Panel</option>
-                  <option value="Salon Meetup">Salon Meetup</option>
-                  <option value="Sovereign Dinner">Sovereign Dinner</option>
-                  <option value="Symposium">Academic Symposium</option>
+                  <option value="Litfest">{t('auto_3291', 'Literary Festival')}</option>
+                  <option value="Discussion">{t('auto_3292', 'Discussion Panel')}</option>
+                  <option value="Salon Meetup">{t('auto_3293', 'Salon Meetup')}</option>
+                  <option value="Sovereign Dinner">{t('auto_3294', 'Sovereign Dinner')}</option>
+                  <option value="Symposium">{t('auto_3295', 'Academic Symposium')}</option>
                 </select>
               </div>
 
               <div className="form-group">
-                <label className="royal-label">Curator-in-Charge</label>
+                <label className="royal-label">{t('auto_3296', 'Curator-in-Charge')}</label>
                 <input
                   type="text"
                   className="royal-input"
@@ -408,7 +408,7 @@ const CuratorGatheringsPage = ({ user }) => {
               </div>
 
               <div className="form-group">
-                <label className="royal-label">Time / Duration</label>
+                <label className="royal-label">{t('auto_3297', 'Time / Duration')}</label>
                 <input
                   type="text"
                   className="royal-input"
@@ -434,7 +434,7 @@ const CuratorGatheringsPage = ({ user }) => {
               </div>
 
               <div className="form-group">
-                <label className="royal-label">Lounge / Hall Location</label>
+                <label className="royal-label">{t('auto_3298', 'Lounge / Hall Location')}</label>
                 <input
                   type="text"
                   className="royal-input"
@@ -447,7 +447,7 @@ const CuratorGatheringsPage = ({ user }) => {
             </div>
 
             <div className="form-group">
-              <label className="royal-label">Address Directions</label>
+              <label className="royal-label">{t('auto_3299', 'Address Directions')}</label>
               <input
                 type="text"
                 className="royal-input"
@@ -471,7 +471,7 @@ const CuratorGatheringsPage = ({ user }) => {
             </div>
 
             <div className="form-group">
-              <label className="royal-label">Detailed Prospectus Description</label>
+              <label className="royal-label">{t('auto_3300', 'Detailed Prospectus Description')}</label>
               <textarea
                 className="royal-input event-textarea"
                 placeholder="Outline full schedule, featured panel speakers, curated wine lists, and detailed guidelines..."
@@ -631,7 +631,7 @@ const CuratorGatheringsPage = ({ user }) => {
             </div>
 
             <div className="form-group">
-              <label className="royal-label">Flyer Cover Banner</label>
+              <label className="royal-label">{t('auto_3301', 'Flyer Cover Banner')}</label>
               <div className="flyer-upload-zone-gatherings">
                 <input
                   type="file"
@@ -641,7 +641,7 @@ const CuratorGatheringsPage = ({ user }) => {
                   style={{ display: 'none' }}
                 />
                 <label htmlFor="event-flyer-file" className="flyer-upload-trigger">
-                  <Upload size={16} /> Choose Image File
+                  <Upload size={16} /> {t('auto_3302', 'Choose Image File')}
                 </label>
                 {coverPreview && (
                   <div className="flyer-upload-preview-gatherings">
@@ -652,7 +652,7 @@ const CuratorGatheringsPage = ({ user }) => {
             </div>
 
             <div className="form-group">
-              <label className="royal-label">Assembly Gallery Images</label>
+              <label className="royal-label">{t('auto_3303', 'Assembly Gallery Images')}</label>
               <div className="gallery-upload-wrapper">
                 <input
                   type="file"

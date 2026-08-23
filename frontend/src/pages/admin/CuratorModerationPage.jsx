@@ -338,7 +338,7 @@ const CuratorModerationPage = ({ user }) => {
             onClick={() => setActiveTab('statistics')}
           >
             <BarChart2 size={16} />
-            <span>Evaluation Statistics</span>
+            <span>{t('auto_3375', 'Evaluation Statistics')}</span>
           </button>
           <button className="moderation-refresh-btn icon-only" onClick={loadData} title={t('admin.refreshLiveData', 'Refresh Live Data')} disabled={loading}>
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -538,14 +538,14 @@ const CuratorModerationPage = ({ user }) => {
           /* Site Reviews Section */
           <div className="moderation-content-panel">
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '24px', maxWidth: '800px', lineHeight: '1.6' }}>
-              These site reviews and testimonials have been submitted by members. By default, reviews are withheld from public exhibition pending curator approval to protect against vulgarity, commercial spam, or malicious postings.
+              {t('auto_3376', 'These site reviews and testimonials have been submitted by members. By default, reviews are withheld from public exhibition pending curator approval to protect against vulgarity, commercial spam, or malicious postings.')}
             </p>
 
             {pendingSiteReviews.length === 0 ? (
               <div className="royal-card moderation-empty-card">
                 <Sparkles className="empty-icon gold-glow" size={48} />
-                <h3>No Testimonials Pending Review</h3>
-                <p>The site testimonials queue is completely clear. All submitted feedback has been processed.</p>
+                <h3>{t('auto_3377', 'No Testimonials Pending Review')}</h3>
+                <p>{t('auto_3378', 'The site testimonials queue is completely clear. All submitted feedback has been processed.')}</p>
               </div>
             ) : (
               <div className="pending-reviews-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
@@ -625,7 +625,7 @@ const CuratorModerationPage = ({ user }) => {
             {approvedSiteReviews.length === 0 ? (
               <div className="royal-card moderation-empty-card">
                 <CheckCircle className="empty-icon gold-glow" size={48} />
-                <h3>No Approved Testimonials</h3>
+                <h3>{t('auto_3379', 'No Approved Testimonials')}</h3>
                 <p>There are no approved testimonials yet. Go to the "Site Testimonials" tab to approve new submissions.</p>
               </div>
             ) : (
@@ -655,7 +655,7 @@ const CuratorModerationPage = ({ user }) => {
                             fontWeight: '600',
                             letterSpacing: '0.5px'
                           }}>
-                            Published
+                            {t('auto_3380', 'Published')}
                           </span>
                         ) : (
                           <span style={{ 
@@ -668,7 +668,7 @@ const CuratorModerationPage = ({ user }) => {
                             fontWeight: '600',
                             letterSpacing: '0.5px'
                           }}>
-                            Hidden
+                            {t('auto_3381', 'Hidden')}
                           </span>
                         )}
                       </div>
@@ -737,7 +737,7 @@ const CuratorModerationPage = ({ user }) => {
           /* Statistics Section */
           <div className="moderation-content-panel">
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '30px', maxWidth: '800px', lineHeight: '1.6' }}>
-              Examine rating distribution counts and evaluation diagnostics for both the overall platform and specific physical checkout experiences.
+              {t('auto_3382', 'Examine rating distribution counts and evaluation diagnostics for both the overall platform and specific physical checkout experiences.')}
             </p>
 
             {ratingStats ? (
@@ -748,7 +748,7 @@ const CuratorModerationPage = ({ user }) => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', borderBottom: '1px solid var(--border-color, rgba(212,175,55,0.15))', paddingBottom: '12px' }}>
                     <MessageSquare size={18} className="gold-glow-icon" />
                     <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', color: 'var(--accent)', fontSize: '1.25rem', fontWeight: 600 }}>
-                      Site Review Statistics
+                      {t('auto_3383', 'Site Review Statistics')}
                     </h3>
                   </div>
 
@@ -799,7 +799,7 @@ const CuratorModerationPage = ({ user }) => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', borderBottom: '1px solid var(--border-color, rgba(212,175,55,0.15))', paddingBottom: '12px' }}>
                     <BookMarked size={18} className="gold-glow-icon" />
                     <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', color: 'var(--accent)', fontSize: '1.25rem', fontWeight: 600 }}>
-                      Checkout Experience Ratings
+                      {t('auto_3384', 'Checkout Experience Ratings')}
                     </h3>
                   </div>
 
@@ -848,7 +848,7 @@ const CuratorModerationPage = ({ user }) => {
               </div>
             ) : (
               <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)', background: 'var(--accent-light, rgba(128,128,128,0.03))', border: '1px dashed var(--border-color)', borderRadius: '8px' }}>
-                No rating statistics could be aggregated. Verify transactions have been completed.
+                {t('auto_3385', 'No rating statistics could be aggregated. Verify transactions have been completed.')}
               </div>
             )}
           </div>
