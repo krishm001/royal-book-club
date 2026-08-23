@@ -188,13 +188,13 @@ export const generateStickerPdf = async ({
 
         // 2. Render QR Code (Left Section: 17.5 x 17.5 mm, vertically centered)
         const qrSize = STICKER_LAYOUT.QR_SIZE_MM;
-        const qrX = x + 0.8;
+        const qrX = x + 0.8 + 3.0; // shifted 3mm right
         const qrY = y + (h - qrSize) / 2;
         doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
 
         // 3. Render Logo Image in between QR and Royal Book Club text (vertically centered)
         const logoSize = STICKER_LAYOUT.LOGO_SIZE_MM;
-        const logoX = x + 18.8;
+        const logoX = x + 18.8 + 3.0; // shifted 3mm right
         const logoY = y + (h - logoSize) / 2;
         if (logoDataUrl) {
           doc.addImage(logoDataUrl, 'PNG', logoX, logoY, logoSize, logoSize);
@@ -205,7 +205,7 @@ export const generateStickerPdf = async ({
         doc.setTextColor(120, 16, 30);
         doc.setFont('times', 'bold');
         
-        const textX = x + 24.6;
+        const textX = x + 24.6 + 3.0; // shifted 3mm right
 
         // Line 1: Royal
         doc.setFontSize(10.5);

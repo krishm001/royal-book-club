@@ -283,7 +283,7 @@ const QrStickerGeneratorPage = ({
               top: `${topPx}px`,
               width: `${widthPx}px`,
               height: `${heightPx}px`,
-              padding: '2px 3px'
+              padding: `2px 2px 2px ${3.8 * MM_TO_PX}px`
             }} title={`Sticker #${sticker.count} (${sticker.url})`}>
                     {/* Left: QR Code (vertically centered) */}
                     <div className="sticker-qr-wrapper" style={{
