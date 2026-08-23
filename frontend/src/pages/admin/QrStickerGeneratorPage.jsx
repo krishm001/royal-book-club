@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { QrCode, Download, Printer, RefreshCw, Sparkles, Layers, ArrowLeft, CheckCircle, Info } from 'lucide-react';
-import { STICKER_LAYOUT, generateStickerPreviewData, generateStickerPdf, LOGO_SVG_STRING } from '../../utils/qrStickerGenerator';
+import { STICKER_LAYOUT, generateStickerPreviewData, generateStickerPdf, getLogoSvgString } from '../../utils/qrStickerGenerator';
 import { useLanguage } from '../../i18n/LanguageContext';
 import './QrStickerGeneratorPage.css';
 const QrStickerGeneratorPage = ({
@@ -11,7 +11,11 @@ const QrStickerGeneratorPage = ({
     t
   } = useLanguage();
   const isAdmin = user && user.role === 'ADMIN';
-  const [startCount, setStartCount] = useState(STICKER_LAYOUT.DEFAULT_START_COUNTER);
+  const [startCount, setStartCount] = useState(() => {
+    const saved = localStorage.getItem('royalBookClub_lastQrCount');
+    return saved ? parseInt(saved, 10) : STICKER_LAYOUT.DEFAULT_START_COUNTER;
+  });
+  const [stickerTheme, setStickerTheme] = useState('maroon');
   const [sheetCount, setSheetCount] = useState(1);
   const [urlPrefix, setUrlPrefix] = useState(STICKER_LAYOUT.DEFAULT_URL_PREFIX);
   const [showCutLines, setShowCutLines] = useState(true);
@@ -57,10 +61,12 @@ const QrStickerGeneratorPage = ({
         startCount,
         sheetCount,
         urlPrefix,
-        showCutLines
+        showCutLines,
+        theme: stickerTheme
       });
       const fileName = `royal-book-club-qr-stickers-${startCount}-${endCount}.pdf`;
       doc.save(fileName);
+      localStorage.setItem('royalBookClub_lastQrCount', endCount + 1);
       setStatusMessage(`Successfully exported ${fileName}`);
       setTimeout(() => setStatusMessage(''), 4000);
     } catch (err) {
@@ -78,9 +84,11 @@ const QrStickerGeneratorPage = ({
         startCount,
         sheetCount,
         urlPrefix,
-        showCutLines
+        showCutLines,
+        theme: stickerTheme
       });
       const blobUrl = doc.output('bloburl');
+      localStorage.setItem('royalBookClub_lastQrCount', endCount + 1);
       const printWindow = window.open(blobUrl);
       if (printWindow) {
         printWindow.focus();
@@ -153,9 +161,45 @@ const QrStickerGeneratorPage = ({
         <div className="controls-grid">
           <div className="control-field">
             <label htmlFor="start-count-input">{t('auto_3434', 'Starting QR Counter ID')}</label>
-            <input id="start-count-input" type="number" min="1" value={startCount} onChange={e => setStartCount(parseInt(e.target.value, 10) || '')} placeholder="100000001" />
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                type="button" 
+                className="royal-btn-secondary" 
+                style={{ padding: '0 12px', minWidth: 'auto', flexShrink: 0 }}
+                onClick={() => setStartCount(Math.max(1, (parseInt(startCount, 10) || 1) - 65))}
+                title="-1 Page"
+              >
+                &laquo; -65
+              </button>
+              <input 
+                id="start-count-input" 
+                type="number" 
+                min="1" 
+                value={startCount} 
+                onChange={e => setStartCount(parseInt(e.target.value, 10) || '')} 
+                placeholder="100000001" 
+                style={{ flexGrow: 1, minWidth: '100px' }}
+              />
+              <button 
+                type="button" 
+                className="royal-btn-secondary" 
+                style={{ padding: '0 12px', minWidth: 'auto', flexShrink: 0 }}
+                onClick={() => setStartCount((parseInt(startCount, 10) || 1) + 65)}
+                title="+1 Page"
+              >
+                +65 &raquo;
+              </button>
+            </div>
           </div>
 
+          <div className="control-field">
+            <label htmlFor="theme-select">{t("str_theme", "Sticker Theme")}</label>
+            <select id="theme-select" value={stickerTheme} onChange={e => setStickerTheme(e.target.value)}>
+              <option value="maroon">Maroon (Light)</option>
+              <option value="golden">Golden (Dark)</option>
+            </select>
+          </div>
+          
           <div className="control-field">
             <label htmlFor="sheet-count-select">{t("str_5355", "Number of Sheets (65/sheet)")}</label>
             <select id="sheet-count-select" value={sheetCount} onChange={e => setSheetCount(parseInt(e.target.value, 10) || 1)}>
@@ -298,11 +342,20 @@ const QrStickerGeneratorPage = ({
                 width: `${logoSizePx}px`,
                 height: `${logoSizePx}px`
               }} dangerouslySetInnerHTML={{
-                __html: LOGO_SVG_STRING
+                __html: getLogoSvgString(stickerTheme)
               }} />
 
                     {/* Right: Branding (Playfair Display serif font, deep burgundy) */}
-                    <div className="sticker-brand-col">
+                    <div className="sticker-brand-col" style={{
+                      backgroundColor: stickerTheme === 'golden' ? '#0c0f1d' : 'transparent',
+                      color: stickerTheme === 'golden' ? '#d4af37' : '#78101e',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      paddingLeft: '2px',
+                      flexGrow: 1
+                    }}>
                       <div className="sticker-brand-line" style={{
                   fontSize: '11.5px',
                   lineHeight: '1.1'
@@ -317,7 +370,8 @@ const QrStickerGeneratorPage = ({
                 }}>{t('auto_brand_3', 'Club')}</div>
                       <div className="sticker-counter-tag" style={{
                   fontSize: '5.2px',
-                  marginTop: '2px'
+                  marginTop: '2px',
+                  color: stickerTheme === 'golden' ? '#b4a064' : '#73737d'
                 }}>#{sticker.count}</div>
                     </div>
                   </div>;

@@ -34,33 +34,39 @@ export const STICKER_LAYOUT = {
 /**
  * Logo SVG matching the Royal Book Club homepage sparkle emblem
  */
-export const LOGO_SVG_STRING = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="200" height="200">
+export const getLogoSvgString = (theme = 'maroon') => {
+  const isGolden = theme === 'golden';
+  const fillColor = isGolden ? '#d4af37' : '#f5e1e4';
+  const strokeColor = isGolden ? '#d4af37' : '#78101e';
+  
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="200" height="200">
   <path d="M 50 12 C 50 33 33 50 12 50 C 33 50 50 67 50 88 C 50 67 67 50 88 50 C 67 50 50 33 50 12 Z" 
-        fill="#f5e1e4" 
+        fill="${fillColor}" 
         fill-opacity="0.4"
-        stroke="#78101e" 
+        stroke="${strokeColor}" 
         stroke-width="7.5" 
         stroke-linejoin="round" 
         stroke-linecap="round" />
   <path d="M 78 18 L 78 32 M 71 25 L 85 25" 
-        stroke="#78101e" 
+        stroke="${strokeColor}" 
         stroke-width="5.5" 
         stroke-linecap="round" />
   <polygon points="26,72 30,76 26,80 22,76" 
-        fill="#78101e" />
+        fill="${strokeColor}" />
 </svg>`;
+};
 
 /**
  * Convert SVG string to PNG data URL for jsPDF embedding
  */
-export const getLogoPngDataUrl = () => {
+export const getLogoPngDataUrl = (theme = 'maroon') => {
   return new Promise((resolve) => {
     if (typeof window === 'undefined') {
       resolve('');
       return;
     }
     const img = new Image();
-    const svgBlob = new Blob([LOGO_SVG_STRING], { type: 'image/svg+xml;charset=utf-8' });
+    const svgBlob = new Blob([getLogoSvgString(theme)], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
     img.onload = () => {
       try {
@@ -137,7 +143,8 @@ export const generateStickerPdf = async ({
   startCount = STICKER_LAYOUT.DEFAULT_START_COUNTER,
   sheetCount = 1,
   urlPrefix = STICKER_LAYOUT.DEFAULT_URL_PREFIX,
-  showCutLines = false
+  showCutLines = false,
+  theme = 'maroon'
 } = {}) => {
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -147,7 +154,7 @@ export const generateStickerPdf = async ({
   });
 
   const parsedStart = parseInt(startCount, 10) || STICKER_LAYOUT.DEFAULT_START_COUNTER;
-  const logoDataUrl = await getLogoPngDataUrl();
+  const logoDataUrl = await getLogoPngDataUrl(theme);
 
   for (let sheet = 0; sheet < sheetCount; sheet++) {
     if (sheet > 0) {
@@ -175,6 +182,13 @@ export const generateStickerPdf = async ({
           doc.rect(x, y, w, h);
         }
 
+        // Optional: If golden theme, draw a dark rectangle for the right side or the whole sticker
+        if (theme === 'golden') {
+          doc.setFillColor(12, 15, 29); // Dark blue/black
+          // Fill the area starting after the QR code to the right edge
+          doc.rect(x + 18.0, y, w - 18.0, h, 'F');
+        }
+
         // 1. Generate High-Resolution QR Data URL
         const qrDataUrl = await QRCode.toDataURL(targetUrl, {
           margin: 1,
@@ -200,9 +214,13 @@ export const generateStickerPdf = async ({
           doc.addImage(logoDataUrl, 'PNG', logoX, logoY, logoSize, logoSize);
         }
 
-        // 4. Render Royal Book Club text (Right Section, vertically centered, elegant serif)
-        // Deep royal burgundy color matching the homepage (#78101e -> RGB: 120, 16, 30)
-        doc.setTextColor(120, 16, 30);
+        // 4. Render Royal Book Club text
+        if (theme === 'golden') {
+          doc.setTextColor(212, 175, 55); // Golden
+        } else {
+          doc.setTextColor(120, 16, 30); // Deep burgundy
+        }
+        
         doc.setFont('times', 'bold');
         
         const textX = x + 24.6 + 3.0; // shifted 3mm right
@@ -217,10 +235,14 @@ export const generateStickerPdf = async ({
         // Line 3: Club
         doc.text('Club', textX, y + 15.4);
 
-        // Counter ID tag underneath (moved lower)
+        // Counter ID tag underneath
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(4.6);
-        doc.setTextColor(115, 115, 125);
+        if (theme === 'golden') {
+          doc.setTextColor(180, 160, 100);
+        } else {
+          doc.setTextColor(115, 115, 125);
+        }
         doc.text(`#${currentCounter}`, textX, y + 19.0);
       }
     }
