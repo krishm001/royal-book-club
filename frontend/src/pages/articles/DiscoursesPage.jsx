@@ -741,7 +741,7 @@ const DiscoursesPage = ({
                 fontSize: '0.85rem',
                 backgroundColor: '#e63946',
                 borderColor: '#e63946',
-                color: "var(--text-primary)"
+                color: '#ffffff',
               }}>
                         <Trash2 size={14} /> {t('discourses.delete', 'Delete')}
                       </button>
@@ -1074,7 +1074,7 @@ const DiscoursesPage = ({
                   fontSize: '0.8rem',
                   backgroundColor: '#e63946',
                   borderColor: '#e63946',
-                  color: "var(--text-primary)"
+                color: '#ffffff',
                 }}>
                             <Trash2 size={12} /> {t('discourses.deleteTopic', 'Delete Topic')}
                           </button>

@@ -317,16 +317,17 @@
   position: absolute;
   top: 15px;
   left: 15px;
-  background: rgba(12, 15, 29, 0.85);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  color: var(--accent);
+  background: var(--genre-tag-bg);
+  border: 1px solid var(--genre-tag-border);
+  color: var(--genre-tag-color);
   padding: 4px 12px;
-  border-radius: 50px;
-  font-size: 0.75rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  backdrop-filter: blur(4px);
+  z-index: 2;
 }
 
 .chron-content {
@@ -1118,13 +1119,14 @@
 }
 
 .house-badge {
-  background: rgba(212, 175, 55, 0.08);
-  border: 1px solid rgba(212, 175, 55, 0.2);
-  color: var(--accent);
-  padding: 3px 12px;
-  border-radius: 50px;
+  background: var(--genre-tag-bg);
+  border: 1px solid var(--genre-tag-border);
+  color: var(--genre-tag-color);
+  padding: 4px 12px;
+  border-radius: var(--border-radius-sm);
   font-weight: 700;
   text-transform: uppercase;
+  font-size: 0.65rem;
   letter-spacing: 0.05em;
 }
 

@@ -85,7 +85,7 @@
 
 .name-bold {
   font-weight: 600;
-  color: var(--text-primary);
+  color: #ffffff;
 }
 
 .id-sub {
@@ -232,7 +232,7 @@
 
 .delete-member-btn:hover:not(:disabled) {
   background: #ef4444;
-  color: var(--text-primary);
+  color: #ffffff;
   border-color: #ef4444;
   box-shadow: 0 0 15px rgba(239, 68, 68, 0.35);
   transform: translateY(-1px);
@@ -292,7 +292,7 @@
 }
 
 .delete-modal-body {
-  color: var(--text-primary);
+  color: #ffffff;
   font-size: 1rem;
   line-height: 1.6;
   text-align: left;
@@ -305,7 +305,7 @@
 
 .delete-member-name {
   font-size: 1.3rem;
-  color: var(--text-primary);
+  color: #ffffff;
   display: inline-block;
   margin-top: 4px;
   margin-bottom: 4px;
@@ -395,7 +395,7 @@
 
 .royal-btn-danger {
   background: #dc2626;
-  color: var(--text-primary);
+  color: #ffffff;
   border: 1px solid #dc2626;
   padding: 10px 20px;
   border-radius: 6px;

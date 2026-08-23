@@ -144,7 +144,7 @@ export default {
     "secureRoyalCheckout": "Checkout",
     "digitalCheckoutAuthorized": "Digital Checkout Authorized",
     "currentlyInPossession": "This volume is currently in your physical possession.",
-    "returnVolume": "Tap-to-Return / Return Volume",
+    "returnVolume": "Return",
     "checkoutRequestPending": "Checkout Request Pending",
     "awaitingCuratorApproval": "Awaiting administrative approval in the Curator's ledger.",
     "returnRequestPending": "Return Request Pending",

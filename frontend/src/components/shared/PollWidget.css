@@ -63,7 +63,7 @@
 .poll-option-wrapper {
   border-radius: var(--border-radius-sm);
   border: 1px solid var(--glass-border);
-  background: rgba(22, 33, 62, 0.3);
+  background: var(--glass-bg);
   cursor: pointer;
   position: relative;
   overflow: hidden;
@@ -197,7 +197,7 @@
   justify-content: center;
   text-align: center;
   padding: 40px 30px;
-  background: rgba(22, 33, 62, 0.4);
+  background: var(--glass-bg);
   border: 1px solid rgba(212, 165, 116, 0.2);
   border-radius: var(--border-radius-md);
   position: relative;

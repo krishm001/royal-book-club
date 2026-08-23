@@ -499,7 +499,7 @@ const HomePage = ({
                   </Link>) : <div style={{
               padding: '2rem 1rem',
               textAlign: 'center',
-              color: 'rgba(255,255,255,0.35)',
+              color: 'var(--text-secondary)',
               fontSize: '0.85rem'
             }}>
                   {t('common.noEvents')}
@@ -539,7 +539,7 @@ const HomePage = ({
                   </Link>) : <div style={{
               padding: '2rem 1rem',
               textAlign: 'center',
-              color: 'rgba(255,255,255,0.35)',
+              color: 'var(--text-secondary)',
               fontSize: '0.85rem'
             }}>
                   {t('common.noDiscourses')}
