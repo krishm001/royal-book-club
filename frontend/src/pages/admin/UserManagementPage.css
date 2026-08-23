@@ -85,7 +85,7 @@
 
 .name-bold {
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .id-sub {
@@ -292,7 +292,7 @@
 }
 
 .delete-modal-body {
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 1rem;
   line-height: 1.6;
   text-align: left;
@@ -305,7 +305,7 @@
 
 .delete-member-name {
   font-size: 1.3rem;
-  color: #ffffff;
+  color: var(--text-primary);
   display: inline-block;
   margin-top: 4px;
   margin-bottom: 4px;

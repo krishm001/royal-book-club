@@ -403,32 +403,18 @@ public class UserService {
                 firebaseAuth.deleteUser(targetUid);
                 log.info("Successfully deleted user {} from Firebase Authentication credentials.", targetUid);
             } catch (Exception e) {
-                log.error("Firebase Auth deletion failed for uid: {}. Message: {}. Proceeding to anonymize Firestore document.", targetUid, e.getMessage(), e);
+                log.error("Firebase Auth deletion failed for uid: {}. Message: {}. Proceeding to delete Firestore document.", targetUid, e.getMessage(), e);
             }
 
-            // 2. Anonymize user document in Firestore to retain name for references while wiping PII
-            if (existingUser != null) {
-                existingUser.setDeleted(true);
-                existingUser.setEmail("deleted_" + targetUid + "@anonymized.royalbookclub.com");
-                existingUser.setPhone(null);
-                existingUser.setHouseNo(null);
-                existingUser.setStreet(null);
-                existingUser.setCity(null);
-                existingUser.setPinCode(null);
-                existingUser.setConsentAcceptedAt(null);
-                existingUser.setLanguage("en");
-                existingUser.setRfidToken(null);
-                existingUser.setUpdatedAt(new Date());
-                
-                docRef.set(existingUser).get();
-                log.info("Successfully anonymized and soft-deleted user {} from Firestore database.", targetUid);
-            }
+            // 2. Delete user document completely from Firestore
+            docRef.delete().get();
+            log.info("Successfully deleted user {} from Firestore database.", targetUid);
 
             // 3. Write an audit entry
             DocumentReference auditRef = firestore.collection("admin_actions").document();
             auditRef.set(new java.util.HashMap<String, Object>() {{
                 put("userId", targetUid);
-                put("action", "SOFT_DELETION_ANONYMIZED");
+                put("action", "HARD_DELETION");
                 put("performedBy", performedByUid);
                 put("performedAt", new Date());
                 put("hadActiveCheckouts", activeCount > 0);
