@@ -26,9 +26,9 @@ const CuratorHeroPage = ({
   const [subtitleHi, setSubtitleHi] = useState('');
   const [titleKn, setTitleKn] = useState('');
   const [subtitleKn, setSubtitleKn] = useState('');
-  const [backgroundImageUrlLibrary, setBackgroundImageUrlLibrary] = useState('');
+  const [backgroundImageUrlSalon, setBackgroundImageUrlSalon] = useState('');
   const [backgroundImageUrlAcademic, setBackgroundImageUrlAcademic] = useState('');
-  const [coverFileLibrary, setCoverFileLibrary] = useState(null);
+  const [coverFileSalon, setCoverFileSalon] = useState(null);
   const [coverPreviewLibrary, setCoverPreviewLibrary] = useState('');
   const [coverFileAcademic, setCoverFileAcademic] = useState(null);
   const [coverPreviewAcademic, setCoverPreviewAcademic] = useState('');
@@ -85,10 +85,10 @@ const CuratorHeroPage = ({
         setSubtitleHi(translations.hi?.subtitle || '');
         setTitleKn(translations.kn?.title || '');
         setSubtitleKn(translations.kn?.subtitle || '');
-        const libraryImg = res.data.backgroundImageUrlLibrary || res.data.backgroundImageUrl || '';
+        const salonImg = res.data.backgroundImageUrlSalon || res.data.backgroundImageUrl || '';
         const acadImg = res.data.backgroundImageUrlAcademic || res.data.backgroundImageUrl || '';
-        setBackgroundImageUrlLibrary(libraryImg);
-        setCoverPreviewLibrary(libraryImg);
+        setBackgroundImageUrlSalon(salonImg);
+        setCoverPreviewLibrary(salonImg);
         setBackgroundImageUrlAcademic(acadImg);
         setCoverPreviewAcademic(acadImg);
         setFeaturedBookIsbns(res.data.featuredBookIsbns || []);
@@ -128,7 +128,7 @@ const CuratorHeroPage = ({
   const handleFileChangeLibrary = e => {
     const file = e.target.files[0];
     if (!file) return;
-    setCoverFileLibrary(file);
+    setCoverFileSalon(file);
     const reader = new FileReader();
     reader.onloadend = () => {
       setCoverPreviewLibrary(reader.result);
@@ -152,15 +152,15 @@ const CuratorHeroPage = ({
     if (isSaving) return;
     try {
       setIsSaving(true);
-      let uploadedUrlLibrary = backgroundImageUrlLibrary;
+      let uploadedUrlSalon = backgroundImageUrlSalon;
       let uploadedUrlAcademic = backgroundImageUrlAcademic;
-      if (coverFileLibrary || coverFileAcademic) {
+      if (coverFileSalon || coverFileAcademic) {
         setIsUploading(true);
       }
-      if (coverFileLibrary) {
+      if (coverFileSalon) {
         try {
-          uploadedUrlLibrary = await uploadBookImage(coverFileLibrary);
-          setBackgroundImageUrlLibrary(uploadedUrlLibrary);
+          uploadedUrlSalon = await uploadBookImage(coverFileSalon);
+          setBackgroundImageUrlSalon(uploadedUrlSalon);
         } catch (uploadErr) {
           alert(`Library Image Upload Failed: ${uploadErr.message}`);
           setIsSaving(false);
@@ -184,8 +184,8 @@ const CuratorHeroPage = ({
         id: 'homeHero',
         title: title.trim(),
         subtitle: subtitle.trim(),
-        backgroundImageUrl: uploadedUrlAcademic || uploadedUrlLibrary || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
-        backgroundImageUrlLibrary: uploadedUrlLibrary || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
+        backgroundImageUrl: uploadedUrlAcademic || uploadedUrlSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
+        backgroundImageUrlSalon: uploadedUrlSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
         backgroundImageUrlAcademic: uploadedUrlAcademic || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1600&q=80',
         featuredBookIsbns: featuredBookIsbns,
         featuredQuotes: featuredQuotes,
@@ -205,7 +205,7 @@ const CuratorHeroPage = ({
       const res = await updateHeroConfig(payload);
       if (res && res.success) {
         alert('Home Hero configurations updated successfully!');
-        setCoverFileLibrary(null);
+        setCoverFileSalon(null);
         setCoverFileAcademic(null);
         loadHeroConfigData();
       }
@@ -228,8 +228,8 @@ const CuratorHeroPage = ({
         id: 'homeHero',
         title: title.trim(),
         subtitle: subtitle.trim(),
-        backgroundImageUrl: backgroundImageUrlAcademic || backgroundImageUrlLibrary || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
-        backgroundImageUrlLibrary: backgroundImageUrlLibrary || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
+        backgroundImageUrl: backgroundImageUrlAcademic || backgroundImageUrlSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
+        backgroundImageUrlSalon: backgroundImageUrlSalon || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80',
         backgroundImageUrlAcademic: backgroundImageUrlAcademic || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1600&q=80',
         featuredBookIsbns: featuredBookIsbns,
         featuredQuotes: featuredQuotes,
@@ -382,11 +382,11 @@ const CuratorHeroPage = ({
         setSubtitleHi('');
         setTitleKn('');
         setSubtitleKn('');
-        setBackgroundImageUrlLibrary('');
+        setBackgroundImageUrlSalon('');
         setBackgroundImageUrlAcademic('');
         setCoverPreviewLibrary('');
         setCoverPreviewAcademic('');
-        setCoverFileLibrary(null);
+        setCoverFileSalon(null);
         setCoverFileAcademic(null);
         setFeaturedBookIsbns([]);
         setFeaturedQuotes([]);

@@ -49,7 +49,7 @@ const HomePage = ({
     title: 'Words, Wisdom, Will.',
     subtitle: 'The wisest humans were not the most connected. They were the most read. They had no feed, no followers, no notifications. They had books. And they shaped the world.',
     backgroundImageUrl: '',
-    backgroundImageUrlLibrary: '',
+    backgroundImageUrlSalon: '',
     backgroundImageUrlAcademic: '',
     featuredBookIsbns: [],
     featuredQuotes: []
@@ -58,7 +58,7 @@ const HomePage = ({
     membersCount: 0,
     booksCount: 0,
     activeCheckoutsCount: 0,
-    upcomingLibrarysCount: 0
+    upcomingSalonsCount: 0
   });
   const [currentAssemblyImageIndex, setCurrentAssemblyImageIndex] = useState(0);
 
@@ -309,7 +309,7 @@ const HomePage = ({
     }
   };
   const getHeroBackgroundStyle = () => {
-    const activeImage = theme === 'dark' || theme === 'library' ? heroConfig.backgroundImageUrlLibrary || heroConfig.backgroundImageUrl : heroConfig.backgroundImageUrlAcademic || heroConfig.backgroundImageUrl;
+    const activeImage = theme === 'dark' || theme === 'library' ? heroConfig.backgroundImageUrlSalon || heroConfig.backgroundImageUrl : heroConfig.backgroundImageUrlAcademic || heroConfig.backgroundImageUrl;
     if (activeImage) {
       const gradient = theme === 'dark' || theme === 'library' ? 'linear-gradient(to right, rgba(12, 15, 29, 0.95) 0%, rgba(12, 15, 29, 0.2) 100%)' : 'linear-gradient(to right, rgba(250, 245, 235, 0.95) 0%, rgba(250, 245, 235, 0.2) 100%)';
       return {
@@ -334,7 +334,7 @@ const HomePage = ({
     icon: <Sparkles className="stat-icon" />
   }, {
     label: t('home.upcomingLibrarys'),
-    count: liveStats.upcomingLibrarysCount.toLocaleString(),
+    count: liveStats.upcomingSalonsCount.toLocaleString(),
     icon: <Calendar className="stat-icon" />
   }];
   return <div className="homepage-container animate-fade-in">

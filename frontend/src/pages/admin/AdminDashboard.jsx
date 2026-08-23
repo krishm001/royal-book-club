@@ -16,7 +16,7 @@ const AdminDashboard = ({ user }) => {
     membersCount: 0,
     booksCount: 0,
     activeCheckoutsCount: 0,
-    upcomingLibrarysCount: 0
+    upcomingSalonsCount: 0
   });
 
   const isAdmin = user && user.role === 'ADMIN';
@@ -66,7 +66,7 @@ const AdminDashboard = ({ user }) => {
     { label: t('admin.registeredPatrons'), count: liveStats.membersCount.toLocaleString(), change: t('admin.liveFromLedger'), icon: <Users className="stat-icon-gold" /> },
     { label: t('admin.archivedVolumes'), count: liveStats.booksCount.toLocaleString(), change: t('admin.catalogedItems'), icon: <BookOpen className="stat-icon-gold" /> },
     { label: t('admin.activeCheckouts'), count: liveStats.activeCheckoutsCount.toLocaleString(), change: t('admin.inCirculation'), icon: <Layers className="stat-icon-gold" /> },
-    { label: t('admin.scheduledMeetups'), count: liveStats.upcomingLibrarysCount.toLocaleString(), change: t('admin.upcomingLibrarys'), icon: <Calendar className="stat-icon-gold" /> }
+    { label: t('admin.scheduledMeetups'), count: liveStats.upcomingSalonsCount.toLocaleString(), change: t('admin.upcomingLibrarys'), icon: <Calendar className="stat-icon-gold" /> }
   ];
 
   if (!isAdmin) {
