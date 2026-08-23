@@ -9,7 +9,6 @@ import { fetchDiscourses } from '../services/discourseApi';
 import { fetchStatsSummary } from '../services/statsApi';
 import { useLanguage } from '../i18n/LanguageContext';
 import './HomePage.css';
-
 const defaultFeaturedBook = {
   id: '9781786330895',
   title: 'Ikigai: The Japanese Secret to a Long and Happy Life',
@@ -20,10 +19,15 @@ const defaultFeaturedBook = {
   description: "The Japanese secret to a long and happy life. We all have an ikigai. It's the Japanese word for 'a reason to live' or 'a reason to jump out of bed in the morning'.It's the place where your needs, desires, ambitions, and satisfaction meet. A place of balance. Small wonder that finding your ikigai is closely linked to living longer. Finding your ikigai is easier than you might think. This book will help you work out what your own ikigai really is, and equip you to change your life. You have a purpose in this world: your skills, your interests, your desires and your history have made you the perfect candidate for something. All you have to do is find it. Do that, and you can make every single day of your life joyful and meaningful.",
   citation: '"To define is to limit." — Lord Henry Wotton'
 };
-
-const HomePage = ({ user, onSignIn, theme }) => {
-  const { t, getLocalized } = useLanguage();
-
+const HomePage = ({
+  user,
+  onSignIn,
+  theme
+}) => {
+  const {
+    t,
+    getLocalized
+  } = useLanguage();
   const getShowcaseCitation = () => {
     if (!currentShowcaseItem) return '';
     if (currentShowcaseItem.citationIndex !== undefined && currentShowcaseItem.citationIndex !== -1 && heroConfig) {
@@ -75,13 +79,11 @@ const HomePage = ({ user, onSignIn, theme }) => {
     }, 6000);
     return () => clearInterval(timer);
   }, [approvedReviews]);
-
   useEffect(() => {
     const loadAllData = async () => {
       let books = [];
       let events = [];
       let currentHeroConfig = heroConfig;
-
       try {
         const res = await fetchHeroConfig();
         if (res?.success && res?.data) {
@@ -91,7 +93,6 @@ const HomePage = ({ user, onSignIn, theme }) => {
       } catch (err) {
         console.warn('Unable to load hero config', err);
       }
-
       try {
         const res = await fetchStatsSummary();
         if (res?.success && res?.data) {
@@ -100,7 +101,6 @@ const HomePage = ({ user, onSignIn, theme }) => {
       } catch (err) {
         console.warn('Unable to load stats summary', err);
       }
-
       try {
         const booksRes = await fetchBooks();
         if (Array.isArray(booksRes) && booksRes.length > 0) {
@@ -110,7 +110,6 @@ const HomePage = ({ user, onSignIn, theme }) => {
       } catch (err) {
         console.warn('Unable to load books', err);
       }
-
       try {
         const eventsRes = await fetchEvents();
         if (eventsRes?.success && Array.isArray(eventsRes.data)) {
@@ -122,7 +121,6 @@ const HomePage = ({ user, onSignIn, theme }) => {
       } catch (err) {
         console.warn('Unable to load events for home feed', err);
       }
-
       try {
         const chroniclesRes = await fetchDiscourses('CHRONICLE');
         if (chroniclesRes?.success && Array.isArray(chroniclesRes.data)) {
@@ -131,7 +129,6 @@ const HomePage = ({ user, onSignIn, theme }) => {
       } catch (err) {
         console.warn('Unable to load chronicles for home feed', err);
       }
-
       try {
         const reviewsRes = await fetchApprovedSiteReviews();
         if (reviewsRes?.success && Array.isArray(reviewsRes.data)) {
@@ -153,8 +150,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
         const chosen = pool[index];
         const quotesPool = currentHeroConfig.featuredQuotes || [];
         const quoteIdx = quotesPool.length > 0 ? Math.floor(Math.random() * quotesPool.length) : -1;
-        const randomQuote = quoteIdx !== -1 ? quotesPool[quoteIdx] : (chosen.citation || defaultFeaturedBook.citation);
-
+        const randomQuote = quoteIdx !== -1 ? quotesPool[quoteIdx] : chosen.citation || defaultFeaturedBook.citation;
         setCurrentShowcaseItem({
           id: chosen.isbn || chosen.bookId || chosen.id || 'book-1',
           title: chosen.title || chosen.name || defaultFeaturedBook.title,
@@ -165,7 +161,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
           description: chosen.description || chosen.subtitle || defaultFeaturedBook.description,
           citation: randomQuote,
           citationIndex: quoteIdx,
-          translations: chosen.translations || null,
+          translations: chosen.translations || null
         });
         setCurrentShowcaseType('book');
       } else if (events.length > 0) {
@@ -174,22 +170,18 @@ const HomePage = ({ user, onSignIn, theme }) => {
         setCurrentShowcaseType('assembly');
       }
     };
-
     loadAllData();
   }, []);
 
   // Interval timer for rotating showcase (every 10 seconds)
   useEffect(() => {
     if (allBooksList.length === 0 && allEvents.length === 0) return;
-
     const interval = setInterval(() => {
       // Start transition fade-out
       setIsTransitioning(true);
-
       setTimeout(() => {
         setCurrentShowcaseType(prevType => {
-          const nextType = (prevType === 'book' && allEvents.length > 0) ? 'assembly' : 'book';
-
+          const nextType = prevType === 'book' && allEvents.length > 0 ? 'assembly' : 'book';
           if (nextType === 'assembly') {
             const randomIndex = Math.floor(Math.random() * allEvents.length);
             setCurrentShowcaseItem(allEvents[randomIndex]);
@@ -203,8 +195,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
               const chosen = pool[randomIndex];
               const quotesPool = heroConfig.featuredQuotes || [];
               const quoteIdx = quotesPool.length > 0 ? Math.floor(Math.random() * quotesPool.length) : -1;
-              const randomQuote = quoteIdx !== -1 ? quotesPool[quoteIdx] : (chosen.citation || defaultFeaturedBook.citation);
-
+              const randomQuote = quoteIdx !== -1 ? quotesPool[quoteIdx] : chosen.citation || defaultFeaturedBook.citation;
               setCurrentShowcaseItem({
                 id: chosen.isbn || chosen.bookId || chosen.id || 'book-1',
                 title: chosen.title || chosen.name || defaultFeaturedBook.title,
@@ -215,7 +206,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
                 description: chosen.description || chosen.subtitle || defaultFeaturedBook.description,
                 citation: randomQuote,
                 citationIndex: quoteIdx,
-                translations: chosen.translations || null,
+                translations: chosen.translations || null
               });
             }
           }
@@ -226,7 +217,6 @@ const HomePage = ({ user, onSignIn, theme }) => {
         setIsTransitioning(false);
       }, 500); // Wait for transition fadeout (0.5s)
     }, 10000);
-
     return () => clearInterval(interval);
   }, [allBooksList, allEvents, heroConfig.featuredBookIsbns, heroConfig.featuredQuotes]);
 
@@ -238,37 +228,25 @@ const HomePage = ({ user, onSignIn, theme }) => {
   // Keep changing images from assemblies under "Upcoming Sovereign Assembly" (every 2.5 seconds)
   useEffect(() => {
     if (currentShowcaseType !== 'assembly' || !currentShowcaseItem) return;
-
-    const assemblyImages = [
-      currentShowcaseItem.imageUrl,
-      ...(currentShowcaseItem.imageUrls || [])
-    ].filter(Boolean);
-
+    const assemblyImages = [currentShowcaseItem.imageUrl, ...(currentShowcaseItem.imageUrls || [])].filter(Boolean);
     if (assemblyImages.length <= 1) return;
-
     const imageTimer = setInterval(() => {
       setCurrentAssemblyImageIndex(prev => (prev + 1) % assemblyImages.length);
     }, 2500);
-
     return () => clearInterval(imageTimer);
   }, [currentShowcaseType, currentShowcaseItem]);
-
-  const isUserRsvped = (item) => {
+  const isUserRsvped = item => {
     if (!user || !item?.rsvps || !Array.isArray(item.rsvps)) return false;
     return item.rsvps.includes(user.uid || user.id);
   };
-
-  const handleShowcaseRsvp = async (e) => {
+  const handleShowcaseRsvp = async e => {
     e.preventDefault();
     e.stopPropagation();
-
     if (!user) {
       onSignIn();
       return;
     }
-
     if (isRsvpingShowcase) return;
-
     setIsRsvpingShowcase(true);
     try {
       const res = await rsvpToEvent(currentShowcaseItem.id);
@@ -278,14 +256,15 @@ const HomePage = ({ user, onSignIn, theme }) => {
           ...prev,
           rsvps: updatedRsvps
         }));
-
         setAllEvents(prevEvents => prevEvents.map(evt => {
           if (evt.id === currentShowcaseItem.id) {
-            return { ...evt, rsvps: updatedRsvps };
+            return {
+              ...evt,
+              rsvps: updatedRsvps
+            };
           }
           return evt;
         }));
-
         alert("✓ Invitation Authorized! You have successfully RSVPed to this Assembly.");
       } else {
         alert(res?.message || 'Failed to request invitation.');
@@ -297,8 +276,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
       setIsRsvpingShowcase(false);
     }
   };
-
-  const handleReviewSubmit = async (e) => {
+  const handleReviewSubmit = async e => {
     e.preventDefault();
     if (!reviewComment.trim()) {
       setReviewErrorMsg("Please enter your comments.");
@@ -330,42 +308,46 @@ const HomePage = ({ user, onSignIn, theme }) => {
       setSubmittingReview(false);
     }
   };
-
   const getHeroBackgroundStyle = () => {
-    const activeImage = (theme === 'dark' || theme === 'salon')
-      ? (heroConfig.backgroundImageUrlSalon || heroConfig.backgroundImageUrl)
-      : (heroConfig.backgroundImageUrlAcademic || heroConfig.backgroundImageUrl);
-
+    const activeImage = theme === 'dark' || theme === 'salon' ? heroConfig.backgroundImageUrlSalon || heroConfig.backgroundImageUrl : heroConfig.backgroundImageUrlAcademic || heroConfig.backgroundImageUrl;
     if (activeImage) {
-      const gradient = (theme === 'dark' || theme === 'salon')
-        ? 'linear-gradient(to right, rgba(12, 15, 29, 0.95) 0%, rgba(12, 15, 29, 0.2) 100%)'
-        : 'linear-gradient(to right, rgba(250, 245, 235, 0.95) 0%, rgba(250, 245, 235, 0.2) 100%)';
+      const gradient = theme === 'dark' || theme === 'salon' ? 'linear-gradient(to right, rgba(12, 15, 29, 0.95) 0%, rgba(12, 15, 29, 0.2) 100%)' : 'linear-gradient(to right, rgba(250, 245, 235, 0.95) 0%, rgba(250, 245, 235, 0.2) 100%)';
       return {
         backgroundImage: `${gradient}, url(${activeImage})`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center',
+        backgroundPosition: 'center'
       };
     }
     return {};
   };
-
-  const stats = [
-    { label: t('home.memberRegistry'), count: liveStats.membersCount.toLocaleString(), icon: <Users className="stat-icon" /> },
-    { label: t('home.royalVolumes'), count: liveStats.booksCount.toLocaleString(), icon: <BookOpen className="stat-icon" /> },
-    { label: t('home.activeCheckouts'), count: liveStats.activeCheckoutsCount.toLocaleString(), icon: <Sparkles className="stat-icon" /> },
-    { label: t('home.upcomingSalons'), count: liveStats.upcomingSalonsCount.toLocaleString(), icon: <Calendar className="stat-icon" /> },
-  ];
-
-  return (
-    <div className="homepage-container animate-fade-in">
+  const stats = [{
+    label: t('home.memberRegistry'),
+    count: liveStats.membersCount.toLocaleString(),
+    icon: <Users className="stat-icon" />
+  }, {
+    label: t('home.royalVolumes'),
+    count: liveStats.booksCount.toLocaleString(),
+    icon: <BookOpen className="stat-icon" />
+  }, {
+    label: t('home.activeCheckouts'),
+    count: liveStats.activeCheckoutsCount.toLocaleString(),
+    icon: <Sparkles className="stat-icon" />
+  }, {
+    label: t('home.upcomingSalons'),
+    count: liveStats.upcomingSalonsCount.toLocaleString(),
+    icon: <Calendar className="stat-icon" />
+  }];
+  return <div className="homepage-container animate-fade-in">
       {/* Hero Section */}
       <section className="hero-section" style={getHeroBackgroundStyle()}>
         <div className="hero-content">
           <div className="hero-badge">
             <Award size={14} className="gold-glow-icon" />
-            <span className="gold-gradient-text">{t('home.established')} MMXXVI</span>
+            <span className="gold-gradient-text">{t('home.established')} {t("str_5081", "MMXXVI")}</span>
           </div>
-          <h1 className="hero-title glow-text" style={{ whiteSpace: 'pre-line' }}>
+          <h1 className="hero-title glow-text" style={{
+          whiteSpace: 'pre-line'
+        }}>
             {getLocalized(heroConfig, 'title') || t('home.heroTitle')}
           </h1>
           <p className="hero-subtitle">
@@ -380,8 +362,7 @@ const HomePage = ({ user, onSignIn, theme }) => {
 
         {/* Hero Card/Visual representation */}
         <div className={`hero-visual ${isTransitioning ? 'showcase-fade-out' : 'showcase-fade-in'}`}>
-          {currentShowcaseType === 'book' ? (
-            <div className="royal-card featured-highlight-card">
+          {currentShowcaseType === 'book' ? <div className="royal-card featured-highlight-card">
               <div className="highlight-tag gold-gradient-text">★ {t('home.featuredSelection')} ★</div>
               <div className="highlight-body">
                 <img src={currentShowcaseItem.coverUrl} alt={getLocalized(currentShowcaseItem, 'title')} className="highlight-img" />
@@ -390,32 +371,20 @@ const HomePage = ({ user, onSignIn, theme }) => {
                   <span className="highlight-author">{t('common.by')} {currentShowcaseItem.author}</span>
                   <p className="highlight-desc">{getLocalized(currentShowcaseItem, 'description')}</p>
                   {featuredError && <div className="highlight-note">{featuredError}</div>}
-                  {getShowcaseCitation() && (
-                    <blockquote className="highlight-quote">{getShowcaseCitation()}</blockquote>
-                  )}
+                  {getShowcaseCitation() && <blockquote className="highlight-quote">{getShowcaseCitation()}</blockquote>}
                   <Link to={`/catalog/${currentShowcaseItem.id}`} className="highlight-action-btn">
                     {t('catalog.checkout')} <ChevronRight size={14} />
                   </Link>
                 </div>
               </div>
-            </div>
-          ) : (() => {
-            const assemblyImages = currentShowcaseItem
-              ? [currentShowcaseItem.imageUrl, ...(currentShowcaseItem.imageUrls || [])].filter(Boolean)
-              : [];
-            const currentAssemblyImage = assemblyImages[currentAssemblyImageIndex] || currentShowcaseItem?.imageUrl || 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80';
-
-            return (
-              <div className="royal-card featured-highlight-card assembly-highlight-card animate-fade-in">
+            </div> : (() => {
+          const assemblyImages = currentShowcaseItem ? [currentShowcaseItem.imageUrl, ...(currentShowcaseItem.imageUrls || [])].filter(Boolean) : [];
+          const currentAssemblyImage = assemblyImages[currentAssemblyImageIndex] || currentShowcaseItem?.imageUrl || 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80';
+          return <div className="royal-card featured-highlight-card assembly-highlight-card animate-fade-in">
                 <div className="highlight-tag gold-gradient-text">⚜ {t('home.upcomingAssembly')} ⚜</div>
                 <div className="highlight-body assembly-body">
                   <div className="assembly-img-container">
-                    <img
-                      key={currentAssemblyImage}
-                      src={currentAssemblyImage}
-                      alt={getLocalized(currentShowcaseItem, 'title')}
-                      className="highlight-img assembly-img assembly-img-fade-in"
-                    />
+                    <img key={currentAssemblyImage} src={currentAssemblyImage} alt={getLocalized(currentShowcaseItem, 'title')} className="highlight-img assembly-img assembly-img-fade-in" />
                   </div>
                   <div className="highlight-details">
                     <span className="assembly-type-tag">{getLocalized(currentShowcaseItem, 'type')}</span>
@@ -434,48 +403,70 @@ const HomePage = ({ user, onSignIn, theme }) => {
                       </span>
                     </div>
 
-                    <div className="showcase-actions" style={{ display: 'flex', gap: '12px', marginTop: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
-                      <Link to={`/events/${currentShowcaseItem.id}`} className="royal-btn-secondary" style={{ padding: '8px 16px', fontSize: '0.75rem', textDecoration: 'none' }}>
+                    <div className="showcase-actions" style={{
+                  display: 'flex',
+                  gap: '12px',
+                  marginTop: '15px',
+                  flexWrap: 'wrap',
+                  alignItems: 'center'
+                }}>
+                      <Link to={`/events/${currentShowcaseItem.id}`} className="royal-btn-secondary" style={{
+                    padding: '8px 16px',
+                    fontSize: '0.75rem',
+                    textDecoration: 'none'
+                  }}>
                         {t('common.details')} <ChevronRight size={12} />
                       </Link>
-                      {isUserRsvped(currentShowcaseItem) ? (
-                        <button className="royal-btn-disabled" disabled style={{ padding: '8px 16px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <CheckCircle2 size={12} style={{ color: 'var(--success)' }} /> {t('home.invitationAuthorized')}
-                        </button>
-                      ) : isRsvpingShowcase ? (
-                        <button className="royal-btn-disabled" disabled style={{ padding: '8px 16px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <div className="loader-mini" style={{ width: '12px', height: '12px' }}></div> {t('home.authorizing')}
-                        </button>
-                      ) : (currentShowcaseItem.rsvps?.length >= (currentShowcaseItem.capacity || 60)) ? (
-                        <button className="royal-btn-disabled" disabled style={{ padding: '8px 16px', fontSize: '0.75rem' }}>
+                      {isUserRsvped(currentShowcaseItem) ? <button className="royal-btn-disabled" disabled style={{
+                    padding: '8px 16px',
+                    fontSize: '0.75rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                          <CheckCircle2 size={12} style={{
+                      color: 'var(--success)'
+                    }} /> {t('home.invitationAuthorized')}
+                        </button> : isRsvpingShowcase ? <button className="royal-btn-disabled" disabled style={{
+                    padding: '8px 16px',
+                    fontSize: '0.75rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                          <div className="loader-mini" style={{
+                      width: '12px',
+                      height: '12px'
+                    }}></div> {t('home.authorizing')}
+                        </button> : currentShowcaseItem.rsvps?.length >= (currentShowcaseItem.capacity || 60) ? <button className="royal-btn-disabled" disabled style={{
+                    padding: '8px 16px',
+                    fontSize: '0.75rem'
+                  }}>
                           {t('home.assemblyFull')}
-                        </button>
-                      ) : (
-                        <button onClick={handleShowcaseRsvp} className="royal-btn" style={{ padding: '8px 16px', fontSize: '0.75rem' }}>
+                        </button> : <button onClick={handleShowcaseRsvp} className="royal-btn" style={{
+                    padding: '8px 16px',
+                    fontSize: '0.75rem'
+                  }}>
                           {t('home.requestInvitation')}
-                        </button>
-                      )}
+                        </button>}
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })()}
+              </div>;
+        })()}
         </div>
       </section>
 
       {/* Statistics Row */}
       <section className="stats-section">
         <div className="stats-grid">
-          {stats.map((stat, idx) => (
-            <div className="royal-card stat-card" key={idx}>
+          {stats.map((stat, idx) => <div className="royal-card stat-card" key={idx}>
               <div className="stat-header">
                 {stat.icon}
                 <span className="stat-number gold-gradient-text">{stat.count}</span>
               </div>
               <div className="stat-label">{stat.label}</div>
-            </div>
-          ))}
+            </div>)}
         </div>
       </section>
 
@@ -498,22 +489,21 @@ const HomePage = ({ user, onSignIn, theme }) => {
               <Link to="/events" className="feed-link">{t('auto_3125', 'See All')} <ChevronRight size={14} /></Link>
             </div>
             <div className="feed-list">
-              {activeEvents.length > 0 ? (
-                activeEvents.map((evt, idx) => (
-                  <Link to={`/events/${evt.id}`} className="feed-item animate-fade-in" key={evt.id || idx}>
+              {activeEvents.length > 0 ? activeEvents.map((evt, idx) => <Link to={`/events/${evt.id}`} className="feed-item animate-fade-in" key={evt.id || idx}>
                     <div className="feed-item-meta">
                       <span className="feed-item-tag">{getLocalized(evt, 'type')}</span>
                       <span className="feed-item-date">{evt.date}</span>
                     </div>
                     <h4 className="feed-item-title">{getLocalized(evt, 'title')}</h4>
-                    <p className="feed-item-desc">Venue: {getLocalized(evt, 'location')}</p>
-                  </Link>
-                ))
-              ) : (
-                <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: '0.85rem' }}>
+                    <p className="feed-item-desc">{t("str_5082", "Venue:")} {getLocalized(evt, 'location')}</p>
+                  </Link>) : <div style={{
+              padding: '2rem 1rem',
+              textAlign: 'center',
+              color: 'rgba(255,255,255,0.35)',
+              fontSize: '0.85rem'
+            }}>
                   {t('common.noEvents')}
-                </div>
-              )}
+                </div>}
             </div>
           </div>
 
@@ -525,213 +515,354 @@ const HomePage = ({ user, onSignIn, theme }) => {
               <Link to="/discourses" className="feed-link">{t('home.browseEssays')} <ChevronRight size={14} /></Link>
             </div>
             <div className="feed-list">
-              {dissertations.length > 0 ? (
-                dissertations.map((diss, idx) => (
-                  <Link to="/discourses" className="feed-item animate-fade-in" key={diss.id || idx}>
+              {dissertations.length > 0 ? dissertations.map((diss, idx) => <Link to="/discourses" className="feed-item animate-fade-in" key={diss.id || idx}>
                     <div className="feed-item-meta">
                       <span className="feed-item-tag font-accent">{diss.house || 'Chronicle'}</span>
                       <span className="feed-item-date">
-                        {diss.createdAt ? new Date(diss.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'}
+                        {diss.createdAt ? new Date(diss.createdAt).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  }) : 'Recently'}
                       </span>
                     </div>
                     <h4 className="feed-item-title">{diss.title}</h4>
                     <p className="feed-item-desc" style={{
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis'
-                    }}>
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
                       {diss.content ? diss.content.replace(/<[^>]*>?/gm, '') : ''}
                     </p>
-                  </Link>
-                ))
-              ) : (
-                <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: '0.85rem' }}>
+                  </Link>) : <div style={{
+              padding: '2rem 1rem',
+              textAlign: 'center',
+              color: 'rgba(255,255,255,0.35)',
+              fontSize: '0.85rem'
+            }}>
                   {t('common.noDiscourses')}
-                </div>
-              )}
+                </div>}
             </div>
           </div>
         </div>
       </section>
 
       {/* Testimonials and Site Reviews */}
-      <section className="site-reviews-section" style={{ marginTop: '40px', padding: '20px 0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
+      <section className="site-reviews-section" style={{
+      marginTop: '40px',
+      padding: '20px 0'
+    }}>
+        <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        marginBottom: '24px'
+      }}>
           <MessageSquare size={22} className="gold-glow-icon" />
-          <h2 className="glow-text" style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.75rem', fontWeight: 600, color: 'var(--accent)', letterSpacing: '0.05em' }}>
+          <h2 className="glow-text" style={{
+          margin: 0,
+          fontFamily: 'var(--font-display)',
+          fontSize: '1.75rem',
+          fontWeight: 600,
+          color: 'var(--accent)',
+          letterSpacing: '0.05em'
+        }}>
             {t('auto_3126', 'Sovereign Testimonials')}
           </h2>
         </div>
 
-        <div className="site-reviews-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '30px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '30px' }}>
+        <div className="site-reviews-grid" style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr',
+        gap: '30px'
+      }}>
+          <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '30px'
+        }}>
             
             {/* Carousel Box */}
-            <div className="royal-card review-carousel-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '30px', position: 'relative', background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)' }}>
+            <div className="royal-card review-carousel-card" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            padding: '30px',
+            position: 'relative',
+            background: 'var(--surface-elevated)',
+            border: '1px solid var(--glass-border)'
+          }}>
               <div>
-                <Quote size={40} style={{ color: 'var(--accent)', opacity: 0.12, position: 'absolute', top: '24px', left: '24px' }} />
-                <h3 style={{ margin: '0 0 20px 0', fontFamily: 'var(--font-display)', color: 'var(--accent)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.02em', borderBottom: '1px solid var(--glass-border)', paddingBottom: '10px' }}>
+                <Quote size={40} style={{
+                color: 'var(--accent)',
+                opacity: 0.12,
+                position: 'absolute',
+                top: '24px',
+                left: '24px'
+              }} />
+                <h3 style={{
+                margin: '0 0 20px 0',
+                fontFamily: 'var(--font-display)',
+                color: 'var(--accent)',
+                fontSize: '1.2rem',
+                fontWeight: 600,
+                letterSpacing: '0.02em',
+                borderBottom: '1px solid var(--glass-border)',
+                paddingBottom: '10px'
+              }}>
                   {t('auto_3127', 'Curated Perspectives')}
                 </h3>
 
-                {approvedReviews.length > 0 ? (
-                  <div className="testimonial-slide animate-fade-in" key={currentReviewIndex} style={{ minHeight: '160px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <div style={{ display: 'flex', gap: '4px', marginBottom: '12px' }}>
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Star
-                          key={s}
-                          size={16}
-                          fill={s <= approvedReviews[currentReviewIndex].rating ? "var(--accent)" : "none"}
-                          stroke={s <= approvedReviews[currentReviewIndex].rating ? "var(--accent)" : (theme === 'academic' ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)")}
-                        />
-                      ))}
+                {approvedReviews.length > 0 ? <div className="testimonial-slide animate-fade-in" key={currentReviewIndex} style={{
+                minHeight: '160px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center'
+              }}>
+                    <div style={{
+                  display: 'flex',
+                  gap: '4px',
+                  marginBottom: '12px'
+                }}>
+                      {[1, 2, 3, 4, 5].map(s => <Star key={s} size={16} fill={s <= approvedReviews[currentReviewIndex].rating ? "var(--accent)" : "none"} stroke={s <= approvedReviews[currentReviewIndex].rating ? "var(--accent)" : theme === 'academic' ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)"} />)}
                     </div>
-                    <blockquote style={{ margin: '0 0 16px 0', fontStyle: 'italic', fontSize: '0.95rem', color: 'var(--text-primary)', lineHeight: '1.6' }}>
+                    <blockquote style={{
+                  margin: '0 0 16px 0',
+                  fontStyle: 'italic',
+                  fontSize: '0.95rem',
+                  color: 'var(--text-primary)',
+                  lineHeight: '1.6'
+                }}>
                       "{approvedReviews[currentReviewIndex].comment}"
                     </blockquote>
-                    <cite style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <cite style={{
+                  display: 'block',
+                  fontSize: '0.8rem',
+                  fontWeight: 'bold',
+                  color: 'var(--accent)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>
                       — {approvedReviews[currentReviewIndex].memberName}
                     </cite>
-                  </div>
-                ) : (
-                  <div style={{ minHeight: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                    <p style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>{t('auto_3128', 'No curations have been certified yet.')}</p>
-                    <p style={{ margin: 0, fontSize: '0.8rem' }}>{t('auto_3129', 'Be the first to leave a testimonial using the form!')}</p>
-                  </div>
-                )}
+                  </div> : <div style={{
+                minHeight: '160px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-secondary)',
+                textAlign: 'center'
+              }}>
+                    <p style={{
+                  margin: '0 0 8px 0',
+                  fontSize: '0.9rem'
+                }}>{t('auto_3128', 'No curations have been certified yet.')}</p>
+                    <p style={{
+                  margin: 0,
+                  fontSize: '0.8rem'
+                }}>{t('auto_3129', 'Be the first to leave a testimonial using the form!')}</p>
+                  </div>}
               </div>
 
-              {approvedReviews.length > 1 && (
-                <div style={{ display: 'flex', gap: '10px', marginTop: '20px', alignSelf: 'flex-end' }}>
-                  <button
-                    onClick={() => setCurrentReviewIndex(prev => (prev - 1 + approvedReviews.length) % approvedReviews.length)}
-                    style={{ background: 'var(--surface)', border: '1px solid var(--glass-border-hover)', color: 'var(--accent)', cursor: 'pointer', padding: '6px 10px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  >
+              {approvedReviews.length > 1 && <div style={{
+              display: 'flex',
+              gap: '10px',
+              marginTop: '20px',
+              alignSelf: 'flex-end'
+            }}>
+                  <button onClick={() => setCurrentReviewIndex(prev => (prev - 1 + approvedReviews.length) % approvedReviews.length)} style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--glass-border-hover)',
+                color: 'var(--accent)',
+                cursor: 'pointer',
+                padding: '6px 10px',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
                     <ChevronLeft size={16} />
                   </button>
-                  <button
-                    onClick={() => setCurrentReviewIndex(prev => (prev + 1) % approvedReviews.length)}
-                    style={{ background: 'var(--surface)', border: '1px solid var(--glass-border-hover)', color: 'var(--accent)', cursor: 'pointer', padding: '6px 10px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  >
+                  <button onClick={() => setCurrentReviewIndex(prev => (prev + 1) % approvedReviews.length)} style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--glass-border-hover)',
+                color: 'var(--accent)',
+                cursor: 'pointer',
+                padding: '6px 10px',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
                     <ChevronRight size={16} />
                   </button>
-                </div>
-              )}
+                </div>}
             </div>
 
             {/* Testimonial Form Box */}
-            <div className="royal-card review-form-card" style={{ padding: '30px', background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)' }}>
-              <h3 style={{ margin: '0 0 20px 0', fontFamily: 'var(--font-display)', color: 'var(--accent)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.02em', borderBottom: '1px solid var(--glass-border)', paddingBottom: '10px' }}>
+            <div className="royal-card review-form-card" style={{
+            padding: '30px',
+            background: 'var(--surface-elevated)',
+            border: '1px solid var(--glass-border)'
+          }}>
+              <h3 style={{
+              margin: '0 0 20px 0',
+              fontFamily: 'var(--font-display)',
+              color: 'var(--accent)',
+              fontSize: '1.2rem',
+              fontWeight: 600,
+              letterSpacing: '0.02em',
+              borderBottom: '1px solid var(--glass-border)',
+              paddingBottom: '10px'
+            }}>
                 {t('auto_3130', 'Inscribe Your Testimonial')}
               </h3>
 
-              {user ? (
-                <form onSubmit={handleReviewSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {user ? <form onSubmit={handleReviewSubmit} style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <label style={{
+                  display: 'block',
+                  fontSize: '0.8rem',
+                  color: 'var(--text-secondary)',
+                  marginBottom: '8px',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>
                       {t('auto_3131', 'Rating')}
                     </label>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      {[1, 2, 3, 4, 5].map((starVal) => (
-                        <button
-                          key={starVal}
-                          type="button"
-                          onClick={() => setReviewRating(starVal)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', transition: 'transform 0.1s ease' }}
-                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.15)'}
-                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                        >
-                          <Star
-                            size={22}
-                            fill={starVal <= reviewRating ? "var(--accent)" : "none"}
-                            stroke={starVal <= reviewRating ? "var(--accent)" : (theme === 'academic' ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.3)")}
-                          />
-                        </button>
-                      ))}
+                    <div style={{
+                  display: 'flex',
+                  gap: '6px'
+                }}>
+                      {[1, 2, 3, 4, 5].map(starVal => <button key={starVal} type="button" onClick={() => setReviewRating(starVal)} style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '2px',
+                    transition: 'transform 0.1s ease'
+                  }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                          <Star size={22} fill={starVal <= reviewRating ? "var(--accent)" : "none"} stroke={starVal <= reviewRating ? "var(--accent)" : theme === 'academic' ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.3)"} />
+                        </button>)}
                     </div>
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <label style={{
+                  display: 'block',
+                  fontSize: '0.8rem',
+                  color: 'var(--text-secondary)',
+                  marginBottom: '8px',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>
                       {t('auto_3132', 'Commentary')}
                     </label>
-                    <textarea
-                      value={reviewComment}
-                      onChange={(e) => setReviewComment(e.target.value)}
-                      placeholder="Share your experience of the Royal Book Club..."
-                      rows={3}
-                      maxLength={500}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        background: 'var(--surface)',
-                        border: '1px solid var(--glass-border)',
-                        borderRadius: '4px',
-                        color: 'var(--text-primary)',
-                        fontSize: '0.9rem',
-                        fontFamily: 'inherit',
-                        lineHeight: '1.5',
-                        resize: 'none',
-                        outline: 'none',
-                      }}
-                      onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
-                      onBlur={(e) => e.target.style.borderColor = 'var(--glass-border)'}
-                    />
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px', opacity: 0.8 }}>
+                    <textarea value={reviewComment} onChange={e => setReviewComment(e.target.value)} placeholder={t("str_5083", "Share your experience of the Royal Book Club...")} rows={3} maxLength={500} style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: 'var(--surface)',
+                  border: '1px solid var(--glass-border)',
+                  borderRadius: '4px',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.9rem',
+                  fontFamily: 'inherit',
+                  lineHeight: '1.5',
+                  resize: 'none',
+                  outline: 'none'
+                }} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--glass-border)'} />
+                    <div style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  fontSize: '0.75rem',
+                  color: 'var(--text-secondary)',
+                  marginTop: '4px',
+                  opacity: 0.8
+                }}>
                       {reviewComment.length}/500
                     </div>
                   </div>
 
-                  {reviewSuccessMsg && (
-                    <div style={{ padding: '10px 12px', background: 'rgba(74, 222, 128, 0.08)', border: '1px solid rgba(74, 222, 128, 0.25)', color: '#4ade80', borderRadius: '4px', fontSize: '0.8rem', lineHeight: '1.4' }}>
+                  {reviewSuccessMsg && <div style={{
+                padding: '10px 12px',
+                background: 'rgba(74, 222, 128, 0.08)',
+                border: '1px solid rgba(74, 222, 128, 0.25)',
+                color: '#4ade80',
+                borderRadius: '4px',
+                fontSize: '0.8rem',
+                lineHeight: '1.4'
+              }}>
                       {reviewSuccessMsg}
-                    </div>
-                  )}
+                    </div>}
 
-                  {reviewErrorMsg && (
-                    <div style={{ padding: '10px 12px', background: 'rgba(248, 113, 113, 0.08)', border: '1px solid rgba(248, 113, 113, 0.25)', color: '#f87171', borderRadius: '4px', fontSize: '0.8rem', lineHeight: '1.4' }}>
+                  {reviewErrorMsg && <div style={{
+                padding: '10px 12px',
+                background: 'rgba(248, 113, 113, 0.08)',
+                border: '1px solid rgba(248, 113, 113, 0.25)',
+                color: '#f87171',
+                borderRadius: '4px',
+                fontSize: '0.8rem',
+                lineHeight: '1.4'
+              }}>
                       {reviewErrorMsg}
-                    </div>
-                  )}
+                    </div>}
 
-                  <button
-                    type="submit"
-                    className="royal-btn"
-                    disabled={submittingReview}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      padding: '10px',
-                      fontSize: '0.85rem',
-                      alignSelf: 'flex-start',
-                      minWidth: '150px',
-                    }}
-                  >
+                  <button type="submit" className="royal-btn" disabled={submittingReview} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '10px',
+                fontSize: '0.85rem',
+                alignSelf: 'flex-start',
+                minWidth: '150px'
+              }}>
                     <Send size={14} /> {submittingReview ? "Submitting..." : "Submit Testimonial"}
                   </button>
-                </form>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '180px', textAlign: 'center', padding: '20px', background: 'var(--surface)', border: '1px dashed var(--glass-border-hover)', borderRadius: '6px' }}>
-                  <Sparkles size={28} className="gold-glow-icon" style={{ marginBottom: '12px' }} />
-                  <p style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                </form> : <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              minHeight: '180px',
+              textAlign: 'center',
+              padding: '20px',
+              background: 'var(--surface)',
+              border: '1px dashed var(--glass-border-hover)',
+              borderRadius: '6px'
+            }}>
+                  <Sparkles size={28} className="gold-glow-icon" style={{
+                marginBottom: '12px'
+              }} />
+                  <p style={{
+                margin: '0 0 16px 0',
+                fontSize: '0.9rem',
+                color: 'var(--text-secondary)',
+                lineHeight: '1.5'
+              }}>
                     {t('auto_3133', 'Only registered members can submit testimonies. Sign in to contribute your evaluation to the chronicle.')}
                   </p>
-                  <button onClick={onSignIn} className="royal-btn" style={{ padding: '8px 20px', fontSize: '0.8rem' }}>
+                  <button onClick={onSignIn} className="royal-btn" style={{
+                padding: '8px 20px',
+                fontSize: '0.8rem'
+              }}>
                     {t('auto_3134', 'Sign In')}
                   </button>
-                </div>
-              )}
+                </div>}
             </div>
 
           </div>
         </div>
       </section>
-    </div>
-  );
+    </div>;
 };
-
 export default HomePage;

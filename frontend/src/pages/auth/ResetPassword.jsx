@@ -4,21 +4,20 @@ import { auth } from '../../config/firebase';
 import { useNavigate, Link } from 'react-router-dom';
 import { useLanguage } from '../../i18n/LanguageContext';
 import './Auth.css';
-
 export default function ResetPassword() {
-  const { t } = useLanguage();
+  const {
+    t
+  } = useLanguage();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setError(null);
     setMessage(null);
     setLoading(true);
-
     try {
       await sendPasswordResetEmail(auth, email);
       setMessage(t('auth.resetLinkSent'));
@@ -28,19 +27,11 @@ export default function ResetPassword() {
       setLoading(false);
     }
   };
-
-  return (
-    <div className="auth-page">
+  return <div className="auth-page">
       <form onSubmit={handleSubmit} className="auth-form">
         <h2>{t('auth.resetPassword')}</h2>
         <label>{t('auth.email')}</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          placeholder="your.email@example.com"
-        />
+        <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder={t("str_5375", "your.email@example.com")} />
 
         {message && <div className="auth-success">{message}</div>}
         {error && <div className="auth-error">{error}</div>}
@@ -58,6 +49,5 @@ export default function ResetPassword() {
           <Link to="/auth/signup">{t('auth.signUp')}</Link>
         </div>
       </form>
-    </div>
-  );
+    </div>;
 }

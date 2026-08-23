@@ -5,9 +5,12 @@ import { getAllUsers, updateUserRole, getActiveCheckoutsCount, deleteUserPermane
 import { Shield, Users, Award, Radio, CheckCircle, RefreshCw, Key, ArrowLeft, Trash2 } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import './UserManagementPage.css';
-
-const UserManagementPage = ({ user }) => {
-  const { t } = useLanguage();
+const UserManagementPage = ({
+  user
+}) => {
+  const {
+    t
+  } = useLanguage();
   const [assigningRfidId, setAssigningRfidId] = useState(null);
   const [rfidValue, setRfidValue] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -20,10 +23,8 @@ const UserManagementPage = ({ user }) => {
   const [checkingCheckouts, setCheckingCheckouts] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
-
   // Check if user is admin
   const isAdmin = user && user.role === 'ADMIN';
-
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -40,24 +41,23 @@ const UserManagementPage = ({ user }) => {
     };
     fetchUsers();
   }, []);
-
-  const handleToggleRole = async (member) => {
+  const handleToggleRole = async member => {
     if (!member?.id) {
       return;
     }
-
     const isSelf = user?.uid === member.id;
     const targetRole = member.role === 'ADMIN' ? 'MEMBER' : 'ADMIN';
-
     if (isSelf && targetRole !== 'ADMIN') {
       triggerSuccess('Administrators cannot downgrade their own role.');
       return;
     }
-
     try {
       const response = await updateUserRole(member.id, targetRole);
       const updatedUser = response?.data || response;
-      setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, role: updatedUser.role || targetRole } : m)));
+      setMembers(prev => prev.map(m => m.id === member.id ? {
+        ...m,
+        role: updatedUser.role || targetRole
+      } : m));
       triggerSuccess(`Role updated to ${targetRole} for ${member.firstName} ${member.lastName}`);
     } catch (e) {
       console.error('Failed to update role', e);
@@ -65,29 +65,27 @@ const UserManagementPage = ({ user }) => {
       triggerSuccess(message);
     }
   };
-
-  const triggerSuccess = (msg) => {
+  const triggerSuccess = msg => {
     setSuccessMsg(msg);
     setTimeout(() => setSuccessMsg(''), 3000);
   };
-
   const handleRfidAssignSubmit = (e, memberId) => {
     e.preventDefault();
     if (!rfidValue.trim()) return;
-
     setMembers(prev => prev.map(m => {
       if (m.id === memberId) {
         triggerSuccess(`Assigned RFID key ${rfidValue} to ${m.firstName} ${m.lastName}`);
-        return { ...m, rfidToken: rfidValue };
+        return {
+          ...m,
+          rfidToken: rfidValue
+        };
       }
       return m;
     }));
-
     setRfidValue('');
     setAssigningRfidId(null);
   };
-
-  const initiateDeleteUser = async (member) => {
+  const initiateDeleteUser = async member => {
     if (!member?.id) return;
     setDeletingMember(member);
     setCheckingCheckouts(true);
@@ -104,12 +102,11 @@ const UserManagementPage = ({ user }) => {
       setCheckingCheckouts(false);
     }
   };
-
   const handleDeleteConfirm = async (force = false) => {
     if (!deletingMember?.id) return;
     try {
       await deleteUserPermanently(deletingMember.id, force);
-      setMembers((prev) => prev.filter((m) => m.id !== deletingMember.id));
+      setMembers(prev => prev.filter(m => m.id !== deletingMember.id));
       triggerSuccess(`Successfully anonymized member: ${deletingMember.firstName} ${deletingMember.lastName}`);
       setDeletingMember(null);
     } catch (err) {
@@ -118,21 +115,18 @@ const UserManagementPage = ({ user }) => {
       setDeleteError(msg);
     }
   };
-
-
   if (!isAdmin) {
-    return (
-      <div className="user-mgmt-container animate-fade-in">
-        <div style={{ textAlign: 'center', padding: '40px' }}>
+    return <div className="user-mgmt-container animate-fade-in">
+        <div style={{
+        textAlign: 'center',
+        padding: '40px'
+      }}>
           <h2>{t('admin.privilegedSanctuary', 'Access Denied')}</h2>
           <p>{t('admin.accessDeniedDesc', 'Only administrators can access this page.')}</p>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="user-mgmt-container animate-fade-in">
+  return <div className="user-mgmt-container animate-fade-in">
       <header className="user-mgmt-header">
         <Link to="/admin" className="back-link">
           <ArrowLeft size={16} /> {t('admin.backToConsole', 'Curator Console')}
@@ -147,16 +141,19 @@ const UserManagementPage = ({ user }) => {
         </p>
       </header>
 
-      <div style={{ marginTop: 12, marginBottom: 8 }}>
+      <div style={{
+      marginTop: 12,
+      marginBottom: 8
+    }}>
         <button onClick={async () => {
-          try {
-            await createAdminRequest('Requesting admin access via UI');
-            triggerSuccess('Admin request submitted. Awaiting approval.');
-          } catch (e) {
-            console.error('Failed to submit admin request', e);
-            triggerSuccess('Failed to submit admin request');
-          }
-        }} className="royal-btn">{t('admin.reviewRequests', 'Request Admin Access')}</button>
+        try {
+          await createAdminRequest('Requesting admin access via UI');
+          triggerSuccess('Admin request submitted. Awaiting approval.');
+        } catch (e) {
+          console.error('Failed to submit admin request', e);
+          triggerSuccess('Failed to submit admin request');
+        }
+      }} className="royal-btn">{t('admin.reviewRequests', 'Request Admin Access')}</button>
       </div>
 
       {/* Main Registry Table */}
@@ -166,18 +163,17 @@ const UserManagementPage = ({ user }) => {
           <h3>{t('admin.registeredPatrons', 'Sovereign Patron Ledger')}</h3>
         </div>
 
-        {successMsg && (
-          <div className="success-banner animate-fade-in success-banner-mgmt">
+        {successMsg && <div className="success-banner animate-fade-in success-banner-mgmt">
             <CheckCircle size={16} /> {successMsg}
-          </div>
-        )}
+          </div>}
 
-        {loading ? (
-          <div style={{ padding: '20px', textAlign: 'center' }}>{t('common.loading', 'Loading members...')}</div>
-        ) : members.length === 0 ? (
-          <div style={{ padding: '20px', textAlign: 'center' }}>{t('admin.noMembersFound', 'No members found.')}</div>
-        ) : (
-          <div className="ledger-table-container">
+        {loading ? <div style={{
+        padding: '20px',
+        textAlign: 'center'
+      }}>{t('common.loading', 'Loading members...')}</div> : members.length === 0 ? <div style={{
+        padding: '20px',
+        textAlign: 'center'
+      }}>{t('admin.noMembersFound', 'No members found.')}</div> : <div className="ledger-table-container">
             <table className="ledger-table">
               <thead>
                 <tr>
@@ -189,8 +185,7 @@ const UserManagementPage = ({ user }) => {
                 </tr>
               </thead>
               <tbody>
-                {members.map((member) => (
-                  <tr key={member.id} className="ledger-row">
+                {members.map(member => <tr key={member.id} className="ledger-row">
                     <td className="member-name-td">
                       <span className="name-bold">{member.firstName} {member.lastName}</span>
                       <span className="id-sub">{member.id}</span>
@@ -202,108 +197,65 @@ const UserManagementPage = ({ user }) => {
                       </span>
                     </td>
                     <td>
-                      {member.rfidToken ? (
-                        <span className="rfid-assigned-tag">
+                      {member.rfidToken ? <span className="rfid-assigned-tag">
                           <Radio size={12} className="pulse-signal" /> {member.rfidToken}
-                        </span>
-                      ) : (
-                        <span className="rfid-empty-tag">{t('admin.noTokenKeyed', 'No Token Keyed')}</span>
-                      )}
+                        </span> : <span className="rfid-empty-tag">{t('admin.noTokenKeyed', 'No Token Keyed')}</span>}
                     </td>
                     <td className="actions-cell">
                       <div className="action-buttons-row">
-                        <button 
-                          onClick={() => handleToggleRole(member)} 
-                          className="royal-btn-secondary mini-table-btn"
-                          id={`toggle-role-btn-${member.id}`}
-                          disabled={user?.uid === member.id && member.role === 'ADMIN'}
-                          title={user?.uid === member.id && member.role === 'ADMIN' ? t('admin.cannotChangeSelf', 'You cannot change your own admin rank') : ''}
-                        >
-                          {user?.uid === member.id
-                            ? t('admin.currentAdmin', 'Current Admin')
-                            : member.role === 'ADMIN' ? t('admin.demoteAdmin', 'Demote') : t('admin.promoteAdmin', 'Promote to Admin')}
+                        <button onClick={() => handleToggleRole(member)} className="royal-btn-secondary mini-table-btn" id={`toggle-role-btn-${member.id}`} disabled={user?.uid === member.id && member.role === 'ADMIN'} title={user?.uid === member.id && member.role === 'ADMIN' ? t('admin.cannotChangeSelf', 'You cannot change your own admin rank') : ''}>
+                          {user?.uid === member.id ? t('admin.currentAdmin', 'Current Admin') : member.role === 'ADMIN' ? t('admin.demoteAdmin', 'Demote') : t('admin.promoteAdmin', 'Promote to Admin')}
                         </button>
-                        <button 
-                          onClick={() => setAssigningRfidId(member.id)} 
-                          className="royal-btn mini-table-btn"
-                          id={`assign-rfid-btn-${member.id}`}
-                        >
+                        <button onClick={() => setAssigningRfidId(member.id)} className="royal-btn mini-table-btn" id={`assign-rfid-btn-${member.id}`}>
                           {t('admin.assignNfcBtn', 'Key RFID')}
                         </button>
-                        <button 
-                          onClick={() => initiateDeleteUser(member)} 
-                          className="royal-btn-danger-outline mini-table-btn delete-member-btn"
-                          id={`delete-user-btn-${member.id}`}
-                          disabled={user?.uid === member.id}
-                          title={user?.uid === member.id ? t('admin.cannotDeleteSelf', 'You cannot delete yourself') : t('admin.permanentlyDeleteMember', 'Permanently delete member')}
-                        >
+                        <button onClick={() => initiateDeleteUser(member)} className="royal-btn-danger-outline mini-table-btn delete-member-btn" id={`delete-user-btn-${member.id}`} disabled={user?.uid === member.id} title={user?.uid === member.id ? t('admin.cannotDeleteSelf', 'You cannot delete yourself') : t('admin.permanentlyDeleteMember', 'Permanently delete member')}>
                           <Trash2 size={14} />
                         </button>
                       </div>
 
                       {/* Expandable RFID Assign Drawer */}
-                      {assigningRfidId === member.id && (
-                        <form 
-                          onSubmit={(e) => handleRfidAssignSubmit(e, member.id)} 
-                          className="rfid-assign-form animate-slide-down"
-                        >
+                      {assigningRfidId === member.id && <form onSubmit={e => handleRfidAssignSubmit(e, member.id)} className="rfid-assign-form animate-slide-down">
                           <div className="form-sub-row">
-                            <input 
-                              type="text" 
-                              placeholder="RFID-XXXXX" 
-                              className="royal-input mini-form-input"
-                              value={rfidValue}
-                              onChange={(e) => setRfidValue(e.target.value)}
-                              required
-                            />
+                            <input type="text" placeholder={t("str_5370", "RFID-XXXXX")} className="royal-input mini-form-input" value={rfidValue} onChange={e => setRfidValue(e.target.value)} required />
                             <button type="submit" className="royal-btn submit-rfid-btn">
                               {t('admin.save', 'Save')}
                             </button>
-                            <button 
-                              type="button" 
-                              onClick={() => setAssigningRfidId(null)} 
-                              className="cancel-rfid-btn"
-                            >
+                            <button type="button" onClick={() => setAssigningRfidId(null)} className="cancel-rfid-btn">
                               X
                             </button>
                           </div>
-                        </form>
-                      )}
+                        </form>}
                     </td>
-                  </tr>
-                ))}
+                  </tr>)}
               </tbody>
             </table>
-          </div>
-        )}
+          </div>}
       </section>
 
-      {deletingMember && (
-        <div className="delete-modal-overlay animate-fade-in" onClick={() => setDeletingMember(null)}>
-          <div className="delete-modal-content royal-card" onClick={(e) => e.stopPropagation()}>
+      {deletingMember && <div className="delete-modal-overlay animate-fade-in" onClick={() => setDeletingMember(null)}>
+          <div className="delete-modal-content royal-card" onClick={e => e.stopPropagation()}>
             <div className="delete-modal-header">
               <Shield className="gold-glow-icon" size={24} />
               <h2 className="gold-gradient-text">{t('admin.sovereignRemovalProtocol', 'Sovereign Removal Protocol')}</h2>
             </div>
             
             <div className="delete-modal-body">
-              {checkingCheckouts ? (
-                <div className="delete-modal-loading">
-                  <RefreshCw className="animate-spin" size={24} style={{ color: 'var(--accent)' }} />
+              {checkingCheckouts ? <div className="delete-modal-loading">
+                  <RefreshCw className="animate-spin" size={24} style={{
+              color: 'var(--accent)'
+            }} />
                   <p>{t('admin.interrogatingCheckouts', 'Interrogating active checkouts registry...')}</p>
-                </div>
-              ) : (
-                <>
+                </div> : <>
                   <p className="delete-warning-intro">
                     {t('admin.initiatingRemovalFor', 'You are initiating permanent removal for:')}
                     <br />
                     <strong className="delete-member-name">{deletingMember.firstName} {deletingMember.lastName}</strong>
                     <br />
-                    <span className="uid-label">UID: </span><code className="uid-code">{deletingMember.id}</code>
+                    <span className="uid-label">{t("str_5371", "UID:")} </span><code className="uid-code">{deletingMember.id}</code>
                   </p>
                   
-                  {activeCheckoutsCount > 0 ? (
-                    <div className="delete-warning-box active-checkouts animate-slide-down">
+                  {activeCheckoutsCount > 0 ? <div className="delete-warning-box active-checkouts animate-slide-down">
                       <h3>⚠️ {t('admin.activeCheckoutsFoundTitle', 'Active Checkouts Found')} ({activeCheckoutsCount})</h3>
                       <p>
                         {t('admin.activeCheckoutsWarningDesc', 'This scholar currently has active book checkouts or outstanding return requests. Removing this account will permanently clear their access credentials.')}
@@ -311,54 +263,30 @@ const UserManagementPage = ({ user }) => {
                       <p className="override-disclaimer">
                         <strong>{t('admin.curatorNotice', 'Curator Notice:')}</strong> {t('admin.overrideAnonymizeNotice', 'You may choose to override and force deletion. Their name will be preserved on user-generated content, but all profile data will be permanently purged.')}
                       </p>
-                    </div>
-                  ) : (
-                    <div className="delete-warning-box standard-warning">
+                    </div> : <div className="delete-warning-box standard-warning">
                       <p>
                         {t('admin.standardDeleteWarning', 'All profile details (email, address, phone, RFID keys) will be completely anonymized. The historical ledger will preserve their name for reviews and logs, but they will be permanently locked out.')}
                       </p>
-                    </div>
-                  )}
+                    </div>}
 
-                  {deleteError && (
-                    <div className="delete-error-banner animate-slide-down">
+                  {deleteError && <div className="delete-error-banner animate-slide-down">
                       {deleteError}
-                    </div>
-                  )}
+                    </div>}
                   
                   <div className="delete-modal-actions">
-                    <button 
-                      onClick={() => setDeletingMember(null)} 
-                      className="royal-btn-secondary"
-                    >
+                    <button onClick={() => setDeletingMember(null)} className="royal-btn-secondary">
                       {t('common.cancel', 'Cancel')}
                     </button>
-                    {activeCheckoutsCount > 0 ? (
-                      <button 
-                        onClick={() => handleDeleteConfirm(true)} 
-                        className="royal-btn-danger override-btn"
-                        id="confirm-force-delete-btn"
-                      >
+                    {activeCheckoutsCount > 0 ? <button onClick={() => handleDeleteConfirm(true)} className="royal-btn-danger override-btn" id="confirm-force-delete-btn">
                         {t('admin.overrideAndDelete', 'Override & Delete')}
-                      </button>
-                    ) : (
-                      <button 
-                        onClick={() => handleDeleteConfirm(false)} 
-                        className="royal-btn-danger"
-                        id="confirm-delete-btn"
-                      >
+                      </button> : <button onClick={() => handleDeleteConfirm(false)} className="royal-btn-danger" id="confirm-delete-btn">
                         {t('admin.confirmDelete', 'Confirm Delete')}
-                      </button>
-                    )}
+                      </button>}
                   </div>
-                </>
-              )}
+                </>}
             </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
+        </div>}
+    </div>;
 };
-
 export default UserManagementPage;

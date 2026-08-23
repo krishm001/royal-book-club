@@ -4,10 +4,15 @@ import { Printer, CheckCircle, Calendar, User, Bookmark, Sparkles, Shield, Arrow
 import { fetchCheckoutById, fetchBookByIsbn, fetchCheckouts, fetchBooks, fetchCheckoutsByMember } from '../../services/libraryApi';
 import { useLanguage } from '../../i18n/LanguageContext';
 import './GatepassPage.css';
-
-const GatepassPage = ({ user }) => {
-  const { checkoutId } = useParams();
-  const { t } = useLanguage();
+const GatepassPage = ({
+  user
+}) => {
+  const {
+    checkoutId
+  } = useParams();
+  const {
+    t
+  } = useLanguage();
   const [checkout, setCheckout] = useState(null);
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,7 +33,6 @@ const GatepassPage = ({ user }) => {
         if (checkoutId) {
           setIsLedgerMode(false);
           const checkoutData = await fetchCheckoutById(checkoutId);
-          
           if (checkoutData) {
             const isUserAdmin = user?.role === 'ADMIN';
             const isOwner = user && checkoutData.memberId === (user.uid || user.id);
@@ -39,7 +43,6 @@ const GatepassPage = ({ user }) => {
             }
           }
           setCheckout(checkoutData);
-
           if (checkoutData && checkoutData.bookId) {
             const bookData = await fetchBookByIsbn(checkoutData.bookId);
             setBook(bookData);
@@ -51,12 +54,8 @@ const GatepassPage = ({ user }) => {
             setLoading(false);
             return;
           }
-          const [checkoutsRes, booksData] = await Promise.all([
-            fetchCheckoutsByMember(user.uid || user.id),
-            fetchBooks()
-          ]);
+          const [checkoutsRes, booksData] = await Promise.all([fetchCheckoutsByMember(user.uid || user.id), fetchBooks()]);
           setLedgerCheckouts(checkoutsRes || []);
-          
           const bMap = {};
           if (Array.isArray(booksData)) {
             booksData.forEach(b => {
@@ -72,31 +71,23 @@ const GatepassPage = ({ user }) => {
         setLoading(false);
       }
     };
-
     loadGatepassData();
   }, [checkoutId, user]);
-
   const handlePrint = () => {
     window.print();
   };
-
-  const formattedDate = (inst) => {
+  const formattedDate = inst => {
     if (!inst) return "N/A";
     return new Date(inst).toLocaleString();
   };
-
   if (loading) {
-    return (
-      <div className="gatepass-loading-container">
+    return <div className="gatepass-loading-container">
         <div className="royal-spinner"></div>
         <p>{t('gatepass.retrieving', 'Retrieving secure digital ledger gatepass...')}</p>
-      </div>
-    );
+      </div>;
   }
-
   if (error) {
-    return (
-      <div className="gatepass-error-container">
+    return <div className="gatepass-error-container">
         <div className="error-card">
           <h2>{t('gatepass.accessDenied', 'Access Denied')}</h2>
           <p>{error}</p>
@@ -104,17 +95,15 @@ const GatepassPage = ({ user }) => {
             <ArrowLeft size={16} /> {t('common.returnToStudy', 'Return to Study')}
           </Link>
         </div>
-      </div>
-    );
+      </div>;
   }
 
   // --- RENDERING CONSOLIDATED LEDGER ---
   if (isLedgerMode) {
-    const filterByTime = (itemDate) => {
+    const filterByTime = itemDate => {
       if (!itemDate) return false;
       const d = new Date(itemDate);
       const now = new Date();
-      
       if (timeFilter === 'today') {
         return d.toDateString() === now.toDateString();
       }
@@ -128,16 +117,8 @@ const GatepassPage = ({ user }) => {
       }
       return true; // 'all'
     };
-
-    const activeCheckouts = ledgerCheckouts
-      .filter(c => c.status !== 'RETURNED' && c.status !== 'REJECTED')
-      .filter(c => filterByTime(c.checkedOutAt || c.createdAt))
-      .sort((a, b) => new Date(b.checkedOutAt || b.createdAt) - new Date(a.checkedOutAt || a.createdAt));
-
-    const returnedCheckouts = ledgerCheckouts
-      .filter(c => c.status === 'RETURNED')
-      .filter(c => filterByTime(c.returnedAt || c.updatedAt))
-      .sort((a, b) => new Date(b.returnedAt || b.updatedAt) - new Date(a.returnedAt || a.updatedAt));
+    const activeCheckouts = ledgerCheckouts.filter(c => c.status !== 'RETURNED' && c.status !== 'REJECTED').filter(c => filterByTime(c.checkedOutAt || c.createdAt)).sort((a, b) => new Date(b.checkedOutAt || b.createdAt) - new Date(a.checkedOutAt || a.createdAt));
+    const returnedCheckouts = ledgerCheckouts.filter(c => c.status === 'RETURNED').filter(c => filterByTime(c.returnedAt || c.updatedAt)).sort((a, b) => new Date(b.returnedAt || b.updatedAt) - new Date(a.returnedAt || a.updatedAt));
 
     // Dynamic mapping to keep both checkout and return timestamps dynamically in sync for each active book
     const bookSyncMap = {};
@@ -151,10 +132,8 @@ const GatepassPage = ({ user }) => {
           status: 'AVAILABLE'
         };
       }
-
       const checkoutTime = c.checkedOutAt ? new Date(c.checkedOutAt) : new Date(c.createdAt);
-      const returnTime = c.returnedAt ? new Date(c.returnedAt) : (c.updatedAt ? new Date(c.updatedAt) : null);
-
+      const returnTime = c.returnedAt ? new Date(c.returnedAt) : c.updatedAt ? new Date(c.updatedAt) : null;
       if (c.status === 'RETURNED') {
         if (!bookSyncMap[bId].latestReturn || returnTime > new Date(bookSyncMap[bId].latestReturn.returnedAt)) {
           bookSyncMap[bId].latestReturn = c;
@@ -169,17 +148,18 @@ const GatepassPage = ({ user }) => {
         }
       }
     });
-
     const syncedBooksList = Object.values(bookSyncMap).map(item => {
-      const bDetail = booksMap[item.bookId] || { title: `Volume ${item.bookId}`, isbn: item.bookId, authors: 'Unknown' };
+      const bDetail = booksMap[item.bookId] || {
+        title: `Volume ${item.bookId}`,
+        isbn: item.bookId,
+        authors: 'Unknown'
+      };
       return {
         ...item,
         ...bDetail
       };
     });
-
-    return (
-      <div className="gatepass-outer-wrapper consolidated-ledger-container animate-fade-in">
+    return <div className="gatepass-outer-wrapper consolidated-ledger-container animate-fade-in">
         <div className="ledger-main-header">
           <div className="header-meta">
             <Shield className="header-shield" size={32} />
@@ -189,16 +169,10 @@ const GatepassPage = ({ user }) => {
             </div>
           </div>
           <div className="ledger-tabs no-print">
-            <button 
-              className={`ledger-tab-btn ${ledgerTab === 'transits' ? 'active' : ''}`}
-              onClick={() => setLedgerTab('transits')}
-            >
+            <button className={`ledger-tab-btn ${ledgerTab === 'transits' ? 'active' : ''}`} onClick={() => setLedgerTab('transits')}>
               <Activity size={14} /> {t('gatepass.dailyTransits', 'Daily Transits')}
             </button>
-            <button 
-              className={`ledger-tab-btn ${ledgerTab === 'sync' ? 'active' : ''}`}
-              onClick={() => setLedgerTab('sync')}
-            >
+            <button className={`ledger-tab-btn ${ledgerTab === 'sync' ? 'active' : ''}`} onClick={() => setLedgerTab('sync')}>
               <Clock size={14} /> {t('gatepass.bookRegistrySync', 'Book Registry Sync')}
             </button>
           </div>
@@ -217,66 +191,59 @@ const GatepassPage = ({ user }) => {
         </div>
 
         {/* Segmented Chronological Filter Controls */}
-        {ledgerTab === 'transits' && (
-          <div className="time-filter-segmented-control no-print" style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px', gap: '8px' }}>
-            {[
-              { id: 'all', label: 'All Time' },
-              { id: 'today', label: 'Today' },
-              { id: 'week', label: 'Last 1 Week' },
-              { id: 'month', label: 'Last 1 Month' }
-            ].map(f => (
-              <button
-                key={f.id}
-                onClick={() => setTimeFilter(f.id)}
-                className={`royal-btn-secondary ${timeFilter === f.id ? 'active-time-filter' : ''}`}
-                style={{
-                  padding: '6px 16px',
-                  fontSize: '0.85rem',
-                  borderRadius: '20px',
-                  background: timeFilter === f.id ? 'var(--accent, #d4af37)' : 'transparent',
-                  color: timeFilter === f.id ? '#0f0c08' : 'var(--text-secondary)',
-                  border: `1px solid ${timeFilter === f.id ? 'var(--accent, #d4af37)' : 'var(--glass-border, rgba(212, 175, 55, 0.2))'}`,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  boxShadow: timeFilter === f.id ? '0 0 12px rgba(212, 175, 55, 0.4)' : 'none'
-                }}
-              >
+        {ledgerTab === 'transits' && <div className="time-filter-segmented-control no-print" style={{
+        display: 'flex',
+        justifyContent: 'center',
+        marginBottom: '24px',
+        gap: '8px'
+      }}>
+            {[{
+          id: 'all',
+          label: 'All Time'
+        }, {
+          id: 'today',
+          label: 'Today'
+        }, {
+          id: 'week',
+          label: 'Last 1 Week'
+        }, {
+          id: 'month',
+          label: 'Last 1 Month'
+        }].map(f => <button key={f.id} onClick={() => setTimeFilter(f.id)} className={`royal-btn-secondary ${timeFilter === f.id ? 'active-time-filter' : ''}`} style={{
+          padding: '6px 16px',
+          fontSize: '0.85rem',
+          borderRadius: '20px',
+          background: timeFilter === f.id ? 'var(--accent, #d4af37)' : 'transparent',
+          color: timeFilter === f.id ? '#0f0c08' : 'var(--text-secondary)',
+          border: `1px solid ${timeFilter === f.id ? 'var(--accent, #d4af37)' : 'var(--glass-border, rgba(212, 175, 55, 0.2))'}`,
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+          boxShadow: timeFilter === f.id ? '0 0 12px rgba(212, 175, 55, 0.4)' : 'none'
+        }}>
                 {f.label}
-              </button>
-            ))}
-          </div>
-        )}
+              </button>)}
+          </div>}
 
-        {ledgerTab === 'transits' ? (
-          <div className="ledger-grid-columns">
+        {ledgerTab === 'transits' ? <div className="ledger-grid-columns">
             {/* Active Checkouts Column */}
             <div className="ledger-col-pane">
               <h2 className="pane-title active-color">
-                <span className="status-indicator active-dot"></span>
-                Active Sovereignties ({activeCheckouts.length})
+                <span className="status-indicator active-dot"></span> {t("str_5392", "Active Sovereignties (")}{activeCheckouts.length})
               </h2>
               <div className="ledger-list-stack">
-                {activeCheckouts.length === 0 ? (
-                  <div className="empty-ledger-state">
+                {activeCheckouts.length === 0 ? <div className="empty-ledger-state">
                     <BookOpen size={24} />
                     <p>{t('auto_3502', 'No active transits recorded for this timeframe.')}</p>
-                  </div>
-                ) : (
-                  activeCheckouts.map(c => {
-                    const b = booksMap[c.bookId] || {};
-                    return (
-                      <div key={c.id} className="ledger-card-item">
-                        <img 
-                          src={b.coverImage || b.coverUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} 
-                          alt={b.title} 
-                          className="ledger-thumb" 
-                        />
+                  </div> : activeCheckouts.map(c => {
+              const b = booksMap[c.bookId] || {};
+              return <div key={c.id} className="ledger-card-item">
+                        <img src={b.coverImage || b.coverUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} alt={b.title} className="ledger-thumb" />
                         <div className="ledger-item-info">
                           <h3>{b.title || c.bookId}</h3>
-                          <p className="author">by {b.authors || 'Unknown'}</p>
+                          <p className="author">{t("str_5393", "by")} {b.authors || 'Unknown'}</p>
                           <div className="txn-details">
-                            <p><strong>Scholar:</strong> {c.memberName || user?.displayName || 'Verified Scholar'}</p>
-                            <p><strong>Checked Out:</strong> {formattedDate(c.checkedOutAt)}</p>
+                            <p><strong>{t("str_5394", "Scholar:")}</strong> {c.memberName || user?.displayName || 'Verified Scholar'}</p>
+                            <p><strong>{t("str_5395", "Checked Out:")}</strong> {formattedDate(c.checkedOutAt)}</p>
                           </div>
                           <div className="card-actions no-print">
                             <Link to={`/gatepass/${c.id}`} className="royal-btn-secondary gatepass-mini-btn">
@@ -284,41 +251,30 @@ const GatepassPage = ({ user }) => {
                             </Link>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })
-                )}
+                      </div>;
+            })}
               </div>
             </div>
 
             {/* Restored Columns */}
             <div className="ledger-col-pane">
               <h2 className="pane-title restored-color">
-                <span className="status-indicator restored-dot"></span>
-                Restored & Sealed ({returnedCheckouts.length})
+                <span className="status-indicator restored-dot"></span> {t("str_5396", "Restored & Sealed (")}{returnedCheckouts.length})
               </h2>
               <div className="ledger-list-stack">
-                {returnedCheckouts.length === 0 ? (
-                  <div className="empty-ledger-state">
+                {returnedCheckouts.length === 0 ? <div className="empty-ledger-state">
                     <CheckCircle size={24} />
                     <p>{t('auto_3504', 'No books restored to the Study today.')}</p>
-                  </div>
-                ) : (
-                  returnedCheckouts.map(c => {
-                    const b = booksMap[c.bookId] || {};
-                    return (
-                      <div key={c.id} className="ledger-card-item returned-item">
-                        <img 
-                          src={b.coverImage || b.coverUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} 
-                          alt={b.title} 
-                          className="ledger-thumb" 
-                        />
+                  </div> : returnedCheckouts.map(c => {
+              const b = booksMap[c.bookId] || {};
+              return <div key={c.id} className="ledger-card-item returned-item">
+                        <img src={b.coverImage || b.coverUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} alt={b.title} className="ledger-thumb" />
                         <div className="ledger-item-info">
                           <h3>{b.title || c.bookId}</h3>
-                          <p className="author">by {b.authors || 'Unknown'}</p>
+                          <p className="author">{t("str_5397", "by")} {b.authors || 'Unknown'}</p>
                           <div className="txn-details">
-                            <p><strong>Scholar:</strong> {c.memberName || user?.displayName || 'Verified Scholar'}</p>
-                            <p><strong>Restored:</strong> {formattedDate(c.returnedAt)}</p>
+                            <p><strong>{t("str_5398", "Scholar:")}</strong> {c.memberName || user?.displayName || 'Verified Scholar'}</p>
+                            <p><strong>{t("str_5399", "Restored:")}</strong> {formattedDate(c.returnedAt)}</p>
                           </div>
                           <div className="card-actions no-print">
                             <Link to={`/gatepass/${c.id}`} className="royal-btn-secondary gatepass-mini-btn">
@@ -326,16 +282,12 @@ const GatepassPage = ({ user }) => {
                             </Link>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })
-                )}
+                      </div>;
+            })}
               </div>
             </div>
-          </div>
-        ) : (
-          /* Book Registry Sync View (Book-Centric Timestamps Sync) */
-          <div className="ledger-sync-view">
+          </div> : (/* Book Registry Sync View (Book-Centric Timestamps Sync) */
+      <div className="ledger-sync-view">
             <h2 className="pane-title sync-header-title">
               <Sparkles size={16} /> {t('auto_3506', 'Volume Timestamp Synchronization Registry')}
             </h2>
@@ -351,25 +303,20 @@ const GatepassPage = ({ user }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {syncedBooksList.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" style={{ textAlign: 'center', padding: '30px' }}>
+                  {syncedBooksList.length === 0 ? <tr>
+                      <td colSpan="5" style={{
+                  textAlign: 'center',
+                  padding: '30px'
+                }}>
                         {t('auto_3512', 'No volume activities found in the ledger.')}
                       </td>
-                    </tr>
-                  ) : (
-                    syncedBooksList.map(item => (
-                      <tr key={item.bookId}>
+                    </tr> : syncedBooksList.map(item => <tr key={item.bookId}>
                         <td>
                           <div className="table-book-meta">
-                            <img 
-                              src={item.coverImage || item.coverUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} 
-                              alt={item.title} 
-                              className="table-book-thumb" 
-                            />
+                            <img src={item.coverImage || item.coverUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} alt={item.title} className="table-book-thumb" />
                             <div>
                               <div className="table-title">{item.title}</div>
-                              <div className="table-isbn">ISBN: {item.isbn}</div>
+                              <div className="table-isbn">{t("str_5400", "ISBN:")} {item.isbn}</div>
                             </div>
                           </div>
                         </td>
@@ -379,50 +326,34 @@ const GatepassPage = ({ user }) => {
                           </span>
                         </td>
                         <td className="time-col">
-                          {item.latestCheckout ? (
-                            <div className="time-cell">
+                          {item.latestCheckout ? <div className="time-cell">
                               <span className="time-val">{formattedDate(item.latestCheckout.checkedOutAt)}</span>
-                              <span className="member-val">by {item.latestCheckout.memberName || user?.displayName || 'Verified Scholar'}</span>
-                            </div>
-                          ) : (
-                            <span className="not-avail">-</span>
-                          )}
+                              <span className="member-val">{t("str_5401", "by")} {item.latestCheckout.memberName || user?.displayName || 'Verified Scholar'}</span>
+                            </div> : <span className="not-avail">-</span>}
                         </td>
                         <td className="time-col">
-                          {item.latestReturn ? (
-                            <div className="time-cell">
+                          {item.latestReturn ? <div className="time-cell">
                               <span className="time-val">{formattedDate(item.latestReturn.returnedAt)}</span>
-                              <span className="member-val">by {item.latestReturn.memberName || user?.displayName || 'Verified Scholar'}</span>
-                            </div>
-                          ) : (
-                            <span className="not-avail">-</span>
-                          )}
+                              <span className="member-val">{t("str_5402", "by")} {item.latestReturn.memberName || user?.displayName || 'Verified Scholar'}</span>
+                            </div> : <span className="not-avail">-</span>}
                         </td>
                         <td className="no-print">
-                          {item.status !== 'AVAILABLE' && item.activeCheckoutId && (
-                            <Link to={`/gatepass/${item.activeCheckoutId}`} className="sync-view-gatepass-link">
+                          {item.status !== 'AVAILABLE' && item.activeCheckoutId && <Link to={`/gatepass/${item.activeCheckoutId}`} className="sync-view-gatepass-link">
                               {t('auto_3513', 'View Gatepass')}
-                            </Link>
-                          )}
+                            </Link>}
                         </td>
-                      </tr>
-                    ))
-                  )}
+                      </tr>)}
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
-      </div>
-    );
+          </div>)}
+      </div>;
   }
 
   // --- RENDERING SINGLE GATEPASS ---
   const isReturned = checkout.status === 'RETURNED' || checkout.status === 'REQUESTED_RETURN';
   const isPendingApproval = checkout.status === 'REQUESTED_CHECKOUT';
-
-  return (
-    <div className="gatepass-outer-wrapper animate-fade-in">
+  return <div className="gatepass-outer-wrapper animate-fade-in">
       <div className="gatepass-actions-header no-print">
         <Link to="/profile" className="back-link">
           <ArrowLeft size={16} /> {t('auto_3514', 'Back to Profile Ledger')}
@@ -433,39 +364,53 @@ const GatepassPage = ({ user }) => {
       </div>
 
       <div className="gatepass-card-container printable-gatepass">
-        {isPendingApproval && (
-          <div className="gatepass-pending-warning-banner animate-fade-in" style={{
-            background: 'rgba(212, 175, 55, 0.12)',
-            borderBottom: '1px solid rgba(212, 175, 55, 0.25)',
-            padding: '16px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '14px',
-            width: '100%',
-            boxSizing: 'border-box'
+        {isPendingApproval && <div className="gatepass-pending-warning-banner animate-fade-in" style={{
+        background: 'rgba(212, 175, 55, 0.12)',
+        borderBottom: '1px solid rgba(212, 175, 55, 0.25)',
+        padding: '16px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '14px',
+        width: '100%',
+        boxSizing: 'border-box'
+      }}>
+            <Clock className="gold-glow-icon animate-pulse" size={24} style={{
+          color: '#d4af37'
+        }} />
+            <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2px',
+          textAlign: 'left'
+        }}>
+              <span style={{
+            fontSize: '0.9rem',
+            fontWeight: '700',
+            color: '#d4af37',
+            fontFamily: '"Outfit", sans-serif',
+            letterSpacing: '0.5px'
           }}>
-            <Clock className="gold-glow-icon animate-pulse" size={24} style={{ color: '#d4af37' }} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
-              <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#d4af37', fontFamily: '"Outfit", sans-serif', letterSpacing: '0.5px' }}>
                 {t('auto_3516', 'PENDING ADMINISTRATIVE APPROVAL')}
               </span>
-              <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontWeight: '500' }}>
+              <span style={{
+            fontSize: '0.74rem',
+            color: 'var(--text-secondary)',
+            fontWeight: '500'
+          }}>
                 {t('auto_3517', 'PROVISIONAL GATEPASS — SECURE EXIT CLEARANCE IS NOT ACTIVE')}
               </span>
             </div>
-          </div>
-        )}
+          </div>}
         {/* Holographic header decorative element */}
-        <div 
-          className="gatepass-hologram-seal" 
-          style={isPendingApproval ? {
-            borderColor: 'rgba(212, 175, 55, 0.4)',
-            background: 'rgba(212, 175, 55, 0.05)',
-            color: '#d4af37'
-          } : {}}
-        >
-          {isPendingApproval ? <Clock size={12} className="seal-icon" style={{ animation: 'spin 12s linear infinite' }} /> : <Sparkles className="seal-icon" />}
+        <div className="gatepass-hologram-seal" style={isPendingApproval ? {
+        borderColor: 'rgba(212, 175, 55, 0.4)',
+        background: 'rgba(212, 175, 55, 0.05)',
+        color: '#d4af37'
+      } : {}}>
+          {isPendingApproval ? <Clock size={12} className="seal-icon" style={{
+          animation: 'spin 12s linear infinite'
+        }} /> : <Sparkles className="seal-icon" />}
           <span>{isPendingApproval ? "PENDING CLEARANCE" : "VERIFIED SECURE"}</span>
         </div>
 
@@ -475,30 +420,22 @@ const GatepassPage = ({ user }) => {
             <div className="header-titles">
               <h1>{t('auto_3518', 'The Royal Book Club')}</h1>
               <h2>{t('auto_3519', 'OFFICIAL DIGITAL GATEPASS')}</h2>
-              <span className="serial-num">TXN ID: {checkout.id}</span>
+              <span className="serial-num">{t("str_5403", "TXN ID:")} {checkout.id}</span>
             </div>
           </div>
 
           <div className="gatepass-divider"></div>
 
           <div className="gatepass-content">
-            {book && (
-              <div className="gatepass-book-preview">
-                <img 
-                  src={book.coverImage || book.coverUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} 
-                  alt={book.title} 
-                  className="gatepass-book-cover" 
-                />
+            {book && <div className="gatepass-book-preview">
+                <img src={book.coverImage || book.coverUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400"} alt={book.title} className="gatepass-book-cover" />
                 <div className="gatepass-book-details">
                   <h3>{book.title}</h3>
-                  <p className="author-line">by {book.authors}</p>
-                  <p className="isbn-line">ISBN: {book.isbn}</p>
-                  {checkout.ntagUid && (
-                    <span className="ntag-badge">NTAG213 SECURED: {checkout.ntagUid}</span>
-                  )}
+                  <p className="author-line">{t("str_5404", "by")} {book.authors}</p>
+                  <p className="isbn-line">{t("str_5405", "ISBN:")} {book.isbn}</p>
+                  {checkout.ntagUid && <span className="ntag-badge">{t("str_5406", "NTAG213 SECURED:")} {checkout.ntagUid}</span>}
                 </div>
-              </div>
-            )}
+              </div>}
 
             <div className="gatepass-divider"></div>
 
@@ -531,8 +468,11 @@ const GatepassPage = ({ user }) => {
                 <Calendar size={16} className="detail-icon" />
                 <div className="detail-info">
                   <span className="detail-label">{t('gatepass.dueDate', 'Due Date')}</span>
-                  <span className={`detail-value ${!isReturned && !isPendingApproval ? 'due-alert' : ''}`} style={isPendingApproval ? { color: 'var(--text-muted)', fontStyle: 'italic' } : {}}>
-                    {isPendingApproval ? t('gatepass.pendingApproval', 'Pending Approval') : (isReturned ? formattedDate(checkout.returnedAt) : formattedDate(checkout.dueDate))}
+                  <span className={`detail-value ${!isReturned && !isPendingApproval ? 'due-alert' : ''}`} style={isPendingApproval ? {
+                  color: 'var(--text-muted)',
+                  fontStyle: 'italic'
+                } : {}}>
+                    {isPendingApproval ? t('gatepass.pendingApproval', 'Pending Approval') : isReturned ? formattedDate(checkout.returnedAt) : formattedDate(checkout.dueDate)}
                   </span>
                 </div>
               </div>
@@ -542,31 +482,27 @@ const GatepassPage = ({ user }) => {
 
             <div className="gatepass-security-status">
               <div className={`status-stamp ${isReturned ? 'returned-stamp' : isPendingApproval ? 'pending-stamp' : 'approved-stamp'}`}>
-                {isPendingApproval ? <Clock size={20} style={{ animation: 'pulse 2s infinite' }} /> : <CheckCircle size={20} />}
+                {isPendingApproval ? <Clock size={20} style={{
+                animation: 'pulse 2s infinite'
+              }} /> : <CheckCircle size={20} />}
                 <span>{checkout.status === 'RETURNED' ? "RETURNED & CLOSED" : checkout.status === 'REQUESTED_RETURN' ? "PENDING RETURN VERIFICATION" : isPendingApproval ? "PENDING ADMIN APPROVAL" : "APPROVED LEAVE REALM"}</span>
               </div>
             </div>
 
             <div className="gatepass-barcode-container">
               <div className="barcode-bars">
-                {Array.from({ length: 35 }).map((_, idx) => (
-                  <div 
-                    key={idx} 
-                    className="barcode-bar" 
-                    style={{ 
-                      width: `${(idx % 3 === 0 ? 3 : idx % 2 === 0 ? 1 : 2)}px`,
-                      marginRight: `${(idx % 4 === 0 ? 2 : 1)}px` 
-                    }}
-                  />
-                ))}
+                {Array.from({
+                length: 35
+              }).map((_, idx) => <div key={idx} className="barcode-bar" style={{
+                width: `${idx % 3 === 0 ? 3 : idx % 2 === 0 ? 1 : 2}px`,
+                marginRight: `${idx % 4 === 0 ? 2 : 1}px`
+              }} />)}
               </div>
               <span className="barcode-text">*{checkoutId}*</span>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default GatepassPage;
