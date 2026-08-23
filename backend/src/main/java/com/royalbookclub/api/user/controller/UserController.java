@@ -124,10 +124,11 @@ public class UserController {
     public ResponseEntity<ApiResponse<Void>> deleteUser(
             @PathVariable String id,
             @RequestParam(defaultValue = "false") boolean force,
+            @RequestParam(defaultValue = "false") boolean hardDelete,
             @AuthenticationPrincipal User currentUser
     ) {
         String performedBy = currentUser != null ? currentUser.getId() : "SYSTEM";
-        userService.deleteUserPermanently(id, performedBy, force);
+        userService.deleteUserPermanently(id, performedBy, force, hardDelete);
         return ResponseEntity.ok(ApiResponse.success(null, "User record anonymized successfully."));
     }
 }

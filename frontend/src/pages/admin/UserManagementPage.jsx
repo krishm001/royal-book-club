@@ -22,6 +22,7 @@ const UserManagementPage = ({
   const [activeCheckoutsCount, setActiveCheckoutsCount] = useState(0);
   const [checkingCheckouts, setCheckingCheckouts] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [hardDelete, setHardDelete] = useState(false);
 
   // Check if user is admin
   const isAdmin = user && user.role === 'ADMIN';
@@ -90,6 +91,7 @@ const UserManagementPage = ({
     setDeletingMember(member);
     setCheckingCheckouts(true);
     setDeleteError('');
+    setHardDelete(false);
     try {
       const response = await getActiveCheckoutsCount(member.id);
       const count = response?.data !== undefined ? response.data : response;
@@ -105,9 +107,9 @@ const UserManagementPage = ({
   const handleDeleteConfirm = async (force = false) => {
     if (!deletingMember?.id) return;
     try {
-      await deleteUserPermanently(deletingMember.id, force);
+      await deleteUserPermanently(deletingMember.id, force, hardDelete);
       setMembers(prev => prev.filter(m => m.id !== deletingMember.id));
-      triggerSuccess(`Successfully anonymized member: ${deletingMember.firstName} ${deletingMember.lastName}`);
+      triggerSuccess(hardDelete ? `Successfully hard-deleted member:` : `Successfully anonymized member: ${deletingMember.firstName} ${deletingMember.lastName}`);
       setDeletingMember(null);
     } catch (err) {
       console.error('Deletion failed', err);
@@ -255,19 +257,36 @@ const UserManagementPage = ({
                     <span className="uid-label">{t("str_5371", "UID:")} </span><code className="uid-code">{deletingMember.id}</code>
                   </p>
                   
-                  {activeCheckoutsCount > 0 ? <div className="delete-warning-box active-checkouts animate-slide-down">
+                  {activeCheckoutsCount > 0 && <div className="delete-warning-box active-checkouts animate-slide-down">
                       <h3>⚠️ {t('admin.activeCheckoutsFoundTitle', 'Active Checkouts Found')} ({activeCheckoutsCount})</h3>
                       <p>
                         {t('admin.activeCheckoutsWarningDesc', 'This scholar currently has active book checkouts or outstanding return requests. Removing this account will permanently clear their access credentials.')}
                       </p>
                       <p className="override-disclaimer">
-                        <strong>{t('admin.curatorNotice', 'Curator Notice:')}</strong> {t('admin.overrideAnonymizeNotice', 'You may choose to override and force deletion. Their name will be preserved on user-generated content, but all profile data will be permanently purged.')}
-                      </p>
-                    </div> : <div className="delete-warning-box standard-warning">
-                      <p>
-                        {t('admin.standardDeleteWarning', 'All profile details (email, address, phone, RFID keys) will be completely anonymized. The historical ledger will preserve their name for reviews and logs, but they will be permanently locked out.')}
+                        <strong>{t('admin.curatorNotice', 'Curator Notice:')}</strong> {t('admin.overrideAnonymizeNotice', 'You may choose to override and force deletion. Active checkouts will be force-returned to inventory.')}
                       </p>
                     </div>}
+                  
+                  <div className="delete-options-section" style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.05)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+                     <label style={{ display: 'block', marginBottom: '15px', cursor: 'pointer' }}>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <input type="radio" name="deleteType" value="anonymize" checked={!hardDelete} onChange={() => setHardDelete(false)} style={{ accentColor: 'var(--accent)' }} />
+                          <span style={{ marginLeft: '8px', fontWeight: 'bold' }}>{t('admin.softAnonymize', 'Anonymize Profile (Recommended)')}</span>
+                        </div>
+                        <p style={{ margin: '4px 0 0 24px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                           {t('admin.softAnonymizeDesc', 'Wipes all PII (email, address, phone) and revokes access, but preserves their generated content and ledger history under an anonymous profile.')}
+                        </p>
+                     </label>
+                     <label style={{ display: 'block', cursor: 'pointer' }}>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <input type="radio" name="deleteType" value="hard" checked={hardDelete} onChange={() => setHardDelete(true)} style={{ accentColor: '#ef4444' }} />
+                          <span style={{ marginLeft: '8px', fontWeight: 'bold' }}>{t('admin.hardDelete', 'Absolute Erasure')}</span>
+                        </div>
+                        <p style={{ margin: '4px 0 0 24px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                           {t('admin.hardDeleteDesc', 'Completely purges their user document and recursively destroys all their generated content (reviews, blogs, comments, etc.).')}
+                        </p>
+                     </label>
+                  </div>
 
                   {deleteError && <div className="delete-error-banner animate-slide-down">
                       {deleteError}

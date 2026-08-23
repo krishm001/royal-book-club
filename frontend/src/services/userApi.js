@@ -25,8 +25,8 @@ export const getActiveCheckoutsCount = async (userId) => {
   return response.data;
 };
 
-export const deleteUserPermanently = async (userId, force = false) => {
-  const response = await api.delete(`/api/v1/admin/users/${userId}?force=${force}`);
+export const deleteUserPermanently = async (userId, force = false, hardDelete = false) => {
+  const response = await api.delete(`/api/v1/admin/users/${userId}?force=${force}&hardDelete=${hardDelete}`);
   return response.data;
 };
 

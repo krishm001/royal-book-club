@@ -332,7 +332,7 @@ public class UserService {
     /**
      * Soft deletes and anonymizes a user.
      */
-    public void deleteUserPermanently(String targetUid, String performedByUid, boolean force) {
+    public void deleteUserPermanently(String targetUid, String performedByUid, boolean force, boolean hardDelete) {
         if (targetUid == null || targetUid.isBlank()) {
             throw new BusinessRuleException("Target user UID must be provided.");
         }
@@ -406,15 +406,55 @@ public class UserService {
                 log.error("Firebase Auth deletion failed for uid: {}. Message: {}. Proceeding to delete Firestore document.", targetUid, e.getMessage(), e);
             }
 
-            // 2. Delete user document completely from Firestore
-            docRef.delete().get();
-            log.info("Successfully deleted user {} from Firestore database.", targetUid);
+            // 2. Handle Firestore document based on hardDelete flag
+            if (hardDelete) {
+                // Completely remove the user document
+                docRef.delete().get();
+                log.info("Successfully HARD deleted user {} from Firestore database.", targetUid);
+                
+                // Also wipe all generated content
+                try {
+                    // Delete Reviews
+                    QuerySnapshot reviews = firestore.collection("book_reviews").whereEqualTo("userId", targetUid).get().get();
+                    for (QueryDocumentSnapshot doc : reviews.getDocuments()) { doc.getReference().delete(); }
+                    
+                    // Delete Discourses
+                    QuerySnapshot discourses = firestore.collection("discourses").whereEqualTo("authorId", targetUid).get().get();
+                    for (QueryDocumentSnapshot doc : discourses.getDocuments()) { doc.getReference().delete(); }
+                    
+                    // Delete Discourse Comments
+                    QuerySnapshot comments = firestore.collection("discourse_comments").whereEqualTo("authorId", targetUid).get().get();
+                    for (QueryDocumentSnapshot doc : comments.getDocuments()) { doc.getReference().delete(); }
+                    
+                    log.info("Successfully wiped generated content for HARD deleted user {}.", targetUid);
+                } catch (Exception e) {
+                    log.error("Failed to wipe generated content for user {}: {}", targetUid, e.getMessage(), e);
+                }
+            } else {
+                // Soft Anonymize
+                if (existingUser != null) {
+                    existingUser.setDeleted(true);
+                    existingUser.setEmail("deleted_" + targetUid + "@anonymized.royalbookclub.com");
+                    existingUser.setPhone(null);
+                    existingUser.setHouseNo(null);
+                    existingUser.setStreet(null);
+                    existingUser.setCity(null);
+                    existingUser.setPinCode(null);
+                    existingUser.setConsentAcceptedAt(null);
+                    existingUser.setLanguage("en");
+                    existingUser.setRfidToken(null);
+                    existingUser.setUpdatedAt(new Date());
+                    
+                    docRef.set(existingUser).get();
+                    log.info("Successfully anonymized and soft-deleted user {} from Firestore database.", targetUid);
+                }
+            }
 
             // 3. Write an audit entry
             DocumentReference auditRef = firestore.collection("admin_actions").document();
             auditRef.set(new java.util.HashMap<String, Object>() {{
                 put("userId", targetUid);
-                put("action", "HARD_DELETION");
+                put("action", hardDelete ? "HARD_DELETION" : "SOFT_DELETION_ANONYMIZED");
                 put("performedBy", performedByUid);
                 put("performedAt", new Date());
                 put("hadActiveCheckouts", activeCount > 0);
