@@ -304,13 +304,20 @@ const QrStickerGeneratorPage = ({
                     {/* Right: Branding (Playfair Display serif font, deep burgundy) */}
                     <div className="sticker-brand-col">
                       <div className="sticker-brand-line" style={{
-                  fontSize: '7.2px'
-                }}>{t('auto_3440', 'Royal Book')}</div>
+                  fontSize: '11.5px',
+                  lineHeight: '1.1'
+                }}>{t('auto_brand_1', 'Royal')}</div>
                       <div className="sticker-brand-line" style={{
-                  fontSize: '7.2px'
-                }}>{t('auto_3441', 'Club')}</div>
+                  fontSize: '11.5px',
+                  lineHeight: '1.1'
+                }}>{t('auto_brand_2', 'Book')}</div>
+                      <div className="sticker-brand-line" style={{
+                  fontSize: '11.5px',
+                  lineHeight: '1.1'
+                }}>{t('auto_brand_3', 'Club')}</div>
                       <div className="sticker-counter-tag" style={{
-                  fontSize: '5.2px'
+                  fontSize: '5.2px',
+                  marginTop: '2px'
                 }}>#{sticker.count}</div>
                     </div>
                   </div>;
