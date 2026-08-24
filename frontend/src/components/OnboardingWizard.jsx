@@ -247,8 +247,12 @@ export default function OnboardingWizard({
             setStreet(d.street || '');
             setCity(d.city || '');
             setPinCode(d.pinCode || '');
-            if (d.firstName) setFirstName(d.firstName);
-            if (d.lastName) setLastName(d.lastName);
+            const pendingFirst = sessionStorage.getItem("pendingRegistrationFirstName");
+            const pendingLast = sessionStorage.getItem("pendingRegistrationLastName");
+            if (pendingFirst) setFirstName(pendingFirst);
+            else if (d.firstName) setFirstName(d.firstName);
+            if (pendingLast) setLastName(pendingLast);
+
             if (gatingSettings) {
               const hasConsent = !!d.consentAcceptedAt;
               if (hasConsent) {

@@ -314,7 +314,7 @@ const BookDetailPage = ({
         setNfcModalOpen(true);
         setActiveTab('validator_qr');
         setGeofenceFailed(true);
-        setNfcError("Location verification failed. We have automatically opened Validator QR scanning for your convenience.");
+        setNfcError("Geofence location check failed. We have automatically opened Validator QR scanning for your convenience.");
         startDetailQrValidatorScanner();
       } else {
         setInstantError(errMsg);
@@ -527,9 +527,17 @@ const BookDetailPage = ({
              setTimeout(() => {
                handleDetailBarcodeScanned("qr=" + e.detail.qrId);
              }, 400);
-           } else if (e.detail.actionType === "checkout") handleCheckoutClick();
+           } else if (e.detail.actionType === "checkout") {
+             if (sessionStorage.getItem("nfc_session")) handleInstantNfcAction("checkout");
+             else handleCheckoutClick();
+           }
 
-           else if (e.detail.actionType === 'return') handleReturnClick();
+
+           else if (e.detail.actionType === "return") {
+             if (sessionStorage.getItem("nfc_session")) handleInstantNfcAction("return");
+             else handleReturnClick();
+           }
+
         }
       }, 100);
     };
@@ -1083,7 +1091,7 @@ const BookDetailPage = ({
         if (isLocationError && nfcActionTypeRef.current === 'return') {
           setActiveTab('validator_qr');
           setGeofenceFailed(true);
-          setNfcError("Location verification failed. We have automatically switched to the Validator QR tab for your convenience.");
+          setNfcError("Geofence location check failed. We have automatically switched to the Validator QR tab for your convenience.");
           await stopDetailBarcodeScanner();
           startDetailQrValidatorScanner();
         } else {
@@ -1177,7 +1185,7 @@ const BookDetailPage = ({
             if (isLocationError && actionType === 'return') {
               setActiveTab('validator_qr');
               setGeofenceFailed(true);
-              setNfcError("Location verification failed. We have automatically switched to the Validator QR tab for your convenience.");
+              setNfcError("Geofence location check failed. We have automatically switched to the Validator QR tab for your convenience.");
               startDetailQrValidatorScanner();
             } else {
               setNfcError(t('catalog.unableToSubmitRequest') + errMsg);
