@@ -19,6 +19,7 @@ const BookDetailPage = ({
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const deepLinkQrId = searchParams.get('qrId');
+  const hasTriggeredDeepLink = useRef(false);
   const {
     t
   } = useLanguage();
@@ -529,7 +530,7 @@ const BookDetailPage = ({
       window.removeEventListener('onboarding_closed', handleOnboardingFocus);
       window.removeEventListener('onboarding_complete', handleOnboardingFocus);
     };
-  }, [book]); // Use book dependency to ensure functions have context
+  }, [book, user]); // Use book and user dependency to ensure functions have context
 
   // Center checkout action card in the viewport upon catalog details loading (Epic 1)
   useEffect(() => {

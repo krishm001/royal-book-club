@@ -403,7 +403,12 @@ public class UserService {
                 firebaseAuth.deleteUser(targetUid);
                 log.info("Successfully deleted user {} from Firebase Authentication credentials.", targetUid);
             } catch (Exception e) {
-                log.error("Firebase Auth deletion failed for uid: {}. Message: {}. Proceeding to delete Firestore document.", targetUid, e.getMessage(), e);
+                if (e.getMessage() != null && (e.getMessage().contains("user-not-found") || e.getMessage().contains("NOT_FOUND"))) {
+                    log.warn("User {} already missing from Firebase Auth. Proceeding to delete Firestore document.", targetUid);
+                } else {
+                    log.error("Firebase Auth deletion failed for uid: {}. Message: {}", targetUid, e.getMessage(), e);
+                    throw new BusinessRuleException("Failed to delete user from Firebase Auth: " + e.getMessage());
+                }
             }
 
             // 2. Handle Firestore document based on hardDelete flag
@@ -435,6 +440,9 @@ public class UserService {
                 if (existingUser != null) {
                     existingUser.setDeleted(true);
                     existingUser.setEmail("deleted_" + targetUid + "@anonymized.royalbookclub.com");
+                    existingUser.setFirstName("Anonymous");
+                    existingUser.setLastName("User");
+
                     existingUser.setPhone(null);
                     existingUser.setHouseNo(null);
                     existingUser.setStreet(null);

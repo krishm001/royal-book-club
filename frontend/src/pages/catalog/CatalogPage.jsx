@@ -680,7 +680,7 @@ const CatalogPage = ({
       window.removeEventListener('onboarding_closed', handleOnboardingFocus);
       window.removeEventListener('onboarding_complete', handleOnboardingFocus);
     };
-  }, [books]); // Added books so it doesn't use stale closure
+  }, [books, user]); // Added user so it doesn't use stale closure
   const refreshCatalogState = async () => {
     try {
       const data = await fetchBooks();
