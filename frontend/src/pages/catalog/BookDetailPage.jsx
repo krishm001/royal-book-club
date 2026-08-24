@@ -519,7 +519,16 @@ const BookDetailPage = ({
         }
         
         if (e && e.type === 'onboarding_complete' && e.detail && e.detail.actionType) {
-           if (e.detail.actionType === 'checkout') handleCheckoutClick();
+           if (e.detail.qrId) {
+             setNfcActionType(e.detail.actionType);
+             nfcActionTypeRef.current = e.detail.actionType;
+             setActiveTab("barcode");
+             setNfcModalOpen(true);
+             setTimeout(() => {
+               handleDetailBarcodeScanned("qr=" + e.detail.qrId);
+             }, 400);
+           } else if (e.detail.actionType === "checkout") handleCheckoutClick();
+
            else if (e.detail.actionType === 'return') handleReturnClick();
         }
       }, 100);
@@ -550,58 +559,37 @@ const BookDetailPage = ({
 
   // Deep Link Auto-Checkout or Return Flow Trigger
   useEffect(() => {
-    if (book) {
-      const query = new URLSearchParams(window.location.search);
-      const action = query.get('action');
-      const status = getResolvedStatus();
-      if (action === 'checkout' && status === 'available') {
-        resetRatingAndCheckoutId();
-        setNfcActionType('checkout');
-        nfcActionTypeRef.current = 'checkout';
-        setNfcError('');
-        setNfcSuccess(false);
-        setFallbackSuccess(false);
-        setGeofenceFailed(false);
-        setQrValidationFailed(false);
-        const defaultTab = 'NDEFReader' in window && book?.ntagUid ? 'nfc' : 'barcode';
-        setActiveTab(defaultTab);
-        setNfcModalOpen(true);
-        if (defaultTab === 'nfc') {
-          startNfcAction('checkout');
-        } else {
-          startDetailBarcodeScanner();
-        }
-        window.history.replaceState({}, document.title, window.location.pathname);
-      } else if (action === 'return' && status === 'checked-out') {
-        resetRatingAndCheckoutId();
-        setNfcActionType('return');
-        nfcActionTypeRef.current = 'return';
-        setNfcError('');
-        setNfcSuccess(false);
-        setFallbackSuccess(false);
-        const geofenceFailedParam = query.get('geofenceFailed') === 'true';
-        if (geofenceFailedParam) {
-          setGeofenceFailed(true);
-          setActiveTab('validator_qr');
-          setNfcModalOpen(true);
-          setNfcError("Location verification failed. We have automatically switched to the Validator QR tab for your convenience.");
-          startDetailQrValidatorScanner();
-        } else {
-          setGeofenceFailed(false);
-          setQrValidationFailed(false);
-          const defaultTab = 'NDEFReader' in window && book?.ntagUid ? 'nfc' : 'barcode';
-          setActiveTab(defaultTab);
-          setNfcModalOpen(true);
-          if (defaultTab === 'nfc') {
-            startNfcAction('return');
-          } else {
-            startDetailBarcodeScanner();
-          }
-        }
-        window.history.replaceState({}, document.title, window.location.pathname);
+    if (book && deepLinkQrId && !hasTriggeredDeepLink.current) {
+      hasTriggeredDeepLink.current = true;
+      if (!user) {
+        triggerOnboarding({ actionType: 'checkout', qrId: deepLinkQrId });
+        return;
       }
+      const status = getResolvedStatus();
+      const actionToTake = status === 'checked-out' ? 'return' : 'checkout';
+      
+      resetRatingAndCheckoutId();
+      setNfcActionType(actionToTake);
+      nfcActionTypeRef.current = actionToTake;
+      setNfcError('');
+      setNfcSuccess(false);
+      setFallbackSuccess(false);
+      setGeofenceFailed(false);
+      setQrValidationFailed(false);
+      
+      setActiveTab('barcode');
+      setNfcModalOpen(true);
+      
+      // Give the modal a tiny bit of time to render, then auto-process the QR
+      setTimeout(() => {
+        handleDetailBarcodeScanned("qr=" + deepLinkQrId);
+      }, 400);
+
+      try {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (e) {}
     }
-  }, [book, memberCheckouts]);
+  }, [book, user, deepLinkQrId, memberCheckouts]);
   const handleCheckoutClick = async () => {
     const passes = await checkGatingPasses('checkout');
     if (!passes) return;

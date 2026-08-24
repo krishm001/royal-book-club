@@ -58,8 +58,9 @@ export default function OnboardingWizard({
   const [authMode, setAuthFormMode] = useState('signin'); // 'signin' or 'signup'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [firstName, setFirstName] = useState(sessionStorage.getItem("pendingRegistrationFirstName") || "");
+  const [lastName, setLastName] = useState(sessionStorage.getItem("pendingRegistrationLastName") || "");
+
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -99,6 +100,13 @@ export default function OnboardingWizard({
   const [resending, setResending] = useState(false);
   const suggestionsContainerRef = React.useRef(null);
   const debounceTimeoutRef = React.useRef(null);
+  const scrollRef = React.useRef(null);
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
+  }, [step, authMode]);
+
 
   // Advance steps
   const nextStep = () => setStep(prev => Math.min(prev + 1, 3));
@@ -124,6 +132,7 @@ export default function OnboardingWizard({
   // Determine gating status matching ProfilePage
   const checkIfProfileMeetsGating = (u, gating) => {
     if (!gating) return false;
+    if (!u?.consentAcceptedAt) return false;
 
     // Check email verification if enforced and user is a password user
     const currentUser = auth.currentUser;
@@ -452,7 +461,13 @@ export default function OnboardingWizard({
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err) {
-      setError(err.message || 'Invalid credentials');
+      let errorMsg = err.message || 'Invalid credentials';
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || (err.message && err.message.includes('invalid-credential'))) {
+          errorMsg = "Invalid email or password.";
+      } else {
+          errorMsg = "Sorry for the glitch, Please contact Admin.";
+      }
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -460,6 +475,9 @@ export default function OnboardingWizard({
 
   // Submit Sign Up
   const handleEmailSignUp = async e => {
+    sessionStorage.setItem("pendingRegistrationFirstName", firstName);
+    sessionStorage.setItem("pendingRegistrationLastName", lastName);
+
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -582,6 +600,9 @@ export default function OnboardingWizard({
         pinCode: pinCode
       };
       await api.put('/api/v1/users/profile', updatePayload);
+      sessionStorage.removeItem("pendingRegistrationFirstName");
+      sessionStorage.removeItem("pendingRegistrationLastName");
+
       if (setUser) {
         setUser(prev => ({
           ...prev,
@@ -647,7 +668,7 @@ export default function OnboardingWizard({
         </div>
 
         {/* Wizard Body */}
-        <div className="onboarding-body" style={{
+        <div ref={scrollRef} className="onboarding-body" style={{
         overflowY: 'auto',
         flex: 1
       }}>
@@ -752,7 +773,7 @@ export default function OnboardingWizard({
                 }}>{t('auto_3091', 'Create Account')}</button>
                       </p>
                     </form> : <form onSubmit={handleEmailSignUp}>
-                      <div className="name-fields-row" style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                      <div className="name-fields-row" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         <div className="onboarding-form-group">
                           <label>{t('auto_3092', 'First Name')}</label>
                           <input type="text" required className="onboarding-input" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder={t("str_5047", "Royal")} />
@@ -967,8 +988,8 @@ export default function OnboardingWizard({
                   </section>
 
                   {gatingSettings?.enforceEmailVerification && auth.currentUser?.providerData?.some(p => p.providerId === 'password') && !emailVerified ? <div className="email-verification-blocking-panel animate-fade-in royal-card" style={{
-              padding: '24px',
-              margin: '20px 0',
+              padding: '16px',
+              margin: '10px 0',
               border: '1px solid rgba(212,165,116,0.3)',
               background: 'rgba(212,165,116,0.02)'
             }}>
@@ -978,35 +999,29 @@ export default function OnboardingWizard({
                 alignItems: 'center',
                 textAlign: 'center'
               }}>
-                        <div className="pulsing-mail-icon" style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'rgba(212,165,116,0.1)',
-                  borderRadius: '50%',
-                  width: '80px',
-                  height: '80px',
-                  marginBottom: '10px',
-                  boxShadow: '0 0 20px rgba(212,165,116,0.2)'
-                }}>
-                          <Mail size={40} className="gold-glow-icon animate-pulse" style={{
-                    color: 'var(--accent)'
-                  }} />
-                        </div>
                         <h3 className="section-title-royal" style={{
                   color: 'var(--accent)',
                   marginTop: '0',
                   fontSize: '1.2rem',
                   textTransform: 'uppercase',
                   letterSpacing: '1px'
-                }}>{t('auto_3103', 'Royal Verification Gating')}</h3>
+                }}>Verification Pending</h3>
                         <p style={{
                   fontSize: '0.9rem',
                   color: 'var(--text-primary)',
-                  margin: '12px 0 24px 0',
+                  margin: '12px 0',
                   maxWidth: '440px',
-                  lineHeight: '1.6'
-                }}> {t("str_5054", "An administrator has enforced mandatory email verification for secure self-checkout. Please check your inbox (")}<strong>{auth.currentUser?.email}</strong>{t("str_5055", ") and click the verification link to unblock checkout.")} </p>
+                  lineHeight: '1.5'
+                }}> An administrator has enforced mandatory email verification. Please check your inbox and spam folder for <strong>{auth.currentUser?.email}</strong> and click the link to unblock checkout. </p>
+                        
+                        <p style={{
+                  fontSize: '0.8rem',
+                  color: 'var(--text-secondary)',
+                  margin: '0 0 16px 0',
+                  maxWidth: '440px',
+                  lineHeight: '1.4'
+                }}> <em>Note: Clicking the link may open a new browser tab. You can safely return to this original tab to continue.</em> </p>
+                        
                         <div style={{
                   display: 'flex',
                   gap: '12px',
@@ -1014,20 +1029,20 @@ export default function OnboardingWizard({
                   justifyContent: 'center'
                 }}>
                           <button type="button" onClick={handleResendVerification} disabled={verificationResendCooldown > 0 || resending} className="royal-btn-secondary" style={{
-                    padding: '10px 20px',
+                    padding: '8px 16px',
                     fontSize: '0.85rem',
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px'
                   }}>
-                            {resending ? <Loader2 className="animate-spin" size={14} /> : verificationResendCooldown > 0 ? `Resend link in ${verificationResendCooldown}s` : 'Resend Verification Email'}
+                            {resending ? <Loader2 className="animate-spin" size={14} /> : verificationResendCooldown > 0 ? `Resend (${verificationResendCooldown}s)` : 'Resend Email'}
                           </button>
                           <button type="button" onClick={forceVerifyCheck} className="royal-btn" style={{
-                    padding: '10px 20px',
+                    padding: '8px 16px',
                     fontSize: '0.85rem',
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px'
                   }}>
-                            {t('auto_3104', 'Check Verification Now')}
+                            Check Now
                           </button>
                         </div>
                       </div>

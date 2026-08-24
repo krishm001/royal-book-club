@@ -250,7 +250,7 @@ const NfcCounterDashboard = ({
         fontSize: '2.4rem',
         fontWeight: 'bold',
         margin: '0 0 12px 0',
-        color: 'var(--text-primary, #ffffff)'
+        color: 'var(--text-primary)'
       }}>
           {t('auto_3411', 'NFC Tag Counter & Sequence Audit')}
         </h1>
@@ -485,7 +485,7 @@ const NfcCounterDashboard = ({
         }} />
             <p style={{
           margin: 0,
-          color: 'var(--text-primary, #ffffff)',
+          color: 'var(--text-primary)',
           fontSize: '1rem',
           fontWeight: 'bold'
         }}>{t('auto_3418', 'No NFC Counter Logs Found')}</p>

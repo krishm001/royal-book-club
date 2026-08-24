@@ -222,6 +222,8 @@ function App() {
       if (pathname && pathname !== '/' && !pathname.startsWith('/api') && !pathname.startsWith('/static') && !pathname.includes('.')) {
         const pathName = pathname.substring(1).trim();
         if (pathName.length > 0) {
+          setGlobalScannerLoading(true);
+
           if (/^\d+$/.test(pathName)) {
             console.info("[QR INTERCEPT] Detected numeric potential book copy QR ID path. Checking catalog:", pathName);
             try {
@@ -248,6 +250,8 @@ function App() {
       if (searchParams.has('qr')) {
         const qrCode = searchParams.get('qr').trim();
         if (qrCode.length > 0) {
+          setGlobalScannerLoading(true);
+
           try {
             const cleanUrl = window.location.origin + '/' + window.location.hash;
             window.history.replaceState(null, '', cleanUrl);
@@ -692,6 +696,22 @@ function App() {
         </div>
       </div>;
   }
+  if (globalScannerLoading) {
+    return <div className="gatepass-loading-container" style={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: "100vh",
+      background: "var(--bg-primary)",
+      color: "var(--text-primary)"
+    }}>
+      <div className="loader-royal" style={{ marginBottom: "20px" }}></div>
+      <h2 style={{ color: "var(--accent)", fontFamily: "var(--font-serif)" }}>Preparing the Library...</h2>
+      <p style={{ color: "var(--text-secondary)", marginTop: "10px" }}>Retrieving volume coordinates from the archives.</p>
+    </div>;
+  }
+
   if (deepLinkResolving) {
     return <div className="gatepass-loading-container" style={{
       display: 'flex',
