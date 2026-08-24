@@ -244,7 +244,7 @@ const CatalogPage = ({
   const startTopBarcodeScanner = () => {
     if (!user || user.isAnonymous) {
       if (triggerOnboarding) triggerOnboarding({
-        actionType: 'scan'
+        actionType: 'scan_barcode'
       });
       return;
     }
@@ -458,7 +458,7 @@ const CatalogPage = ({
   const startTopNfcRead = async () => {
     if (!user || user.isAnonymous) {
       if (triggerOnboarding) triggerOnboarding({
-        actionType: 'scan'
+        actionType: 'scan_nfc'
       });
       return;
     }
@@ -666,10 +666,16 @@ const CatalogPage = ({
         
         // Auto-resume action if event was complete
         if (e.type === 'onboarding_complete' && target.actionType) {
-           const matchedBook = books.find(b => b.isbn === target.isbn);
-           if (matchedBook) {
-              if (target.actionType === 'checkout') handleCheckoutClick(matchedBook);
-              else if (target.actionType === 'return') handleReturnClick(matchedBook);
+           if (target.actionType === 'scan_barcode') {
+              startTopBarcodeScanner();
+           } else if (target.actionType === 'scan_nfc') {
+              startTopNfcRead();
+           } else {
+             const matchedBook = books.find(b => b.isbn === target.isbn);
+             if (matchedBook) {
+                if (target.actionType === 'checkout') handleCheckoutClick(matchedBook);
+                else if (target.actionType === 'return') handleReturnClick(matchedBook);
+             }
            }
         }
       }, 100);

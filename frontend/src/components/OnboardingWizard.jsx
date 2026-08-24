@@ -160,6 +160,7 @@ export default function OnboardingWizard({
         try {
           await currentUser.reload();
           if (currentUser.emailVerified) {
+            await currentUser.getIdToken(true); // Force token refresh so backend gets the email_verified:true claim
             setEmailVerified(true);
             const res = await api.get('/api/v1/auth/me');
             if (res?.data?.success && res?.data?.data) {
@@ -215,6 +216,7 @@ export default function OnboardingWizard({
     try {
       await auth.currentUser.reload();
       if (auth.currentUser.emailVerified) {
+        await auth.currentUser.getIdToken(true); // Force token refresh so backend gets the email_verified:true claim
         setEmailVerified(true);
         const res = await api.get('/api/v1/auth/me');
         if (res?.data?.success && res?.data?.data) {
