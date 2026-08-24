@@ -649,19 +649,22 @@ const CatalogPage = ({
   useEffect(() => {
     const handleOnboardingFocus = e => {
       const target = e.detail;
-      if (!target || !target.isbn) return;
-      console.info("Onboarding closed/completed for catalog, scrolling book card into focus:", target.isbn);
+      if (!target) return;
+      
       setTimeout(() => {
-        const el = document.getElementById(`book-card-${target.isbn}`);
-        if (el) {
-          el.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-          });
-          el.classList.add('glow-highlight');
-          setTimeout(() => {
-            el.classList.remove('glow-highlight');
-          }, 3000);
+        if (target.isbn) {
+          console.info("Onboarding closed/completed for catalog, scrolling book card into focus:", target.isbn);
+          const el = document.getElementById(`book-card-${target.isbn}`);
+          if (el) {
+            el.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center'
+            });
+            el.classList.add('glow-highlight');
+            setTimeout(() => {
+              el.classList.remove('glow-highlight');
+            }, 3000);
+          }
         }
         
         // Auto-resume action if event was complete
