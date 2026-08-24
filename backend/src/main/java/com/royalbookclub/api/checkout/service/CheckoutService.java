@@ -1529,12 +1529,6 @@ public class CheckoutService {
                 DocumentSnapshot bookDoc = transaction.get(bookRef).get();
 
                 if (bookDoc.exists()) {
-                    Long copyNo = checkoutDoc.getLong("copyNo");
-                    if (copyNo != null) {
-                        transitionCopyStatus(bookDoc, copyNo.intValue(), checkoutId, "AVAILABLE", true, transaction, bookRef);
-                        // Re-read book document because transitionCopyStatus might have modified the transaction state
-                        bookDoc = transaction.get(bookRef).get();
-                    }
                     Long available = bookDoc.getLong("availableCopies");
                     Long total = bookDoc.getLong("totalCopies");
                     long newAvailable = (available != null ? available : 0) + 1;
@@ -1542,6 +1536,11 @@ public class CheckoutService {
                         newAvailable = total;
                     }
                     transaction.update(bookRef, "availableCopies", newAvailable);
+
+                    Long copyNo = checkoutDoc.getLong("copyNo");
+                    if (copyNo != null) {
+                        transitionCopyStatus(bookDoc, copyNo.intValue(), checkoutId, "AVAILABLE", true, transaction, bookRef);
+                    }
                 }
 
                 Instant now = Instant.now();
