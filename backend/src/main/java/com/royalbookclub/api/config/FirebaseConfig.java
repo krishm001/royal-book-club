@@ -52,6 +52,9 @@ public class FirebaseConfig {
             } else if (credentialsPath != null && !credentialsPath.isBlank()) {
                 log.info("Initializing Firebase App using credentials file: {}", credentialsPath);
                 builder.setCredentials(GoogleCredentials.fromStream(new FileInputStream(credentialsPath)));
+            } else if (new java.io.File("firebase-service-account.json").exists()) {
+                log.info("Initializing Firebase App using local firebase-service-account.json");
+                builder.setCredentials(GoogleCredentials.fromStream(new FileInputStream("firebase-service-account.json")));
             } else {
                 log.info("Initializing Firebase App with Google Application Default Credentials");
                 try {

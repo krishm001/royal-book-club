@@ -104,3 +104,10 @@ resource "google_cloud_run_v2_service_iam_member" "noauth" {
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
+
+# Grant Firebase Authentication Admin role to the service account (needed to delete users)
+resource "google_project_iam_member" "firebase_auth_admin" {
+  project = var.project_id
+  role    = "roles/firebaseauth.admin"
+  member  = "serviceAccount:${google_service_account.backend_sa.email}"
+}

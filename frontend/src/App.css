@@ -254,12 +254,13 @@
   right: 0;
   bottom: 0;
   width: 100vw;
-  min-height: 100vh;
+  height: 100dvh;
   background: var(--mobile-overlay-bg, rgba(8, 10, 20, 0.96));
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   z-index: 1200;
-  padding: 100px 20px 24px;
+  padding: 80px 20px 40px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -984,5 +985,20 @@
   }
   .header-content {
     gap: 8px !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .brand-title {
+    font-size: 0.95rem !important;
+  }
+  .brand-logo {
+    gap: 8px !important;
+  }
+  .header-content {
+    gap: 4px !important;
+  }
+  .royal-header {
+    padding: 10px 10px !important;
   }
 }
