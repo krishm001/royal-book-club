@@ -179,18 +179,29 @@ public class E2eTestController {
         String password = System.getenv("TEST_USER_PASSWORD") != null ? System.getenv("TEST_USER_PASSWORD") : "E2eTestPass123!";
         try {
             UserRecord user = FirebaseAuth.getInstance().getUserByEmail(email);
-            UserRecord.UpdateRequest request = new UserRecord.UpdateRequest(user.getUid())
-                    .setPassword(password)
-                    .setEmailVerified(emailVerified);
-            FirebaseAuth.getInstance().updateUser(request);
+            // User exists, try updating
+            try {
+                UserRecord.UpdateRequest updateReq = new UserRecord.UpdateRequest(user.getUid())
+                        .setPassword(password)
+                        .setEmailVerified(emailVerified);
+                FirebaseAuth.getInstance().updateUser(updateReq);
+            } catch (Exception e) {
+                System.out.println("Could not update user " + email + ": " + e.getMessage());
+            }
             return user.getUid();
         } catch (Exception e) {
-            UserRecord.CreateRequest request = new UserRecord.CreateRequest()
-                    .setEmail(email)
-                    .setPassword(password)
-                    .setEmailVerified(emailVerified);
-            UserRecord user = FirebaseAuth.getInstance().createUser(request);
-            return user.getUid();
+            // User does not exist (or fetch failed), create new
+            try {
+                UserRecord.CreateRequest createReq = new UserRecord.CreateRequest()
+                        .setEmail(email)
+                        .setPassword(password)
+                        .setEmailVerified(emailVerified);
+                UserRecord user = FirebaseAuth.getInstance().createUser(createReq);
+                return user.getUid();
+            } catch (Exception createEx) {
+                System.out.println("Failed to create user " + email + ": " + createEx.getMessage());
+                throw createEx;
+            }
         }
     }
 }

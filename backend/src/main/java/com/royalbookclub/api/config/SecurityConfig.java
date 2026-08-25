@@ -78,7 +78,8 @@ public class SecurityConfig {
                                 "/api/v1/events/**",
                                 "/api/v1/genres/**",
                                 "/api/v1/discourses/**",
-                                "/api/v1/site-reviews"
+                                "/api/v1/site-reviews",
+                                "/api/v1/e2e/**"
                         ).permitAll()
                         // Any other request must be authenticated
                         .anyRequest().authenticated()
