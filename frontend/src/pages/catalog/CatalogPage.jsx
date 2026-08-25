@@ -40,97 +40,7 @@ export const isNfcTagMatched = (b, cleanScanned) => {
   return false;
 };
 
-const ScannerHelperGraphic = () => {
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
-  const isAndroid = /android/i.test(navigator.userAgent);
-  
-  const PhoneSVG = () => {
-    if (isIOS) {
-      return (
-        <svg width="40" height="70" viewBox="0 0 100 200" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.2))' }}>
-          <rect x="5" y="5" width="90" height="190" rx="15" fill="#1c1c1e" stroke="#48484a" strokeWidth="2"/>
-          <rect x="35" y="10" width="30" height="8" rx="4" fill="#000"/>
-          <circle cx="50" cy="100" r="15" fill="none" stroke="#48484a" strokeWidth="2" opacity="0.3"/>
-          <line x1="10" y1="20" x2="90" y2="20" stroke="var(--accent)" strokeWidth="4" filter="drop-shadow(0 0 2px var(--accent))">
-            <animate attributeName="y1" values="20; 180; 20" dur="2s" repeatCount="indefinite" />
-            <animate attributeName="y2" values="20; 180; 20" dur="2s" repeatCount="indefinite" />
-          </line>
-        </svg>
-      );
-    } else {
-      return (
-        <svg width="40" height="70" viewBox="0 0 100 200" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.2))' }}>
-          <rect x="5" y="5" width="90" height="190" rx="10" fill="#202124" stroke="#5f6368" strokeWidth="2"/>
-          <circle cx="50" cy="15" r="3" fill="#000"/>
-          <rect x="15" y="180" width="70" height="2" rx="1" fill="#5f6368" opacity="0.5"/>
-          <line x1="10" y1="20" x2="90" y2="20" stroke="var(--accent)" strokeWidth="4" filter="drop-shadow(0 0 2px var(--accent))">
-            <animate attributeName="y1" values="20; 180; 20" dur="2s" repeatCount="indefinite" />
-            <animate attributeName="y2" values="20; 180; 20" dur="2s" repeatCount="indefinite" />
-          </line>
-        </svg>
-      );
-    }
-  };
-
-  return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', margin: '16px 0 8px 0', opacity: 0.9 }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <PhoneSVG />
-        <span style={{ fontSize: '0.65rem', marginTop: '4px', color: 'var(--text-secondary)' }}>
-          {isIOS ? 'iPhone' : isAndroid ? 'Android' : 'Phone'}
-        </span>
-      </div>
-      
-      <ArrowRight size={14} color="var(--text-secondary)" />
-      
-      <div style={{
-        position: 'relative',
-        width: '70px',
-        height: '98px',
-        borderRadius: '2px',
-        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-        backgroundImage: 'url(/images/book-back-cover.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        border: '1px solid rgba(255,255,255,0.1)'
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: '6px',
-          right: '50%',
-          transform: 'translateX(50%)',
-          display: 'flex',
-          alignItems: 'center',
-          width: '45px',
-          height: '21px',
-          backgroundColor: '#0c0f1d',
-          border: '0.5px solid #d4af37',
-          borderRadius: '1px',
-          padding: '1px 1px 1px 2px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.4)'
-        }}>
-          <div style={{ width: '14px', height: '14px', background: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '0.5px', borderRadius: '0.5px', flexShrink: 0 }}>
-             <QrCode size={12} color="#000" strokeWidth={2.5} />
-          </div>
-          <div style={{ width: '8px', height: '8px', marginLeft: '1.5px', flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: getLogoSvgString('golden') }} />
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            paddingLeft: '1.5px',
-            color: '#d4af37',
-            flexGrow: 1
-          }}>
-            <div style={{ fontSize: '3.5px', lineHeight: '1.1', fontFamily: 'Georgia, serif' }}>Royal</div>
-            <div style={{ fontSize: '3.5px', lineHeight: '1.1', fontFamily: 'Georgia, serif' }}>Book</div>
-            <div style={{ fontSize: '3.5px', lineHeight: '1.1', fontFamily: 'Georgia, serif' }}>Club</div>
-            <div style={{ fontSize: '2.5px', marginTop: '1px', color: '#b4a064', fontFamily: 'monospace' }}>#100000001</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+import ScannerHelperGraphic from '../../components/shared/ScannerHelperGraphic';
 const CatalogPage = ({
   user,
   triggerOnboarding
@@ -1326,10 +1236,15 @@ const CatalogPage = ({
           </button>
         </div>
 
-        {topNfcActive && <div className="top-nfc-status-banner animate-fade-in">
-            <span className="pulse-dot"></span>
-            <span>{t('catalog.nfcActiveBanner')}</span>
-            <button className="text-btn cancel-btn" onClick={stopTopNfcRead}>{t('common.cancel')}</button>
+        {topNfcActive && <div className="top-nfc-status-banner animate-fade-in" style={{ flexDirection: 'column', gap: '8px', padding: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="pulse-dot"></span>
+                <span>{t('catalog.nfcActiveBanner')}</span>
+              </div>
+              <button className="text-btn cancel-btn" onClick={stopTopNfcRead}>{t('common.cancel')}</button>
+            </div>
+            <ScannerHelperGraphic type="nfc" bookImage="/images/book-front-cover.png" />
           </div>}
 
         {topNfcError && <div className="top-p2d-error-banner animate-fade-in">
@@ -1712,16 +1627,7 @@ const CatalogPage = ({
                   {activeTab === 'nfc' && <div className="tab-pane nfc-tab-pane animate-fade-in" style={{
             width: '100%'
           }}>
-                      <div style={{ display: 'flex', justifyContent: 'center', margin: '12px 0' }}>
-                        <div style={{ width: '60px', height: '80px', border: '1px solid var(--accent)', borderRadius: '4px', position: 'relative', background: 'var(--glass-bg)' }}>
-                          <div style={{ position: 'absolute', top: '5px', left: '5px', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                            <Wifi size={14} color="var(--accent)" style={{ transform: 'rotate(90deg)' }} />
-                          </div>
-                          <div style={{ position: 'absolute', top: '-10px', left: '-10px', animation: 'nfc-pulse 1.5s infinite alternate' }}>
-                            <Smartphone size={28} color="var(--text-primary)" fill="var(--surface)" />
-                          </div>
-                        </div>
-                      </div>
+                      <ScannerHelperGraphic type="nfc" bookImage={selectedBook?.coverUrl} />
                       <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', textAlign: 'center', margin: '0 0 16px 0', fontWeight: '500' }}>
                         Tap phone on front top left cover
                       </p>

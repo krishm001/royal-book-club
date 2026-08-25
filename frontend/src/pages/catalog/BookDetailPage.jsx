@@ -8,6 +8,7 @@ import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { isNfcTagMatched } from './CatalogPage';
 import ShareModal from '../../components/shared/ShareModal';
+import ScannerHelperGraphic from '../../components/shared/ScannerHelperGraphic';
 import './BookDetailPage.css';
 const SafeHtml5Qrcode = Html5Qrcode;
 const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
@@ -2466,12 +2467,7 @@ const BookDetailPage = ({
                 {activeTab === 'nfc' && <div className="tab-pane nfc-tab-pane animate-fade-in" style={{
               width: '100%'
             }}>
-                    <div className="nfc-scanner-pulse" style={{
-                margin: '15px 0'
-              }}>
-                      <Smartphone size={40} className="gold-glow-icon animate-pulse" />
-                      <div className="pulse-ring"></div>
-                    </div>
+                    <ScannerHelperGraphic type="nfc" bookImage={book?.coverUrl} />
                     
                     <p className="nfc-prompt-desc" style={{
                 fontSize: '0.85rem',
@@ -2479,7 +2475,7 @@ const BookDetailPage = ({
                 lineHeight: '1.5',
                 margin: '0 0 16px 0'
               }}>
-                      {t('catalog.holdNfcTagDesc')}
+                      Tap phone on front top left cover
                     </p>
 
                     <div className="nfc-meta-box" style={{
@@ -2555,6 +2551,8 @@ const BookDetailPage = ({
                 }}></div>
                       <div className="scanner-laser-line"></div>
                     </div>
+
+                    <ScannerHelperGraphic />
 
                     <p className="scanner-iphone-tip" style={{
                 fontSize: '0.78rem',
