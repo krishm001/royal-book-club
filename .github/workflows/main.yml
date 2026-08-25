@@ -10,6 +10,16 @@ on:
       - main
       - master
   workflow_dispatch:
+    inputs:
+      test_level:
+        description: 'E2E Test Level'
+        required: true
+        default: 'sanity'
+        type: choice
+        options:
+        - sanity
+        - smoke
+        - complete
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -155,7 +165,18 @@ jobs:
       
     - name: Run Playwright tests
       working-directory: ./frontend
-      run: npx playwright test
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [ "${{ inputs.test_level }}" = "complete" ]; then
+            npx playwright test
+          elif [ "${{ inputs.test_level }}" = "smoke" ]; then
+            npx playwright test --grep "@smoke"
+          else
+            npx playwright test --grep "@sanity"
+          fi
+        else
+          npx playwright test --grep-invert "@manual" --timeout 600000
+        fi
       env:
         BASE_URL: ${{ needs.frontend-deploy.outputs.url || 'http://localhost:3000' }}
         TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
