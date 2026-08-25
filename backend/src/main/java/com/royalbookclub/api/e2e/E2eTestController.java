@@ -9,7 +9,6 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
 import com.royalbookclub.api.book.model.Book;
 import com.royalbookclub.api.book.model.BookCopy;
-import com.royalbookclub.api.book.model.CopyStatus;
 import com.royalbookclub.api.config.model.CheckoutSettings;
 import com.royalbookclub.api.config.service.CheckoutSettingsService;
 import org.slf4j.Logger;
@@ -68,13 +67,12 @@ public class E2eTestController {
         book.setQrIds(List.of(999000001L));
         book.setTotalCopies(5);
         book.setAvailableCopies(5);
-        book.setAvailability(true);
         
         BookCopy copy = new BookCopy();
         copy.setCopyNo(1);
         copy.setNtagUid("e2e000aabbcc");
         copy.setQrId(999000001L);
-        copy.setStatus(CopyStatus.AVAILABLE);
+        copy.setStatus("AVAILABLE");
         book.setCopies(List.of(copy));
         
         firestore.collection("books").document(isbn).set(book).get();
