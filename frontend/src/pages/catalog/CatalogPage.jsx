@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, SlidersHorizontal, BookOpen, Sparkles, X, Smartphone, RefreshCw, AlertTriangle, CheckCircle, Scan, Camera, Check, Clock, ShoppingBag, Loader2, Star, Shield } from 'lucide-react';
+import { Search, SlidersHorizontal, BookOpen, Sparkles, X, Smartphone, RefreshCw, AlertTriangle, CheckCircle, Scan, Camera, Check, Clock, ShoppingBag, Loader2, Star, Shield, QrCode, Wifi, ArrowRight } from 'lucide-react';
 import BookCard from '../../components/shared/BookCard';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { fetchBooks, fetchCheckoutsByMember, verifiedCheckout, verifiedReturn, requestCheckout, requestReturn, rateCheckout } from '../../services/libraryApi';
@@ -1352,7 +1352,7 @@ const CatalogPage = ({
           <div className="royal-card nfc-modal-card animate-fade-in" style={{
         width: '100%',
         maxWidth: '440px',
-        padding: '24px',
+        padding: '16px',
         background: 'var(--surface)',
         border: '1px solid var(--accent)',
         boxShadow: "0 10px 40px var(--card-shadow)"
@@ -1361,9 +1361,9 @@ const CatalogPage = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '16px',
+          marginBottom: '10px',
           borderBottom: '1px solid rgba(212, 175, 55, 0.15)',
-          paddingBottom: '10px'
+          paddingBottom: '8px'
         }}>
               <h3 style={{
             margin: 0,
@@ -1612,20 +1612,18 @@ const CatalogPage = ({
                   {activeTab === 'nfc' && <div className="tab-pane nfc-tab-pane animate-fade-in" style={{
             width: '100%'
           }}>
-                      <div className="nfc-scanner-pulse" style={{
-              margin: '15px 0'
-            }}>
-                        <Smartphone size={40} className="gold-glow-icon animate-pulse" />
-                        <div className="pulse-ring"></div>
+                      <div style={{ display: 'flex', justifyContent: 'center', margin: '12px 0' }}>
+                        <div style={{ width: '60px', height: '80px', border: '1px solid var(--accent)', borderRadius: '4px', position: 'relative', background: 'var(--glass-bg)' }}>
+                          <div style={{ position: 'absolute', top: '5px', left: '5px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            <Wifi size={14} color="var(--accent)" style={{ transform: 'rotate(90deg)' }} />
+                          </div>
+                          <div style={{ position: 'absolute', top: '-10px', left: '-10px', animation: 'nfc-pulse 1.5s infinite alternate' }}>
+                            <Smartphone size={28} color="var(--text-primary)" fill="var(--surface)" />
+                          </div>
+                        </div>
                       </div>
-                      
-                      <p className="nfc-prompt-desc" style={{
-              fontSize: '0.85rem',
-              color: 'var(--text-secondary)',
-              lineHeight: '1.5',
-              margin: '0 0 16px 0'
-            }}>
-                        {t('catalog.holdNfcTagDesc')}
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', textAlign: 'center', margin: '0 0 16px 0', fontWeight: '500' }}>
+                        Tap phone on front top left cover
                       </p>
 
                       <div className="nfc-meta-box" style={{
@@ -1683,16 +1681,14 @@ const CatalogPage = ({
             width: '100%'
           }}>
                       <div className="barcode-scanner-viewfinder" style={{
-              margin: '15px auto',
+              margin: '8px auto',
               position: 'relative',
               width: '100%',
               maxWidth: '320px',
-              height: '280px',
+              height: '220px',
               overflow: 'hidden',
               background: "var(--surface-elevated)",
               borderRadius: '8px',
-        maxHeight: '90vh',
-        overflowY: 'auto',
               border: '1px solid rgba(212, 175, 55, 0.3)'
             }}>
                         <div id="card-barcode-reader" className="scanner-focus-ring-container" onClick={e => handleScannerClick(e, cardHtml5QrCodeRef.current)} style={{
@@ -1702,45 +1698,24 @@ const CatalogPage = ({
                         <div className="scanner-laser-line"></div>
                       </div>
 
-                      <p className="scanner-iphone-tip" style={{
-              fontSize: '0.78rem',
-              color: 'var(--accent)',
-              background: 'rgba(212, 175, 55, 0.08)',
-              border: '1px solid rgba(212, 175, 55, 0.2)',
-              padding: '6px 10px',
-              borderRadius: '4px',
-              margin: '0 auto 12px auto',
-              maxWidth: '320px',
-              textAlign: 'center',
-              lineHeight: '1.4'
-            }}>
-                        {t('catalog.iphoneAutofocusTip')}
-                      </p>
-
-                      <p className="barcode-prompt-desc" style={{
-              fontSize: '0.85rem',
-              color: 'var(--text-secondary)',
-              lineHeight: '1.5',
-              margin: '0 0 10px 0'
-            }}>
-                        {t('catalog.alignBarcodePrompt')}
-                      </p>
-
-                      <p style={{
-              fontSize: '0.8rem',
-              color: 'var(--text-secondary)',
-              marginTop: '0',
-              marginBottom: '16px'
-            }}>
-                        {t('catalog.cantScanBarcode')} <button type="button" onClick={() => handleCardTabChange('manual')} style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--accent)',
-                textDecoration: 'underline',
-                cursor: 'pointer',
-                padding: 0,
-                font: 'inherit'
-              }}>{t('catalog.submitManualRequest')}</button>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', margin: '8px 0' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.8 }}>
+                          <div style={{ width: '40px', height: '50px', border: '1px solid var(--text-secondary)', borderRadius: '4px', position: 'relative', background: 'var(--glass-bg)' }}>
+                            <div style={{ position: 'absolute', bottom: '5px', right: '5px', width: '12px', height: '12px', border: '1px solid var(--accent)', background: 'var(--surface)' }} />
+                          </div>
+                          <span style={{ fontSize: '0.65rem', marginTop: '4px', color: 'var(--text-secondary)' }}>Back Cover</span>
+                        </div>
+                        <ArrowRight size={16} color="var(--text-secondary)" style={{ alignSelf: 'center', marginBottom: '14px' }} />
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.8 }}>
+                          <div style={{ width: '40px', height: '40px', border: '2px solid var(--accent)', borderRadius: '4px', padding: '4px', background: 'var(--glass-bg)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <QrCode size={20} color="var(--accent)" />
+                          </div>
+                          <span style={{ fontSize: '0.65rem', marginTop: '4px', color: 'var(--text-secondary)' }}>QR Sticker</span>
+                        </div>
+                      </div>
+                      
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', textAlign: 'center', margin: '0 0 10px 0', fontWeight: '500' }}>
+                        Scan QR code on back cover
                       </p>
 
                       {cardScannerError && <div className="nfc-error-message royal-card" style={{
@@ -2018,7 +1993,7 @@ const CatalogPage = ({
           <div className="royal-card scanner-modal-card animate-fade-in" style={{
         width: '100%',
         maxWidth: '480px',
-        padding: '24px',
+        padding: '16px',
         background: 'var(--surface)',
         border: '1px solid var(--accent)',
         boxShadow: "0 10px 40px var(--card-shadow)",
@@ -2028,9 +2003,9 @@ const CatalogPage = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '20px',
+          marginBottom: '10px',
           borderBottom: '1px solid rgba(212, 175, 55, 0.2)',
-          paddingBottom: '12px'
+          paddingBottom: '8px'
         }}>
               <div style={{
             display: 'flex',
@@ -2068,31 +2043,33 @@ const CatalogPage = ({
               <div id="top-barcode-reader" className="scanner-focus-ring-container" onClick={e => handleScannerClick(e, topHtml5QrCodeRef.current)} style={{
             width: '100%',
             maxWidth: '400px',
+            height: '220px',
+            margin: '8px auto',
             background: "var(--surface-elevated)",
             borderRadius: '8px',
-        maxHeight: '90vh',
-        overflowY: 'auto',
             overflow: 'hidden',
             border: '1px solid var(--glass-border)'
           }}></div>
               
-              <p className="scanner-iphone-tip" style={{
-            fontSize: '0.78rem',
-            color: 'var(--accent)',
-            background: 'rgba(212, 175, 55, 0.08)',
-            border: '1px solid rgba(212, 175, 55, 0.2)',
-            padding: '6px 10px',
-            borderRadius: '4px',
-            marginTop: '12px',
-            marginBottom: '0',
-            maxWidth: '400px',
-            textAlign: 'center',
-            lineHeight: '1.4',
-            width: '100%'
-          }}>
-                {t('catalog.iphoneAutofocusTip')}
-              </p>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', margin: '16px 0 8px 0' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.8 }}>
+                  <div style={{ width: '40px', height: '50px', border: '1px solid var(--text-secondary)', borderRadius: '4px', position: 'relative', background: 'var(--glass-bg)' }}>
+                    <div style={{ position: 'absolute', bottom: '5px', right: '5px', width: '12px', height: '12px', border: '1px solid var(--accent)', background: 'var(--surface)' }} />
+                  </div>
+                  <span style={{ fontSize: '0.65rem', marginTop: '4px', color: 'var(--text-secondary)' }}>Back Cover</span>
+                </div>
+                <ArrowRight size={16} color="var(--text-secondary)" style={{ alignSelf: 'center', marginBottom: '14px' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.8 }}>
+                  <div style={{ width: '40px', height: '40px', border: '2px solid var(--accent)', borderRadius: '4px', padding: '4px', background: 'var(--glass-bg)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <QrCode size={20} color="var(--accent)" />
+                  </div>
+                  <span style={{ fontSize: '0.65rem', marginTop: '4px', color: 'var(--text-secondary)' }}>QR Sticker</span>
+                </div>
+              </div>
               
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', textAlign: 'center', margin: '0 0 10px 0', fontWeight: '500' }}>
+                Scan QR code on back cover
+              </p>
               {topScannerError ? <div className="top-p2d-error-banner" style={{
             marginTop: '16px',
             padding: '12px',

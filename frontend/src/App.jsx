@@ -96,6 +96,18 @@ function App() {
   const [covenantViewer, setCovenantViewer] = useState(null); // null, 'terms', or 'privacy'
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
+  
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
+
   useEffect(() => {
     if (hasAcceptedTerms && hasAcceptedPrivacy) {
       setConsentChecked(true);

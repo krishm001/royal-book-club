@@ -53,3 +53,23 @@ Focuses on standardizing NFC/QR deep-link routing and ensuring immediate loading
 
 ### Phase 3: Hardware Integration & Diagnostics
 Focuses on advanced combinations (e.g., scanning while logged out on iOS vs Android) and bridging hardware nuances with the web app interface.
+
+### 2.4 Mobile Menu & Checkout Hardware UX Optimization (Phase 4)
+1. **Mobile Menu Scrolling**:
+   - Top menu items (Pavilion, Study, etc.) are rendered over a background screen.
+   - Fix scrolling behavior so that touches in the gaps between menu items properly scroll the background screen (allowing users to easily reach "leave realm" or profile) without losing the existing visual aesthetics.
+2. **Barcode / QR Scanner UI (Checkout Popups)**:
+   - **Helper Graphics**: Include visual helpers showing a phone scanning a barcode/QR code on the *back cover* of a book. Show a stylized QR code sticker (matching the salon theme from the admin generator).
+   - **Text Reduction**: Remove the iPhone tip and the text "can’t see the barcode, submit a manual request".
+   - **Brief Prompt**: Add a very short text prompt guiding the user to find and scan the QR code on the back cover.
+   - **Space Optimization**:
+     - Ensure the Cancel button is always visible at the bottom, even on small screens (e.g., iPhone 8).
+     - Maintain the behavior where the UI scrolls up enough to show the top barcode scan tab selector.
+     - Reduce whitespace between the bottom manual request tab selector and the viewfinder box.
+     - Reduce the height of the viewfinder by approximately 20%.
+3. **NFC Tap UI (Checkout Popups)**:
+   - **Helper Graphics**: Clearly show (via images and minimal text) that the NFC tap must be performed with the phone on the *front top left cover* of the book.
+   - **Space Optimization**: Apply the same aggressive space optimization rules as the Barcode Scanner (always show Cancel button), taking advantage of the extra space available since a camera viewfinder is not required.
+
+### Phase 4: Mobile Menu & Checkout Hardware UX Optimization
+Focuses on refining the physical interaction UI for checkout (Barcode, QR, NFC) to be intuitive with helper graphics and space-optimized for small screens. It also addresses scrolling usability in the mobile menu overlay.
