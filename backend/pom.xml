@@ -205,6 +205,7 @@
                         <exclude>com/royalbookclub/api/book/service/BookGenreService.class</exclude>
                         <exclude>com/royalbookclub/api/book/service/BookService.class</exclude>
                         <exclude>com/royalbookclub/api/checkout/service/CheckoutService.class</exclude>
+                        <exclude>com/royalbookclub/api/e2e/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>
