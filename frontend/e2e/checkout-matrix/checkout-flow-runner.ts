@@ -23,11 +23,18 @@ export async function runCheckoutFlow(
     if (combo.userState === 'anonymous') {
       await page.context().clearCookies();
     } else if (combo.userState === 'email_verified_complete') {
-      await loginWithEmailPassword(page, process.env.TEST_USER_EMAIL!, process.env.TEST_USER_PASSWORD!);
+      await loginWithEmailPassword(page, 'e2e_verified_complete@e2e-test.royalbookclub.invalid', process.env.TEST_USER_PASSWORD || 'E2eTestPass123!');
+    } else if (combo.userState === 'email_verified_incomplete') {
+      await loginWithEmailPassword(page, 'e2e_verified_incomplete@e2e-test.royalbookclub.invalid', process.env.TEST_USER_PASSWORD || 'E2eTestPass123!');
     } else if (combo.userState === 'google_oauth') {
       await simulateGoogleOAuth(page);
     } else if (combo.userState === 'linkedin_oauth') {
       await simulateLinkedInOAuth(page);
+    }
+    // For 'email_unverified', we don't login here because the test handles the signup/login during the flow itself,
+    // OR we login here and then it hits the verify modal. The matrix definition expects the user to be in the unverified state.
+    else if (combo.userState === 'email_unverified') {
+      await loginWithEmailPassword(page, 'e2e_unverified@e2e-test.royalbookclub.invalid', process.env.TEST_USER_PASSWORD || 'E2eTestPass123!');
     }
 
     let targetUrl = '';
@@ -79,8 +86,30 @@ export async function runCheckoutFlow(
       if (combo.userState === 'anonymous') {
         reportSteps.push('Entered email and password');
         await page.locator('input[name="email"]').fill('anon@e2e-test.royalbookclub.invalid');
-        await page.locator('input[name="password"]').fill('password123');
+        await page.locator('input[name="password"]').fill(process.env.TEST_USER_PASSWORD || 'E2eTestPass123!');
         await page.locator('button:has-text("Sign In")').click();
+      }
+
+      // If gating requires email verification and we are unverified or anonymous, we need to verify!
+      if (['phone_email', 'full_gating'].includes(combo.gatingConfig) && 
+          ['email_unverified', 'anonymous'].includes(combo.userState)) {
+        
+        const isVerifyModalVisible = await page.locator('text=Verify your email').isVisible({ timeout: 5000 }).catch(() => false);
+        if (isVerifyModalVisible) {
+           reportSteps.push('Simulating mid-test email verification via backend API...');
+           const emailToVerify = combo.userState === 'anonymous' ? 'anon@e2e-test.royalbookclub.invalid' : 'e2e_unverified@e2e-test.royalbookclub.invalid';
+           const axios = require('axios');
+           const e2eSecret = process.env.E2E_SHARED_SECRET || 'test-secret';
+           await axios.post(`${baseUrl}/api/v1/e2e/verify-email?email=${encodeURIComponent(emailToVerify)}`, {}, { headers: { 'X-E2E-Secret': e2eSecret } });
+           reportSteps.push('Email verified on backend. Waiting for frontend to poll and advance...');
+        }
+      }
+
+      // If we are incomplete or anonymous, we might need to fill out the profile
+      if (['email_verified_incomplete', 'email_unverified', 'anonymous'].includes(combo.userState)) {
+        // Just call the helper which attempts to fill gating fields if they are visible
+        await completeOnboardingProfile(page);
+        reportSteps.push('Attempted to fill profile fields if present');
       }
       
       await waitForOnboardingClose(page);

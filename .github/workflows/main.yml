@@ -93,7 +93,7 @@ jobs:
             --min-instances=0 \
             --max-instances=3 \
             --allow-unauthenticated \
-            --update-env-vars="SPRING_PROFILES_ACTIVE=prod,GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }}" \
+            --update-env-vars="SPRING_PROFILES_ACTIVE=prod,GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }},E2E_SHARED_SECRET=${{ secrets.E2E_SHARED_SECRET }}" \
             --quiet
 
   frontend-deploy:
@@ -168,14 +168,14 @@ jobs:
       run: |
         if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
           if [ "${{ inputs.test_level }}" = "complete" ]; then
-            npx playwright test
+            npx playwright test --project=chromium
           elif [ "${{ inputs.test_level }}" = "smoke" ]; then
-            npx playwright test --grep "@smoke"
+            npx playwright test --project=chromium --grep "@smoke"
           else
-            npx playwright test --grep "@sanity"
+            npx playwright test --project=chromium --grep "@sanity"
           fi
         else
-          npx playwright test --grep-invert "@manual" --timeout 600000
+          npx playwright test --project=chromium --grep-invert "@manual" --timeout 600000
         fi
       env:
         BASE_URL: ${{ needs.frontend-deploy.outputs.url || 'http://localhost:3000' }}

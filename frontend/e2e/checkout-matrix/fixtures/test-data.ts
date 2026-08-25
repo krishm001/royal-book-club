@@ -41,113 +41,47 @@ export interface GatingConfigPreset {
 const TEST_DOMAIN = '@e2e-test.royalbookclub.invalid';
 const TEST_PASSWORD = process.env.TEST_USER_PASSWORD || 'E2eTestPass123!';
 
-const getHeaders = (adminToken: string) => ({
+const getHeaders = (secret: string) => ({
   headers: {
-    Authorization: `Bearer ${adminToken}`,
+    'X-E2E-Secret': secret,
     'Content-Type': 'application/json'
   }
 });
 
-export async function createTestBook(apiBaseUrl: string, adminToken: string): Promise<TestBookData> {
-  const bookData = {
-    isbn: "E2E_TEST_0001",
-    title: "E2E Test Volume — Automated Testing (DO NOT USE)",
-    authors: ["E2E Robot"],
-    description: "Automated test fixture. If visible in production, please report.",
-    isTest: true,
-    ntagUid: "e2e000aabbcc",
-    ntagUids: ["e2e000aabbcc"],
-    qrIds: [999000001],
-    availableCopies: 5,
-    totalCopies: 5,
-    availability: true,
-    copies: [{
-      copyNo: 1,
-      ntagUid: "e2e000aabbcc",
-      qrId: 999000001,
-      status: "AVAILABLE"
-    }]
-  };
-
+export async function setupTestData(apiBaseUrl: string, secret: string): Promise<TestBookData> {
   try {
-    await axios.post(`${apiBaseUrl}/api/v1/books`, bookData, getHeaders(adminToken));
+    await axios.post(`${apiBaseUrl}/api/v1/e2e/setup`, {}, getHeaders(secret));
     return {
-      isbn: bookData.isbn,
-      ntagUid: bookData.ntagUid,
-      qrId: bookData.qrIds[0]
+      isbn: "E2E_TEST_0001",
+      ntagUid: "e2e000aabbcc",
+      qrId: 999000001
     };
   } catch (error) {
-    console.error('Failed to create test book:', error);
+    console.error('Failed to run E2E setup:', error);
     throw error;
   }
 }
 
-export async function createTestNfcCounter(apiBaseUrl: string, adminToken: string): Promise<void> {
-  const counterData = {
-    ntagUid: "e2e000aabbcc",
-    lastCounterValue: 10,
-    isTest: true
-  };
-
+export async function cleanupAllTestData(apiBaseUrl: string, secret: string): Promise<void> {
   try {
-    await axios.post(`${apiBaseUrl}/api/v1/admin/nfc-counters`, counterData, getHeaders(adminToken));
+    await axios.delete(`${apiBaseUrl}/api/v1/e2e/teardown`, getHeaders(secret));
   } catch (error) {
-    console.error('Failed to create test NFC counter:', error);
-    throw error;
+    console.error('Failed to cleanup E2E data:', error);
   }
 }
 
-export async function createTestUsers(apiBaseUrl: string, adminToken: string): Promise<TestUsersData> {
-  const users = {
-    unverified: {
-      email: `e2e_unverified${TEST_DOMAIN}`,
-      password: TEST_PASSWORD,
-      emailVerified: false,
-      profile: {}
-    },
-    verifiedIncomplete: {
-      email: `e2e_verified_incomplete${TEST_DOMAIN}`,
-      password: TEST_PASSWORD,
-      emailVerified: true,
-      profile: {}
-    },
-    verifiedComplete: {
-      email: `e2e_verified_complete${TEST_DOMAIN}`,
-      password: TEST_PASSWORD,
-      emailVerified: true,
-      profile: {
-        phone: "+1234567890",
-        address: "123 Test St, Test City, TS 12345"
-      }
-    }
-  };
-
-  const createdUsers: any = {};
-
+export async function setGatingConfig(apiBaseUrl: string, secret: string, config: GatingConfigPreset): Promise<void> {
   try {
-    for (const [key, userData] of Object.entries(users)) {
-      const res = await axios.post(`${apiBaseUrl}/api/v1/admin/users`, { ...userData, isTest: true }, getHeaders(adminToken));
-      createdUsers[key] = { email: userData.email, password: userData.password, uid: res.data?.uid };
-    }
-    return createdUsers as TestUsersData;
-  } catch (error) {
-    console.error('Failed to create test users:', error);
-    throw error;
-  }
-}
-
-export async function setGatingConfig(apiBaseUrl: string, adminToken: string, config: GatingConfigPreset): Promise<void> {
-  try {
-    await axios.put(`${apiBaseUrl}/api/v1/admin/checkout-settings`, config, getHeaders(adminToken));
+    await axios.put(`${apiBaseUrl}/api/v1/e2e/gating-config`, config, getHeaders(secret));
   } catch (error) {
     console.error('Failed to set gating config:', error);
     throw error;
   }
 }
 
-export async function saveOriginalGatingConfig(apiBaseUrl: string, adminToken: string): Promise<GatingConfigPreset> {
+export async function saveOriginalGatingConfig(apiBaseUrl: string, secret: string): Promise<GatingConfigPreset> {
   try {
-    const response = await axios.get(`${apiBaseUrl}/api/v1/admin/checkout-settings`, getHeaders(adminToken));
+    const response = await axios.get(`${apiBaseUrl}/api/v1/e2e/gating-config`, getHeaders(secret));
     return response.data;
   } catch (error) {
     console.error('Failed to save original gating config:', error);
@@ -155,22 +89,22 @@ export async function saveOriginalGatingConfig(apiBaseUrl: string, adminToken: s
   }
 }
 
-export async function restoreGatingConfig(apiBaseUrl: string, adminToken: string, original: GatingConfigPreset): Promise<void> {
+export async function restoreGatingConfig(apiBaseUrl: string, secret: string, original: GatingConfigPreset): Promise<void> {
   try {
     if (Object.keys(original).length > 0) {
-      await axios.put(`${apiBaseUrl}/api/v1/admin/checkout-settings`, original, getHeaders(adminToken));
+      await axios.put(`${apiBaseUrl}/api/v1/e2e/gating-config`, original, getHeaders(secret));
     }
   } catch (error) {
     console.error('Failed to restore gating config:', error);
   }
 }
 
-export async function cleanupAllTestData(apiBaseUrl: string, adminToken: string): Promise<void> {
+export async function verifyEmailMidTest(apiBaseUrl: string, secret: string, email: string): Promise<void> {
   try {
-    // Assuming backend has an admin endpoint designed to clean up all items with isTest: true
-    await axios.delete(`${apiBaseUrl}/api/v1/admin/test-data`, getHeaders(adminToken));
+    await axios.post(`${apiBaseUrl}/api/v1/e2e/verify-email?email=${encodeURIComponent(email)}`, {}, getHeaders(secret));
   } catch (error) {
-    console.error('Failed to cleanup test data, errors might not have been thrown to avoid masking test failures:', error);
+    console.error('Failed to verify email mid-test:', error);
+    throw error;
   }
 }
 

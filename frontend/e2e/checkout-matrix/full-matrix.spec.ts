@@ -1,8 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 import { ALL_COMBINATIONS, describeCombo, getExpectedSteps, TestCombination } from './matrix-definition';
 import {
-  createTestBook,
-  createTestNfcCounter,
+  setupTestData,
   cleanupAllTestData,
   setGatingConfig,
   saveOriginalGatingConfig,
@@ -32,7 +31,7 @@ test.describe('Checkout Matrix — Full E2E (All 360 Combinations)', () => {
   test.describe.configure({ timeout: 120_000 });
 
   const apiBaseUrl = process.env.VITE_API_BASE_URL || 'http://localhost:8080';
-  const adminToken = process.env.TEST_ADMIN_TOKEN || '';
+  const e2eSecret = process.env.E2E_SHARED_SECRET || "test-secret";
   let testBook: TestBookData;
   let originalGatingConfig: GatingConfigPreset;
 
@@ -41,16 +40,15 @@ test.describe('Checkout Matrix — Full E2E (All 360 Combinations)', () => {
     console.log('   ISBN prefix: E2E_TEST_, NFC prefix: e2e000, QR range: 999000001+');
     console.log('   Email domain: @e2e-test.royalbookclub.invalid');
     console.log('   All documents flagged isTest: true');
-    testBook = await createTestBook(apiBaseUrl, adminToken);
-    await createTestNfcCounter(apiBaseUrl, adminToken);
-    originalGatingConfig = await saveOriginalGatingConfig(apiBaseUrl, adminToken);
+    testBook = await setupTestData(apiBaseUrl, e2eSecret);
+    originalGatingConfig = await saveOriginalGatingConfig(apiBaseUrl, e2eSecret);
     console.log('✅ [Full Matrix] Test data created. Starting 360 combinations...');
   });
 
   test.afterAll(async () => {
     console.log('🧹 [Full Matrix] Cleaning up ALL test data...');
-    await restoreGatingConfig(apiBaseUrl, adminToken, originalGatingConfig);
-    await cleanupAllTestData(apiBaseUrl, adminToken);
+    await restoreGatingConfig(apiBaseUrl, e2eSecret, originalGatingConfig);
+    await cleanupAllTestData(apiBaseUrl, e2eSecret);
     console.log('✅ [Full Matrix] Cleanup complete. Production gating config restored.');
   });
 
@@ -77,7 +75,7 @@ test.describe('Checkout Matrix — Full E2E (All 360 Combinations)', () => {
         // Only update gating config if it changed (optimization for 360 tests)
         if (currentGatingConfig !== combo.gatingConfig) {
           const preset = getGatingPreset(combo.gatingConfig);
-          await setGatingConfig(apiBaseUrl, adminToken, preset);
+          await setGatingConfig(apiBaseUrl, e2eSecret, preset);
           currentGatingConfig = combo.gatingConfig;
         }
         reportSteps.push(`Gating config: ${combo.gatingConfig}`);

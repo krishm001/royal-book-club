@@ -1,8 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 import { SANITY_COMBINATIONS, describeCombo, getExpectedSteps, TestCombination } from './matrix-definition';
 import {
-  createTestBook,
-  createTestNfcCounter,
+  setupTestData,
   cleanupAllTestData,
   setGatingConfig,
   saveOriginalGatingConfig,
@@ -39,22 +38,21 @@ import { runCheckoutFlow } from './checkout-flow-runner';
  */
 test.describe('Checkout Matrix — Sanity (8 Critical Paths)', () => {
   const apiBaseUrl = process.env.VITE_API_BASE_URL || 'http://localhost:8080';
-  const adminToken = process.env.TEST_ADMIN_TOKEN || '';
+  const e2eSecret = process.env.E2E_SHARED_SECRET || "test-secret";
   let testBook: TestBookData;
   let originalGatingConfig: GatingConfigPreset;
 
   test.beforeAll(async () => {
     console.log('🧪 [Sanity] Setting up test data with production isolation...');
-    testBook = await createTestBook(apiBaseUrl, adminToken);
-    await createTestNfcCounter(apiBaseUrl, adminToken);
-    originalGatingConfig = await saveOriginalGatingConfig(apiBaseUrl, adminToken);
+    testBook = await setupTestData(apiBaseUrl, e2eSecret);
+    originalGatingConfig = await saveOriginalGatingConfig(apiBaseUrl, e2eSecret);
     console.log('✅ [Sanity] Test data created. ISBN:', testBook.isbn, 'NFC:', testBook.ntagUid);
   });
 
   test.afterAll(async () => {
     console.log('🧹 [Sanity] Cleaning up test data...');
-    await restoreGatingConfig(apiBaseUrl, adminToken, originalGatingConfig);
-    await cleanupAllTestData(apiBaseUrl, adminToken);
+    await restoreGatingConfig(apiBaseUrl, e2eSecret, originalGatingConfig);
+    await cleanupAllTestData(apiBaseUrl, e2eSecret);
     console.log('✅ [Sanity] Cleanup complete. Production gating config restored.');
   });
 
@@ -75,7 +73,7 @@ test.describe('Checkout Matrix — Sanity (8 Critical Paths)', () => {
 
       await test.step('Configure admin gating settings', async () => {
         const preset = getGatingPreset(combo.gatingConfig);
-        await setGatingConfig(apiBaseUrl, adminToken, preset);
+        await setGatingConfig(apiBaseUrl, e2eSecret, preset);
         reportSteps.push(`Gating config set to: ${combo.gatingConfig}`);
       });
 
