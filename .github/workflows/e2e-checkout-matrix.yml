@@ -1,0 +1,150 @@
+name: E2E Checkout Matrix Tests
+
+on:
+  # Run smoke tests on push to main
+  push:
+    branches: [main, master]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/e2e-checkout-matrix.yml'
+
+  # Manual trigger with coverage level selection
+  workflow_dispatch:
+    inputs:
+      level:
+        description: 'Test coverage level'
+        required: true
+        default: 'smoke'
+        type: choice
+        options:
+          - sanity
+          - smoke
+          - full-matrix
+      base_url:
+        description: 'Target URL (leave empty for production)'
+        required: false
+        type: string
+
+  # Daily scheduled run at 6:00 AM UTC
+  schedule:
+    - cron: '0 6 * * *'
+
+concurrency:
+  group: e2e-matrix-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 20
+
+jobs:
+  checkout-matrix-tests:
+    runs-on: ubuntu-latest
+    # 10-minute budget for default smoke, 60 min for full-matrix
+    timeout-minutes: ${{ inputs.level == 'full-matrix' && 60 || 10 }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        working-directory: ./frontend
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Determine Test Level
+        id: level
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "level=${{ inputs.level }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "level=smoke" >> $GITHUB_OUTPUT
+          else
+            echo "level=smoke" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine Base URL
+        id: url
+        run: |
+          if [ -n "${{ inputs.base_url }}" ]; then
+            echo "base_url=${{ inputs.base_url }}" >> $GITHUB_OUTPUT
+          else
+            echo "base_url=${{ secrets.PRODUCTION_URL || 'https://royal-book-club.pages.dev' }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Checkout Matrix E2E Tests
+        working-directory: ./frontend
+        run: npx playwright test --project=${{ steps.level.outputs.level }}
+        env:
+          BASE_URL: ${{ steps.url.outputs.base_url }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          TEST_ADMIN_TOKEN: ${{ secrets.TEST_ADMIN_TOKEN }}
+          CI: true
+
+      - name: Upload Playwright HTML Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ steps.level.outputs.level }}-${{ github.run_number }}
+          path: frontend/playwright-report/
+          retention-days: 15
+
+      - name: Upload Checkout Matrix Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: checkout-matrix-report-${{ steps.level.outputs.level }}-${{ github.run_number }}
+          path: frontend/test-reports/
+          retention-days: 30
+
+      - name: Create Issue on Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const level = '${{ steps.level.outputs.level }}';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const date = new Date().toISOString().split('T')[0];
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 E2E Checkout Matrix FAILURE [${level}] — ${date}`,
+              body: [
+                `## E2E Checkout Matrix Test Failure`,
+                ``,
+                `**Coverage Level:** ${level}`,
+                `**Date:** ${date}`,
+                `**Trigger:** ${context.eventName}`,
+                `**Run:** [View Workflow Run](${runUrl})`,
+                ``,
+                `### Action Required`,
+                `One or more checkout flow combinations failed. Please:`,
+                `1. Download the test report artifact from the workflow run`,
+                `2. Review the checkout-matrix-report HTML for detailed step-by-step failure analysis`,
+                `3. Check if any production gating settings changed recently`,
+                ``,
+                `### How to Reproduce Locally`,
+                '```bash',
+                `cd frontend`,
+                `npx playwright test --project=${level}`,
+                '```',
+                ``,
+                `### How to Run Full Matrix`,
+                '```bash',
+                `gh workflow run e2e-checkout-matrix.yml -f level=full-matrix`,
+                '```',
+              ].join('\n'),
+              labels: ['bug', 'e2e-test', 'automated'],
+            });

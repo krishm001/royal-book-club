@@ -122,6 +122,71 @@ These variables are configured directly inside the GCP Cloud Run service templat
 
 ---
 
+## 🧪 E2E Checkout Matrix Testing
+
+The project includes comprehensive end-to-end testing of all checkout flow combinations across **Platform × User State × Entry Point × Admin Gating Config** (360 total combinations).
+
+### Running Tests Locally
+
+```bash
+cd frontend
+
+# Sanity: 8 critical path tests (~3 min)
+npx playwright test --project=sanity
+
+# Smoke: 24 pairwise coverage tests (~8 min)
+npx playwright test --project=smoke
+
+# Full Matrix: all 360 combinations (~45-60 min)
+npx playwright test --project=full-matrix
+
+# Run existing non-matrix tests only
+npx playwright test --project=chromium
+```
+
+### Viewing Reports
+
+After running tests, reports are generated at:
+- **HTML Report**: `frontend/test-reports/checkout-matrix-report.html` (open in browser)
+- **Dated Archive**: `frontend/test-reports/checkout-matrix-report-YYYY-MM-DD.html`
+- **JSON Data**: `frontend/test-reports/checkout-matrix-report.json`
+- **Playwright HTML Report**: `frontend/playwright-report/index.html`
+
+### CI/CD Integration
+
+| Trigger | Level | Budget | Workflow |
+|---------|-------|--------|----------|
+| Push to main | Smoke (24 tests) | 10 min | `e2e-checkout-matrix.yml` |
+| Daily cron (6 AM UTC) | Smoke (24 tests) | 10 min | `e2e-checkout-matrix.yml` |
+| Manual dispatch | Configurable | 60 min | `e2e-checkout-matrix.yml` |
+
+**Trigger full matrix manually:**
+```bash
+gh workflow run e2e-checkout-matrix.yml -f level=full-matrix
+```
+
+### Production Data Isolation
+
+Test data is **completely invisible** to production users through multi-layered isolation:
+- All test books use ISBN prefix `E2E_TEST_` and `isTest: true` flag
+- Backend `getAllBooks()` and `getAllCheckouts()` skip `isTest: true` documents
+- Test NFC UIDs use prefix `e2e000`, test QR IDs use range `999000001+`
+- Test user emails use RFC 2606 `.invalid` TLD
+- Admin gating settings are saved before tests and restored after
+
+### Required GitHub Secrets for E2E
+
+| Secret | Purpose |
+|--------|---------|
+| `TEST_USER_EMAIL` | Pre-existing test user email for auth tests |
+| `TEST_USER_PASSWORD` | Test user password |
+| `TEST_ADMIN_TOKEN` | Firebase admin token for test data setup/teardown |
+| `PRODUCTION_URL` | Production URL target (optional, defaults to Cloudflare Pages URL) |
+
+See [TEST_PLAN.md](TEST_PLAN.md) for the complete test matrix documentation.
+
+---
+
 ## 🏷️ Physical Catalog Asset Fabrication & QR Generator
 
 The system includes an integrated 65-up A4 physical sticker generator for catalog curation:

@@ -565,39 +565,6 @@ const BookDetailPage = ({
     }
   }, [loading, book]);
 
-  // Deep Link Auto-Checkout or Return Flow Trigger
-  useEffect(() => {
-    if (book && deepLinkQrId && !hasTriggeredDeepLink.current) {
-      hasTriggeredDeepLink.current = true;
-      if (!user) {
-        triggerOnboarding({ actionType: 'checkout', qrId: deepLinkQrId });
-        return;
-      }
-      const status = getResolvedStatus();
-      const actionToTake = status === 'checked-out' ? 'return' : 'checkout';
-      
-      resetRatingAndCheckoutId();
-      setNfcActionType(actionToTake);
-      nfcActionTypeRef.current = actionToTake;
-      setNfcError('');
-      setNfcSuccess(false);
-      setFallbackSuccess(false);
-      setGeofenceFailed(false);
-      setQrValidationFailed(false);
-      
-      setActiveTab('barcode');
-      setNfcModalOpen(true);
-      
-      // Give the modal a tiny bit of time to render, then auto-process the QR
-      setTimeout(() => {
-        handleDetailBarcodeScanned("qr=" + deepLinkQrId);
-      }, 400);
-
-      try {
-        window.history.replaceState({}, document.title, window.location.pathname);
-      } catch (e) {}
-    }
-  }, [book, user, deepLinkQrId, memberCheckouts]);
   const handleCheckoutClick = async () => {
     const passes = await checkGatingPasses('checkout');
     if (!passes) return;

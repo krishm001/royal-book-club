@@ -8,7 +8,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: [
+    ['html'],
+    ['./e2e/checkout-matrix/reporters/checkout-matrix-reporter.ts'],
+  ],
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:3000',
     trace: 'on-first-retry',
@@ -21,9 +24,29 @@ export default defineConfig({
     timeout: 120 * 1000,
   },
   projects: [
+    // Existing default project
     {
       name: 'chromium',
+      testMatch: /^(?!.*checkout-matrix).*\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
-    }
-  ]
+    },
+    // Sanity: 8 critical path tests, ~3 min
+    {
+      name: 'sanity',
+      testMatch: '**/checkout-matrix/sanity.spec.ts',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    // Smoke: 24 pairwise tests, ~8 min
+    {
+      name: 'smoke',
+      testMatch: '**/checkout-matrix/smoke.spec.ts',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    // Full Matrix: all 360 combinations
+    {
+      name: 'full-matrix',
+      testMatch: '**/checkout-matrix/full-matrix.spec.ts',
+      use: { ...devices['Desktop Chrome'] },
+    },
+  ],
 });

@@ -33,6 +33,11 @@ yarn-error.log*
 .svelte-kit/
 .next/
 
+# --- Playwright / E2E Reports ---
+**/playwright-report/
+**/test-results/
+**/test-reports/
+
 # --- Terraform ---
 **/.terraform/
 *.tfstate
