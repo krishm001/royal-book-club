@@ -5,6 +5,7 @@ import BookCard from '../../components/shared/BookCard';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { fetchBooks, fetchCheckoutsByMember, verifiedCheckout, verifiedReturn, requestCheckout, requestReturn, rateCheckout } from '../../services/libraryApi';
 import { fetchBookHouses } from '../../services/genreApi';
+import { getLogoSvgString } from '../../utils/qrStickerGenerator';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import api from '../../api/apiClient';
 import { auth } from '../../config/firebase';
@@ -643,6 +644,13 @@ const CatalogPage = ({
       setMemberCheckouts([]);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (topScannerActiveRef.current) stopTopBarcodeScanner();
+      if (cardScannerActiveRef.current) stopCardBarcodeScanner();
+    };
+  }, []);
   useEffect(() => {
     loadMemberCheckouts();
   }, [user]);
@@ -1124,8 +1132,8 @@ const CatalogPage = ({
       startCardBarcodeScanner(selectedBook);
     }
   };
-  const handleCloseCardModal = () => {
-    stopCardBarcodeScanner();
+  const handleCloseCardModal = async () => {
+    await stopCardBarcodeScanner();
     setNfcModalOpen(false);
     setSelectedBook(null);
   };
@@ -1698,19 +1706,59 @@ const CatalogPage = ({
                         <div className="scanner-laser-line"></div>
                       </div>
 
-                      <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', margin: '8px 0' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.8 }}>
-                          <div style={{ width: '40px', height: '50px', border: '1px solid var(--text-secondary)', borderRadius: '4px', position: 'relative', background: 'var(--glass-bg)' }}>
-                            <div style={{ position: 'absolute', bottom: '5px', right: '5px', width: '12px', height: '12px', border: '1px solid var(--accent)', background: 'var(--surface)' }} />
-                          </div>
-                          <span style={{ fontSize: '0.65rem', marginTop: '4px', color: 'var(--text-secondary)' }}>Back Cover</span>
+                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', margin: '8px 0', opacity: 0.9 }}>
+                        {/* Phone Scanning */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <Camera size={24} color="var(--text-secondary)" />
+                          <div style={{ width: '2px', height: '12px', background: 'var(--accent)', marginTop: '2px', animation: 'scan-pulse 2s infinite' }} />
                         </div>
-                        <ArrowRight size={16} color="var(--text-secondary)" style={{ alignSelf: 'center', marginBottom: '14px' }} />
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.8 }}>
-                          <div style={{ width: '40px', height: '40px', border: '2px solid var(--accent)', borderRadius: '4px', padding: '4px', background: 'var(--glass-bg)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                            <QrCode size={20} color="var(--accent)" />
+                        
+                        <ArrowRight size={14} color="var(--text-secondary)" />
+                        
+                        {/* Colorful Book */}
+                        <div style={{
+                          width: '42px',
+                          height: '58px',
+                          background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
+                          borderRadius: '2px 6px 6px 2px',
+                          boxShadow: 'inset 4px 0 0 rgba(0,0,0,0.3), 2px 2px 5px rgba(0,0,0,0.4)',
+                          position: 'relative',
+                          border: '1px solid rgba(255,255,255,0.1)'
+                        }}>
+                          <div style={{ position: 'absolute', right: '4px', top: '6px', width: '14px', height: '6px', background: '#0c0f1d', border: '0.5px solid #d4af37', borderRadius: '0.5px' }} />
+                        </div>
+                        
+                        <ArrowRight size={14} color="var(--text-secondary)" />
+                        
+                        {/* Exact QR Sticker Replica (Golden) */}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          width: '90px',
+                          height: '42px',
+                          backgroundColor: '#0c0f1d',
+                          border: '1px solid #d4af37',
+                          borderRadius: '2px',
+                          padding: '2px 2px 2px 4px',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                        }}>
+                          <div style={{ width: '28px', height: '28px', background: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1px', borderRadius: '1px', flexShrink: 0 }}>
+                             <QrCode size={26} color="#000" />
                           </div>
-                          <span style={{ fontSize: '0.65rem', marginTop: '4px', color: 'var(--text-secondary)' }}>QR Sticker</span>
+                          <div style={{ width: '16px', height: '16px', marginLeft: '3px', flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: getLogoSvgString('golden') }} />
+                          <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            paddingLeft: '3px',
+                            color: '#d4af37',
+                            flexGrow: 1
+                          }}>
+                            <div style={{ fontSize: '7px', lineHeight: '1.1', fontFamily: 'Georgia, serif' }}>Royal</div>
+                            <div style={{ fontSize: '7px', lineHeight: '1.1', fontFamily: 'Georgia, serif' }}>Book</div>
+                            <div style={{ fontSize: '7px', lineHeight: '1.1', fontFamily: 'Georgia, serif' }}>Club</div>
+                            <div style={{ fontSize: '4.5px', marginTop: '1px', color: '#b4a064', fontFamily: 'monospace' }}>#100000001</div>
+                          </div>
                         </div>
                       </div>
                       
@@ -2051,19 +2099,59 @@ const CatalogPage = ({
             border: '1px solid var(--glass-border)'
           }}></div>
               
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', margin: '16px 0 8px 0' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.8 }}>
-                  <div style={{ width: '40px', height: '50px', border: '1px solid var(--text-secondary)', borderRadius: '4px', position: 'relative', background: 'var(--glass-bg)' }}>
-                    <div style={{ position: 'absolute', bottom: '5px', right: '5px', width: '12px', height: '12px', border: '1px solid var(--accent)', background: 'var(--surface)' }} />
-                  </div>
-                  <span style={{ fontSize: '0.65rem', marginTop: '4px', color: 'var(--text-secondary)' }}>Back Cover</span>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', margin: '16px 0 8px 0', opacity: 0.9 }}>
+                {/* Phone Scanning */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <Camera size={24} color="var(--text-secondary)" />
+                  <div style={{ width: '2px', height: '12px', background: 'var(--accent)', marginTop: '2px', animation: 'scan-pulse 2s infinite' }} />
                 </div>
-                <ArrowRight size={16} color="var(--text-secondary)" style={{ alignSelf: 'center', marginBottom: '14px' }} />
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.8 }}>
-                  <div style={{ width: '40px', height: '40px', border: '2px solid var(--accent)', borderRadius: '4px', padding: '4px', background: 'var(--glass-bg)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <QrCode size={20} color="var(--accent)" />
+                
+                <ArrowRight size={14} color="var(--text-secondary)" />
+                
+                        {/* Colorful Book */}
+                        <div style={{
+                          width: '42px',
+                          height: '58px',
+                          background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
+                          borderRadius: '2px 6px 6px 2px',
+                          boxShadow: 'inset 4px 0 0 rgba(0,0,0,0.3), 2px 2px 5px rgba(0,0,0,0.4)',
+                          position: 'relative',
+                          border: '1px solid rgba(255,255,255,0.1)'
+                        }}>
+                          <div style={{ position: 'absolute', right: '4px', top: '6px', width: '14px', height: '6px', background: '#0c0f1d', border: '0.5px solid #d4af37', borderRadius: '0.5px' }} />
+                        </div>
+                
+                <ArrowRight size={14} color="var(--text-secondary)" />
+                
+                {/* Exact QR Sticker Replica (Golden) */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: '90px',
+                  height: '42px',
+                  backgroundColor: '#0c0f1d',
+                  border: '1px solid #d4af37',
+                  borderRadius: '2px',
+                  padding: '2px 2px 2px 4px',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                }}>
+                  <div style={{ width: '28px', height: '28px', background: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1px', borderRadius: '1px', flexShrink: 0 }}>
+                     <QrCode size={26} color="#000" />
                   </div>
-                  <span style={{ fontSize: '0.65rem', marginTop: '4px', color: 'var(--text-secondary)' }}>QR Sticker</span>
+                  <div style={{ width: '16px', height: '16px', marginLeft: '3px', flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: getLogoSvgString('golden') }} />
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    paddingLeft: '3px',
+                    color: '#d4af37',
+                    flexGrow: 1
+                  }}>
+                    <div style={{ fontSize: '7px', lineHeight: '1.1', fontFamily: 'Georgia, serif' }}>Royal</div>
+                    <div style={{ fontSize: '7px', lineHeight: '1.1', fontFamily: 'Georgia, serif' }}>Book</div>
+                    <div style={{ fontSize: '7px', lineHeight: '1.1', fontFamily: 'Georgia, serif' }}>Club</div>
+                    <div style={{ fontSize: '4.5px', marginTop: '1px', color: '#b4a064', fontFamily: 'monospace' }}>#100000001</div>
+                  </div>
                 </div>
               </div>
               
