@@ -298,6 +298,7 @@ public class BookService {
                         .publishDate(bookDto.getPublishDate())
                         .description(bookDto.getDescription())
                         .coverUrl(bookDto.getCoverUrl())
+                        .backCoverUrl(bookDto.getBackCoverUrl())
                         .pages(bookDto.getPages())
                         .totalCopies(bookDto.getTotalCopies())
                         .availableCopies(bookDto.getAvailableCopies() != null ? bookDto.getAvailableCopies() : newAvailable)
@@ -325,6 +326,7 @@ public class BookService {
                         .publishDate(bookDto.getPublishDate())
                         .description(bookDto.getDescription())
                         .coverUrl(bookDto.getCoverUrl())
+                        .backCoverUrl(bookDto.getBackCoverUrl())
                         .pages(bookDto.getPages())
                         .totalCopies(bookDto.getTotalCopies())
                         .availableCopies(bookDto.getAvailableCopies() != null ? bookDto.getAvailableCopies() : bookDto.getTotalCopies())
@@ -906,6 +908,7 @@ public class BookService {
         map.put("publishDate", book.getPublishDate());
         map.put("description", book.getDescription());
         map.put("coverUrl", book.getCoverUrl());
+        map.put("backCoverUrl", book.getBackCoverUrl());
         map.put("pages", book.getPages());
         map.put("totalCopies", book.getTotalCopies());
         map.put("availableCopies", book.getAvailableCopies());
@@ -988,6 +991,7 @@ public class BookService {
                 .publishDate(doc.getString("publishDate"))
                 .description(doc.getString("description"))
                 .coverUrl(doc.getString("coverUrl"))
+                .backCoverUrl(doc.getString("backCoverUrl"))
                 .pages(doc.getLong("pages") != null ? doc.getLong("pages").intValue() : null)
                 .totalCopies(doc.getLong("totalCopies") != null ? doc.getLong("totalCopies").intValue() : null)
                 .availableCopies(doc.getLong("availableCopies") != null ? doc.getLong("availableCopies").intValue() : null)

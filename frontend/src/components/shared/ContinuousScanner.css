@@ -1,0 +1,583 @@
+/* =============================================
+   Continuous Scanner Animation
+   ============================================= */
+.continuous-scanner-container {
+  width: 100%;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--surface-elevated);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  position: relative;
+}
+
+.continuous-scanner-container.desktop-scale {
+  height: 300px;
+  max-width: 600px;
+}
+
+.continuous-scanner-container.mobile-scale {
+  height: 240px;
+  max-width: 360px;
+}
+
+/* Instruction Text */
+.anim-instruction-text {
+  position: absolute;
+  top: 15px;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  text-align: center;
+  pointer-events: none;
+}
+.anim-instruction-text p {
+  display: inline-block;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--accent);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+  padding: 10px 24px;
+  border-radius: 20px;
+  border: 2px solid #fff;
+  margin: 0;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+  letter-spacing: 0.5px;
+}
+
+/* 3D Scene */
+.scene-3d {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+/* -------------------
+   1. Shelf
+------------------- */
+.library-shelf {
+  position: absolute;
+  bottom: 25%;
+  left: 50%;
+  transform: translateX(-50%) translateZ(-150px);
+  width: 260px;
+  height: 110px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  transform-style: preserve-3d;
+}
+
+/* Checkout: shelf visible early, fades out */
+.checkout-barcode-shelf, .checkout-nfc-shelf {
+  animation: shelfFadeOut 15s infinite linear;
+}
+/* Return: shelf appears at the end */
+.return-barcode-shelf, .return-nfc-shelf {
+  animation: shelfFadeIn 15s infinite linear;
+}
+
+@keyframes shelfFadeOut {
+  0%, 20% { opacity: 1; }
+  30%, 100% { opacity: 0; }
+}
+@keyframes shelfFadeIn {
+  0%, 55% { opacity: 0; }
+  65%, 90% { opacity: 1; }
+  95%, 100% { opacity: 0; }
+}
+
+.fake-spine {
+  width: 22px;
+  height: 100px;
+  background: #2a2a2a;
+  border-left: 1px solid #444;
+  border-radius: 2px;
+  box-shadow: inset -2px 0 5px rgba(0,0,0,0.5);
+}
+.spine-1 { background: #3e2723; height: 105px; }
+.spine-2 { background: #1b5e20; height: 95px; }
+.spine-3 { background: #b71c1c; height: 110px; }
+.spine-4 { background: #0d47a1; height: 100px; }
+.spine-5 { background: #4a148c; height: 105px; }
+.spine-gap { width: 28px; height: 100px; }
+
+.shelf-board {
+  position: absolute;
+  bottom: -8px;
+  left: -30px;
+  width: 320px;
+  height: 16px;
+  background: #4e342e;
+  transform: rotateX(80deg);
+  transform-origin: top;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+}
+
+/* -------------------
+   2. Person (on the floor, below shelf)
+------------------- */
+.anim-person {
+  position: absolute;
+  bottom: 0;
+  left: 30%;
+  transform-origin: bottom center;
+  z-index: 1;
+}
+.checkout-barcode-person, .checkout-nfc-person {
+  animation: personCheckout 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+.return-barcode-person, .return-nfc-person {
+  animation: personReturn 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes personCheckout {
+  0%, 15% { opacity: 1; transform: translateX(0) scale(0.8); }
+  45%, 100% { opacity: 0; transform: translateX(-40px) scale(0.8); }
+}
+@keyframes personReturn {
+  0%, 45% { opacity: 0; transform: translateX(-40px) scale(0.8); }
+  65%, 85% { opacity: 1; transform: translateX(0) scale(0.8); }
+  95%, 100% { opacity: 0; transform: translateX(0) scale(0.8); }
+}
+
+.person-arm {
+  animation: armReach 15s infinite;
+  transform-origin: 52px 40px;
+}
+@keyframes armReach {
+  0%, 5% { transform: rotate(0deg); }
+  10%, 15% { transform: rotate(-15deg); }
+  20%, 100% { transform: rotate(0deg); }
+}
+
+/* -------------------
+   3. 3D Book
+------------------- */
+.anim-book-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+}
+
+.anim-book {
+  position: absolute;
+  top: -65px;
+  left: -45px;
+  width: 90px;
+  height: 130px;
+  transform-style: preserve-3d;
+}
+
+.book-face {
+  position: absolute;
+  box-sizing: border-box;
+  background-size: cover;
+  background-position: center;
+}
+.book-front {
+  width: 90px; height: 130px;
+  transform: translateZ(12px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 2px 4px 4px 2px;
+}
+.book-back {
+  width: 90px; height: 130px;
+  transform: rotateY(180deg) translateZ(12px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px 2px 2px 4px;
+}
+.book-spine {
+  width: 24px; height: 130px;
+  background: #111;
+  transform: rotateY(-90deg) translateZ(45px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.spine-text {
+  color: #d4af37;
+  font-size: 6px;
+  transform: rotate(-90deg);
+  white-space: nowrap;
+  font-family: Georgia, serif;
+}
+.book-right {
+  width: 24px; height: 126px;
+  background: #eee;
+  transform: rotateY(90deg) translateZ(43px);
+  top: 2px;
+}
+.book-top {
+  width: 86px; height: 24px;
+  background: #eee;
+  transform: rotateX(90deg) translateZ(43px);
+  left: 2px;
+}
+.book-bottom {
+  width: 86px; height: 24px;
+  background: #eee;
+  transform: rotateX(-90deg) translateZ(85px);
+  left: 2px;
+}
+
+/* CHECKOUT BARCODE: shelf(spine) -> pull out -> front -> flip back -> tilt to camera */
+.checkout-barcode-book {
+  animation: bookCheckoutBarcode 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes bookCheckoutBarcode {
+  0%, 10% { transform: translate3d(-15px, 10px, -150px) rotateY(90deg); }
+  18%, 22% { transform: translate3d(-15px, 10px, 0px) rotateY(90deg); }
+  28%, 35% { transform: translate3d(0px, 0px, 50px) rotateY(0deg); }
+  42%, 50% { transform: translate3d(0px, 0px, 50px) rotateY(-180deg); }
+  55%, 88% { transform: translate3d(45px, 0px, 20px) rotateY(-210deg) rotateX(10deg); }
+  95%, 100% { transform: translate3d(-15px, 10px, -150px) rotateY(90deg); }
+}
+
+/* CHECKOUT NFC: shelf -> pull out -> front -> tilt for phone tap on top-left */
+.checkout-nfc-book {
+  animation: bookCheckoutNfc 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes bookCheckoutNfc {
+  0%, 10% { transform: translate3d(-15px, 10px, -150px) rotateY(90deg); }
+  18%, 22% { transform: translate3d(-15px, 10px, 0px) rotateY(90deg); }
+  28%, 45% { transform: translate3d(0px, 0px, 50px) rotateY(0deg); }
+  52%, 88% { transform: translate3d(20px, 10px, 20px) rotateY(-15deg) rotateX(20deg); }
+  95%, 100% { transform: translate3d(-15px, 10px, -150px) rotateY(90deg); }
+}
+
+/* RETURN BARCODE: book already in hand -> scan -> success -> place back */
+.return-barcode-book {
+  animation: bookReturnBarcode 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes bookReturnBarcode {
+  0%, 5% { transform: translate3d(45px, 0, 20px) rotateY(-210deg) rotateX(10deg); }
+  10%, 40% { transform: translate3d(45px, 0, 20px) rotateY(-210deg) rotateX(10deg); }
+  55%, 65% { transform: translate3d(0, 0, 50px) rotateY(-180deg); }
+  72%, 80% { transform: translate3d(-15px, 10px, 0px) rotateY(90deg); }
+  85%, 92% { transform: translate3d(-15px, 10px, -150px) rotateY(90deg); }
+  95%, 100% { transform: translate3d(45px, 0, 20px) rotateY(-210deg) rotateX(10deg); }
+}
+
+/* RETURN NFC: front cover facing -> tap -> success -> place back */
+.return-nfc-book {
+  animation: bookReturnNfc 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes bookReturnNfc {
+  0%, 5% { transform: translate3d(20px, 10px, 20px) rotateY(-15deg) rotateX(20deg); }
+  10%, 40% { transform: translate3d(20px, 10px, 20px) rotateY(-15deg) rotateX(20deg); }
+  55%, 65% { transform: translate3d(0, 0, 50px) rotateY(0deg); }
+  72%, 80% { transform: translate3d(-15px, 10px, 0px) rotateY(90deg); }
+  85%, 92% { transform: translate3d(-15px, 10px, -150px) rotateY(90deg); }
+  95%, 100% { transform: translate3d(20px, 10px, 20px) rotateY(-15deg) rotateX(20deg); }
+}
+
+/* Hand on book */
+.anim-hand-spine, .anim-hand-bottom {
+  opacity: 0;
+  z-index: 10;
+}
+.checkout-barcode-hand, .checkout-nfc-hand {
+  animation: handCheckout 15s infinite;
+}
+.return-barcode-hand, .return-nfc-hand {
+  animation: handReturn 15s infinite;
+}
+@keyframes handCheckout {
+  0%, 18% { opacity: 0; }
+  22%, 88% { opacity: 0.85; }
+  92%, 100% { opacity: 0; }
+}
+@keyframes handReturn {
+  0%, 5% { opacity: 0.85; }
+  8%, 65% { opacity: 0.85; }
+  70%, 100% { opacity: 0; }
+}
+
+/* -------------------
+   4. Elements on Book
+------------------- */
+.book-qr-sticker {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 26px;
+  height: 13px;
+  background: #0c0f1d;
+  border: 1px solid #d4af37;
+  display: flex;
+  align-items: center;
+  padding: 1px;
+  border-radius: 1px;
+  animation: highlightQr 15s infinite;
+}
+@keyframes highlightQr {
+  0%, 50% { box-shadow: 0 1px 3px rgba(0,0,0,0.5); border-color: #d4af37; }
+  55%, 88% { box-shadow: 0 0 12px #ff3b30; border-color: #ff3b30; }
+  92%, 100% { box-shadow: 0 1px 3px rgba(0,0,0,0.5); border-color: #d4af37; }
+}
+.qr-white-box {
+  width: 9px; height: 9px; background: white; display: flex; align-items: center; justify-content: center;
+}
+.qr-logo-box {
+  width: 5px; height: 5px; margin-left: 2px; overflow: hidden;
+}
+
+.book-nfc-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  background: var(--accent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+/* -------------------
+   5. 3D Phone
+------------------- */
+.anim-phone-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+}
+
+.anim-phone {
+  position: absolute;
+  top: -50px;
+  left: -25px;
+  width: 50px;
+  height: 100px;
+  transform-style: preserve-3d;
+}
+
+.phone-face {
+  position: absolute;
+  box-sizing: border-box;
+}
+.phone-front {
+  width: 50px; height: 100px;
+  background: #000;
+  transform: translateZ(4px);
+  border-radius: 6px;
+  border: 2px solid #444;
+  overflow: hidden;
+}
+.phone-back {
+  width: 50px; height: 100px;
+  background: #202124;
+  transform: rotateY(180deg) translateZ(4px);
+  border-radius: 6px;
+  border: 2px solid #555;
+}
+.ios .phone-back { background: #1c1c1e; }
+
+.phone-left { width: 8px; height: 90px; background: #333; transform: rotateY(-90deg) translateZ(25px); top: 5px;}
+.phone-right { width: 8px; height: 90px; background: #333; transform: rotateY(90deg) translateZ(25px); top: 5px;}
+.phone-top { width: 40px; height: 8px; background: #333; transform: rotateX(90deg) translateZ(50px); left: 5px;}
+.phone-bottom { width: 40px; height: 8px; background: #333; transform: rotateX(-90deg) translateZ(50px); left: 5px;}
+
+.rear-camera {
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 14px; height: 14px;
+  background: #000;
+  border-radius: 4px;
+  box-shadow: inset 0 0 4px rgba(255,255,255,0.2);
+}
+
+/* Phone Animation: QR Checkout - phone to the LEFT, angled to show rear camera toward book */
+.checkout-barcode-phone {
+  animation: phoneCheckoutBarcode 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes phoneCheckoutBarcode {
+  0%, 48% { transform: translate3d(-200px, 0, 0); opacity: 0; }
+  55%, 88% { transform: translate3d(-70px, 0, 80px) rotateY(-30deg); opacity: 1; }
+  92%, 100% { transform: translate3d(-200px, 0, 0); opacity: 0; }
+}
+
+/* Phone Animation: NFC Checkout - phone comes from TOP-LEFT to tap on book's top-left corner */
+.checkout-nfc-phone {
+  animation: phoneCheckoutNfc 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes phoneCheckoutNfc {
+  0%, 48% { transform: translate3d(-100px, -100px, 0); opacity: 0; }
+  55%, 88% { transform: translate3d(-30px, -50px, 80px) rotateX(-45deg) rotateY(15deg); opacity: 1; }
+  92%, 100% { transform: translate3d(-100px, -100px, 0); opacity: 0; }
+}
+
+/* Phone Animation: QR Return - phone visible early */
+.return-barcode-phone {
+  animation: phoneReturnBarcode 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes phoneReturnBarcode {
+  0%, 2% { transform: translate3d(-200px, 0, 0); opacity: 0; }
+  5%, 42% { transform: translate3d(-70px, 0, 80px) rotateY(-30deg); opacity: 1; }
+  50%, 100% { transform: translate3d(-200px, 0, 0); opacity: 0; }
+}
+
+/* Phone Animation: NFC Return - phone visible early, taps top-left */
+.return-nfc-phone {
+  animation: phoneReturnNfc 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes phoneReturnNfc {
+  0%, 2% { transform: translate3d(-100px, -100px, 0); opacity: 0; }
+  5%, 42% { transform: translate3d(-30px, -50px, 80px) rotateX(-45deg) rotateY(15deg); opacity: 1; }
+  50%, 100% { transform: translate3d(-100px, -100px, 0); opacity: 0; }
+}
+
+/* -------------------
+   Phone Screen Mockup
+------------------- */
+.mock-screen {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.mock-status-bar {
+  height: 8px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 3px;
+}
+.mock-phone-body-state {
+  flex: 1; position: relative;
+}
+.mock-scan-body {
+  position: absolute; width: 100%; height: 100%;
+  display: flex; flex-direction: column; align-items: center;
+  animation: mockScanHide 15s infinite;
+}
+.mock-success-body {
+  position: absolute; width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  animation: mockSuccessShow 15s infinite;
+}
+
+/* For checkout: scan visible 0-65%, success visible 65-95% */
+.checkout-barcode-mode .mock-scan-body,
+.checkout-nfc-mode .mock-scan-body {
+  animation: mockScanCheckout 15s infinite;
+}
+.checkout-barcode-mode .mock-success-body,
+.checkout-nfc-mode .mock-success-body {
+  animation: mockSuccessCheckout 15s infinite;
+}
+@keyframes mockScanCheckout {
+  0%, 62% { opacity: 1; visibility: visible; }
+  65%, 100% { opacity: 0; visibility: hidden; }
+}
+@keyframes mockSuccessCheckout {
+  0%, 62% { opacity: 0; visibility: hidden; }
+  65%, 92% { opacity: 1; visibility: visible; }
+  95%, 100% { opacity: 0; visibility: hidden; }
+}
+
+/* For return: scan visible 0-40%, success 42-55% */
+.return-barcode-mode .mock-scan-body,
+.return-nfc-mode .mock-scan-body {
+  animation: mockScanReturn 15s infinite;
+}
+.return-barcode-mode .mock-success-body,
+.return-nfc-mode .mock-success-body {
+  animation: mockSuccessReturn 15s infinite;
+}
+@keyframes mockScanReturn {
+  0%, 35% { opacity: 1; visibility: visible; }
+  40%, 100% { opacity: 0; visibility: hidden; }
+}
+@keyframes mockSuccessReturn {
+  0%, 35% { opacity: 0; visibility: hidden; }
+  40%, 55% { opacity: 1; visibility: visible; }
+  60%, 100% { opacity: 0; visibility: hidden; }
+}
+
+.mock-laser {
+  width: 100%; height: 1px;
+  animation: laserScan 2s infinite linear;
+  position: absolute;
+  top: 0;
+}
+@keyframes laserScan {
+  0% { top: 0; }
+  50% { top: 100%; }
+  100% { top: 0; }
+}
+
+/* -------------------
+   6. Zoomed QR
+------------------- */
+.zoomed-qr-container {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+}
+.checkout-barcode-qr {
+  animation: zoomedCheckout 15s infinite;
+}
+.return-barcode-qr {
+  animation: zoomedReturn 15s infinite;
+}
+@keyframes zoomedCheckout {
+  0%, 50% { opacity: 0; transform: translateY(-50%) scale(0.8); }
+  55%, 88% { opacity: 1; transform: translateY(-50%) scale(1); }
+  92%, 100% { opacity: 0; transform: translateY(-50%) scale(0.8); }
+}
+@keyframes zoomedReturn {
+  0%, 2% { opacity: 0; }
+  5%, 42% { opacity: 1; transform: translateY(-50%) scale(1); }
+  50%, 100% { opacity: 0; transform: translateY(-50%) scale(0.8); }
+}
+
+.dotted-line-svg {
+  position: absolute;
+  left: -80px; top: 50%;
+  width: 80px; height: 40px;
+  transform: translateY(-50%);
+  overflow: visible; z-index: 0;
+}
+
+.zoomed-qr-box {
+  width: 90px; height: 42px;
+  background: #0c0f1d;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  display: flex; align-items: center;
+  padding: 2px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+  z-index: 1;
+}
+.z-qr-code {
+  width: 28px; height: 28px;
+  background: #fff;
+  display: flex; justify-content: center; align-items: center;
+  flex-shrink: 0;
+}
+.z-qr-logo {
+  width: 14px; height: 14px;
+  margin-left: 4px; overflow: hidden;
+  flex-shrink: 0;
+}
+.z-qr-text {
+  display: flex; flex-direction: column;
+  color: var(--accent);
+  font-size: 7px;
+  font-family: Georgia, serif;
+  margin-left: 4px;
+}

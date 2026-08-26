@@ -38,6 +38,7 @@ public class Book {
     private String publishDate;
     private String description;
     private String coverUrl;
+    private String backCoverUrl;
     private Integer pages;
     private Integer totalCopies;
     private Integer availableCopies;

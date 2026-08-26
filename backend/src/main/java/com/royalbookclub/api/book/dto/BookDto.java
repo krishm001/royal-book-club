@@ -43,6 +43,7 @@ public class BookDto {
     private String publishDate;
     private String description;
     private String coverUrl;
+    private String backCoverUrl;
     
     @Min(value = 0, message = "Pages cannot be negative")
     private Integer pages;

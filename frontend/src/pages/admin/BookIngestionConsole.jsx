@@ -32,6 +32,7 @@ const BookIngestionConsole = ({
   const [publisher, setPublisher] = useState('');
   const [publishDate, setPublishDate] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
+  const [backCoverUrl, setBackCoverUrl] = useState('');
   const [description, setDescription] = useState('');
   const [pages, setPages] = useState(0);
   const [totalCopies, setTotalCopies] = useState(1);
@@ -190,6 +191,7 @@ const BookIngestionConsole = ({
       setPublisher(book.publisher || '');
       setPublishDate(book.publishDate || '');
       setCoverUrl(book.coverUrl || '');
+      setBackCoverUrl(book.backCoverUrl || '');
       setDescription(book.description || book.subtitle || '');
       setPages(book.pages || 0);
       setIsbn(book.isbn || '');
@@ -225,6 +227,7 @@ const BookIngestionConsole = ({
     setPublisher(book.publisher || '');
     setPublishDate(book.publishDate || book.publishYear || '');
     setCoverUrl(book.coverUrl || '');
+    setBackCoverUrl(book.backCoverUrl || '');
     setDescription(book.description || book.subtitle || '');
     setPages(book.pages || 0);
     setTotalCopies(book.totalCopies || 1);
@@ -259,6 +262,7 @@ const BookIngestionConsole = ({
     setPublisher('');
     setPublishDate('');
     setCoverUrl('');
+    setBackCoverUrl('');
     setDescription('');
     setPages(0);
     setTotalCopies(1);
@@ -1701,6 +1705,7 @@ const BookIngestionConsole = ({
       publishDate: publishDate.trim(),
       description: description.trim(),
       coverUrl: coverUrl.trim(),
+      backCoverUrl: backCoverUrl.trim(),
       pages: Number(pages) || 0,
       totalCopies: Number(totalCopies) || 1,
       availableCopies: Number(availableCopies) || 1,
@@ -2943,6 +2948,45 @@ const BookIngestionConsole = ({
                   alignItems: 'center',
                   justifyContent: 'center'
                 }} title={t("str_5143", "Clear cover URL")}>
+                        <X size={14} />
+                      </button>
+                    </div>}
+                </div>
+
+                <div className="input-group">
+                  <label className="royal-input-label">Back Cover Image URL (Optional)</label>
+                  <input type="text" className="royal-input" value={backCoverUrl} onChange={e => setBackCoverUrl(e.target.value)} placeholder="Paste direct image URL for back cover (https://...)" />
+                  {backCoverUrl && <div style={{
+                position: 'relative',
+                marginTop: '12px',
+                border: '1px solid var(--glass-border)',
+                padding: '6px',
+                borderRadius: '6px',
+                background: "var(--glass-bg)",
+                display: 'inline-block',
+                maxWidth: '100%'
+              }}>
+                      <img src={backCoverUrl} alt="Back Cover Preview" style={{
+                  maxWidth: '100%',
+                  maxHeight: '180px',
+                  borderRadius: '4px',
+                  display: 'block'
+                }} />
+                      <button type="button" onClick={() => setBackCoverUrl('')} style={{
+                  position: 'absolute',
+                  top: '6px',
+                  right: '6px',
+                  background: "var(--glass-bg)",
+                  border: 'none',
+                  color: "var(--text-primary)",
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }} title="Clear back cover URL">
                         <X size={14} />
                       </button>
                     </div>}

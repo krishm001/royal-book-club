@@ -40,7 +40,7 @@ export const isNfcTagMatched = (b, cleanScanned) => {
   return false;
 };
 
-import ScannerHelperGraphic from '../../components/shared/ScannerHelperGraphic';
+import ContinuousScannerAnimation from '../../components/shared/ContinuousScannerAnimation';
 const CatalogPage = ({
   user,
   triggerOnboarding
@@ -1244,7 +1244,7 @@ const CatalogPage = ({
               </div>
               <button className="text-btn cancel-btn" onClick={stopTopNfcRead}>{t('common.cancel')}</button>
             </div>
-            <ScannerHelperGraphic type="nfc" bookImage="/images/book-front-cover.png" />
+            <ContinuousScannerAnimation action={nfcActionType || "checkout"} type="nfc" book={{coverUrl: "/images/book-front-cover.png"}} />
           </div>}
 
         {topNfcError && <div className="top-p2d-error-banner animate-fade-in">
@@ -1627,7 +1627,7 @@ const CatalogPage = ({
                   {activeTab === 'nfc' && <div className="tab-pane nfc-tab-pane animate-fade-in" style={{
             width: '100%'
           }}>
-                      <ScannerHelperGraphic type="nfc" bookImage={selectedBook?.coverUrl} />
+                      <ContinuousScannerAnimation action={nfcActionType || "checkout"} type="nfc" book={selectedBook} />
                       <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', textAlign: 'center', margin: '0 0 16px 0', fontWeight: '500' }}>
                         Tap phone on front top left cover
                       </p>
@@ -1704,7 +1704,7 @@ const CatalogPage = ({
                         <div className="scanner-laser-line"></div>
                       </div>
 
-                      <ScannerHelperGraphic />
+                      <ContinuousScannerAnimation action={nfcActionType || "checkout"} book={selectedBook} />
                       
                       <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', textAlign: 'center', margin: '0 0 10px 0', fontWeight: '500' }}>
                         Scan QR code on back cover
@@ -2043,7 +2043,7 @@ const CatalogPage = ({
             border: '1px solid var(--glass-border)'
           }}></div>
               
-              <ScannerHelperGraphic />
+              <ContinuousScannerAnimation action={nfcActionType || "checkout"} book={selectedBook} />
               
               <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', textAlign: 'center', margin: '0 0 10px 0', fontWeight: '500' }}>
                 Scan QR code on back cover

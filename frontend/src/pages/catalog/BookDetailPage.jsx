@@ -8,7 +8,7 @@ import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { isNfcTagMatched } from './CatalogPage';
 import ShareModal from '../../components/shared/ShareModal';
-import ScannerHelperGraphic from '../../components/shared/ScannerHelperGraphic';
+import ContinuousScannerAnimation from '../../components/shared/ContinuousScannerAnimation';
 import './BookDetailPage.css';
 const SafeHtml5Qrcode = Html5Qrcode;
 const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
@@ -2467,7 +2467,7 @@ const BookDetailPage = ({
                 {activeTab === 'nfc' && <div className="tab-pane nfc-tab-pane animate-fade-in" style={{
               width: '100%'
             }}>
-                    <ScannerHelperGraphic type="nfc" bookImage={book?.coverUrl} />
+                    <ContinuousScannerAnimation action={nfcActionType || "checkout"} type="nfc" book={book} />
                     
                     <p className="nfc-prompt-desc" style={{
                 fontSize: '0.85rem',
@@ -2552,7 +2552,7 @@ const BookDetailPage = ({
                       <div className="scanner-laser-line"></div>
                     </div>
 
-                    <ScannerHelperGraphic />
+                    <ContinuousScannerAnimation action={nfcActionType || "checkout"} book={book} />
 
                     <p className="scanner-iphone-tip" style={{
                 fontSize: '0.78rem',
