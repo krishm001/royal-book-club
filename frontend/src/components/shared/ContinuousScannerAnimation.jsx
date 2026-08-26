@@ -3,7 +3,7 @@ import { Wifi, QrCode, CheckCircle, Star } from 'lucide-react';
 import { getLogoSvgString } from '../../utils/qrStickerGenerator';
 import './ContinuousScanner.css';
 
-const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'checkout' }) => {
+const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'checkout', isConfirmation = false }) => {
   const [mounted, setMounted] = useState(false);
   const [phase, setPhase] = useState(0); // For text instructions
 
@@ -56,20 +56,19 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
   useEffect(() => {
     if (!mounted) return;
     const getPhase = () => {
-      const elapsed = (Date.now() / 1000) % 15;
+      const elapsed = (Date.now() / 1000) % 17;
       if (isReturn) {
-        // Return: scan/tap first -> then place book back
-        if (elapsed < 5) return 0;   // Scan/Tap the book
-        if (elapsed < 8) return 1;   // Success
-        if (elapsed < 12) return 2;  // Place book back on shelf
-        return 3;                    // Done
+        if (elapsed < 4) return 0;
+        if (elapsed < 9) return 1; // Show success longer (pause)
+        if (elapsed < 13) return 2;
+        if (elapsed < 15) return 3;
+        return 0;
       } else {
-        // Checkout: pick up -> flip -> scan -> success
-        if (elapsed < 2.5) return 0; // Pick up from shelf
-        if (elapsed < 5) return 1;   // Flip / Hold front
-        if (elapsed < 8) return 2;   // Scan / Tap
-        if (elapsed < 12) return 3;  // Success
-        return 0;                    // Loop
+        if (elapsed < 3) return 0;
+        if (elapsed < 5.5) return 1;
+        if (elapsed < 8.5) return 2;
+        if (elapsed < 14) return 3; // Show success longer (pause)
+        return 0;
       }
     };
     const interval = setInterval(() => setPhase(getPhase()), 500);
@@ -115,9 +114,8 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
   };
 
   // Miniature Phone Screen that mirrors the ACTUAL popup UI
-  const MockPhoneScreen = () => (
+    const MockPhoneScreen = () => (
     <div className="mock-screen" style={{ background: t.surface }}>
-      {/* Status bar */}
       <div className="mock-status-bar" style={{ background: t.headerBg }}>
         <span style={{ fontSize: '4px', color: t.textSecondary }}>9:41</span>
         <div style={{ display: 'flex', gap: '1px' }}>
@@ -126,81 +124,90 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
         </div>
       </div>
       
-      {/* Popup Header: "Royal Checkout/Return Verification" */}
       <div style={{ padding: '3px 4px 2px', borderBottom: `1px solid ${t.glassBorder}` }}>
         <div style={{ fontSize: '5px', fontWeight: 'bold', color: t.accent, fontFamily: 'Georgia, serif' }}>
           {isReturn ? 'Royal Return Verification' : 'Royal Checkout Verification'}
         </div>
       </div>
 
-      {/* Tab Bar */}
       <div style={{ display: 'flex', margin: '2px 3px', background: t.glassBg, borderRadius: '3px', padding: '1px' }}>
         <div style={{ flex: 1, fontSize: '4px', textAlign: 'center', color: t.textSecondary, padding: '2px 0' }}>NFC Tap</div>
         <div style={{ flex: 1, fontSize: '4px', textAlign: 'center', fontWeight: 'bold', padding: '2px 0', background: `linear-gradient(135deg, ${t.accent}, ${t.accentHover || t.accent})`, borderRadius: '2px', color: '#fff' }}>QR Scan</div>
         <div style={{ flex: 1, fontSize: '4px', textAlign: 'center', color: t.textSecondary, padding: '2px 0' }}>Manual</div>
       </div>
 
-      {/* Body: Scanning State */}
       <div className="mock-phone-body-state">
-        {/* SCANNING STATE */}
-        <div className="mock-scan-body">
-          {/* Viewfinder */}
-          <div style={{
-            width: '34px', height: '22px',
-            background: t.viewfinderBg,
-            border: `1px solid ${t.accent}`,
-            borderRadius: '2px',
-            margin: '4px auto 2px',
-            position: 'relative',
-            overflow: 'hidden'
-          }}>
-            {/* Corner brackets */}
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '5px', height: '5px', borderTop: '1px solid #fff', borderLeft: '1px solid #fff' }}></div>
-            <div style={{ position: 'absolute', top: 0, right: 0, width: '5px', height: '5px', borderTop: '1px solid #fff', borderRight: '1px solid #fff' }}></div>
-            <div style={{ position: 'absolute', bottom: 0, left: 0, width: '5px', height: '5px', borderBottom: '1px solid #fff', borderLeft: '1px solid #fff' }}></div>
-            <div style={{ position: 'absolute', bottom: 0, right: 0, width: '5px', height: '5px', borderBottom: '1px solid #fff', borderRight: '1px solid #fff' }}></div>
-            {/* Laser scanline */}
-            {type === 'barcode' && <div className="mock-laser" style={{ background: '#ff3b30', boxShadow: '0 0 2px #ff3b30' }}></div>}
+        {type === 'barcode' && (
+          <div className="mock-scan-body">
+            <div style={{
+              width: '34px', height: '22px', background: t.viewfinderBg,
+              border: `1px solid ${t.accent}`, borderRadius: '2px',
+              margin: '4px auto 2px', position: 'relative', overflow: 'hidden'
+            }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '5px', height: '5px', borderTop: '1px solid #fff', borderLeft: '1px solid #fff' }}></div>
+              <div style={{ position: 'absolute', top: 0, right: 0, width: '5px', height: '5px', borderTop: '1px solid #fff', borderRight: '1px solid #fff' }}></div>
+              <div style={{ position: 'absolute', bottom: 0, left: 0, width: '5px', height: '5px', borderBottom: '1px solid #fff', borderLeft: '1px solid #fff' }}></div>
+              <div style={{ position: 'absolute', bottom: 0, right: 0, width: '5px', height: '5px', borderBottom: '1px solid #fff', borderRight: '1px solid #fff' }}></div>
+              <div className="mock-laser" style={{ background: '#ff3b30', boxShadow: '0 0 2px #ff3b30' }}></div>
+            </div>
+            <div style={{ fontSize: '4px', color: t.textSecondary, textAlign: 'center' }}>
+              Scan QR code on back cover
+            </div>
           </div>
-          <div style={{ fontSize: '4px', color: t.textSecondary, textAlign: 'center' }}>
-            {type === 'barcode' ? 'Scan QR code on back cover' : 'Tap phone on front cover'}
-          </div>
-        </div>
+        )}
 
-        {/* SUCCESS STATE */}
         <div className="mock-success-body">
-          {/* Checkmark circle */}
-          <div style={{ margin: '3px auto', width: '14px', height: '14px', borderRadius: '50%', border: `2px solid ${t.checkColor}`, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={t.checkColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-          </div>
-          {/* Title */}
-          <div style={{ fontSize: '5px', fontWeight: 'bold', color: t.textPrimary, textAlign: 'center', fontFamily: 'Georgia, serif' }}>Royal Verification Confirmed</div>
-          <div style={{ fontSize: '3.5px', color: t.textSecondary, textAlign: 'center', margin: '1px 0' }}>Transaction ledger updated.</div>
-          
-          {/* Rating box */}
-          <div style={{ margin: '2px 4px', padding: '2px', border: `1px solid ${t.glassBorder}`, borderRadius: '2px', background: t.glassBg }}>
-            <div style={{ fontSize: '3.5px', color: t.textSecondary, textAlign: 'center', marginBottom: '1px' }}>How was your experience?</div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '1px' }}>
-              {[1,2,3,4,5].map(i => (
-                <svg key={i} width="5" height="5" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-              ))}
-            </div>
-          </div>
-
-          {/* Action buttons */}
-          <div style={{ display: 'flex', gap: '2px', margin: '2px 4px' }}>
-            <div style={{ flex: 1, fontSize: '3.5px', textAlign: 'center', padding: '2px', borderRadius: '1px', background: t.accent, color: '#fff', fontWeight: 'bold' }}>
-              {isReturn ? 'WRITE REVIEW' : 'VIEW GATEPASS'}
-            </div>
-            <div style={{ flex: 0.6, fontSize: '3.5px', textAlign: 'center', padding: '2px', borderRadius: '1px', border: `1px solid ${t.accent}`, color: t.accent }}>
-              DONE
-            </div>
-          </div>
+          {isConfirmation ? (
+            <>
+              <div style={{ padding: '2px 4px', border: `1px solid ${t.glassBorder}`, borderRadius: '2px', background: t.surfaceEl, margin: '2px 4px', display: 'flex', gap: '3px' }}>
+                <div style={{ width: '16px', height: '22px', background: '#ccc', borderRadius: '1px', backgroundImage: `url(${frontCoverUrl})`, backgroundSize: 'cover' }}></div>
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div style={{ fontSize: '4.5px', fontWeight: 'bold', color: t.textPrimary }}>{book?.title || 'Book Title'}</div>
+                  <div style={{ fontSize: '3px', color: t.textSecondary }}>ISBN: {book?.isbn || '1234567890'}</div>
+                </div>
+              </div>
+              <div style={{ fontSize: '3px', color: t.textSecondary, textAlign: 'center', margin: '2px 4px', lineHeight: '1.2' }}>
+                A physical possession barcode or NFC match has been registered. Proceed with instant checkout? No curator approval required.
+              </div>
+              <div style={{ display: 'flex', gap: '2px', margin: '2px 4px' }}>
+                <div style={{ flex: 1, fontSize: '3.5px', textAlign: 'center', padding: '2px', borderRadius: '1px', border: `1px solid ${t.accent}`, color: t.accent }}>
+                  CANCEL
+                </div>
+                <div style={{ flex: 1, fontSize: '3.5px', textAlign: 'center', padding: '2px', borderRadius: '1px', background: t.accent, color: '#fff', fontWeight: 'bold' }}>
+                  {isReturn ? 'CONFIRM RETURN' : 'CONFIRM CHECKOUT'}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ margin: '3px auto', width: '14px', height: '14px', borderRadius: '50%', border: `2px solid ${t.checkColor}`, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={t.checkColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </div>
+              <div style={{ fontSize: '5px', fontWeight: 'bold', color: t.textPrimary, textAlign: 'center', fontFamily: 'Georgia, serif' }}>Royal Verification Confirmed</div>
+              <div style={{ fontSize: '3.5px', color: t.textSecondary, textAlign: 'center', margin: '1px 0' }}>Transaction ledger updated.</div>
+              
+              <div style={{ margin: '2px 4px', padding: '2px', border: `1px solid ${t.glassBorder}`, borderRadius: '2px', background: t.glassBg }}>
+                <div style={{ fontSize: '3.5px', color: t.textSecondary, textAlign: 'center', marginBottom: '1px' }}>How was your experience?</div>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '1px' }}>
+                  {[1,2,3,4,5].map(i => (
+                    <svg key={i} width="5" height="5" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '2px', margin: '2px 4px' }}>
+                <div style={{ flex: 1, fontSize: '3.5px', textAlign: 'center', padding: '2px', borderRadius: '1px', background: t.accent, color: '#fff', fontWeight: 'bold' }}>
+                  {isReturn ? 'WRITE REVIEW' : 'VIEW GATEPASS'}
+                </div>
+                <div style={{ flex: 0.6, fontSize: '3.5px', textAlign: 'center', padding: '2px', borderRadius: '1px', border: `1px solid ${t.accent}`, color: t.accent }}>
+                  DONE
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
   );
-
   const animClass = isReturn 
     ? (type === 'barcode' ? 'return-barcode' : 'return-nfc')
     : (type === 'barcode' ? 'checkout-barcode' : 'checkout-nfc');
@@ -209,7 +216,7 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
     <div className={`continuous-scanner-container ${type}-mode ${animClass}-mode ${isDesktop ? 'desktop-scale' : 'mobile-scale'}`}>
       
       {/* Instruction Text Overlay - Renders instantly */}
-      <div className="anim-instruction-text">
+      <div className="anim-instruction-text" style={{ position: "relative", top: "10px", marginBottom: "15px", zIndex: 100 }}>
         <p>{getInstructionText()}</p>
       </div>
 

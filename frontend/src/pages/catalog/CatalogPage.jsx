@@ -97,6 +97,7 @@ const CatalogPage = ({
   const [p2dSuccess, setP2dSuccess] = useState(false);
   const [p2dError, setP2dError] = useState('');
   const [p2dLoading, setP2dLoading] = useState(false);
+  const [processingActionIsbn, setProcessingActionIsbn] = useState(null);
 
   // Direct Transactions States (for book cards NFC triggers)
   const [selectedBook, setSelectedBook] = useState(null);
@@ -251,6 +252,7 @@ const CatalogPage = ({
       });
       return;
     }
+    setActiveTab('barcode');
     setTopScannerOpen(true);
     setTopScannerError('');
     if (topScannerTimeoutRef.current) {
@@ -789,7 +791,9 @@ const CatalogPage = ({
       });
       return;
     }
+    setProcessingActionIsbn(book?.isbn);
     const passes = await checkGatingPasses('checkout', book?.isbn);
+    setProcessingActionIsbn(null);
     if (!passes) return;
     resetRatingAndCheckoutId();
     setSelectedBook(book);
@@ -1236,16 +1240,7 @@ const CatalogPage = ({
           </button>
         </div>
 
-        {topNfcActive && <div className="top-nfc-status-banner animate-fade-in" style={{ flexDirection: 'column', gap: '8px', padding: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="pulse-dot"></span>
-                <span>{t('catalog.nfcActiveBanner')}</span>
-              </div>
-              <button className="text-btn cancel-btn" onClick={stopTopNfcRead}>{t('common.cancel')}</button>
-            </div>
-            <ContinuousScannerAnimation action={nfcActionType || "checkout"} type="nfc" book={{coverUrl: "/images/book-front-cover.png"}} />
-          </div>}
+
 
         {topNfcError && <div className="top-p2d-error-banner animate-fade-in">
             <AlertTriangle size={14} />
@@ -1335,7 +1330,7 @@ const CatalogPage = ({
           </div> : error ? <div className="royal-card no-results-card">
             <p>{error}</p>
           </div> : filteredBooks.length > 0 ? <div className="catalog-grid">
-            {filteredBooks.map(book => <BookCard key={book.isbn || book.title} book={book} user={user} resolvedStatus={getResolvedStatus(book)} onCheckoutClick={handleCheckoutClick} onReturnClick={handleReturnClick} />)}
+            {filteredBooks.map(book => <BookCard key={book.isbn || book.title} book={book} user={user} resolvedStatus={getResolvedStatus(book)} onCheckoutClick={handleCheckoutClick} onReturnClick={handleReturnClick} isProcessing={processingActionIsbn === book.isbn} />)}
           </div> : <div className="royal-card no-results-card">
             <BookOpen size={48} className="no-results-icon" />
             <h3>{t('catalog.noVolumesFound')}</h3>

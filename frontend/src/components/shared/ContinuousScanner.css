@@ -12,21 +12,20 @@
 }
 
 .continuous-scanner-container.desktop-scale {
-  height: 300px;
-  max-width: 600px;
+  height: 380px;
+  max-width: 100%;
 }
 
 .continuous-scanner-container.mobile-scale {
-  height: 240px;
-  max-width: 360px;
+  height: 280px;
+  max-width: 100%;
 }
 
 /* Instruction Text */
 .anim-instruction-text {
-  position: absolute;
-  top: 15px;
-  left: 0;
-  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   z-index: 20;
   text-align: center;
   pointer-events: none;
@@ -73,11 +72,11 @@
 
 /* Checkout: shelf visible early, fades out */
 .checkout-barcode-shelf, .checkout-nfc-shelf {
-  animation: shelfFadeOut 15s infinite linear;
+  animation: shelfFadeOut 17s infinite linear;
 }
 /* Return: shelf appears at the end */
 .return-barcode-shelf, .return-nfc-shelf {
-  animation: shelfFadeIn 15s infinite linear;
+  animation: shelfFadeIn 17s infinite linear;
 }
 
 @keyframes shelfFadeOut {
@@ -128,10 +127,10 @@
   z-index: 1;
 }
 .checkout-barcode-person, .checkout-nfc-person {
-  animation: personCheckout 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  animation: personCheckout 17s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 .return-barcode-person, .return-nfc-person {
-  animation: personReturn 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  animation: personReturn 17s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes personCheckout {
@@ -145,7 +144,7 @@
 }
 
 .person-arm {
-  animation: armReach 15s infinite;
+  animation: armReach 17s infinite;
   transform-origin: 52px 40px;
 }
 @keyframes armReach {
@@ -194,9 +193,9 @@
   border-radius: 4px 2px 2px 4px;
 }
 .book-spine {
-  width: 24px; height: 130px;
+  width: 25px; height: 130px;
   background: #111;
-  transform: rotateY(-90deg) translateZ(45px);
+  transform: rotateY(-90deg) translateZ(44px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -229,7 +228,7 @@
 
 /* CHECKOUT BARCODE: shelf(spine) -> pull out -> front -> flip back -> tilt to camera */
 .checkout-barcode-book {
-  animation: bookCheckoutBarcode 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  animation: bookCheckoutBarcode 17s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 @keyframes bookCheckoutBarcode {
   0%, 10% { transform: translate3d(-15px, 10px, -150px) rotateY(90deg); }
@@ -242,7 +241,7 @@
 
 /* CHECKOUT NFC: shelf -> pull out -> front -> tilt for phone tap on top-left */
 .checkout-nfc-book {
-  animation: bookCheckoutNfc 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  animation: bookCheckoutNfc 17s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 @keyframes bookCheckoutNfc {
   0%, 10% { transform: translate3d(-15px, 10px, -150px) rotateY(90deg); }
@@ -254,7 +253,7 @@
 
 /* RETURN BARCODE: book already in hand -> scan -> success -> place back */
 .return-barcode-book {
-  animation: bookReturnBarcode 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  animation: bookReturnBarcode 17s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 @keyframes bookReturnBarcode {
   0%, 5% { transform: translate3d(45px, 0, 20px) rotateY(-210deg) rotateX(10deg); }
@@ -267,7 +266,7 @@
 
 /* RETURN NFC: front cover facing -> tap -> success -> place back */
 .return-nfc-book {
-  animation: bookReturnNfc 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  animation: bookReturnNfc 17s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 @keyframes bookReturnNfc {
   0%, 5% { transform: translate3d(20px, 10px, 20px) rotateY(-15deg) rotateX(20deg); }
@@ -284,10 +283,10 @@
   z-index: 10;
 }
 .checkout-barcode-hand, .checkout-nfc-hand {
-  animation: handCheckout 15s infinite;
+  animation: handCheckout 17s infinite;
 }
 .return-barcode-hand, .return-nfc-hand {
-  animation: handReturn 15s infinite;
+  animation: handReturn 17s infinite;
 }
 @keyframes handCheckout {
   0%, 18% { opacity: 0; }
@@ -316,7 +315,7 @@
   align-items: center;
   padding: 1px;
   border-radius: 1px;
-  animation: highlightQr 15s infinite;
+  animation: highlightQr 17s infinite;
 }
 @keyframes highlightQr {
   0%, 50% { box-shadow: 0 1px 3px rgba(0,0,0,0.5); border-color: #d4af37; }
@@ -402,7 +401,7 @@
 
 /* Phone Animation: QR Checkout - phone to the LEFT, angled to show rear camera toward book */
 .checkout-barcode-phone {
-  animation: phoneCheckoutBarcode 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  animation: phoneCheckoutBarcode 17s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 @keyframes phoneCheckoutBarcode {
   0%, 48% { transform: translate3d(-200px, 0, 0); opacity: 0; }
@@ -412,7 +411,7 @@
 
 /* Phone Animation: NFC Checkout - phone comes from TOP-LEFT to tap on book's top-left corner */
 .checkout-nfc-phone {
-  animation: phoneCheckoutNfc 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  animation: phoneCheckoutNfc 17s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 @keyframes phoneCheckoutNfc {
   0%, 48% { transform: translate3d(-100px, -100px, 0); opacity: 0; }
@@ -422,7 +421,7 @@
 
 /* Phone Animation: QR Return - phone visible early */
 .return-barcode-phone {
-  animation: phoneReturnBarcode 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  animation: phoneReturnBarcode 17s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 @keyframes phoneReturnBarcode {
   0%, 2% { transform: translate3d(-200px, 0, 0); opacity: 0; }
@@ -432,7 +431,7 @@
 
 /* Phone Animation: NFC Return - phone visible early, taps top-left */
 .return-nfc-phone {
-  animation: phoneReturnNfc 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  animation: phoneReturnNfc 17s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 @keyframes phoneReturnNfc {
   0%, 2% { transform: translate3d(-100px, -100px, 0); opacity: 0; }
@@ -459,49 +458,49 @@
 .mock-scan-body {
   position: absolute; width: 100%; height: 100%;
   display: flex; flex-direction: column; align-items: center;
-  animation: mockScanHide 15s infinite;
+  animation: mockScanHide 17s infinite;
 }
 .mock-success-body {
   position: absolute; width: 100%; height: 100%;
   display: flex; flex-direction: column;
-  animation: mockSuccessShow 15s infinite;
+  animation: mockSuccessShow 17s infinite;
 }
 
 /* For checkout: scan visible 0-65%, success visible 65-95% */
 .checkout-barcode-mode .mock-scan-body,
 .checkout-nfc-mode .mock-scan-body {
-  animation: mockScanCheckout 15s infinite;
+  animation: mockScanCheckout 17s infinite;
 }
 .checkout-barcode-mode .mock-success-body,
 .checkout-nfc-mode .mock-success-body {
-  animation: mockSuccessCheckout 15s infinite;
+  animation: mockSuccessCheckout 17s infinite;
 }
 @keyframes mockScanCheckout {
-  0%, 62% { opacity: 1; visibility: visible; }
-  65%, 100% { opacity: 0; visibility: hidden; }
+  0%, 45% { opacity: 1; visibility: visible; }
+  50%, 100% { opacity: 0; visibility: hidden; }
 }
 @keyframes mockSuccessCheckout {
-  0%, 62% { opacity: 0; visibility: hidden; }
-  65%, 92% { opacity: 1; visibility: visible; }
-  95%, 100% { opacity: 0; visibility: hidden; }
+  0%, 45% { opacity: 0; visibility: hidden; }
+  50%, 85% { opacity: 1; visibility: visible; }
+  90%, 100% { opacity: 0; visibility: hidden; }
 }
 
 /* For return: scan visible 0-40%, success 42-55% */
 .return-barcode-mode .mock-scan-body,
 .return-nfc-mode .mock-scan-body {
-  animation: mockScanReturn 15s infinite;
+  animation: mockScanReturn 17s infinite;
 }
 .return-barcode-mode .mock-success-body,
 .return-nfc-mode .mock-success-body {
-  animation: mockSuccessReturn 15s infinite;
+  animation: mockSuccessReturn 17s infinite;
 }
 @keyframes mockScanReturn {
-  0%, 35% { opacity: 1; visibility: visible; }
-  40%, 100% { opacity: 0; visibility: hidden; }
+  0%, 25% { opacity: 1; visibility: visible; }
+  30%, 100% { opacity: 0; visibility: hidden; }
 }
 @keyframes mockSuccessReturn {
-  0%, 35% { opacity: 0; visibility: hidden; }
-  40%, 55% { opacity: 1; visibility: visible; }
+  0%, 25% { opacity: 0; visibility: hidden; }
+  30%, 55% { opacity: 1; visibility: visible; }
   60%, 100% { opacity: 0; visibility: hidden; }
 }
 
@@ -529,10 +528,10 @@
   align-items: center;
 }
 .checkout-barcode-qr {
-  animation: zoomedCheckout 15s infinite;
+  animation: zoomedCheckout 17s infinite;
 }
 .return-barcode-qr {
-  animation: zoomedReturn 15s infinite;
+  animation: zoomedReturn 17s infinite;
 }
 @keyframes zoomedCheckout {
   0%, 50% { opacity: 0; transform: translateY(-50%) scale(0.8); }

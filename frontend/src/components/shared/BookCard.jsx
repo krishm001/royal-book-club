@@ -8,7 +8,8 @@ const BookCard = ({
   user,
   resolvedStatus,
   onCheckoutClick,
-  onReturnClick
+  onReturnClick,
+  isProcessing
 }) => {
   const {
     t
@@ -92,7 +93,7 @@ const BookCard = ({
         {checkoutStatus === 'available' ? onCheckoutClick ? <button onClick={() => onCheckoutClick(book)} className="royal-btn book-checkout-btn" id={`checkout-btn-${bookId}`}>
               <ShoppingBag size={14} style={{
           marginRight: '6px'
-        }} /> {t('catalog.checkoutBtnLabel')}
+        }} /> {isProcessing ? <span className="spinner-mini"></span> : t('catalog.checkoutBtnLabel')}
             </button> : <Link to={`/catalog/${encodeURIComponent(bookId)}`} className="royal-btn book-checkout-btn" id={`checkout-btn-${bookId}`}>
               <ShoppingBag size={14} style={{
           marginRight: '6px'
@@ -105,7 +106,7 @@ const BookCard = ({
         alignItems: 'center',
         justifyContent: 'center'
       }}>
-              {t('catalog.returnVolumeOnly')}
+              {isProcessing ? <span className="spinner-mini"></span> : t('catalog.returnVolumeOnly')}
             </button> : <Link to={`/catalog/${encodeURIComponent(bookId)}?action=return`} className="royal-btn book-checkout-btn return-action-btn" id={`return-btn-${bookId}`} style={{
         background: 'transparent',
         border: '1px solid var(--accent)',

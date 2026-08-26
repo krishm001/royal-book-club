@@ -73,6 +73,7 @@ const BookDetailPage = ({
   const [instantSuccess, setInstantSuccess] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [instantError, setInstantError] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Load gating settings on mount
   useEffect(() => {
@@ -256,7 +257,9 @@ const BookDetailPage = ({
   };
   const [cancellingInstant, setCancellingInstant] = useState(false);
   const handleInstantNfcAction = async actionType => {
+    setIsProcessing(true);
     const passes = await checkGatingPasses(actionType);
+    setIsProcessing(false);
     if (!passes) return;
     setInstantActionType(actionType);
     setInstantConfirmOpen(true);
@@ -567,7 +570,9 @@ const BookDetailPage = ({
   }, [loading, book]);
 
   const handleCheckoutClick = async () => {
+    setIsProcessing(true);
     const passes = await checkGatingPasses('checkout');
+    setIsProcessing(false);
     if (!passes) return;
     resetRatingAndCheckoutId();
     setNfcActionType('checkout');
@@ -587,7 +592,9 @@ const BookDetailPage = ({
     }
   };
   const handleReturnClick = async () => {
+    setIsProcessing(true);
     const passes = await checkGatingPasses('return');
+    setIsProcessing(false);
     if (!passes) return;
     resetRatingAndCheckoutId();
     setNfcActionType('return');
