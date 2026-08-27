@@ -184,13 +184,13 @@
   width: 90px; height: 130px;
   transform: translateZ(12px);
   border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 2px 4px 4px 2px;
+  border-radius: 0 4px 4px 0;
 }
 .book-back {
   width: 90px; height: 130px;
   transform: rotateY(180deg) translateZ(12px);
   border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 4px 2px 2px 4px;
+  border-radius: 0 4px 4px 0;
 }
 .book-spine {
   width: 24px; height: 130px;
@@ -647,9 +647,9 @@
 /* Book Core to prevent tearing */
 .book-core {
   position: absolute;
-  width: 88px;
+  width: 90px;
   height: 128px;
   background: #f5f2eb;
-  transform: translateZ(2px);
+  transform: translateZ(0px);
   border-radius: 2px 5px 5px 2px;
 }

@@ -106,12 +106,12 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
         if (phase === 0) return t('catalog.animFindBook', 'Find and pick up the book from the shelf');
         if (phase === 1) return t('catalog.animFlipBook', 'Flip to the back cover');
         if (phase === 2) return 'Point camera at the QR sticker';
-        return t('catalog.animComplete', 'Checkout complete!');
+        return t('catalog.animCheckoutComplete', 'Checkout complete!');
       } else {
         if (phase === 0) return t('catalog.animFindBook', 'Find and pick up the book from the shelf');
         if (phase === 1) return 'Hold the front cover facing you';
         if (phase === 2) return 'Tap your phone on the top-left NFC logo';
-        return t('catalog.animComplete', 'Checkout complete!');
+        return t('catalog.animCheckoutComplete', 'Checkout complete!');
       }
     }
   };
@@ -175,14 +175,14 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
                 </div>
               </div>
               <div style={{ fontSize: '3px', color: tPalette.textSecondary, textAlign: 'center', margin: '2px 4px', lineHeight: '1.2' }}>
-                A physical possession barcode or NFC match has been registered. Proceed with instant checkout? No curator approval required.
+                {t('catalog.p2dDesc', 'A physical possession barcode or NFC match has been registered.')} Proceed with instant checkout? No curator approval required.
               </div>
               <div style={{ display: 'flex', gap: '2px', margin: '2px 4px' }}>
                 <div style={{ flex: 1, fontSize: '3.5px', textAlign: 'center', padding: '2px', borderRadius: '1px', border: `1px solid ${tPalette.accent}`, color: tPalette.accent }}>
                   CANCEL
                 </div>
                 <div style={{ flex: 1, fontSize: '3.5px', textAlign: 'center', padding: '2px', borderRadius: '1px', background: tPalette.accent, color: '#fff', fontWeight: 'bold' }}>
-                  {isReturn ? 'CONFIRM RETURN' : 'CONFIRM CHECKOUT'}
+                  {isReturn ? t('common.confirm', 'CONFIRM') + ' RETURN' : t('common.confirm', 'CONFIRM') + ' CHECKOUT'}
                 </div>
               </div>
             </>
@@ -191,11 +191,11 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
               <div style={{ margin: '3px auto', width: '14px', height: '14px', borderRadius: '50%', border: `2px solid ${tPalette.checkColor}`, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={tPalette.checkColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
               </div>
-              <div style={{ fontSize: '5px', fontWeight: 'bold', color: tPalette.textPrimary, textAlign: 'center', fontFamily: 'Georgia, serif' }}>Royal Verification Confirmed</div>
+              <div style={{ fontSize: '5px', fontWeight: 'bold', color: tPalette.textPrimary, textAlign: 'center', fontFamily: 'Georgia, serif' }}>{t('catalog.royalVerification', 'Royal Verification Confirmed')}</div>
               <div style={{ fontSize: '3.5px', color: tPalette.textSecondary, textAlign: 'center', margin: '1px 0' }}>Transaction ledger updated.</div>
               
               <div style={{ margin: '2px 4px', padding: '2px', border: `1px solid ${tPalette.glassBorder}`, borderRadius: '2px', background: tPalette.glassBg }}>
-                <div style={{ fontSize: '3.5px', color: tPalette.textSecondary, textAlign: 'center', marginBottom: '1px' }}>How was your experience?</div>
+                <div style={{ fontSize: '3.5px', color: tPalette.textSecondary, textAlign: 'center', marginBottom: '1px' }}>{t('catalog.howExperience', 'How was your experience?')}</div>
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '1px' }}>
                   {[1,2,3,4,5].map(i => (
                     <svg key={i} width="5" height="5" viewBox="0 0 24 24" fill="none" stroke={tPalette.accent} strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
@@ -204,7 +204,7 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
               </div>
               <div style={{ display: 'flex', gap: '2px', margin: '2px 4px' }}>
                 <div style={{ flex: 1, fontSize: '3.5px', textAlign: 'center', padding: '2px', borderRadius: '1px', background: tPalette.accent, color: '#fff', fontWeight: 'bold' }}>
-                  {isReturn ? 'WRITE REVIEW' : 'VIEW GATEPASS'}
+                  {isReturn ? t('catalog.writeReview', 'WRITE REVIEW') : t('catalog.viewGatepass', 'VIEW GATEPASS')}
                 </div>
                 <div style={{ flex: 0.6, fontSize: '3.5px', textAlign: 'center', padding: '2px', borderRadius: '1px', border: `1px solid ${tPalette.accent}`, color: tPalette.accent }}>
                   DONE
@@ -223,12 +223,12 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
   return (
     <div className={`continuous-scanner-container ${type}-mode ${animClass}-mode ${isDesktop ? 'desktop-scale' : 'mobile-scale'}`}>
       
-      {/* Instruction Text Overlay - Renders instantly */}
-      <div className="anim-instruction-text" style={{ position: "relative", top: "10px", marginBottom: "15px", zIndex: 100 }}>
-        <p>{getInstructionText()}</p>
-      </div>
-
       {renderViewfinder && renderViewfinder}
+
+      {/* Instruction Text Overlay */}
+      <div className="anim-instruction-text" style={{ position: "relative", margin: "8px 0", zIndex: 100, textAlign: "center" }}>
+        <p style={{ margin: 0, fontWeight: "600", fontSize: "1.2rem", color: "var(--text-primary)" }}>{getInstructionText()}</p>
+      </div>
 
       <div className="scene-3d">
         
