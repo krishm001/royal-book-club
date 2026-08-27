@@ -9,6 +9,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { isNfcTagMatched } from './CatalogPage';
 import ShareModal from '../../components/shared/ShareModal';
 import ContinuousScannerAnimation from '../../components/shared/ContinuousScannerAnimation';
+import ScannerModal from '../../components/shared/ScannerModal';
 import './BookDetailPage.css';
 const SafeHtml5Qrcode = Html5Qrcode;
 const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
