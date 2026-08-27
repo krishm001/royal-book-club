@@ -1141,10 +1141,12 @@ const CatalogPage = ({
       startCardBarcodeScanner(selectedBook);
     }
   };
-  const handleCloseCardModal = async () => {
+  const handleCloseCardModal = async (keepBook = false) => {
     await stopCardBarcodeScanner();
     setNfcModalOpen(false);
-    setSelectedBook(null);
+    if (!keepBook) {
+      setSelectedBook(null);
+    }
   };
   const handleSubmitFallbackRequest = async () => {
     if (!selectedBook) return;
@@ -1354,7 +1356,7 @@ const CatalogPage = ({
           onClose={handleCloseCardModal}
           activeTab={activeTab}
           onTabChange={(tab) => {
-              if (tab === 'manual') { handleCloseCardModal(); setFallbackModalOpen(true); }
+              if (tab === 'manual') { handleCloseCardModal(true); setFallbackModalOpen(true); }
               else handleCardTabChange(tab);
           }}
           book={selectedBook}

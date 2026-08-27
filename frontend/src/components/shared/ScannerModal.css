@@ -4,10 +4,14 @@
     background: var(--glass-bg);
     backdrop-filter: blur(8px);
     display: flex;
-    align-items: center;
+    align-items: flex-start; /* Prevent top clipping */
     justify-content: center;
     z-index: 1100;
     padding: 20px;
+    overflow-y: auto; /* Let overlay scroll if modal is taller than screen */
+}
+.universal-scanner-modal {
+    margin: auto; /* Re-center the modal when it is shorter than screen */
 }
 
 .universal-scanner-modal {
@@ -120,7 +124,7 @@
     .universal-scanner-modal {
         max-width: 100%;
         max-height: 95vh;
-        margin: 0;
+        margin: auto;
     }
     .scanner-focus-ring-container {
         height: 120px !important;
