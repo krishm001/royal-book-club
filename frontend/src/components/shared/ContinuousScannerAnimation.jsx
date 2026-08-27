@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { Wifi, QrCode, CheckCircle, Star } from 'lucide-react';
 import { getLogoSvgString } from '../../utils/qrStickerGenerator';

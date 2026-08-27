@@ -193,9 +193,9 @@
   border-radius: 4px 2px 2px 4px;
 }
 .book-spine {
-  width: 25px; height: 130px;
+  width: 24px; height: 130px;
   background: #111;
-  transform: rotateY(-90deg) translateZ(44px);
+  transform: rotateY(-90deg) translateZ(45px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -231,12 +231,11 @@
   animation: bookCheckoutBarcode 20s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 @keyframes bookCheckoutBarcode {
-  0%, 10% { transform: translate3d(-15px, 10px, -150px) rotateY(90deg); }
-  18%, 22% { transform: translate3d(-15px, 10px, 0px) rotateY(90deg); }
-  28%, 35% { transform: translate3d(0px, 0px, 50px) rotateY(0deg); }
-  42%, 50% { transform: translate3d(0px, 0px, 50px) rotateY(-180deg); }
-  55%, 88% { transform: translate3d(45px, 0px, 20px) rotateY(-210deg) rotateX(10deg); }
-  95%, 100% { transform: translate3d(-15px, 10px, -150px) rotateY(90deg); }
+  0%, 8% { transform: translate3d(-15px, 10px, -150px) rotateY(90deg); }
+  12%, 15% { transform: translate3d(-15px, 10px, 0px) rotateY(90deg); }
+  22%, 30% { transform: translate3d(0px, 0px, 50px) rotateY(-180deg); }
+  35%, 80% { transform: translate3d(45px, 0px, 20px) rotateY(-210deg) rotateX(10deg); }
+  85%, 100% { transform: translate3d(-15px, 10px, -150px) rotateY(90deg); }
 }
 
 /* CHECKOUT NFC: shelf -> pull out -> front -> tilt for phone tap on top-left */
@@ -244,11 +243,11 @@
   animation: bookCheckoutNfc 20s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 @keyframes bookCheckoutNfc {
-  0%, 10% { transform: translate3d(-15px, 10px, -150px) rotateY(90deg); }
-  18%, 22% { transform: translate3d(-15px, 10px, 0px) rotateY(90deg); }
-  28%, 45% { transform: translate3d(0px, 0px, 50px) rotateY(0deg); }
-  52%, 88% { transform: translate3d(20px, 10px, 20px) rotateY(-15deg) rotateX(20deg); }
-  95%, 100% { transform: translate3d(-15px, 10px, -150px) rotateY(90deg); }
+  0%, 8% { transform: translate3d(-15px, 10px, -150px) rotateY(90deg); }
+  12%, 15% { transform: translate3d(-15px, 10px, 0px) rotateY(90deg); }
+  22%, 30% { transform: translate3d(0px, 0px, 50px) rotateY(0deg); }
+  35%, 80% { transform: translate3d(20px, 10px, 20px) rotateY(-15deg) rotateX(20deg); }
+  85%, 100% { transform: translate3d(-15px, 10px, -150px) rotateY(90deg); }
 }
 
 /* RETURN BARCODE: book already in hand -> scan -> success -> place back */
@@ -404,9 +403,9 @@
   animation: phoneCheckoutBarcode 20s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 @keyframes phoneCheckoutBarcode {
-  0%, 48% { transform: translate3d(-200px, 0, 0); opacity: 0; }
-  55%, 88% { transform: translate3d(-70px, 0, 80px) rotateY(-30deg); opacity: 1; }
-  92%, 100% { transform: translate3d(-200px, 0, 0); opacity: 0; }
+  0%, 30% { transform: translate3d(-200px, 0, 0); opacity: 0; }
+  35%, 80% { transform: translate3d(-70px, 0, 80px) rotateY(-30deg); opacity: 1; }
+  85%, 100% { transform: translate3d(-200px, 0, 0); opacity: 0; }
 }
 
 /* Phone Animation: NFC Checkout - phone comes from TOP-LEFT to tap on book's top-left corner */
@@ -414,9 +413,9 @@
   animation: phoneCheckoutNfc 20s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 @keyframes phoneCheckoutNfc {
-  0%, 48% { transform: translate3d(-100px, -100px, 0); opacity: 0; }
-  55%, 88% { transform: translate3d(-30px, -50px, 80px) rotateX(-45deg) rotateY(15deg); opacity: 1; }
-  92%, 100% { transform: translate3d(-100px, -100px, 0); opacity: 0; }
+  0%, 30% { transform: translate3d(-100px, -100px, 0); opacity: 0; }
+  35%, 80% { transform: translate3d(-30px, -50px, 80px) rotateX(-45deg) rotateY(15deg); opacity: 1; }
+  85%, 100% { transform: translate3d(-100px, -100px, 0); opacity: 0; }
 }
 
 /* Phone Animation: QR Return - phone visible early */
@@ -425,8 +424,8 @@
 }
 @keyframes phoneReturnBarcode {
   0%, 2% { transform: translate3d(-200px, 0, 0); opacity: 0; }
-  5%, 42% { transform: translate3d(-70px, 0, 80px) rotateY(-30deg); opacity: 1; }
-  50%, 100% { transform: translate3d(-200px, 0, 0); opacity: 0; }
+  5%, 50% { transform: translate3d(-70px, 0, 80px) rotateY(-30deg); opacity: 1; }
+  55%, 100% { transform: translate3d(-200px, 0, 0); opacity: 0; }
 }
 
 /* Phone Animation: NFC Return - phone visible early, taps top-left */
@@ -435,8 +434,8 @@
 }
 @keyframes phoneReturnNfc {
   0%, 2% { transform: translate3d(-100px, -100px, 0); opacity: 0; }
-  5%, 42% { transform: translate3d(-30px, -50px, 80px) rotateX(-45deg) rotateY(15deg); opacity: 1; }
-  50%, 100% { transform: translate3d(-100px, -100px, 0); opacity: 0; }
+  5%, 50% { transform: translate3d(-30px, -50px, 80px) rotateX(-45deg) rotateY(15deg); opacity: 1; }
+  55%, 100% { transform: translate3d(-100px, -100px, 0); opacity: 0; }
 }
 
 /* -------------------

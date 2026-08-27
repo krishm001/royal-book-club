@@ -21,7 +21,7 @@ const ScannerModal = ({
     const { t } = useLanguage();
     if (!isOpen) return null;
 
-    const Viewfinder = () => (activeTab === 'barcode' || activeTab === 'validator_qr') && scannerId && !isConfirmation ? (
+    const Viewfinder = () => (activeTab === 'barcode' || activeTab === 'validator_qr') && scannerId  ? (
         <div className="viewfinder-wrapper">
             <div 
                 id={scannerId} 
@@ -41,7 +41,7 @@ const ScannerModal = ({
                         <h3>
                             {isConfirmation 
                                 ? (actionType === 'return' ? 'Royal Return Verification' : 'Royal Checkout Verification')
-                                : t('catalog.selfCheckout') || 'Royal Scanner'}
+                                : t('catalog.selfCheckout', 'Royal Scanner')}
                         </h3>
                     </div>
                     <button onClick={onClose} className="close-btn"><X size={18} /></button>
@@ -50,12 +50,12 @@ const ScannerModal = ({
                 {/* Tabs (Compressed on Mobile, Full on Desktop) */}
                 <div className="scanner-tabs">
                     <button 
-                        className={`tab-btn ${activeTab === 'nfc' ? 'active' : ''} ${!book && !isConfirmation && activeTab !== 'nfc' ? '' : (!book?.ntagUid && book !== null ? 'tab-disabled' : '')}`}
+                        className={`tab-btn ${activeTab === 'nfc' ? 'active' : ''} ${!book  && activeTab !== 'nfc' ? '' : (!book?.ntagUid && book !== null ? 'tab-disabled' : '')}`}
                         onClick={() => onTabChange('nfc')}
                         disabled={book !== null && !book?.ntagUid}
                     >
                         <Smartphone size={16} className="desktop-icon" /> 
-                        <span className="desktop-text">{t('catalog.nfcTap') || 'NFC Tap'}</span>
+                        <span className="desktop-text">{t('catalog.nfcTap', 'NFC Tap')}</span>
                         <span className="mobile-text">Tap</span>
                     </button>
                     <button 
@@ -63,7 +63,7 @@ const ScannerModal = ({
                         onClick={() => onTabChange('barcode')}
                     >
                         <Camera size={16} className="desktop-icon" /> 
-                        <span className="desktop-text">{t('catalog.qrBarcodeScan') || 'QR / Barcode Scan'}</span>
+                        <span className="desktop-text">{t('catalog.qrBarcodeScan', 'QR / Barcode Scan')}</span>
                         <span className="mobile-text">Scan</span>
                     </button>
                     {showManualTab && (
@@ -72,7 +72,7 @@ const ScannerModal = ({
                             onClick={() => onTabChange('manual')}
                         >
                             <Edit3 size={16} className="desktop-icon" />
-                            <span className="desktop-text">{t('catalog.manualSubtab') || 'Manual Request'}</span>
+                            <span className="desktop-text">{t('catalog.manualSubtab', 'Manual Request')}</span>
                             <span className="mobile-text">Manual</span>
                         </button>
                     )}
