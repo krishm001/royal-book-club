@@ -61,17 +61,18 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
     const getPhase = () => {
       const elapsed = ((Date.now() - startTimeRef.current) / 1000) % 20;
       if (isReturn) {
-        if (elapsed < 5) return 0;
-        if (elapsed < 10) return 1; // Show success longer (pause)
-        if (elapsed < 15) return 2;
-        return 3;
-        return 0;
+        // Return: scan(0-5s) -> success(5-10s) -> shelve(10-15s) -> reset(15-20s)
+        if (elapsed < 5) return 0;  // scanning
+        if (elapsed < 10) return 1; // success pause
+        if (elapsed < 15) return 2; // placing back
+        return 3;                   // resetting
       } else {
-        if (elapsed < 3) return 0;
-        if (elapsed < 6) return 1;
-        if (elapsed < 11) return 2;
-        if (elapsed < 16) return 3; // Show success longer (pause)
-        return 0;
+        // Checkout: shelf(0-3s) -> pull/flip(3-7s) -> scan/tap(7-11s) -> success(11-16s) -> return(16-20s)
+        if (elapsed < 3) return 0;  // find book on shelf
+        if (elapsed < 7) return 1;  // pick up / flip
+        if (elapsed < 11) return 2; // scanning / tapping
+        if (elapsed < 16) return 3; // checkout complete (5s pause)
+        return 0;                   // resetting
       }
     };
     const interval = setInterval(() => setPhase(getPhase()), 500);
@@ -91,34 +92,37 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
   const getInstructionText = () => {
     if (isReturn) {
       if (type === 'barcode') {
-        if (phase === 0) return 'Point your camera at the QR sticker on the back cover';
-        if (phase === 1) return 'Scan complete! Return verified.';
-        if (phase === 2) return t('catalog.animPlaceBack', 'Place the book back on the shelf');
-        return 'All done!';
+        if (phase === 0) return t('catalog.animScanQr', 'Scan QR on back cover');
+        if (phase === 1) return t('catalog.animReturnComplete', 'Return complete!');
+        if (phase === 2) return t('catalog.animPlaceBack', 'Place book on shelf');
+        return t('catalog.animDone', 'All done!');
       } else {
-        if (phase === 0) return 'Tap your phone on the NFC logo (top-left of front cover)';
-        if (phase === 1) return 'Tap complete! Return verified.';
-        if (phase === 2) return t('catalog.animPlaceBack', 'Place the book back on the shelf');
-        return 'All done!';
+        if (phase === 0) return t('catalog.animNfcTap', 'Tap phone on NFC logo');
+        if (phase === 1) return t('catalog.animReturnComplete', 'Return complete!');
+        if (phase === 2) return t('catalog.animPlaceBack', 'Place book on shelf');
+        return t('catalog.animDone', 'All done!');
       }
     } else {
       if (type === 'barcode') {
-        if (phase === 0) return t('catalog.animFindBook', 'Find and pick up the book from the shelf');
-        if (phase === 1) return t('catalog.animFlipBook', 'Flip to the back cover');
-        if (phase === 2) return 'Point camera at the QR sticker';
+        if (phase === 0) return t('catalog.animFindBook', 'Pick up the book');
+        if (phase === 1) return t('catalog.animFlipBook', 'Flip to back cover');
+        if (phase === 2) return t('catalog.animScanQr', 'Scan QR on back cover');
         return t('catalog.animCheckoutComplete', 'Checkout complete!');
       } else {
-        if (phase === 0) return t('catalog.animFindBook', 'Find and pick up the book from the shelf');
-        if (phase === 1) return 'Hold the front cover facing you';
-        if (phase === 2) return 'Tap your phone on the top-left NFC logo';
+        if (phase === 0) return t('catalog.animFindBook', 'Pick up the book');
+        if (phase === 1) return t('catalog.animFlipFront', 'Hold front cover facing you');
+        if (phase === 2) return t('catalog.animNfcTap', 'Tap phone on NFC logo');
         return t('catalog.animCheckoutComplete', 'Checkout complete!');
       }
     }
   };
 
-  // Miniature Phone Screen that mirrors the ACTUAL popup UI
-    const MockPhoneScreen = () => (
+  // Phase-aware Phone Screen — shows scanning UI or success UI based on current phase
+  const showSuccess = isReturn ? (phase === 1) : (phase === 3);
+  
+  const MockPhoneScreen = () => (
     <div className="mock-screen" style={{ background: tPalette.surface }}>
+      {/* Status bar */}
       <div className="mock-status-bar" style={{ background: tPalette.headerBg }}>
         <span style={{ fontSize: '4px', color: tPalette.textSecondary }}>9:41</span>
         <div style={{ display: 'flex', gap: '1px' }}>
@@ -126,45 +130,52 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
           <div style={{ width: '6px', height: '3px', background: tPalette.textSecondary, borderRadius: '1px' }}></div>
         </div>
       </div>
-      <div style={{ display: 'flex', margin: '2px', background: tPalette.glassBg, borderRadius: '2px', padding: '1px', borderBottom: `0.5px solid ${tPalette.glassBorder}` }}>
-        <div style={{ flex: 1, fontSize: '3px', textAlign: 'center', color: type==='nfc' ? '#fff' : tPalette.textSecondary, background: type==='nfc' ? tPalette.accent : 'transparent', borderRadius: '1.5px', padding: '1px 0' }}>Tap</div>
-        <div style={{ flex: 1, fontSize: '3px', textAlign: 'center', color: type==='barcode' ? '#fff' : tPalette.textSecondary, background: type==='barcode' ? tPalette.accent : 'transparent', borderRadius: '1.5px', padding: '1px 0' }}>Scan</div>
-        <div style={{ flex: 1, fontSize: '3px', textAlign: 'center', color: tPalette.textSecondary, padding: '1px 0' }}>Manual</div>
-      </div>
-      
-      <div style={{ padding: '3px 4px 2px', borderBottom: `1px solid ${tPalette.glassBorder}` }}>
-        <div style={{ fontSize: '5px', fontWeight: 'bold', color: tPalette.accent, fontFamily: 'Georgia, serif' }}>
-          {isReturn ? 'Royal Return Verification' : 'Royal Checkout Verification'}
-        </div>
+      {/* Tab row matching real UI: Tap | Scan | Manual | X */}
+      <div style={{ display: 'flex', margin: '1px', gap: '1px' }}>
+        <div style={{ flex: 1, fontSize: '3px', textAlign: 'center', fontWeight: 'bold', color: type==='nfc' ? '#fff' : tPalette.textSecondary, background: type==='nfc' ? tPalette.accent : 'transparent', borderRadius: '1.5px', padding: '1.5px 0', border: type==='nfc' ? 'none' : `0.5px solid ${tPalette.glassBorder}` }}>Tap</div>
+        <div style={{ flex: 1, fontSize: '3px', textAlign: 'center', fontWeight: 'bold', color: type==='barcode' ? '#fff' : tPalette.textSecondary, background: type==='barcode' ? tPalette.accent : 'transparent', borderRadius: '1.5px', padding: '1.5px 0', border: type==='barcode' ? 'none' : `0.5px solid ${tPalette.glassBorder}` }}>Scan</div>
+        <div style={{ flex: 1, fontSize: '3px', textAlign: 'center', color: tPalette.textSecondary, padding: '1.5px 0', border: `0.5px solid ${tPalette.glassBorder}`, borderRadius: '1.5px' }}>Manual</div>
+        <div style={{ width: '8px', fontSize: '4px', textAlign: 'center', color: tPalette.textSecondary, padding: '1px 0' }}>×</div>
       </div>
 
-      <div style={{ display: 'flex', margin: '2px 3px', background: tPalette.glassBg, borderRadius: '3px', padding: '1px' }}>
-        <div style={{ flex: 1, fontSize: '4px', textAlign: 'center', color: tPalette.textSecondary, padding: '2px 0' }}>NFC Tap</div>
-        <div style={{ flex: 1, fontSize: '4px', textAlign: 'center', fontWeight: 'bold', padding: '2px 0', background: `linear-gradient(135deg, ${tPalette.accent}, ${tPalette.accentHover || tPalette.accent})`, borderRadius: '2px', color: '#fff' }}>QR Scan</div>
-        <div style={{ flex: 1, fontSize: '4px', textAlign: 'center', color: tPalette.textSecondary, padding: '2px 0' }}>Manual</div>
-      </div>
-
-      <div className="mock-phone-body-state">
-        {type === 'barcode' && (
-          <div className="mock-scan-body">
-            <div style={{
-              width: '34px', height: '22px', background: tPalette.viewfinderBg,
-              border: `1px solid ${tPalette.accent}`, borderRadius: '2px',
-              margin: '4px auto 2px', position: 'relative', overflow: 'hidden'
-            }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, width: '5px', height: '5px', borderTop: '1px solid #fff', borderLeft: '1px solid #fff' }}></div>
-              <div style={{ position: 'absolute', top: 0, right: 0, width: '5px', height: '5px', borderTop: '1px solid #fff', borderRight: '1px solid #fff' }}></div>
-              <div style={{ position: 'absolute', bottom: 0, left: 0, width: '5px', height: '5px', borderBottom: '1px solid #fff', borderLeft: '1px solid #fff' }}></div>
-              <div style={{ position: 'absolute', bottom: 0, right: 0, width: '5px', height: '5px', borderBottom: '1px solid #fff', borderRight: '1px solid #fff' }}></div>
-              <div className="mock-laser" style={{ background: '#ff3b30', boxShadow: '0 0 2px #ff3b30' }}></div>
-            </div>
-            <div style={{ fontSize: '4px', color: tPalette.textSecondary, textAlign: 'center' }}>
-              Scan QR code on back cover
-            </div>
+      <div className="mock-phone-body-state" style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+        {/* SCANNING STATE — visible when NOT showing success */}
+        {!showSuccess && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2px' }}>
+            {type === 'barcode' ? (
+              <>
+                {/* Mini viewfinder */}
+                <div style={{
+                  width: '38px', height: '16px', background: tPalette.viewfinderBg,
+                  border: `1px solid ${tPalette.accent}`, borderRadius: '2px',
+                  margin: '3px auto 2px', position: 'relative', overflow: 'hidden'
+                }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '4px', borderTop: '1px solid #fff', borderLeft: '1px solid #fff' }}></div>
+                  <div style={{ position: 'absolute', top: 0, right: 0, width: '4px', height: '4px', borderTop: '1px solid #fff', borderRight: '1px solid #fff' }}></div>
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, width: '4px', height: '4px', borderBottom: '1px solid #fff', borderLeft: '1px solid #fff' }}></div>
+                  <div style={{ position: 'absolute', bottom: 0, right: 0, width: '4px', height: '4px', borderBottom: '1px solid #fff', borderRight: '1px solid #fff' }}></div>
+                  <div className="mock-laser" style={{ background: '#ff3b30', boxShadow: '0 0 2px #ff3b30' }}></div>
+                </div>
+                <div style={{ fontSize: '3.5px', fontWeight: 'bold', color: tPalette.textPrimary, textAlign: 'center', margin: '2px 0' }}>
+                  {isReturn ? 'Scan QR on back cover' : 'Scan QR on back cover'}
+                </div>
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '8px 2px' }}>
+                <div style={{ fontSize: '4px', fontWeight: 'bold', color: tPalette.textPrimary, margin: '4px 0' }}>
+                  Tap phone on NFC logo
+                </div>
+                <div style={{ fontSize: '3px', color: tPalette.textSecondary }}>
+                  Hold steady near top-left corner
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        <div className="mock-success-body">
+        {/* SUCCESS STATE — visible when showing success */}
+        {showSuccess && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2px' }}>
           {isConfirmation ? (
             <>
               <div style={{ padding: '2px 4px', border: `1px solid ${tPalette.glassBorder}`, borderRadius: '2px', background: tPalette.surfaceEl, margin: '2px 4px', display: 'flex', gap: '3px' }}>
@@ -212,7 +223,8 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
               </div>
             </>
           )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

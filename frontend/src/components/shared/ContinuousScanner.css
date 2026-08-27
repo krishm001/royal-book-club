@@ -193,9 +193,9 @@
   border-radius: 0 4px 4px 0;
 }
 .book-spine {
-  width: 24px; height: 130px;
+  width: 26px; height: 130px;
   background: #111;
-  transform: rotateY(-90deg) translateZ(45px);
+  transform: rotateY(-90deg) translateZ(45px) translateX(-1px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -450,55 +450,9 @@
 .mock-phone-body-state {
   flex: 1; position: relative;
 }
-.mock-scan-body {
-  position: absolute; width: 100%; height: 100%;
-  display: flex; flex-direction: column; align-items: center;
-  animation: mockScanHide 20s infinite;
-}
-.mock-success-body {
-  position: absolute; width: 100%; height: 100%;
-  display: flex; flex-direction: column;
-  animation: mockSuccessShow 20s infinite;
-}
 
-/* For checkout: scan visible 0-65%, success visible 65-95% */
-.checkout-barcode-mode .mock-scan-body,
-.checkout-nfc-mode .mock-scan-body {
-  animation: mockScanCheckout 20s infinite;
-}
-.checkout-barcode-mode .mock-success-body,
-.checkout-nfc-mode .mock-success-body {
-  animation: mockSuccessCheckout 20s infinite;
-}
-@keyframes mockScanCheckout {
-  0%, 28% { opacity: 0; visibility: hidden; }
-  30%, 55% { opacity: 1; visibility: visible; }
-  57%, 100% { opacity: 0; visibility: hidden; }
-}
-@keyframes mockSuccessCheckout {
-  0%, 53% { opacity: 0; visibility: hidden; }
-  55%, 80% { opacity: 1; visibility: visible; }
-  82%, 100% { opacity: 0; visibility: hidden; }
-}
+/* Mock phone scan/success bodies - visibility now controlled by React phase state, not CSS animations */
 
-/* For return: scan visible 0-40%, success 42-55% */
-.return-barcode-mode .mock-scan-body,
-.return-nfc-mode .mock-scan-body {
-  animation: mockScanReturn 20s infinite;
-}
-.return-barcode-mode .mock-success-body,
-.return-nfc-mode .mock-success-body {
-  animation: mockSuccessReturn 20s infinite;
-}
-@keyframes mockScanReturn {
-  0%, 25% { opacity: 1; visibility: visible; }
-  27%, 100% { opacity: 0; visibility: hidden; }
-}
-@keyframes mockSuccessReturn {
-  0%, 23% { opacity: 0; visibility: hidden; }
-  25%, 50% { opacity: 1; visibility: visible; }
-  52%, 100% { opacity: 0; visibility: hidden; }
-}
 
 .mock-laser {
   width: 100%; height: 1px;
@@ -647,9 +601,9 @@
 /* Book Core to prevent tearing */
 .book-core {
   position: absolute;
-  width: 90px;
-  height: 128px;
-  background: #f5f2eb;
-  transform: translateZ(0px);
-  border-radius: 2px 5px 5px 2px;
+  width: 92px;
+  height: 130px;
+  background: #444;
+  transform: translateX(-1px);
+  left: 0; top: 0;
 }

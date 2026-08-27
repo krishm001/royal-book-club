@@ -2213,9 +2213,15 @@ const BookDetailPage = ({
     
       <ScannerModal 
         isOpen={nfcModalOpen} 
-        onClose={handleCloseCardModal} 
+        onClose={handleCloseNfcModal} 
         activeTab={activeTab} 
         onTabChange={(tab) => {
+          if (tab === 'manual') {
+            // Close scanner modal, open the manual/fallback submission form
+            handleCloseNfcModal();
+            setFallbackModalOpen(true);
+            return;
+          }
           setActiveTab(tab);
           if (tab === 'barcode' || tab === 'validator_qr') {
             startDetailBarcodeScanner();
