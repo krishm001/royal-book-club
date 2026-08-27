@@ -437,3 +437,13 @@ This section details the architectural designs, database schema updates, and sta
   - One-click copy link to clipboard with visual toast checkmark feedback.
   - Integrated into Book Details Page (`BookDetailPage.jsx`) and Discourses / Courtyard Debates (`DiscoursesPage.jsx`).
 
+
+### Patron Experience Rules (Scanner Modal)
+1. **Consistency**: All three scanner contexts (Top Scanner, Book List Scanner, Book Detail Scanner) MUST use the shared `<ScannerModal>` component. Inline modals are strictly prohibited.
+2. **Compact Viewfinder**: The HTML5 QrCode camera viewport (`.scanner-focus-ring-container`) must be capped at `160px` in height universally to preserve vertical space for instructions and 3D animations.
+3. **No Extraneous Headers**: The modal must not contain dedicated title bars (e.g. "Self-Checkout"). The close (X) button must reside within the tabs row.
+4. **Tab Naming**: Tab labels must strictly be one word (e.g. "Tap", "Scan", "Manual").
+5. **Caption Styling**: The instruction overlay (`.anim-instruction-text`) must retain its native pill-box styling (`background: var(--accent); color: #fff;`) to ensure high visibility.
+6. **Modal Sizing**: The modal must never consume `100vh` or stretch to the screen edges on mobile. It must retain a popup aesthetic (`max-height: 90vh; border-radius: 12px; margin: 16px;`) with internal `overflow-y: auto`, locking the underlying document `body` from scrolling while open.
+7. **Animation Sync**: React state phases (e.g. `(Date.now() - startTimeRef.current) / 1000 % 20`) must mathematically map to the exact percentage blocks defined in the CSS `@keyframes` (e.g. 55% = 11 seconds) for both Checkout and Return timelines.
+8. **Mock Phone Fidelity**: The 3D Mock Phone in the animation must faithfully recreate the real UI of the `<ScannerModal>`, including tabs, viewfinders, and success states (e.g., P2D Confirmation or Star Rating screens).

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Camera, Smartphone, Scan, X, AlertTriangle, Edit3 } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import ContinuousScannerAnimation from './ContinuousScannerAnimation';
@@ -19,6 +19,18 @@ const ScannerModal = ({
     showManualTab = false
 }) => {
     const { t } = useLanguage();
+
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     const Viewfinder = () => (activeTab === 'barcode' || activeTab === 'validator_qr') && scannerId  ? (

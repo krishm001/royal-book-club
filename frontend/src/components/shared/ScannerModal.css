@@ -19,7 +19,7 @@
     display: flex;
     flex-direction: column;
     max-height: 95vh;
-    overflow-y: auto;
+    overflow-y: auto; overscroll-behavior: contain;
 }
 
 .scanner-modal-header {
@@ -105,7 +105,7 @@
 .scanner-focus-ring-container {
     width: 100%;
     max-width: 400px;
-    height: 110px !important;
+    height: 160px !important;
     border-radius: 12px;
     overflow: hidden;
     border: 2px solid var(--accent);
@@ -142,12 +142,10 @@
 @media (max-width: 768px) {
     .universal-scanner-modal {
         max-width: 100%;
-        height: 100%;
-        max-height: 100vh;
-        border-radius: 0;
-        border: none;
-        box-shadow: none;
+        max-height: 90vh;
+        border-radius: 12px;
         justify-content: flex-start;
+        margin: 16px;
     }
     
     .desktop-only { display: none; }
@@ -190,7 +188,7 @@
     
     .scanner-focus-ring-container {
         max-width: 100%;
-        height: 110px; /* Squat 0.5x height as requested */
+        height: 160px;
         border-width: 1px;
     }
 }

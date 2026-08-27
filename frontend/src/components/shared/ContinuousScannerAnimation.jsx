@@ -227,7 +227,7 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
 
       {/* Instruction Text Overlay */}
       <div className="anim-instruction-text" style={{ position: "relative", margin: "8px 0", zIndex: 100, textAlign: "center" }}>
-        <p style={{ margin: 0, fontWeight: "600", fontSize: "1.2rem", color: "var(--text-primary)" }}>{getInstructionText()}</p>
+        <p  >{getInstructionText()}</p>
       </div>
 
       <div className="scene-3d">
