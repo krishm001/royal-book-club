@@ -54,11 +54,12 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
     return () => clearTimeout(tm);
   }, []);
 
-  // Phase text instructions synced to CSS animation (15s loop)
+  const startTimeRef = useRef(Date.now());
+  // Phase text instructions synced to CSS animation (20s loop)
   useEffect(() => {
-    if (!mounted) return;
+    startTimeRef.current = Date.now();
     const getPhase = () => {
-      const elapsed = (Date.now() / 1000) % 20;
+      const elapsed = ((Date.now() - startTimeRef.current) / 1000) % 20;
       if (isReturn) {
         if (elapsed < 5) return 0;
         if (elapsed < 10) return 1; // Show success longer (pause)
@@ -227,12 +228,8 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
         <p>{getInstructionText()}</p>
       </div>
 
-      {!mounted ? (
-        <div style={{ height: '260px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="pulse-ring" style={{ borderColor: tPalette.accent, width: '40px', height: '40px', borderWidth: '3px' }}></div>
-        </div>
-      ) : (
-      <>
+      {renderViewfinder && renderViewfinder}
+
       <div className="scene-3d">
         
         {/* The Library Shelf */}
@@ -348,8 +345,7 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
           </div>
         )}
       </div>
-      </>
-      )}
+
     </div>
   );
 };
