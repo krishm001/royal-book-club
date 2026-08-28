@@ -390,8 +390,8 @@ const CatalogPage = ({
     setTopScannerOpen(false);
   };
   const handleTopBarcodeScanned = async decodedText => {
-    await stopTopBarcodeScanner();
     if (!user) {
+      await stopTopBarcodeScanner();
       window.alert(t('catalog.signInToCheckoutOrReturn'));
       return;
     }
@@ -1044,10 +1044,13 @@ const CatalogPage = ({
     setCardScannerOpen(false);
   };
   const handleCardBarcodeScanned = async (decodedText, bookToUse) => {
-    await stopCardBarcodeScanner();
     const currentBook = bookToUse || selectedBook;
-    if (!currentBook) return;
+    if (!currentBook) {
+      await stopCardBarcodeScanner();
+      return;
+    }
     if (!user) {
+      await stopCardBarcodeScanner();
       window.alert(t('catalog.signInToCompleteTx'));
       return;
     }

@@ -34,12 +34,13 @@ const ScannerModal = ({
     if (!isOpen) return null;
 
     const Viewfinder = () => (activeTab === 'barcode' || activeTab === 'validator_qr') && scannerId  ? (
-        <div className="viewfinder-wrapper">
+        <div className="viewfinder-wrapper" style={{ position: 'relative' }}>
             <div 
                 id={scannerId} 
                 className="scanner-focus-ring-container"
                 onClick={(e) => onScannerClick && html5QrCodeRef && onScannerClick(e, html5QrCodeRef.current)}
             ></div>
+            <div className="scanner-laser-line"></div>
         </div>
     ) : null;
 
