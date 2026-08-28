@@ -92,7 +92,7 @@
 #top-barcode-reader,
 #card-barcode-reader,
 #detail-barcode-reader,
-.viewfinder-wrapper > div {
+.viewfinder-wrapper > div.scanner-focus-ring-container {
     width: 100%;
     max-width: 400px;
     height: 120px !important;
@@ -135,8 +135,20 @@
     #top-barcode-reader,
     #card-barcode-reader,
     #detail-barcode-reader,
-    .viewfinder-wrapper > div {
+    .viewfinder-wrapper > div.scanner-focus-ring-container {
         height: 120px !important;
         border-width: 1px;
     }
+}
+
+
+/* Ensure video covers the cropped 120px area without squishing */
+.scanner-focus-ring-container video,
+#top-barcode-reader video,
+#card-barcode-reader video,
+#detail-barcode-reader video,
+#detail-qr-validator-reader video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
 }
