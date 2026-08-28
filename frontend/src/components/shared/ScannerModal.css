@@ -126,7 +126,11 @@
         max-height: 95vh;
         margin: auto;
     }
-    .scanner-focus-ring-container {
+    .scanner-focus-ring-container,
+    #top-barcode-reader,
+    #card-barcode-reader,
+    #detail-barcode-reader,
+    .viewfinder-wrapper > div {
         height: 120px !important;
         border-width: 1px;
     }

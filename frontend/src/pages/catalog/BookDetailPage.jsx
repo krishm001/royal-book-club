@@ -358,6 +358,7 @@ const BookDetailPage = ({
   const [nfcModalOpen, setNfcModalOpen] = useState(false);
   const [nfcActionType, setNfcActionType] = useState('checkout'); // 'checkout' or 'return'
   const nfcActionTypeRef = useRef('checkout');
+  const detailLastErrorTimeRef = useRef(0);
 
   // Synchronize ref with state as a fallback
   useEffect(() => {
@@ -987,8 +988,8 @@ const BookDetailPage = ({
     setIsQrCameraActive(false);
   };
   const handleDetailBarcodeScanned = async decodedText => {
-    await stopDetailBarcodeScanner();
     if (!user) {
+      await stopDetailBarcodeScanner();
       window.alert(t('catalog.signInToCompleteTx'));
       return;
     }
@@ -1022,6 +1023,7 @@ const BookDetailPage = ({
       }
     }
     if (isMatch) {
+      await stopDetailBarcodeScanner();
       try {
         resetRatingAndCheckoutId();
         // Use matched copy's NTAG UID if found
@@ -1075,7 +1077,11 @@ const BookDetailPage = ({
         }
       }
     } else {
-      setNfcError(t('catalog.securityMismatch') + decodedText + ".");
+      // If mismatch, do NOT stop scanner. Just show error and throttle it.
+      if (Date.now() - detailLastErrorTimeRef.current > 3000) {
+        setNfcError(t('catalog.securityMismatch') + decodedText + ". Please try again.");
+        detailLastErrorTimeRef.current = Date.now();
+      }
     }
   };
   const handleTabChange = async tabName => {

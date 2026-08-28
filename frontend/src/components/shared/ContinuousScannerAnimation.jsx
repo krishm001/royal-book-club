@@ -107,12 +107,12 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
         if (phase === 0) return t('catalog.animFindBook', 'Pick up the book');
         if (phase === 1) return t('catalog.animFlipBook', 'Flip to back cover');
         if (phase === 2) return t('catalog.animScanQr', 'Scan QR on back cover');
-        return t('catalog.animCheckoutComplete', 'Checkout complete!');
+        return t('catalog.animCheckoutComplete', 'Scan successful!');
       } else {
         if (phase === 0) return t('catalog.animFindBook', 'Pick up the book');
         if (phase === 1) return t('catalog.animFlipFront', 'Hold front cover facing you');
         if (phase === 2) return t('catalog.animNfcTap', 'Tap phone on NFC logo');
-        return t('catalog.animCheckoutComplete', 'Checkout complete!');
+        return t('catalog.animCheckoutComplete', 'Scan successful!');
       }
     }
   };
