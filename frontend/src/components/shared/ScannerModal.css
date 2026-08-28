@@ -88,15 +88,20 @@
     margin-bottom: 4px;
 }
 
-.scanner-focus-ring-container {
+.scanner-focus-ring-container,
+#top-barcode-reader,
+#card-barcode-reader,
+#detail-barcode-reader,
+.viewfinder-wrapper > div {
     width: 100%;
     max-width: 400px;
     height: 120px !important;
     border-radius: 8px;
     overflow: hidden;
-    border: 2px solid var(--accent);
-    box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
-    background: var(--surface-elevated);
+    position: relative;
+    border: 1px solid var(--accent);
+    margin: 0 auto 16px auto;
+    background: #000;
 }
 
 .animation-wrapper {
