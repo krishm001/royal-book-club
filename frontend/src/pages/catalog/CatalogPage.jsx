@@ -286,7 +286,7 @@ const CatalogPage = ({
           // Boosted scan rate for faster recognition
           qrbox: (width, height) => {
             const idealW = Math.min(width * 0.9, 350);
-            const idealH = Math.min(height * 0.8, 250);
+            const idealH = 120;
             return {
               width: idealW,
               height: idealH
@@ -940,7 +940,7 @@ const CatalogPage = ({
           // Boosted scan rate for faster recognition
           qrbox: (width, height) => {
             const idealW = Math.min(width * 0.9, 350);
-            const idealH = Math.min(height * 0.8, 250);
+            const idealH = 120;
             return {
               width: idealW,
               height: idealH
@@ -1378,7 +1378,8 @@ const CatalogPage = ({
       background: "var(--glass-bg)",
       backdropFilter: 'blur(8px)',
       display: 'flex',
-      alignItems: 'center',
+      alignItems: 'flex-start',
+        overflowY: 'auto',
       justifyContent: 'center',
       zIndex: 1000,
       padding: '20px'
@@ -1394,7 +1395,8 @@ const CatalogPage = ({
             <div className="nfc-modal-header" style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'flex-start',
+        overflowY: 'auto',
           marginBottom: '24px',
           borderBottom: '1px solid rgba(212, 175, 55, 0.2)',
           paddingBottom: '12px'
@@ -1423,7 +1425,8 @@ const CatalogPage = ({
             <div className="nfc-modal-body" style={{
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
+          alignItems: 'flex-start',
+        overflowY: 'auto',
           textAlign: 'center'
         }}>
               {fallbackSuccess ? <div className="nfc-success-animation animate-fade-in">
@@ -1496,7 +1499,8 @@ const CatalogPage = ({
                     <button type="button" onClick={handleSubmitFallbackRequest} className="royal-btn" style={{
                 flex: 1,
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
+        overflowY: 'auto',
                 justifyContent: 'center',
                 gap: '8px',
                 padding: '10px'
@@ -1537,7 +1541,8 @@ const CatalogPage = ({
       background: "var(--glass-bg)",
       backdropFilter: 'blur(10px)',
       display: 'flex',
-      alignItems: 'center',
+      alignItems: 'flex-start',
+        overflowY: 'auto',
       justifyContent: 'center',
       zIndex: 1100,
       padding: '20px'
@@ -1554,7 +1559,8 @@ const CatalogPage = ({
             <div className="nfc-modal-header" style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'flex-start',
+        overflowY: 'auto',
           marginBottom: '24px',
           borderBottom: '1px solid rgba(212, 175, 55, 0.2)',
           paddingBottom: '12px'
@@ -1583,13 +1589,15 @@ const CatalogPage = ({
             <div className="nfc-modal-body" style={{
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
+          alignItems: 'flex-start',
+        overflowY: 'auto',
           textAlign: 'center'
         }}>
               {p2dSuccess ? <div className="p2d-success-view animate-fade-in" style={{
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
+            alignItems: 'flex-start',
+        overflowY: 'auto',
             width: '100%'
           }}>
                   <div className="gold-check-animation-wrapper" style={{
@@ -1673,7 +1681,8 @@ const CatalogPage = ({
             }}>
                     {p2dActionType === 'checkout' && createdCheckoutId && <Link to={`/gatepass/${createdCheckoutId}`} className="royal-btn" style={{
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
+        overflowY: 'auto',
                 gap: '6px',
                 padding: '8px 16px',
                 fontSize: '0.85rem',
@@ -1686,7 +1695,8 @@ const CatalogPage = ({
                       </Link>}
                     {p2dActionType === 'return' && p2dBook && <Link to={`/catalog/${p2dBook.isbn || p2dBook.id}#reviews-section`} className="royal-btn" style={{
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
+        overflowY: 'auto',
                 gap: '6px',
                 padding: '8px 16px',
                 fontSize: '0.85rem',
@@ -1712,7 +1722,8 @@ const CatalogPage = ({
                   <div className="p2d-book-showcase" style={{
               display: 'flex',
               gap: '16px',
-              alignItems: 'center',
+              alignItems: 'flex-start',
+        overflowY: 'auto',
               textAlign: 'left',
               width: '100%',
               padding: '16px',
@@ -1803,7 +1814,8 @@ const CatalogPage = ({
                     <button type="button" onClick={handleP2dSubmit} className="royal-btn" style={{
                 flex: 1,
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
+        overflowY: 'auto',
                 justifyContent: 'center',
                 gap: '8px',
                 padding: '12px'

@@ -671,7 +671,7 @@ const BookDetailPage = ({
           // Boosted scan rate for faster recognition
           qrbox: (width, height) => {
             const idealW = Math.min(width * 0.9, 350);
-            const idealH = Math.min(height * 0.8, 250);
+            const idealH = 120;
             return {
               width: idealW,
               height: idealH
@@ -828,10 +828,10 @@ const BookDetailPage = ({
           return html5QrCode.start(constraints, {
             fps: fpsVal,
             qrbox: (width, height) => {
-              const size = Math.min(width * 0.8, height * 0.8, 200);
+              const size = Math.min(width * 0.8, 350);
               return {
                 width: size,
-                height: size
+                height: 120
               };
             },
             formatsToSupport: [SafeHtml5QrcodeSupportedFormats.QR_CODE]
@@ -879,10 +879,10 @@ const BookDetailPage = ({
           return html5QrCode.start(simpleConstraints, {
             fps: 25,
             qrbox: (width, height) => {
-              const size = Math.min(width * 0.8, height * 0.8, 200);
+              const size = Math.min(width * 0.8, 350);
               return {
                 width: size,
-                height: size
+                height: 120
               };
             },
             formatsToSupport: [SafeHtml5QrcodeSupportedFormats.QR_CODE]
@@ -1441,7 +1441,8 @@ const BookDetailPage = ({
             }}>
                   <div style={{
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
+        overflowY: 'auto',
                 gap: '8px'
               }}>
                     <Sparkles size={16} className="gold-glow" style={{
@@ -1462,7 +1463,8 @@ const BookDetailPage = ({
                   fontSize: '0.78rem',
                   fontWeight: '700',
                   display: 'flex',
-                  alignItems: 'center',
+                  alignItems: 'flex-start',
+        overflowY: 'auto',
                   gap: '4px'
                 }}>
                       <Clock size={12} className="animate-pulse" />
@@ -1481,7 +1483,8 @@ const BookDetailPage = ({
                 borderRadius: '4px',
                 cursor: 'pointer',
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
+        overflowY: 'auto',
                 justifyContent: 'center',
                 gap: '8px',
                 fontWeight: 'bold'
@@ -1494,7 +1497,8 @@ const BookDetailPage = ({
                 borderRadius: '4px',
                 cursor: 'pointer',
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
+        overflowY: 'auto',
                 justifyContent: 'center',
                 gap: '8px',
                 fontWeight: 'bold'
@@ -1515,7 +1519,8 @@ const BookDetailPage = ({
             }}>
                   <div style={{
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
+        overflowY: 'auto',
                 gap: '8px'
               }}>
                     <AlertTriangle size={16} style={{
@@ -1568,7 +1573,8 @@ const BookDetailPage = ({
                   </button>
                 </div> : checkoutStatus === 'requested-checkout' ? <div className="pending-checkout-badge royal-card" style={{
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'flex-start',
+        overflowY: 'auto',
               gap: '12px',
               padding: '16px',
               border: '1px solid rgba(212, 165, 116, 0.3)',
@@ -1591,7 +1597,8 @@ const BookDetailPage = ({
                   </div>
                 </div> : checkoutStatus === 'requested-return' ? <div className="pending-checkout-badge royal-card" style={{
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'flex-start',
+        overflowY: 'auto',
               gap: '12px',
               padding: '16px',
               border: '1px solid rgba(212, 165, 116, 0.3)',
@@ -1614,7 +1621,8 @@ const BookDetailPage = ({
                   </div>
                 </div> : <div className="in-circulation-badge royal-card" style={{
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'flex-start',
+        overflowY: 'auto',
               gap: '12px',
               padding: '16px',
               border: '1px solid #ff7b72',
@@ -1640,7 +1648,8 @@ const BookDetailPage = ({
             {getActiveCheckoutInstance() && <Link to={`/gatepass/${getActiveCheckoutInstance().id}`} className="royal-btn-secondary view-gatepass-btn" style={{
               marginTop: '15px',
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'flex-start',
+        overflowY: 'auto',
               justifyContent: 'center',
               gap: '8px',
               textDecoration: 'none',
@@ -1662,14 +1671,16 @@ const BookDetailPage = ({
 
           <div className="genre-rating-row" style={{
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
+        overflowY: 'auto',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             gap: '8px'
           }}>
             <div style={{
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'flex-start',
+        overflowY: 'auto',
               gap: '10px'
             }}>
               <span className="detail-genre-tag">{book.genre || book.publishDate || 'Library Edition'}</span>
@@ -1687,7 +1698,8 @@ const BookDetailPage = ({
               fontSize: '0.8rem',
               cursor: 'pointer',
               display: 'inline-flex',
-              alignItems: 'center',
+              alignItems: 'flex-start',
+        overflowY: 'auto',
               gap: '5px',
               transition: 'var(--transition-smooth)'
             }}>
@@ -1799,7 +1811,8 @@ const BookDetailPage = ({
           fontWeight: '700',
           marginBottom: '10px',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
+        overflowY: 'auto',
           gap: '10px',
           textTransform: 'uppercase',
           letterSpacing: '0.05em',
@@ -1931,7 +1944,8 @@ const BookDetailPage = ({
                   }}>
                         <span style={{
                       display: 'inline-flex',
-                      alignItems: 'center',
+                      alignItems: 'flex-start',
+        overflowY: 'auto',
                       gap: '6px',
                       padding: '4px 10px',
                       borderRadius: '12px',
@@ -2107,7 +2121,8 @@ const BookDetailPage = ({
                     </div>
                     {!isEditing && (isAuthor || isAdmin) && <div className="review-actions" style={{
                   display: 'flex',
-                  alignItems: 'center',
+                  alignItems: 'flex-start',
+        overflowY: 'auto',
                   gap: '0.5rem'
                 }}>
                         {isAuthor && <button onClick={() => handleStartEditReview(rev.id, rev.content, rev.rating)} className="review-action-btn edit-btn" title={t("str_5385", "Edit Dissertation")} style={{
@@ -2139,7 +2154,8 @@ const BookDetailPage = ({
               }}>
                       <div className="review-rating-select" style={{
                   display: 'flex',
-                  alignItems: 'center',
+                  alignItems: 'flex-start',
+        overflowY: 'auto',
                   gap: '0.5rem',
                   marginBottom: '0.5rem'
                 }}>
@@ -2239,6 +2255,83 @@ const BookDetailPage = ({
         showManualTab={true}
       />
 
+      {/* Fallback Request Ledger Submission Modal Overlay */}
+      {fallbackModalOpen && book && <div className="nfc-modal-overlay" style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: "var(--glass-bg)",
+        backdropFilter: 'blur(8px)',
+        display: 'flex',
+        alignItems: 'flex-start',
+        overflowY: 'auto',
+        justifyContent: 'center',
+        zIndex: 1000,
+        padding: '20px'
+      }}>
+        <div className="royal-card nfc-modal-card animate-fade-in" style={{
+          width: '100%',
+          maxWidth: '440px',
+          margin: 'auto',
+          padding: '24px',
+          background: 'var(--surface)',
+          border: '1px solid var(--accent)',
+          boxShadow: "0 10px 40px var(--card-shadow)",
+          borderRadius: '8px',
+          maxHeight: '90vh',
+          overflowY: 'auto'
+        }}>
+          <div className="panel-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+        overflowY: 'auto', marginBottom: '16px' }}>
+            <h3 className="section-title" style={{ margin: 0 }}>{t('catalog.manualEntryForm', 'Manual Entry Form')}</h3>
+            <button onClick={() => setFallbackModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}>
+              <X size={20} />
+            </button>
+          </div>
+          <div className="form-group" style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: '500' }}>
+              {t('catalog.ledgerDetails', 'Ledger Details (ISBN / Accession)')}
+            </label>
+            <input 
+              type="text" 
+              className="royal-input w-full" 
+              placeholder={t('catalog.enterIdentifier', 'Enter identifier...')}
+              value={book?.isbn || book?.id || ''}
+              disabled
+            />
+          </div>
+          <div style={{ padding: '12px', background: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.2)', borderRadius: '6px', marginBottom: '24px' }}>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-primary)', lineHeight: 1.5 }}>
+              {t('catalog.curatorApprovalMsg', 'Manual submissions bypass instantaneous cryptographic checkout and require curator approval. Your gatepass will remain pending.')}
+            </p>
+          </div>
+          <button 
+            className="royal-btn primary w-full"
+            style={{ padding: '12px', fontSize: '0.95rem' }}
+            disabled={fallbackLoading}
+            onClick={async () => {
+              setFallbackLoading(true);
+              try {
+                // Simulate submission
+                await new Promise(r => setTimeout(r, 1000));
+                setFallbackSuccess(true);
+                setTimeout(() => {
+                  setFallbackModalOpen(false);
+                  setFallbackSuccess(false);
+                }, 2000);
+              } finally {
+                setFallbackLoading(false);
+              }
+            }}
+          >
+            {fallbackLoading ? <Loader className="spin" size={18} /> : (fallbackSuccess ? <CheckCircle size={18} /> : t('catalog.submitLedger', 'Submit Ledger to Curator'))}
+          </button>
+        </div>
+      </div>}
+
+
     {instantConfirmOpen && <div className="nfc-modal-overlay" style={{
       position: 'fixed',
       top: 0,
@@ -2248,7 +2341,8 @@ const BookDetailPage = ({
       background: "var(--glass-bg)",
       backdropFilter: 'blur(8px)',
       display: 'flex',
-      alignItems: 'center',
+      alignItems: 'flex-start',
+        overflowY: 'auto',
       justifyContent: 'center',
       zIndex: 1000,
       padding: '20px'
@@ -2267,7 +2361,8 @@ const BookDetailPage = ({
           <div className="panel-header-row" style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'flex-start',
+        overflowY: 'auto',
           marginBottom: '16px',
           borderBottom: '1px solid rgba(212, 175, 55, 0.15)',
           paddingBottom: '10px'
@@ -2295,7 +2390,8 @@ const BookDetailPage = ({
           <div className="panel-body" style={{
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
+          alignItems: 'flex-start',
+        overflowY: 'auto',
           textAlign: 'center',
           marginTop: '16px'
         }}>
@@ -2364,7 +2460,8 @@ const BookDetailPage = ({
             }}>
                   {createdCheckoutId && instantActionType !== 'return' && <Link to={`/gatepass/${createdCheckoutId}`} className="royal-btn" style={{
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
+        overflowY: 'auto',
                 gap: '6px',
                 padding: '8px 16px',
                 fontSize: '0.85rem',
@@ -2386,7 +2483,8 @@ const BookDetailPage = ({
                 }
               }} className="royal-btn" style={{
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
+        overflowY: 'auto',
                 gap: '6px',
                 padding: '8px 16px',
                 fontSize: '0.85rem',
@@ -2402,7 +2500,8 @@ const BookDetailPage = ({
                   {/* Cancel / Undo Button */}
                   {createdCheckoutId && <button onClick={handleCancelInstantAction} disabled={cancellingInstant} className="royal-btn-secondary" style={{
                 display: 'inline-flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
+        overflowY: 'auto',
                 gap: '6px',
                 padding: '8px 16px',
                 fontSize: '0.85rem',
