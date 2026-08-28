@@ -9,16 +9,28 @@
   background: var(--surface-elevated);
   border: 1px solid rgba(212, 175, 55, 0.2);
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .continuous-scanner-container.desktop-scale {
-  height: 380px;
   max-width: 100%;
+}
+.continuous-scanner-container.desktop-scale.nfc-mode {
+  height: 380px;
+}
+.continuous-scanner-container.desktop-scale.barcode-mode {
+  height: 520px; /* Make room for 120px viewfinder */
 }
 
 .continuous-scanner-container.mobile-scale {
-  height: 280px;
   max-width: 100%;
+}
+.continuous-scanner-container.mobile-scale.nfc-mode {
+  height: 280px;
+}
+.continuous-scanner-container.mobile-scale.barcode-mode {
+  height: 420px; /* Make room for 120px viewfinder */
 }
 
 /* Instruction Text */
@@ -48,7 +60,7 @@
 /* 3D Scene */
 .scene-3d {
   width: 100%;
-  height: 100%;
+  flex: 1;
   position: relative;
   perspective: 1200px;
   transform-style: preserve-3d;
