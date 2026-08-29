@@ -263,6 +263,8 @@ const BookDetailPage = ({
     setIsProcessing(false);
     if (!passes) return;
     setInstantActionType(actionType);
+    setNfcActionType(actionType);
+    nfcActionTypeRef.current = actionType;
     setInstantConfirmOpen(true);
     setInstantSuccess(false);
     setInstantError('');
@@ -1104,7 +1106,10 @@ const BookDetailPage = ({
     setGeofenceFailed(false);
     setQrValidationFailed(false);
   };
+  let detailNfcAbortController = null;
   const startNfcAction = async actionType => {
+    if (detailNfcAbortController) detailNfcAbortController.abort();
+    detailNfcAbortController = new AbortController();
     setDetailScannerLoading(false);
     setNfcReading(true);
     setNfcError('');
@@ -1116,7 +1121,7 @@ const BookDetailPage = ({
     }
     try {
       const ndef = new window.NDEFReader();
-      await ndef.scan();
+      await ndef.scan({ signal: detailNfcAbortController.signal });
       ndef.addEventListener("readingerror", () => {
         setNfcError(t('catalog.nfcReadingError'));
       });
@@ -1126,10 +1131,35 @@ const BookDetailPage = ({
         console.log(`NFC tag scanned: ${serialNumber}`);
         const cleanScanned = (serialNumber || '').toLowerCase().replace(/:/g, '');
         if (isNfcTagMatched(book, cleanScanned)) {
+          let freshCheckouts = memberCheckouts;
+          const memberId = user?.uid || user?.id;
+          if (memberId) {
+            try {
+              const fetchCheckoutsByMember = (await import('../../services/libraryApi')).fetchCheckoutsByMember;
+              freshCheckouts = await fetchCheckoutsByMember(memberId);
+              setMemberCheckouts(freshCheckouts || []);
+            } catch (e) {}
+          }
+          const activeCheckout = freshCheckouts.find(c => c.bookId === book.isbn && (c.status === 'CHECKED_OUT' || c.status === 'REQUESTED_CHECKOUT' || c.status === 'REQUESTED_RETURN'));
+          const isCheckedOutByMe = activeCheckout && activeCheckout.status === 'CHECKED_OUT';
+          const dynamicActionType = isCheckedOutByMe ? 'return' : 'checkout';
+          
+          let matchedCopy = null;
+          if (Array.isArray(book.copies)) {
+             matchedCopy = book.copies.find(c => c.ntagUid === cleanScanned);
+          }
+          if (dynamicActionType === 'checkout' && matchedCopy && matchedCopy.status === 'CHECKED_OUT') {
+              setDetailScannerOpen(false);
+              setInstantSuccess(false);
+              setInstantError("This copy is currently checked out by another patron.");
+              setInstantConfirmOpen(true);
+              return;
+          }
+
           try {
             resetRatingAndCheckoutId();
             let txRes;
-            if (actionType === 'checkout') {
+            if (dynamicActionType === 'checkout') {
               txRes = await verifiedCheckout({
                 bookId: book.isbn,
                 memberId: user.uid || user.id,
@@ -1156,7 +1186,9 @@ const BookDetailPage = ({
               setCreatedCheckoutId(txRes.data.id);
             }
             handleCloseNfcModal();
-            setInstantActionType(actionType);
+            setInstantActionType(dynamicActionType);
+            setNfcActionType(dynamicActionType);
+            nfcActionTypeRef.current = dynamicActionType;
             setInstantSuccess(true);
             setInstantConfirmOpen(true);
             await refreshState();

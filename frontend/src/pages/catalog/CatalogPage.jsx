@@ -477,7 +477,7 @@ const CatalogPage = ({
       const isCheckedOutByMe = activeCheckout && activeCheckout.status === 'CHECKED_OUT';
       const actionType = isCheckedOutByMe ? 'return' : 'checkout';
       
-      if (actionType === 'checkout') {
+      if (dynamicActionType === 'checkout') {
          if (matchedCopy && matchedCopy.status === 'CHECKED_OUT') {
              setTopScannerLoading(false);
              openP2dOverlay(resolvedBook, false, actionType, "This copy is currently checked out by another patron.");
@@ -501,7 +501,10 @@ const CatalogPage = ({
       }
     }
   };
+  let topNfcAbortController = null;
   const startTopNfcRead = async () => {
+    if (topNfcAbortController) topNfcAbortController.abort();
+    topNfcAbortController = new AbortController();
     if (!user || user.isAnonymous) {
       if (triggerOnboarding) triggerOnboarding({
         actionType: 'scan_nfc'
@@ -521,7 +524,7 @@ const CatalogPage = ({
     }
     try {
       const ndef = new window.NDEFReader();
-      await ndef.scan();
+      await ndef.scan({ signal: topNfcAbortController.signal });
       ndef.addEventListener("readingerror", () => {
         setTopNfcError("NFC Reading Error: Place tag firmly against your device's NFC hot spot.");
       });
@@ -553,12 +556,35 @@ const CatalogPage = ({
         }
         if (matchedBook) {
           setTopNfcActive(false);
-          const resolvedStatus = getResolvedStatus(matchedBook);
-          if (resolvedStatus !== 'checked-out') {
-            const passes = await checkGatingPasses('checkout', matchedBook.isbn);
-            if (!passes) return;
+          
+          let freshCheckouts = memberCheckouts;
+          const memberId = user?.uid || user?.id;
+          if (memberId) {
+            try {
+              const fetchCheckoutsByMember = (await import('../../services/libraryApi')).fetchCheckoutsByMember;
+              freshCheckouts = await fetchCheckoutsByMember(memberId);
+              setMemberCheckouts(freshCheckouts || []);
+            } catch (e) {}
           }
-          openP2dOverlay(matchedBook);
+          
+          const activeCheckout = freshCheckouts.find(c => c.bookId === matchedBook.isbn && (c.status === 'CHECKED_OUT' || c.status === 'REQUESTED_CHECKOUT' || c.status === 'REQUESTED_RETURN'));
+          const isCheckedOutByMe = activeCheckout && activeCheckout.status === 'CHECKED_OUT';
+          const actionType = isCheckedOutByMe ? 'return' : 'checkout';
+          
+          let matchedCopy = null;
+          if (Array.isArray(matchedBook.copies)) {
+             matchedCopy = matchedBook.copies.find(c => c.ntagUid === cleanScanned);
+          }
+          
+          if (dynamicActionType === 'checkout') {
+             if (matchedCopy && matchedCopy.status === 'CHECKED_OUT') {
+                 openP2dOverlay(matchedBook, false, actionType, "This copy is currently checked out by another patron.");
+                 return;
+             }
+             const passes = await checkGatingPasses('checkout', matchedBook.isbn);
+             if (!passes) return;
+          }
+          openP2dOverlay(matchedBook, false, actionType);
         } else {
           setTopNfcError(`No book in catalog registered with NFC Serial ${serialNumber}`);
         }
@@ -571,6 +597,7 @@ const CatalogPage = ({
   };
   const stopTopNfcRead = () => {
     setTopNfcActive(false);
+    if (topNfcAbortController) topNfcAbortController.abort();
   };
   const openP2dOverlay = (book, success, actionType, errorMsg = '') => {
     setTopScannerOpen(false);
@@ -875,7 +902,10 @@ const CatalogPage = ({
       startCardBarcodeScanner(book);
     }
   };
+  let cardNfcAbortController = null;
   const startNfcAction = async (targetBook, actionType) => {
+    if (cardNfcAbortController) cardNfcAbortController.abort();
+    cardNfcAbortController = new AbortController();
     setNfcReading(true);
     setNfcError('');
     setNfcSuccess(false);
@@ -886,7 +916,7 @@ const CatalogPage = ({
     }
     try {
       const ndef = new window.NDEFReader();
-      await ndef.scan();
+      await ndef.scan({ signal: cardNfcAbortController.signal });
       ndef.addEventListener("readingerror", () => {
         setNfcError("NFC Reading Error: Unable to read tag. Place tag firmly against your device's NFC sweet spot.");
       });
@@ -896,8 +926,32 @@ const CatalogPage = ({
         console.log(`NFC tag scanned: ${serialNumber}`);
         const cleanScanned = (serialNumber || '').toLowerCase().replace(/:/g, '');
         if (isNfcTagMatched(targetBook, cleanScanned)) {
+          let freshCheckouts = memberCheckouts;
+          const memberId = user?.uid || user?.id;
+          if (memberId) {
+            try {
+              const fetchCheckoutsByMember = (await import('../../services/libraryApi')).fetchCheckoutsByMember;
+              freshCheckouts = await fetchCheckoutsByMember(memberId);
+              setMemberCheckouts(freshCheckouts || []);
+            } catch (e) {}
+          }
+          const activeCheckout = freshCheckouts.find(c => c.bookId === targetBook.isbn && (c.status === 'CHECKED_OUT' || c.status === 'REQUESTED_CHECKOUT' || c.status === 'REQUESTED_RETURN'));
+          const isCheckedOutByMe = activeCheckout && activeCheckout.status === 'CHECKED_OUT';
+          const dynamicActionType = isCheckedOutByMe ? 'return' : 'checkout';
+          
+          let matchedCopy = null;
+          if (Array.isArray(targetBook.copies)) {
+             matchedCopy = targetBook.copies.find(c => c.ntagUid === cleanScanned);
+          }
+          
+          if (dynamicActionType === 'checkout' && matchedCopy && matchedCopy.status === 'CHECKED_OUT') {
+              setNfcReading(false);
+              openP2dOverlay(targetBook, false, dynamicActionType, "This copy is currently checked out by another patron.");
+              return;
+          }
+
           try {
-            if (actionType === 'checkout') {
+            if (dynamicActionType === 'checkout') {
               const res = await verifiedCheckout({
                 bookId: targetBook.isbn,
                 memberId: user.uid || user.id,
