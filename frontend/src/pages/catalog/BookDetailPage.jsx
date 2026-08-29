@@ -380,6 +380,11 @@ const BookDetailPage = ({
     setCheckoutRating(0);
     setRatingSubmitted(false);
   };
+
+  const stateRef = useRef({ book, user });
+  useEffect(() => {
+    stateRef.current = { book, user };
+  }, [book, user]);
   const handleRateExperience = async ratingValue => {
     setCheckoutRating(ratingValue);
     if (!createdCheckoutId) return;
@@ -972,7 +977,8 @@ const BookDetailPage = ({
     setIsQrCameraActive(false);
   };
   const handleDetailBarcodeScanned = async decodedText => {
-    if (!user) {
+    const { user: currentUser, book: latestBook } = stateRef.current;
+    if (!currentUser) {
       await stopDetailBarcodeScanner();
       window.alert(t('catalog.signInToCompleteTx'));
       return;
@@ -988,21 +994,21 @@ const BookDetailPage = ({
     } else if (/^\d+$/.test(scannedCode) && scannedCode.length <= 9) {
       qrId = parseInt(scannedCode, 10);
     }
-    const cleanBookIsbn = (book.isbn || '').trim().replace(/[-\s]/g, '');
+    const cleanBookIsbn = (latestBook.isbn || '').trim().replace(/[-\s]/g, '');
     const cleanScannedCode = scannedCode.replace(/[-\s]/g, '');
 
     // Is it a match?
     let isMatch = cleanScannedCode === cleanBookIsbn;
 
     // Match alternative ISBNs
-    if (!isMatch && Array.isArray(book.alternativeIsbns)) {
-      isMatch = book.alternativeIsbns.some(alt => alt && alt.trim().replace(/[-\s]/g, '') === cleanScannedCode);
+    if (!isMatch && Array.isArray(latestBook.alternativeIsbns)) {
+      isMatch = latestBook.alternativeIsbns.some(alt => alt && alt.trim().replace(/[-\s]/g, '') === cleanScannedCode);
     }
 
     // Match copy-level QR IDs
     let matchedCopy = null;
-    if (!isMatch && Array.isArray(book.copies)) {
-      matchedCopy = book.copies.find(c => c.qrId === qrId || String(c.qrId) === cleanScannedCode);
+    if (!isMatch && Array.isArray(latestBook.copies)) {
+      matchedCopy = latestBook.copies.find(c => c.qrId === qrId || String(c.qrId) === cleanScannedCode);
       if (matchedCopy) {
         isMatch = true;
       }
@@ -1012,12 +1018,12 @@ const BookDetailPage = ({
       try {
         resetRatingAndCheckoutId();
         // Use matched copy's NTAG UID if found
-        const targetUid = matchedCopy && matchedCopy.ntagUid || book.ntagUid || '04:A3:B2:C1:D0:E9:80';
+        const targetUid = matchedCopy && matchedCopy.ntagUid || latestBook.ntagUid || '04:A3:B2:C1:D0:E9:80';
         let txRes;
         const currentActionType = nfcActionTypeRef.current;
         if (currentActionType === 'checkout') {
           txRes = await verifiedCheckout({
-            bookId: book.isbn,
+            bookId: latestBook.isbn,
             memberId: user.uid || user.id,
             ntagUid: targetUid,
             memberName: user?.displayName,
@@ -1030,7 +1036,7 @@ const BookDetailPage = ({
         } else {
           const coords = await getCoordinates();
           txRes = await verifiedReturn({
-            bookId: book.isbn,
+            bookId: latestBook.isbn,
             memberId: user.uid || user.id,
             ntagUid: targetUid,
             memberName: user?.displayName,

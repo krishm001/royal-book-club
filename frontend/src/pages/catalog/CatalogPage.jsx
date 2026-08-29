@@ -119,6 +119,11 @@ const CatalogPage = ({
     setCheckoutRating(0);
     setRatingSubmitted(false);
   };
+
+  const stateRef = useRef({ books, user });
+  useEffect(() => {
+    stateRef.current = { books, user };
+  }, [books, user]);
   const handleRateExperience = async ratingValue => {
     if (!createdCheckoutId) {
       console.warn("No created checkout ID found to rate");
@@ -394,7 +399,8 @@ const CatalogPage = ({
     }
   };
   const handleTopBarcodeScanned = async decodedText => {
-    if (!user) {
+    const { user: currentUser, books: currentBooks } = stateRef.current;
+    if (!currentUser) {
       await stopTopBarcodeScanner();
       window.alert(t('catalog.signInToCheckoutOrReturn'));
       return;
@@ -414,7 +420,7 @@ const CatalogPage = ({
     let matchedCopy = null;
     if (qrId !== null) {
       // Give explicit precedence to QR code resolution
-      matchedBook = books.find(b => Array.isArray(b.copies) && b.copies.some(c => {
+      matchedBook = currentBooks.find(b => Array.isArray(b.copies) && b.copies.some(c => {
         if (c.qrId === qrId) {
           matchedCopy = c;
           return true;
@@ -425,7 +431,7 @@ const CatalogPage = ({
     if (!matchedBook) {
       // Fallback or primary resolution via primary/alternative ISBN or QR ID matching
       const cleanCode = scannedCode.replace(/[-\s]/g, '');
-      matchedBook = books.find(b => {
+      matchedBook = currentBooks.find(b => {
         const bIsbn = (b.isbn || '').trim().replace(/[-\s]/g, '');
         if (bIsbn === cleanCode) return true;
 
@@ -1065,12 +1071,13 @@ const CatalogPage = ({
     }
   };
   const handleCardBarcodeScanned = async (decodedText, bookToUse) => {
+    const { user: currentUser } = stateRef.current;
     const currentBook = bookToUse || selectedBook;
     if (!currentBook) {
       await stopCardBarcodeScanner();
       return;
     }
-    if (!user) {
+    if (!currentUser) {
       await stopCardBarcodeScanner();
       window.alert(t('catalog.signInToCompleteTx'));
       return;
