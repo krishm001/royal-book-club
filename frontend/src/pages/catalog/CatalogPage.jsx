@@ -477,7 +477,7 @@ const CatalogPage = ({
       const isCheckedOutByMe = activeCheckout && activeCheckout.status === 'CHECKED_OUT';
       const actionType = isCheckedOutByMe ? 'return' : 'checkout';
       
-      if (dynamicActionType === 'checkout') {
+      if (actionType === 'checkout') {
          if (matchedCopy && matchedCopy.status === 'CHECKED_OUT') {
              setTopScannerLoading(false);
              openP2dOverlay(resolvedBook, false, actionType, "This copy is currently checked out by another patron.");
@@ -576,7 +576,7 @@ const CatalogPage = ({
              matchedCopy = matchedBook.copies.find(c => c.ntagUid === cleanScanned);
           }
           
-          if (dynamicActionType === 'checkout') {
+          if (actionType === 'checkout') {
              if (matchedCopy && matchedCopy.status === 'CHECKED_OUT') {
                  openP2dOverlay(matchedBook, false, actionType, "This copy is currently checked out by another patron.");
                  return;
