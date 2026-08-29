@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Camera, Smartphone, Scan, X, AlertTriangle, Edit3 } from 'lucide-react';
+import { Camera, Smartphone, Scan, X, AlertTriangle, Edit3, RefreshCw } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import ContinuousScannerAnimation from './ContinuousScannerAnimation';
 import './ScannerModal.css';
@@ -16,7 +16,8 @@ const ScannerModal = ({
     scannerId,
     onScannerClick,
     html5QrCodeRef,
-    showManualTab = false
+    showManualTab = false,
+    loading = false
 }) => {
     const { t } = useLanguage();
 
@@ -78,26 +79,36 @@ const ScannerModal = ({
                     </button>
                 </div>
 
-                {/* Body Content */}
+                                {/* Body Content */}
                 <div className="scanner-modal-body">
-                    {/* Animation Handles the Viewfinder Placement Internally */}
-                    {(activeTab !== 'manual') && (
-                        <div className="animation-wrapper">
-                            <ContinuousScannerAnimation 
-                                action={actionType} 
-                                type={activeTab === 'nfc' ? 'nfc' : 'barcode'} 
-                                book={book} 
-                                isConfirmation={isConfirmation}
-                                renderViewfinder={<Viewfinder />}
-                            />
+                    {loading ? (
+                        <div className="scanner-loading-state animate-fade-in" style={{ padding: '60px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                            <RefreshCw className="spin-icon" size={48} style={{ color: 'var(--gold-primary)' }} />
+                            <h4 style={{ color: 'var(--text-primary)', marginTop: '24px', marginBottom: '8px' }}>Verifying...</h4>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>Securely authenticating volume.</p>
                         </div>
-                    )}
+                    ) : (
+                        <>
+                            {/* Animation Handles the Viewfinder Placement Internally */}
+                            {(activeTab !== 'manual') && (
+                                <div className="animation-wrapper">
+                                    <ContinuousScannerAnimation 
+                                        action={actionType} 
+                                        type={activeTab === 'nfc' ? 'nfc' : 'barcode'} 
+                                        book={book} 
+                                        isConfirmation={isConfirmation}
+                                        renderViewfinder={<Viewfinder />}
+                                    />
+                                </div>
+                            )}
 
-                    {/* Error */}
-                    {error && (
-                        <div className="scanner-error">
-                            <AlertTriangle size={16} /> <span>{error}</span>
-                        </div>
+                            {/* Error */}
+                            {error && (
+                                <div className="scanner-error">
+                                    <AlertTriangle size={16} /> <span>{error}</span>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
 

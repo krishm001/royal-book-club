@@ -404,6 +404,7 @@ const BookDetailPage = ({
   }, [book]);
   const [detailScannerOpen, setDetailScannerOpen] = useState(false);
   const [detailScannerError, setDetailScannerError] = useState('');
+  const [detailScannerLoading, setDetailScannerLoading] = useState(false);
   const detailHtml5QrCodeRef = React.useRef(null);
   const detailScannerTimeoutRef = React.useRef(null);
   const detailScannerActiveRef = React.useRef(false);
@@ -932,7 +933,7 @@ const BookDetailPage = ({
           setDetailQrScannerError("Could not initialize QR scanner: " + err.message);
         }
       }
-    }, 150);
+    }, 800);
   };
   const stopDetailQrValidatorScanner = async () => {
     detailQrScannerActiveRef.current = false;
@@ -976,6 +977,7 @@ const BookDetailPage = ({
       window.alert(t('catalog.signInToCompleteTx'));
       return;
     }
+    setDetailScannerLoading(true);
     const scannedCode = (decodedText || '').trim();
     let qrId = null;
 
@@ -1094,6 +1096,7 @@ const BookDetailPage = ({
     setQrValidationFailed(false);
   };
   const startNfcAction = async actionType => {
+    setDetailScannerLoading(false);
     setNfcReading(true);
     setNfcError('');
     setNfcSuccess(false);
@@ -2226,7 +2229,8 @@ const BookDetailPage = ({
     
       <ScannerModal 
         key={'detail-scanner-' + (nfcModalOpen ? 'open' : 'closed')}
-        isOpen={nfcModalOpen} 
+        isOpen={nfcModalOpen}
+        loading={detailScannerLoading}
         onClose={handleCloseNfcModal} 
         activeTab={activeTab} 
         onTabChange={(tab) => {

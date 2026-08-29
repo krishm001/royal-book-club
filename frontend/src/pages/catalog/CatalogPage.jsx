@@ -90,6 +90,7 @@ const CatalogPage = ({
   // Top-of-Study P2D Self-Checkout States
   const [topScannerOpen, setTopScannerOpen] = useState(false);
   const [topScannerError, setTopScannerError] = useState('');
+  const [topScannerLoading, setTopScannerLoading] = useState(false);
   const [topNfcActive, setTopNfcActive] = useState(false);
   const [topNfcError, setTopNfcError] = useState('');
   const [p2dModalOpen, setP2dModalOpen] = useState(false);
@@ -135,6 +136,7 @@ const CatalogPage = ({
   // Card-level preferences state
   const [cardScannerOpen, setCardScannerOpen] = useState(false);
   const [cardScannerError, setCardScannerError] = useState('');
+  const [cardScannerLoading, setCardScannerLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('NDEFReader' in window ? 'nfc' : 'barcode');
   useEffect(() => {
     if (selectedBook) {
@@ -254,8 +256,10 @@ const CatalogPage = ({
       return;
     }
     setActiveTab('barcode');
+    setTopScannerLoading(false);
     setTopScannerOpen(true);
     setTopScannerError('');
+    setTopNfcError('');
     if (topScannerTimeoutRef.current) {
       clearTimeout(topScannerTimeoutRef.current);
     }
@@ -352,7 +356,7 @@ const CatalogPage = ({
           setTopScannerError("Could not initialize the barcode scanner: " + err.message);
         }
       }
-    }, 150);
+    }, 800);
   };
   const stopTopBarcodeScanner = async () => {
     topScannerActiveRef.current = false;
@@ -388,7 +392,6 @@ const CatalogPage = ({
     } catch (err) {
       console.warn("Failed to manually stop top track fallback", err);
     }
-    setTopScannerOpen(false);
   };
   const handleTopBarcodeScanned = async decodedText => {
     if (!user) {
@@ -457,12 +460,15 @@ const CatalogPage = ({
       if (resolvedStatus !== 'checked-out') {
         const passes = await checkGatingPasses('checkout', resolvedBook.isbn);
         if (!passes) {
+          setTopScannerLoading(false);
           setTopScannerOpen(false);
           return;
         }
       }
+      setTopScannerLoading(false);
       openP2dOverlay(resolvedBook);
     } else {
+      setTopScannerLoading(false);
       if (Date.now() - (topScannerActiveRef.current_lastError || 0) > 3000) {
         setTopScannerError(t('catalog.securityMismatch') + decodedText + ". Please try again.");
         topScannerActiveRef.current_lastError = Date.now();
@@ -478,7 +484,9 @@ const CatalogPage = ({
     }
     setTopNfcActive(true);
     setTopNfcError('');
+    setTopScannerError('');
     setActiveTab('nfc');
+    setTopScannerLoading(false);
     setTopScannerOpen(true);
     if (!('NDEFReader' in window)) {
       setTopNfcError("Web NFC is not supported on this browser/device. Use Simulator Deck or Barcode scanning.");
@@ -918,6 +926,8 @@ const CatalogPage = ({
   };
   const startCardBarcodeScanner = targetBook => {
     setCardScannerError('');
+    setNfcError('');
+    setCardScannerLoading(false);
     setCardScannerOpen(true);
     const bookToUse = targetBook || selectedBook;
     if (!bookToUse) return;
@@ -1017,7 +1027,7 @@ const CatalogPage = ({
           setCardScannerError("Could not initialize scanner: " + err.message);
         }
       }
-    }, 150);
+    }, 800);
   };
   const stopCardBarcodeScanner = async () => {
     cardScannerActiveRef.current = false;
@@ -1053,7 +1063,6 @@ const CatalogPage = ({
     } catch (err) {
       console.warn("Failed to manually stop card video track fallback", err);
     }
-    setCardScannerOpen(false);
   };
   const handleCardBarcodeScanned = async (decodedText, bookToUse) => {
     const currentBook = bookToUse || selectedBook;
@@ -1066,6 +1075,7 @@ const CatalogPage = ({
       window.alert(t('catalog.signInToCompleteTx'));
       return;
     }
+    setCardScannerLoading(true);
     const scannedCode = (decodedText || '').trim();
     let qrId = null;
 
@@ -1129,6 +1139,7 @@ const CatalogPage = ({
             setCreatedCheckoutId(res.id || res.data?.id);
           }
         }
+        setCardScannerLoading(false);
         setCardScannerOpen(false);
         setP2dBook(currentBook);
         setP2dActionType(nfcActionType);
@@ -1267,11 +1278,7 @@ const CatalogPage = ({
 
 
 
-        {topNfcError && <div className="top-p2d-error-banner animate-fade-in">
-            <AlertTriangle size={14} />
-            <span>{topNfcError}</span>
-            <button className="text-btn close-error-btn" onClick={() => setTopNfcError('')}>{t('catalog.dismiss')}</button>
-          </div>}
+        
       </section>
 
       <section className="catalog-controls royal-card">
@@ -1374,6 +1381,7 @@ const CatalogPage = ({
       <ScannerModal 
           key={'card-scanner-' + (nfcModalOpen ? 'open' : 'closed')}
           isOpen={nfcModalOpen && selectedBook}
+          loading={cardScannerLoading}
           onClose={handleCloseCardModal}
           activeTab={activeTab}
           onTabChange={(tab) => {
@@ -1539,6 +1547,7 @@ const CatalogPage = ({
       <ScannerModal 
           key={'top-scanner-' + (topScannerOpen ? 'open' : 'closed')}
           isOpen={topScannerOpen}
+          loading={topScannerLoading}
           onClose={() => { stopTopBarcodeScanner(); stopTopNfcRead(); setTopScannerOpen(false); }}
           activeTab={activeTab}
           onTabChange={(tab) => {
