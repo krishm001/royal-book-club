@@ -983,7 +983,6 @@ const BookDetailPage = ({
       window.alert(t('catalog.signInToCompleteTx'));
       return;
     }
-    setDetailScannerLoading(true);
     const scannedCode = (decodedText || '').trim();
     let qrId = null;
 
@@ -1014,6 +1013,7 @@ const BookDetailPage = ({
       }
     }
     if (isMatch) {
+      setDetailScannerLoading(true);
       await stopDetailBarcodeScanner();
       try {
         resetRatingAndCheckoutId();
@@ -1051,12 +1051,14 @@ const BookDetailPage = ({
         } else if (txRes && txRes.data && txRes.data.id) {
           setCreatedCheckoutId(txRes.data.id);
         }
+        setDetailScannerLoading(false);
         handleCloseNfcModal();
         setInstantActionType(currentActionType);
         setInstantSuccess(true);
         setInstantConfirmOpen(true);
         await refreshState();
       } catch (txError) {
+        setDetailScannerLoading(false);
         console.error('Verified barcode database error:', txError);
         const errMsg = txError.response?.data?.message || txError.message || '';
         const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
@@ -1095,6 +1097,7 @@ const BookDetailPage = ({
     }
   };
   const handleCloseNfcModal = () => {
+    setDetailScannerLoading(false);
     stopDetailBarcodeScanner();
     stopDetailQrValidatorScanner();
     setNfcModalOpen(false);
