@@ -120,10 +120,10 @@ const CatalogPage = ({
     setRatingSubmitted(false);
   };
 
-  const stateRef = useRef({ books, user });
+  const stateRef = useRef({ books, user, nfcActionType });
   useEffect(() => {
-    stateRef.current = { books, user };
-  }, [books, user]);
+    stateRef.current = { books, user, nfcActionType };
+  }, [books, user, nfcActionType]);
   const handleRateExperience = async ratingValue => {
     if (!createdCheckoutId) {
       console.warn("No created checkout ID found to rate");
@@ -1071,7 +1071,7 @@ const CatalogPage = ({
     }
   };
   const handleCardBarcodeScanned = async (decodedText, bookToUse) => {
-    const { user: currentUser } = stateRef.current;
+    const { user: currentUser, nfcActionType: currentActionType } = stateRef.current;
     const currentBook = bookToUse || selectedBook;
     if (!currentBook) {
       await stopCardBarcodeScanner();
@@ -1116,7 +1116,8 @@ const CatalogPage = ({
       await stopCardBarcodeScanner();
       try {
         const targetUid = matchedCopy && matchedCopy.ntagUid || currentBook.ntagUid || '04:A3:B2:C1:D0:E9:80';
-        if (nfcActionType === 'checkout') {
+        let finalP2dAction = currentActionType;
+        if (currentActionType === 'checkout') {
           const res = await verifiedCheckout({
             bookId: currentBook.isbn,
             memberId: user.uid || user.id,
@@ -1128,6 +1129,7 @@ const CatalogPage = ({
             setCreatedCheckoutId(res.id || res.data?.id);
             if (res.status === 'RETURNED' || res.data?.status === 'RETURNED') {
               setNfcActionType('return');
+              finalP2dAction = 'return';
             }
           }
         } else {
@@ -1149,15 +1151,16 @@ const CatalogPage = ({
         setCardScannerLoading(false);
         setCardScannerOpen(false);
         setP2dBook(currentBook);
-        setP2dActionType(nfcActionType);
+        setP2dActionType(finalP2dAction);
         setP2dSuccess(true);
         setP2dModalOpen(true);
+        setNfcModalOpen(false);
         await refreshCatalogState();
       } catch (txError) {
         console.error('Verified card barcode database error:', txError);
         const errMsg = txError.response?.data?.message || txError.message || '';
         const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
-        if (isLocationError && nfcActionType === 'return') {
+        if (isLocationError && currentActionType === 'return') {
           setNfcModalOpen(false);
           navigate(`/catalog/${currentBook.isbn}?action=return&geofenceFailed=true`);
         } else {
