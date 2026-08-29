@@ -2268,79 +2268,150 @@ const BookDetailPage = ({
 
       {/* Fallback Request Ledger Submission Modal Overlay */}
       {fallbackModalOpen && book && <div className="nfc-modal-overlay" style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: "var(--glass-bg)",
-        backdropFilter: 'blur(8px)',
-        display: 'flex',
-        alignItems: 'flex-start',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: "var(--glass-bg)",
+      backdropFilter: 'blur(8px)',
+      display: 'flex',
+      alignItems: 'flex-start',
         overflowY: 'auto',
-        justifyContent: 'center',
-        zIndex: 1000,
-        padding: '20px'
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '20px'
+    }}>
+          <div className="royal-card nfc-modal-card fallback-modal-card animate-fade-in" style={{
+        width: '100%',
+        maxWidth: '420px',
+        padding: '30px',
+        background: 'var(--surface)',
+        border: '1px solid var(--accent)',
+        boxShadow: "0 10px 40px var(--card-shadow)"
       }}>
-        <div className="royal-card nfc-modal-card animate-fade-in" style={{
-          width: '100%',
-          maxWidth: '440px',
-          margin: 'auto',
-          padding: '24px',
-          background: 'var(--surface)',
-          border: '1px solid var(--accent)',
-          boxShadow: "0 10px 40px var(--card-shadow)",
-          borderRadius: '8px',
-          maxHeight: '90vh',
-          overflowY: 'auto'
+            <div className="nfc-modal-header" style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+        overflowY: 'auto',
+          marginBottom: '24px',
+          borderBottom: '1px solid rgba(212, 175, 55, 0.2)',
+          paddingBottom: '12px'
         }}>
-          <div className="panel-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-        overflowY: 'auto', marginBottom: '16px' }}>
-            <h3 className="section-title" style={{ margin: 0 }}>{t('catalog.manualEntryForm', 'Manual Entry Form')}</h3>
-            <button onClick={() => setFallbackModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}>
-              <X size={20} />
-            </button>
+              <h3 style={{
+            margin: 0,
+            color: 'var(--accent)',
+            fontSize: '1.25rem',
+            fontFamily: 'var(--font-display)',
+            fontWeight: 600,
+            letterSpacing: '0.05em'
+          }}>
+                {nfcActionType === 'checkout' ? t('catalog.manualRequest') : t('catalog.manualRequest')}
+              </h3>
+              <button onClick={() => setFallbackModalOpen(false)} className="close-nfc-btn" style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer',
+            padding: '4px'
+          }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="nfc-modal-body" style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+        overflowY: 'auto',
+          textAlign: 'center'
+        }}>
+              {fallbackSuccess ? <div className="nfc-success-animation animate-fade-in">
+                  <CheckCircle size={56} className="gold-glow-icon" style={{
+              color: 'var(--success)',
+              marginBottom: '16px'
+            }} />
+                  <h4 style={{
+              color: 'var(--text-primary)',
+              marginBottom: '8px',
+              fontSize: '1.1rem'
+            }}>{t('catalog.scribeRequestSaved')}</h4>
+                  <p style={{
+              color: 'var(--text-secondary)',
+              fontSize: '0.85rem',
+              margin: 0
+            }}>{t('catalog.requestSubmittedDesc')}</p>
+                </div> : <>
+                  <p className="fallback-explanation" style={{
+              fontSize: '0.85rem',
+              color: 'var(--text-secondary)',
+              lineHeight: '1.6',
+              margin: '0 0 20px 0',
+              textAlign: 'left'
+            }}>
+                    {nfcActionType === 'checkout' ? t('catalog.fallbackExplanationCheckout') : t('catalog.fallbackExplanationReturn')}
+                  </p>
+
+                  <div className="fallback-form-summary royal-card" style={{
+              padding: '16px',
+              background: "var(--glass-bg)",
+              border: '1px solid var(--glass-border)',
+              borderRadius: '4px',
+              textAlign: 'left',
+              width: '100%',
+              marginBottom: '24px'
+            }}>
+                    <h5 style={{
+                color: 'var(--accent)',
+                fontWeight: '600',
+                marginBottom: '6px',
+                fontSize: '0.8rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em'
+              }}>{t('catalog.volumeDetails')}</h5>
+                    <p style={{
+                fontSize: '0.95rem',
+                fontWeight: '700',
+                color: 'var(--text-primary)',
+                margin: 0
+              }}>{book.title}</p>
+                    <p style={{
+                fontSize: '0.8rem',
+                color: 'var(--text-secondary)',
+                margin: '4px 0 0 0'
+              }}>{t('catalog.isbn')}: {book.isbn}</p>
+                  </div>
+
+                  <div className="fallback-actions-row" style={{
+              display: 'flex',
+              gap: '14px',
+              width: '100%'
+            }}>
+                    <button type="button" onClick={() => setFallbackModalOpen(false)} className="royal-btn-secondary" style={{
+                flex: 1,
+                padding: '10px'
+              }}>
+                      {t('common.cancel')}
+                    </button>
+                    <button type="button" onClick={handleSubmitFallbackRequest} className="royal-btn" style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'flex-start',
+        overflowY: 'auto',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '10px'
+              }} disabled={fallbackLoading}>
+                      {fallbackLoading ? <RefreshCw className="spin-icon" size={14} /> : <CheckCircle size={14} />}
+                      {fallbackLoading ? t('profile.submitting') : t('catalog.submitManualRequest')}
+                    </button>
+                  </div>
+                </>}
+            </div>
           </div>
-          <div className="form-group" style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: '500' }}>
-              {t('catalog.ledgerDetails', 'Ledger Details (ISBN / Accession)')}
-            </label>
-            <input 
-              type="text" 
-              className="royal-input w-full" 
-              placeholder={t('catalog.enterIdentifier', 'Enter identifier...')}
-              value={book?.isbn || book?.id || ''}
-              disabled
-            />
-          </div>
-          <div style={{ padding: '12px', background: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.2)', borderRadius: '6px', marginBottom: '24px' }}>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-primary)', lineHeight: 1.5 }}>
-              {t('catalog.curatorApprovalMsg', 'Manual submissions bypass instantaneous cryptographic checkout and require curator approval. Your gatepass will remain pending.')}
-            </p>
-          </div>
-          <button 
-            className="royal-btn primary w-full"
-            style={{ padding: '12px', fontSize: '0.95rem' }}
-            disabled={fallbackLoading}
-            onClick={async () => {
-              setFallbackLoading(true);
-              try {
-                // Simulate submission
-                await new Promise(r => setTimeout(r, 1000));
-                setFallbackSuccess(true);
-                setTimeout(() => {
-                  setFallbackModalOpen(false);
-                  setFallbackSuccess(false);
-                }, 2000);
-              } finally {
-                setFallbackLoading(false);
-              }
-            }}
-          >
-            {fallbackLoading ? <Loader className="spin" size={18} /> : (fallbackSuccess ? <CheckCircle size={18} /> : t('catalog.submitLedger', 'Submit Ledger to Curator'))}
-          </button>
-        </div>
-      </div>}
+        
+        </div>}
 
 
     {instantConfirmOpen && <div className="nfc-modal-overlay" style={{

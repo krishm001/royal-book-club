@@ -462,17 +462,37 @@ const CatalogPage = ({
         resolvedBook.ntagUid = matchedCopy.ntagUid;
       }
       await stopTopBarcodeScanner();
-      const resolvedStatus = getResolvedStatus(resolvedBook);
-      if (resolvedStatus !== 'checked-out') {
-        const passes = await checkGatingPasses('checkout', resolvedBook.isbn);
-        if (!passes) {
-          setTopScannerLoading(false);
-          setTopScannerOpen(false);
-          return;
-        }
+      
+      let freshCheckouts = memberCheckouts;
+      const memberId = user?.uid || user?.id;
+      if (memberId) {
+        try {
+          const fetchCheckoutsByMember = (await import('../../services/libraryApi')).fetchCheckoutsByMember;
+          freshCheckouts = await fetchCheckoutsByMember(memberId);
+          setMemberCheckouts(freshCheckouts || []);
+        } catch (e) {}
       }
+      
+      const activeCheckout = freshCheckouts.find(c => c.bookId === resolvedBook.isbn && (c.status === 'CHECKED_OUT' || c.status === 'REQUESTED_CHECKOUT' || c.status === 'REQUESTED_RETURN'));
+      const isCheckedOutByMe = activeCheckout && activeCheckout.status === 'CHECKED_OUT';
+      const actionType = isCheckedOutByMe ? 'return' : 'checkout';
+      
+      if (actionType === 'checkout') {
+         if (matchedCopy && matchedCopy.status === 'CHECKED_OUT') {
+             setTopScannerLoading(false);
+             openP2dOverlay(resolvedBook, false, actionType, "This copy is currently checked out by another patron.");
+             return;
+         }
+         const passes = await checkGatingPasses('checkout', resolvedBook.isbn);
+         if (!passes) {
+             setTopScannerLoading(false);
+             setTopScannerOpen(false);
+             return;
+         }
+      }
+      
       setTopScannerLoading(false);
-      openP2dOverlay(resolvedBook);
+      openP2dOverlay(resolvedBook, false, actionType);
     } else {
       setTopScannerLoading(false);
       if (Date.now() - (topScannerActiveRef.current_lastError || 0) > 3000) {
@@ -552,20 +572,14 @@ const CatalogPage = ({
   const stopTopNfcRead = () => {
     setTopNfcActive(false);
   };
-  const openP2dOverlay = book => {
+  const openP2dOverlay = (book, success, actionType, errorMsg = '') => {
     setTopScannerOpen(false);
     setCardScannerOpen(false);
     setNfcModalOpen(false);
-    resetRatingAndCheckoutId();
     setP2dBook(book);
-    setP2dError('');
-    setP2dSuccess(false);
-    const resolvedStatus = getResolvedStatus(book);
-    if (resolvedStatus === 'checked-out') {
-      setP2dActionType('return');
-    } else {
-      setP2dActionType('checkout');
-    }
+    setP2dError(errorMsg);
+    setP2dSuccess(success);
+    setP2dActionType(actionType);
     setP2dModalOpen(true);
   };
   const handleP2dSubmit = async () => {
@@ -909,15 +923,17 @@ const CatalogPage = ({
             setNfcSuccess(true);
             setNfcReading(false);
             await refreshCatalogState();
+            openP2dOverlay(targetBook, true, dynamicActionType);
           } catch (txError) {
             console.error('NFC verified transaction database error:', txError);
+            setNfcReading(false);
             const errMsg = txError.response?.data?.message || txError.message || '';
             const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
-            if (isLocationError && actionType === 'return') {
+            if (isLocationError && dynamicActionType === 'return') {
               setNfcModalOpen(false);
               navigate(`/catalog/${targetBook.isbn}?action=return&geofenceFailed=true`);
             } else {
-              setNfcError(`Database rejected verification: ${errMsg}`);
+              openP2dOverlay(targetBook, false, dynamicActionType, `Database rejected verification: ${errMsg}`);
             }
           }
         } else {
@@ -1114,10 +1130,33 @@ const CatalogPage = ({
     }
     if (isMatch) {
       await stopCardBarcodeScanner();
+      
+      let freshCheckouts = memberCheckouts;
+      const memberId = currentUser?.uid || currentUser?.id;
+      if (memberId) {
+        try {
+          const fetchCheckoutsByMember = (await import('../../services/libraryApi')).fetchCheckoutsByMember;
+          freshCheckouts = await fetchCheckoutsByMember(memberId);
+          setMemberCheckouts(freshCheckouts || []);
+        } catch (e) {}
+      }
+      
+      const activeCheckout = freshCheckouts.find(c => c.bookId === currentBook.isbn && (c.status === 'CHECKED_OUT' || c.status === 'REQUESTED_CHECKOUT' || c.status === 'REQUESTED_RETURN'));
+      const isCheckedOutByMe = activeCheckout && activeCheckout.status === 'CHECKED_OUT';
+      const dynamicActionType = isCheckedOutByMe ? 'return' : 'checkout';
+      
+      if (dynamicActionType === 'checkout') {
+          if (matchedCopy && matchedCopy.status === 'CHECKED_OUT') {
+              setCardScannerLoading(false);
+              openP2dOverlay(currentBook, false, dynamicActionType, "This copy is currently checked out by another patron.");
+              return;
+          }
+      }
+
       try {
         const targetUid = matchedCopy && matchedCopy.ntagUid || currentBook.ntagUid || '04:A3:B2:C1:D0:E9:80';
-        let finalP2dAction = currentActionType;
-        if (currentActionType === 'checkout') {
+        let finalP2dAction = dynamicActionType;
+        if (finalP2dAction === 'checkout') {
           const res = await verifiedCheckout({
             bookId: currentBook.isbn,
             memberId: user.uid || user.id,
@@ -1634,7 +1673,18 @@ const CatalogPage = ({
         overflowY: 'auto',
           textAlign: 'center'
         }}>
-              {p2dSuccess ? <div className="p2d-success-view animate-fade-in" style={{
+              {p2dError ? <div className="p2d-error-view animate-fade-in" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            width: '100%',
+            padding: '20px 0'
+          }}>
+                  <AlertTriangle size={56} style={{ color: 'var(--danger)', marginBottom: '16px' }} />
+                  <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px', fontSize: '1.25rem' }}>Transaction Failed</h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '24px' }}>{p2dError}</p>
+                  <button onClick={() => { setP2dModalOpen(false); setP2dBook(null); setP2dError(''); }} className="royal-btn-secondary" style={{ padding: '8px 16px', borderRadius: '4px' }}>{t('auto_3501', 'Done')}</button>
+              </div> : p2dSuccess ? <div className="p2d-success-view animate-fade-in" style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'flex-start',
