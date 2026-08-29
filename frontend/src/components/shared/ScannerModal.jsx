@@ -34,7 +34,7 @@ const ScannerModal = ({
 
     if (!isOpen) return null;
 
-    const Viewfinder = () => (activeTab === 'barcode' || activeTab === 'validator_qr') && scannerId  ? (
+    const viewfinderNode = (activeTab === 'barcode' || activeTab === 'validator_qr') && scannerId  ? (
         <div className="viewfinder-wrapper" style={{ position: 'relative' }}>
             <div 
                 id={scannerId} 
@@ -97,7 +97,7 @@ const ScannerModal = ({
                                         type={activeTab === 'nfc' ? 'nfc' : 'barcode'} 
                                         book={book} 
                                         isConfirmation={isConfirmation}
-                                        renderViewfinder={<Viewfinder />}
+                                        renderViewfinder={viewfinderNode}
                                     />
                                 </div>
                             )}
