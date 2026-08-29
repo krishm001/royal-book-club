@@ -532,7 +532,7 @@ const BookDetailPage = ({
              setNfcModalOpen(true);
              setTimeout(() => {
                handleDetailBarcodeScanned("qr=" + e.detail.qrId);
-             }, 400);
+             }, 800);
            } else if (e.detail.actionType === "checkout") {
              if (sessionStorage.getItem("nfc_session")) handleInstantNfcAction("checkout");
              else handleCheckoutClick();
@@ -670,14 +670,8 @@ const BookDetailPage = ({
         }, {
           fps: 25,
           // Boosted scan rate for faster recognition
-          qrbox: (width, height) => {
-            const idealW = Math.min(width * 0.9, 350);
-            const idealH = 120;
-            return {
-              width: idealW,
-              height: idealH
-            };
-          },
+          
+          qrbox: (videoWidth, videoHeight) => { const w = videoWidth || 400; const h = videoHeight || 300; return { width: Math.round(Math.min(w * 0.8, 300)), height: Math.round(Math.min(h * 0.8, 120)) }; },
           formatsToSupport: [SafeHtml5QrcodeSupportedFormats.QR_CODE, SafeHtml5QrcodeSupportedFormats.EAN_13, SafeHtml5QrcodeSupportedFormats.EAN_8, SafeHtml5QrcodeSupportedFormats.ISBN_13, SafeHtml5QrcodeSupportedFormats.UPC_A, SafeHtml5QrcodeSupportedFormats.UPC_E, SafeHtml5QrcodeSupportedFormats.CODE_128, SafeHtml5QrcodeSupportedFormats.CODE_39]
         }, decodedText => {
           console.log("Detail barcode scanned successfully:", decodedText);
@@ -737,7 +731,7 @@ const BookDetailPage = ({
           setDetailScannerError("Could not initialize scanner: " + err.message);
         }
       }
-    }, 150);
+    }, 800);
   };
   const stopDetailBarcodeScanner = async () => {
     detailScannerActiveRef.current = false;
@@ -828,13 +822,7 @@ const BookDetailPage = ({
         const tryStart = (constraints, fpsVal) => {
           return html5QrCode.start(constraints, {
             fps: fpsVal,
-            qrbox: (width, height) => {
-              const size = Math.min(width * 0.8, 350);
-              return {
-                width: size,
-                height: 120
-              };
-            },
+            
             formatsToSupport: [SafeHtml5QrcodeSupportedFormats.QR_CODE]
           }, decodedText => {
             console.log("Detail QR validator scanned successfully:", decodedText);
@@ -879,14 +867,9 @@ const BookDetailPage = ({
           detailQrHtml5QrCodeRef.current = html5QrCode;
           return html5QrCode.start(simpleConstraints, {
             fps: 25,
-            qrbox: (width, height) => {
-              const size = Math.min(width * 0.8, 350);
-              return {
-                width: size,
-                height: 120
-              };
-            },
-            formatsToSupport: [SafeHtml5QrcodeSupportedFormats.QR_CODE]
+            
+            qrbox: (videoWidth, videoHeight) => { const w = videoWidth || 400; const h = videoHeight || 300; return { width: Math.round(Math.min(w * 0.8, 300)), height: Math.round(Math.min(h * 0.8, 120)) }; },
+          formatsToSupport: [SafeHtml5QrcodeSupportedFormats.QR_CODE]
           }, decodedText => {
             console.log("Detail QR validator scanned successfully:", decodedText);
             stopDetailQrValidatorScanner();
@@ -1060,7 +1043,10 @@ const BookDetailPage = ({
         } else if (txRes && txRes.data && txRes.data.id) {
           setCreatedCheckoutId(txRes.data.id);
         }
-        setNfcSuccess(true);
+        handleCloseNfcModal();
+        setInstantActionType(currentActionType);
+        setInstantSuccess(true);
+        setInstantConfirmOpen(true);
         await refreshState();
       } catch (txError) {
         console.error('Verified barcode database error:', txError);
@@ -1157,8 +1143,10 @@ const BookDetailPage = ({
             } else if (txRes && txRes.data && txRes.data.id) {
               setCreatedCheckoutId(txRes.data.id);
             }
-            setNfcSuccess(true);
-            setNfcReading(false);
+            handleCloseNfcModal();
+            setInstantActionType(actionType);
+            setInstantSuccess(true);
+            setInstantConfirmOpen(true);
             await refreshState();
           } catch (txError) {
             console.error('NFC verified transaction database error:', txError);
@@ -1270,8 +1258,11 @@ const BookDetailPage = ({
       } else {
         setCreatedCheckoutId(checkoutId);
       }
-      setNfcSuccess(true);
       setValidatorQrPath('');
+      handleCloseNfcModal();
+      setInstantActionType('return');
+      setInstantSuccess(true);
+      setInstantConfirmOpen(true);
       await refreshState();
     } catch (err) {
       console.error('Validator QR return failed:', err);
@@ -2234,6 +2225,7 @@ const BookDetailPage = ({
     {/* Royal Checkout/Return Verification Modal Overlay (rendered at root level to guarantee absolute viewport centering) */}
     
       <ScannerModal 
+        key={'detail-scanner-' + (nfcModalOpen ? 'open' : 'closed')}
         isOpen={nfcModalOpen} 
         onClose={handleCloseNfcModal} 
         activeTab={activeTab} 

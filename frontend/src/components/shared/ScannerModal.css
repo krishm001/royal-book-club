@@ -99,6 +99,9 @@
     border-radius: 8px;
     overflow: hidden;
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border: 1px solid var(--accent);
     margin: 0 auto 16px auto;
     background: #000;
@@ -142,13 +145,20 @@
 }
 
 
-/* Ensure video covers the cropped 120px area without squishing */
+/* Ensure video retains native aspect ratio to prevent squishing the internal canvas */
 .scanner-focus-ring-container video,
 #top-barcode-reader video,
 #card-barcode-reader video,
 #detail-barcode-reader video,
 #detail-qr-validator-reader video {
     width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
+    height: auto !important;
+    min-height: 250px !important;
+    object-fit: contain !important;
+    flex-shrink: 0 !important;
+}
+
+/* Hide the shaded region drawn by html5-qrcode so only our native laser line UI shows */
+#qr-shaded-region {
+    display: none !important;
 }

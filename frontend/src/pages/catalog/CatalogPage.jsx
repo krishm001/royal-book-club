@@ -285,11 +285,12 @@ const CatalogPage = ({
           fps: 25,
           // Boosted scan rate for faster recognition
           qrbox: (width, height) => {
-            const idealW = Math.min(width * 0.9, 350);
+            const safeW = width || 400;
+            const idealW = Math.max(100, Math.min(safeW * 0.9, 350));
             const idealH = 120;
             return {
-              width: idealW,
-              height: idealH
+              width: Math.round(idealW),
+              height: Math.round(idealH)
             };
           },
           formatsToSupport: [SafeHtml5QrcodeSupportedFormats.QR_CODE, SafeHtml5QrcodeSupportedFormats.EAN_13, SafeHtml5QrcodeSupportedFormats.EAN_8, SafeHtml5QrcodeSupportedFormats.ISBN_13, SafeHtml5QrcodeSupportedFormats.UPC_A, SafeHtml5QrcodeSupportedFormats.UPC_E, SafeHtml5QrcodeSupportedFormats.CODE_128, SafeHtml5QrcodeSupportedFormats.CODE_39]
@@ -451,14 +452,21 @@ const CatalogPage = ({
       if (matchedCopy && matchedCopy.ntagUid) {
         resolvedBook.ntagUid = matchedCopy.ntagUid;
       }
+      await stopTopBarcodeScanner();
       const resolvedStatus = getResolvedStatus(resolvedBook);
       if (resolvedStatus !== 'checked-out') {
         const passes = await checkGatingPasses('checkout', resolvedBook.isbn);
-        if (!passes) return;
+        if (!passes) {
+          setTopScannerOpen(false);
+          return;
+        }
       }
       openP2dOverlay(resolvedBook);
     } else {
-      window.alert(t('catalog.noBarcodeMatch') + decodedText + ".");
+      if (Date.now() - (topScannerActiveRef.current_lastError || 0) > 3000) {
+        setTopScannerError(t('catalog.securityMismatch') + decodedText + ". Please try again.");
+        topScannerActiveRef.current_lastError = Date.now();
+      }
     }
   };
   const startTopNfcRead = async () => {
@@ -531,6 +539,9 @@ const CatalogPage = ({
     setTopNfcActive(false);
   };
   const openP2dOverlay = book => {
+    setTopScannerOpen(false);
+    setCardScannerOpen(false);
+    setNfcModalOpen(false);
     resetRatingAndCheckoutId();
     setP2dBook(book);
     setP2dError('');
@@ -636,7 +647,7 @@ const CatalogPage = ({
           behavior: 'smooth'
         });
       }
-    }, 400);
+    }, 800);
   }, []);
   const loadMemberCheckouts = async () => {
     const memberId = user?.uid || user?.id;
@@ -939,11 +950,12 @@ const CatalogPage = ({
           fps: 25,
           // Boosted scan rate for faster recognition
           qrbox: (width, height) => {
-            const idealW = Math.min(width * 0.9, 350);
+            const safeW = width || 400;
+            const idealW = Math.max(100, Math.min(safeW * 0.9, 350));
             const idealH = 120;
             return {
-              width: idealW,
-              height: idealH
+              width: Math.round(idealW),
+              height: Math.round(idealH)
             };
           },
           formatsToSupport: [SafeHtml5QrcodeSupportedFormats.EAN_13, SafeHtml5QrcodeSupportedFormats.EAN_8, SafeHtml5QrcodeSupportedFormats.ISBN_13, SafeHtml5QrcodeSupportedFormats.UPC_A, SafeHtml5QrcodeSupportedFormats.UPC_E, SafeHtml5QrcodeSupportedFormats.CODE_128, SafeHtml5QrcodeSupportedFormats.CODE_39]
@@ -1084,6 +1096,7 @@ const CatalogPage = ({
       }
     }
     if (isMatch) {
+      await stopCardBarcodeScanner();
       try {
         const targetUid = matchedCopy && matchedCopy.ntagUid || currentBook.ntagUid || '04:A3:B2:C1:D0:E9:80';
         if (nfcActionType === 'checkout') {
@@ -1116,7 +1129,11 @@ const CatalogPage = ({
             setCreatedCheckoutId(res.id || res.data?.id);
           }
         }
-        setNfcSuccess(true);
+        setCardScannerOpen(false);
+        setP2dBook(currentBook);
+        setP2dActionType(nfcActionType);
+        setP2dSuccess(true);
+        setP2dModalOpen(true);
         await refreshCatalogState();
       } catch (txError) {
         console.error('Verified card barcode database error:', txError);
@@ -1355,6 +1372,7 @@ const CatalogPage = ({
       
       {/* Royal Verification modal overlay */}
       <ScannerModal 
+          key={'card-scanner-' + (nfcModalOpen ? 'open' : 'closed')}
           isOpen={nfcModalOpen && selectedBook}
           onClose={handleCloseCardModal}
           activeTab={activeTab}
@@ -1519,6 +1537,7 @@ const CatalogPage = ({
 
       
       <ScannerModal 
+          key={'top-scanner-' + (topScannerOpen ? 'open' : 'closed')}
           isOpen={topScannerOpen}
           onClose={() => { stopTopBarcodeScanner(); stopTopNfcRead(); setTopScannerOpen(false); }}
           activeTab={activeTab}
