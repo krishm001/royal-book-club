@@ -25,17 +25,6 @@ const BookDetailPage = ({
   const {
     t
   } = useLanguage();
-  // Lock body scroll when any modal is open
-  useEffect(() => {
-    if (nfcModalOpen || fallbackModalOpen || instantConfirmOpen || shareModalOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [nfcModalOpen, fallbackModalOpen, instantConfirmOpen, shareModalOpen]);
 
   const getCoordinates = () => {
     return new Promise(resolve => {
@@ -202,7 +191,6 @@ const BookDetailPage = ({
       return false;
     }
     try {
-      setLoading(true);
       const res = await api.get('/api/v1/auth/me');
       const backendUser = res?.data?.data;
       if (!backendUser) {
@@ -265,7 +253,7 @@ const BookDetailPage = ({
       });
       return false;
     } finally {
-      setLoading(false);
+      // do nothing
     }
   };
   const [cancellingInstant, setCancellingInstant] = useState(false);
@@ -326,7 +314,7 @@ const BookDetailPage = ({
       console.error('Instant NFC transaction error:', txError);
       const errMsg = txError.response?.data?.message || txError.message || '';
       const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
-      if (isLocationError && actionType === 'return') {
+      if (isLocationError && dynamicActionType === 'return') {
         setInstantConfirmOpen(false);
         setNfcActionType('return');
         nfcActionTypeRef.current = 'return';
@@ -339,7 +327,7 @@ const BookDetailPage = ({
         setInstantError(errMsg);
       }
     } finally {
-      setLoading(false);
+      // do nothing
     }
   };
   const handleConfirmInstantAction = async () => {
@@ -1036,7 +1024,18 @@ const BookDetailPage = ({
         // Use matched copy's NTAG UID if found
         const targetUid = matchedCopy && matchedCopy.ntagUid || latestBook.ntagUid || '04:A3:B2:C1:D0:E9:80';
         let txRes;
-        const currentActionType = nfcActionTypeRef.current;
+        
+        let freshCheckouts = [];
+        if (currentUser?.uid || currentUser?.id) {
+          try {
+            const { fetchCheckoutsByMember } = await import('../../services/libraryApi');
+            freshCheckouts = await fetchCheckoutsByMember(currentUser.uid || currentUser.id);
+          } catch (e) {}
+        }
+        const activeCheckout = freshCheckouts.find(c => c.bookId === latestBook.isbn && (c.status === 'CHECKED_OUT' || c.status === 'REQUESTED_CHECKOUT' || c.status === 'REQUESTED_RETURN'));
+        const isCheckedOutByMe = activeCheckout && activeCheckout.status === 'CHECKED_OUT';
+        const currentActionType = isCheckedOutByMe ? 'return' : 'checkout';
+
         if (currentActionType === 'checkout') {
           txRes = await verifiedCheckout({
             bookId: latestBook.isbn,
@@ -1078,7 +1077,7 @@ const BookDetailPage = ({
         console.error('Verified barcode database error:', txError);
         const errMsg = txError.response?.data?.message || txError.message || '';
         const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
-        if (isLocationError && nfcActionTypeRef.current === 'return') {
+        if (isLocationError && currentActionType === 'return') {
           setActiveTab('validator_qr');
           setGeofenceFailed(true);
           setNfcError("Geofence location check failed. We have automatically switched to the Validator QR tab for your convenience.");
@@ -1216,7 +1215,7 @@ const BookDetailPage = ({
             console.error('NFC verified transaction database error:', txError);
             const errMsg = txError.response?.data?.message || txError.message || '';
             const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
-            if (isLocationError && actionType === 'return') {
+            if (isLocationError && dynamicActionType === 'return') {
               setActiveTab('validator_qr');
               setGeofenceFailed(true);
               setNfcError("Geofence location check failed. We have automatically switched to the Validator QR tab for your convenience.");
@@ -1457,6 +1456,21 @@ const BookDetailPage = ({
       console.error('Failed to delete book review:', err);
     }
   };
+  // Lock body scroll when any modal is open
+  useEffect(() => {
+    if (nfcModalOpen || fallbackModalOpen || instantConfirmOpen || shareModalOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.style.overflow = 'unset';
+      document.body.classList.remove('modal-open');
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.body.classList.remove('modal-open');
+    };
+  }, [nfcModalOpen, fallbackModalOpen, instantConfirmOpen, shareModalOpen]);
+
   if (loading) {
     return <div className="book-detail-container animate-fade-in">
         <div className="royal-card no-results-card">
@@ -1504,8 +1518,7 @@ const BookDetailPage = ({
               padding: '16px',
               border: '1px dashed var(--accent)',
               borderRadius: '8px',
-        maxHeight: '90vh',
-        overflowY: 'auto',
+
               background: 'rgba(141, 18, 34, 0.05)',
               display: 'flex',
               flexDirection: 'column',
@@ -1514,7 +1527,7 @@ const BookDetailPage = ({
                   <div style={{
                 display: 'flex',
                 alignItems: 'flex-start',
-        overflowY: 'auto',
+
                 gap: '8px'
               }}>
                     <Sparkles size={16} className="gold-glow" style={{
@@ -1536,7 +1549,7 @@ const BookDetailPage = ({
                   fontWeight: '700',
                   display: 'flex',
                   alignItems: 'flex-start',
-        overflowY: 'auto',
+
                   gap: '4px'
                 }}>
                       <Clock size={12} className="animate-pulse" />
@@ -1556,7 +1569,7 @@ const BookDetailPage = ({
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'flex-start',
-        overflowY: 'auto',
+
                 justifyContent: 'center',
                 gap: '8px',
                 fontWeight: 'bold'
@@ -1570,7 +1583,7 @@ const BookDetailPage = ({
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'flex-start',
-        overflowY: 'auto',
+
                 justifyContent: 'center',
                 gap: '8px',
                 fontWeight: 'bold'
@@ -1582,8 +1595,7 @@ const BookDetailPage = ({
               padding: '16px',
               border: '1px dashed #d97706',
               borderRadius: '8px',
-        maxHeight: '90vh',
-        overflowY: 'auto',
+
               background: 'rgba(217, 119, 6, 0.05)',
               display: 'flex',
               flexDirection: 'column',
@@ -1592,7 +1604,7 @@ const BookDetailPage = ({
                   <div style={{
                 display: 'flex',
                 alignItems: 'flex-start',
-        overflowY: 'auto',
+
                 gap: '8px'
               }}>
                     <AlertTriangle size={16} style={{
@@ -1625,8 +1637,9 @@ const BookDetailPage = ({
               flexDirection: 'column',
               gap: '12px'
             }}>
-                  <button onClick={handleCheckoutClick} className="royal-btn checkout-cta-btn" id="book-detail-checkout-btn">
-                    <ShoppingBag size={16} /> {t('catalog.secureRoyalCheckout')}
+                  <button onClick={handleCheckoutClick} className="royal-btn checkout-cta-btn" id="book-detail-checkout-btn" disabled={isProcessing}>
+                    {isProcessing ? <RefreshCw className="spin-icon" size={16} /> : <ShoppingBag size={16} />}
+                    {isProcessing ? t('catalog.verifyingProgress', 'Verification in Progress...') : t('catalog.secureRoyalCheckout')}
                   </button>
                 </div> : checkoutStatus === 'checked-out' ? <div className="success-checkout-badge-row" style={{
               display: 'flex',
@@ -1646,7 +1659,7 @@ const BookDetailPage = ({
                 </div> : checkoutStatus === 'requested-checkout' ? <div className="pending-checkout-badge royal-card" style={{
               display: 'flex',
               alignItems: 'flex-start',
-        overflowY: 'auto',
+
               gap: '12px',
               padding: '16px',
               border: '1px solid rgba(212, 165, 116, 0.3)',
@@ -1670,7 +1683,7 @@ const BookDetailPage = ({
                 </div> : checkoutStatus === 'requested-return' ? <div className="pending-checkout-badge royal-card" style={{
               display: 'flex',
               alignItems: 'flex-start',
-        overflowY: 'auto',
+
               gap: '12px',
               padding: '16px',
               border: '1px solid rgba(212, 165, 116, 0.3)',
@@ -1694,7 +1707,7 @@ const BookDetailPage = ({
                 </div> : <div className="in-circulation-badge royal-card" style={{
               display: 'flex',
               alignItems: 'flex-start',
-        overflowY: 'auto',
+
               gap: '12px',
               padding: '16px',
               border: '1px solid #ff7b72',
@@ -1721,7 +1734,7 @@ const BookDetailPage = ({
               marginTop: '15px',
               display: 'flex',
               alignItems: 'flex-start',
-        overflowY: 'auto',
+
               justifyContent: 'center',
               gap: '8px',
               textDecoration: 'none',
@@ -1744,7 +1757,7 @@ const BookDetailPage = ({
           <div className="genre-rating-row" style={{
             display: 'flex',
             alignItems: 'flex-start',
-        overflowY: 'auto',
+
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             gap: '8px'
@@ -1752,7 +1765,7 @@ const BookDetailPage = ({
             <div style={{
               display: 'flex',
               alignItems: 'flex-start',
-        overflowY: 'auto',
+
               gap: '10px'
             }}>
               <span className="detail-genre-tag">{book.genre || book.publishDate || 'Library Edition'}</span>
@@ -1771,7 +1784,7 @@ const BookDetailPage = ({
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'flex-start',
-        overflowY: 'auto',
+
               gap: '5px',
               transition: 'var(--transition-smooth)'
             }}>
@@ -1884,7 +1897,7 @@ const BookDetailPage = ({
           marginBottom: '10px',
           display: 'flex',
           alignItems: 'flex-start',
-        overflowY: 'auto',
+
           gap: '10px',
           textTransform: 'uppercase',
           letterSpacing: '0.05em',
@@ -2017,7 +2030,7 @@ const BookDetailPage = ({
                         <span style={{
                       display: 'inline-flex',
                       alignItems: 'flex-start',
-        overflowY: 'auto',
+
                       gap: '6px',
                       padding: '4px 10px',
                       borderRadius: '12px',
@@ -2194,7 +2207,7 @@ const BookDetailPage = ({
                     {!isEditing && (isAuthor || isAdmin) && <div className="review-actions" style={{
                   display: 'flex',
                   alignItems: 'flex-start',
-        overflowY: 'auto',
+
                   gap: '0.5rem'
                 }}>
                         {isAuthor && <button onClick={() => handleStartEditReview(rev.id, rev.content, rev.rating)} className="review-action-btn edit-btn" title={t("str_5385", "Edit Dissertation")} style={{
@@ -2227,7 +2240,7 @@ const BookDetailPage = ({
                       <div className="review-rating-select" style={{
                   display: 'flex',
                   alignItems: 'flex-start',
-        overflowY: 'auto',
+
                   gap: '0.5rem',
                   marginBottom: '0.5rem'
                 }}>
@@ -2321,6 +2334,7 @@ const BookDetailPage = ({
         }} 
         book={book} 
         actionType={nfcActionType} 
+        onActionChange={(type) => setNfcActionType(type)}
         isConfirmation={false}
         error={nfcError || detailScannerError}
         scannerId="detail-barcode-reader"
@@ -2340,7 +2354,7 @@ const BookDetailPage = ({
       backdropFilter: 'blur(8px)',
       display: 'flex',
       alignItems: 'flex-start',
-        overflowY: 'auto',
+
       justifyContent: 'center',
       zIndex: 1000,
       padding: '20px'
@@ -2357,7 +2371,7 @@ const BookDetailPage = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-        overflowY: 'auto',
+
           marginBottom: '24px',
           borderBottom: '1px solid rgba(212, 175, 55, 0.2)',
           paddingBottom: '12px'
@@ -2387,7 +2401,7 @@ const BookDetailPage = ({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
-        overflowY: 'auto',
+
           textAlign: 'center'
         }}>
               {fallbackSuccess ? <div className="nfc-success-animation animate-fade-in">
@@ -2461,7 +2475,7 @@ const BookDetailPage = ({
                 flex: 1,
                 display: 'flex',
                 alignItems: 'flex-start',
-        overflowY: 'auto',
+
                 justifyContent: 'center',
                 gap: '8px',
                 padding: '10px'
@@ -2487,7 +2501,7 @@ const BookDetailPage = ({
       backdropFilter: 'blur(8px)',
       display: 'flex',
       alignItems: 'flex-start',
-        overflowY: 'auto',
+
       justifyContent: 'center',
       zIndex: 1000,
       padding: '20px'
@@ -2507,7 +2521,7 @@ const BookDetailPage = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-        overflowY: 'auto',
+
           marginBottom: '16px',
           borderBottom: '1px solid rgba(212, 175, 55, 0.15)',
           paddingBottom: '10px'
@@ -2536,7 +2550,7 @@ const BookDetailPage = ({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
-        overflowY: 'auto',
+
           textAlign: 'center',
           marginTop: '16px'
         }}>
@@ -2606,7 +2620,7 @@ const BookDetailPage = ({
                   {createdCheckoutId && instantActionType !== 'return' && <Link to={`/gatepass/${createdCheckoutId}`} className="royal-btn" style={{
                 display: 'flex',
                 alignItems: 'flex-start',
-        overflowY: 'auto',
+
                 gap: '6px',
                 padding: '8px 16px',
                 fontSize: '0.85rem',
@@ -2629,7 +2643,7 @@ const BookDetailPage = ({
               }} className="royal-btn" style={{
                 display: 'flex',
                 alignItems: 'flex-start',
-        overflowY: 'auto',
+
                 gap: '6px',
                 padding: '8px 16px',
                 fontSize: '0.85rem',
@@ -2646,7 +2660,7 @@ const BookDetailPage = ({
                   {createdCheckoutId && <button onClick={handleCancelInstantAction} disabled={cancellingInstant} className="royal-btn-secondary" style={{
                 display: 'inline-flex',
                 alignItems: 'flex-start',
-        overflowY: 'auto',
+
                 gap: '6px',
                 padding: '8px 16px',
                 fontSize: '0.85rem',

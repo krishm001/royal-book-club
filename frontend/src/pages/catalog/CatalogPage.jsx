@@ -89,6 +89,8 @@ const CatalogPage = ({
 
   // Top-of-Study P2D Self-Checkout States
   const [topScannerOpen, setTopScannerOpen] = useState(false);
+  const [topActionType, setTopActionType] = useState('checkout');
+  const topActionTypeRef = useRef('checkout');
   const [topScannerError, setTopScannerError] = useState('');
   const [topScannerLoading, setTopScannerLoading] = useState(false);
   const [topNfcActive, setTopNfcActive] = useState(false);
@@ -105,6 +107,7 @@ const CatalogPage = ({
   const [selectedBook, setSelectedBook] = useState(null);
   const [nfcModalOpen, setNfcModalOpen] = useState(false);
   const [nfcActionType, setNfcActionType] = useState('checkout'); // 'checkout' or 'return'
+  const nfcActionTypeRef = useRef('checkout');
   const [nfcReading, setNfcReading] = useState(false);
   const [nfcError, setNfcError] = useState('');
   const [nfcSuccess, setNfcSuccess] = useState(false);
@@ -120,6 +123,8 @@ const CatalogPage = ({
     setRatingSubmitted(false);
   };
 
+  useEffect(() => { topActionTypeRef.current = topActionType; }, [topActionType]);
+  useEffect(() => { nfcActionTypeRef.current = nfcActionType; }, [nfcActionType]);
   const stateRef = useRef({ books, user, nfcActionType });
   useEffect(() => {
     stateRef.current = { books, user, nfcActionType };
@@ -200,11 +205,14 @@ const CatalogPage = ({
   useEffect(() => {
     if (topScannerOpen || cardScannerOpen || nfcModalOpen || p2dModalOpen || fallbackModalOpen) {
       document.body.style.overflow = 'hidden';
+      document.body.classList.add('modal-open');
     } else {
       document.body.style.overflow = 'unset';
+      document.body.classList.remove('modal-open');
     }
     return () => {
       document.body.style.overflow = 'unset';
+      document.body.classList.remove('modal-open');
     };
   }, [topScannerOpen, cardScannerOpen, nfcModalOpen, p2dModalOpen, fallbackModalOpen]);
 
@@ -590,7 +598,7 @@ const CatalogPage = ({
           
           const activeCheckout = freshCheckouts.find(c => c.bookId === matchedBook.isbn && (c.status === 'CHECKED_OUT' || c.status === 'REQUESTED_CHECKOUT' || c.status === 'REQUESTED_RETURN'));
           const isCheckedOutByMe = activeCheckout && activeCheckout.status === 'CHECKED_OUT';
-          const actionType = isCheckedOutByMe ? 'return' : 'checkout';
+      const actionType = isCheckedOutByMe ? 'return' : 'checkout';
           
           let matchedCopy = null;
           if (Array.isArray(matchedBook.copies)) {
@@ -1013,6 +1021,7 @@ const CatalogPage = ({
           } catch (txError) {
             console.error('NFC verified transaction database error:', txError);
             setNfcReading(false);
+            setCardScannerLoading(false);
             const errMsg = txError.response?.data?.message || txError.message || '';
             const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
             if (isLocationError && dynamicActionType === 'return') {
@@ -1290,9 +1299,10 @@ const CatalogPage = ({
         await refreshCatalogState();
       } catch (txError) {
         console.error('Verified card barcode database error:', txError);
+        setCardScannerLoading(false);
         const errMsg = txError.response?.data?.message || txError.message || '';
         const isLocationError = /geofence|location|coordinate|outside/i.test(errMsg);
-        if (isLocationError && currentActionType === 'return') {
+        if (isLocationError && dynamicActionType === 'return') {
           setNfcModalOpen(false);
           navigate(`/catalog/${currentBook.isbn}?action=return&geofenceFailed=true`);
         } else {
@@ -1532,6 +1542,7 @@ const CatalogPage = ({
           }}
           book={selectedBook}
           actionType={nfcActionType || "checkout"}
+          onActionChange={(type) => setNfcActionType(type)}
           isConfirmation={false}
           error={nfcError}
           scannerId="card-barcode-reader"
@@ -1550,7 +1561,7 @@ const CatalogPage = ({
       backdropFilter: 'blur(8px)',
       display: 'flex',
       alignItems: 'flex-start',
-        overflowY: 'auto',
+
       justifyContent: 'center',
       zIndex: 1000,
       padding: '20px'
@@ -1567,7 +1578,7 @@ const CatalogPage = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-        overflowY: 'auto',
+
           marginBottom: '24px',
           borderBottom: '1px solid rgba(212, 175, 55, 0.2)',
           paddingBottom: '12px'
@@ -1597,7 +1608,7 @@ const CatalogPage = ({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
-        overflowY: 'auto',
+
           textAlign: 'center'
         }}>
               {fallbackSuccess ? <div className="nfc-success-animation animate-fade-in">
@@ -1671,7 +1682,7 @@ const CatalogPage = ({
                 flex: 1,
                 display: 'flex',
                 alignItems: 'flex-start',
-        overflowY: 'auto',
+
                 justifyContent: 'center',
                 gap: '8px',
                 padding: '10px'
@@ -1698,7 +1709,8 @@ const CatalogPage = ({
               if (tab === 'barcode') { stopTopNfcRead(); setActiveTab('barcode'); startTopBarcodeScanner(); }
           }}
           book={null}
-          actionType="checkout"
+          actionType={topActionType}
+          onActionChange={(type) => setTopActionType(type)}
           isConfirmation={true}
           error={topScannerError || topNfcError}
           scannerId="top-barcode-reader"
@@ -1716,7 +1728,7 @@ const CatalogPage = ({
       backdropFilter: 'blur(10px)',
       display: 'flex',
       alignItems: 'flex-start',
-        overflowY: 'auto',
+
       justifyContent: 'center',
       zIndex: 1100,
       padding: '20px'
@@ -1734,7 +1746,7 @@ const CatalogPage = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-        overflowY: 'auto',
+
           marginBottom: '24px',
           borderBottom: '1px solid rgba(212, 175, 55, 0.2)',
           paddingBottom: '12px'
@@ -1764,7 +1776,7 @@ const CatalogPage = ({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
-        overflowY: 'auto',
+
           textAlign: 'center'
         }}>
               {p2dError ? <div className="p2d-error-view animate-fade-in" style={{
@@ -1782,7 +1794,7 @@ const CatalogPage = ({
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'flex-start',
-        overflowY: 'auto',
+
             width: '100%'
           }}>
                   <div className="gold-check-animation-wrapper" style={{
@@ -1867,7 +1879,7 @@ const CatalogPage = ({
                     {p2dActionType === 'checkout' && createdCheckoutId && <Link to={`/gatepass/${createdCheckoutId}`} className="royal-btn" style={{
                 display: 'flex',
                 alignItems: 'flex-start',
-        overflowY: 'auto',
+
                 gap: '6px',
                 padding: '8px 16px',
                 fontSize: '0.85rem',
@@ -1881,7 +1893,7 @@ const CatalogPage = ({
                     {p2dActionType === 'return' && p2dBook && <Link to={`/catalog/${p2dBook.isbn || p2dBook.id}#reviews-section`} className="royal-btn" style={{
                 display: 'flex',
                 alignItems: 'flex-start',
-        overflowY: 'auto',
+
                 gap: '6px',
                 padding: '8px 16px',
                 fontSize: '0.85rem',
@@ -1908,14 +1920,13 @@ const CatalogPage = ({
               display: 'flex',
               gap: '16px',
               alignItems: 'flex-start',
-        overflowY: 'auto',
+
               textAlign: 'left',
               width: '100%',
               padding: '16px',
               background: "var(--glass-bg)",
               borderRadius: '8px',
-        maxHeight: '90vh',
-        overflowY: 'auto',
+
               border: '1px solid var(--glass-border)',
               marginBottom: '24px'
             }}>
@@ -2000,7 +2011,7 @@ const CatalogPage = ({
                 flex: 1,
                 display: 'flex',
                 alignItems: 'flex-start',
-        overflowY: 'auto',
+
                 justifyContent: 'center',
                 gap: '8px',
                 padding: '12px'

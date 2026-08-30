@@ -60,24 +60,14 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
     startTimeRef.current = Date.now();
     const getPhase = () => {
       const elapsed = ((Date.now() - startTimeRef.current) / 1000) % 20;
-      if (isReturn) {
-        // Return: scan(0-5s) -> success(5-10s) -> shelve(10-15s) -> reset(15-20s)
-        if (elapsed < 5) return 0;  // scanning
-        if (elapsed < 10) return 1; // success pause
-        if (elapsed < 15) return 2; // placing back
-        return 3;                   // resetting
-      } else {
-        // Checkout: shelf(0-3s) -> pull/flip(3-7s) -> scan/tap(7-11s) -> success(11-16s) -> return(16-20s)
-        if (elapsed < 3) return 0;  // find book on shelf
-        if (elapsed < 7) return 1;  // pick up / flip
-        if (elapsed < 11) return 2; // scanning / tapping
-        if (elapsed < 16) return 3; // checkout complete (5s pause)
-        return 0;                   // resetting
-      }
+      if (elapsed < 5) return 0;
+      if (elapsed < 10) return 1;
+      if (elapsed < 15) return 2;
+      return 3;
     };
     const interval = setInterval(() => setPhase(getPhase()), 500);
     return () => clearInterval(interval);
-  }, [mounted, isReturn]);
+  }, [mounted, action, type]);
 
 
 
@@ -92,27 +82,27 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
   const getInstructionText = () => {
     if (isReturn) {
       if (type === 'barcode') {
-        if (phase === 0) return t('catalog.animScanQr', 'Scan QR on back cover');
-        if (phase === 1) return t('catalog.animReturnComplete', 'Return complete!');
-        if (phase === 2) return t('catalog.animPlaceBack', 'Place book on shelf');
-        return t('catalog.animDone', 'All done!');
+        if (phase === 0) return '1. Flip to back cover';
+        if (phase === 1) return '2. Scan QR on back cover';
+        if (phase === 2) return '3. Focus until QR is scanned successfully';
+        return '4. Place the book back on shelf';
       } else {
-        if (phase === 0) return t('catalog.animNfcTap', 'Tap phone on NFC logo');
-        if (phase === 1) return t('catalog.animReturnComplete', 'Return complete!');
-        if (phase === 2) return t('catalog.animPlaceBack', 'Place book on shelf');
-        return t('catalog.animDone', 'All done!');
+        if (phase === 0) return '1. Hold front cover facing you';
+        if (phase === 1) return '2. Tap your phone to the top-left corner';
+        if (phase === 2) return '3. Slide it slowly up and down until it connects';
+        return '4. Place the book back on shelf';
       }
     } else {
       if (type === 'barcode') {
-        if (phase === 0) return t('catalog.animFindBook', 'Pick up the book');
-        if (phase === 1) return t('catalog.animFlipBook', 'Flip to back cover');
-        if (phase === 2) return t('catalog.animScanQr', 'Scan QR on back cover');
-        return t('catalog.animCheckoutComplete', 'Scan successful!');
+        if (phase === 0) return '1. Pick up the book';
+        if (phase === 1) return '2. Flip to back cover';
+        if (phase === 2) return '3. Scan QR on back cover';
+        return '4. Focus until QR is scanned successfully';
       } else {
-        if (phase === 0) return t('catalog.animFindBook', 'Pick up the book');
-        if (phase === 1) return t('catalog.animFlipFront', 'Hold front cover facing you');
-        if (phase === 2) return t('catalog.animNfcTap', 'Tap phone on NFC logo');
-        return t('catalog.animCheckoutComplete', 'Scan successful!');
+        if (phase === 0) return '1. Pick up the book';
+        if (phase === 1) return '2. Hold front cover facing you';
+        if (phase === 2) return '3. Tap your phone to the top-left corner';
+        return '4. Slide it slowly up and down until it connects';
       }
     }
   };
@@ -239,10 +229,19 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
 
       {/* Instruction Text Overlay */}
       <div className="anim-instruction-text" style={{ position: "relative", margin: "8px 0", zIndex: 100, textAlign: "center" }}>
-        <p  >{getInstructionText()}</p>
+        <p style={{ display: 'flex', flexDirection: 'column', gap: '4px', margin: 0 }}>
+          <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{getInstructionText()}</span>
+          {(phase === 2 || phase === 3) && (
+            <span style={{ fontSize: '0.75rem', opacity: 0.8, fontStyle: 'italic', fontWeight: 'normal' }}>
+              {type === 'nfc' 
+                ? (isIOS ? "Tip for iPhone: iPhones scan from the top edge." : "Tip for Android: Android phones scan from the center-back.")
+                : "Tip - Adjust distance until QR is clear."}
+            </span>
+          )}
+        </p>
       </div>
 
-      <div className="scene-3d">
+      <div className="scene-3d" key={type + "-" + action}>
         
         {/* The Library Shelf */}
         <div className={`library-shelf ${animClass}-shelf`}>
@@ -288,18 +287,15 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
 
             <div className="book-core"></div>
             <div className="book-face book-front" style={{ backgroundImage: `url(${frontCoverUrl})` }}>
-              {type === 'nfc' && (
-                <div className="book-nfc-badge">
-                  <Wifi size={14} color="#000" style={{ transform: 'rotate(90deg)' }} strokeWidth={3} />
-                </div>
-              )}
+
             </div>
             <div className="book-face book-back" style={{ backgroundImage: `url(${backCoverUrl})` }}>
               {type === 'barcode' && (
-                <div className="book-qr-sticker">
-                  <div className="qr-white-box"><QrCode size={7} color="#000" strokeWidth={2} /></div>
-                  <div className="qr-logo-box" dangerouslySetInnerHTML={{ __html: getLogoSvgString('golden').replace(/width="200"/g, 'width="100%"').replace(/height="200"/g, 'height="100%"') }}></div>
-                </div>
+                <div className="book-qr-sticker" style={{
+                  position: 'absolute', top: '10px', left: '10px', width: '35px', height: '20px',
+                  backgroundImage: 'url(/images/qr_sticker.png)', backgroundSize: 'cover',
+                  transform: 'translateZ(1px)', borderRadius: '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.5)'
+                }}></div>
               )}
             </div>
             <div className="book-face book-spine">
@@ -345,16 +341,7 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
         
         {/* Zoomed QR Sticker (barcode mode only) */}
         {type === 'barcode' && (
-          <div className={`zoomed-qr-container ${animClass}-qr`}>
-            <svg className="dotted-line-svg">
-              <path d="M 0,20 C 40,-20 60,20 100,20" fill="none" stroke="var(--accent)" strokeWidth="2" strokeDasharray="4 4" />
-            </svg>
-            <div className="zoomed-qr-box">
-              <div className="z-qr-code"><QrCode size={24} color="#000" strokeWidth={2} /></div>
-              <div className="z-qr-logo" dangerouslySetInnerHTML={{ __html: getLogoSvgString('golden').replace(/width="200"/g, 'width="100%"').replace(/height="200"/g, 'height="100%"') }}></div>
-              <div className="z-qr-text"><div>Royal</div><div>Book</div><div>Club</div></div>
-            </div>
-          </div>
+          <div className={`zoomed-qr-container ${animClass}-qr`}></div>
         )}
       </div>
 
