@@ -25,6 +25,18 @@ const BookDetailPage = ({
   const {
     t
   } = useLanguage();
+  // Lock body scroll when any modal is open
+  useEffect(() => {
+    if (nfcModalOpen || fallbackModalOpen || instantConfirmOpen || shareModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [nfcModalOpen, fallbackModalOpen, instantConfirmOpen, shareModalOpen]);
+
   const getCoordinates = () => {
     return new Promise(resolve => {
       if (!navigator.geolocation) {
@@ -1136,6 +1148,7 @@ const BookDetailPage = ({
           console.log(`NFC tag scanned: ${serialNumber}`);
         const cleanScanned = (serialNumber || '').toLowerCase().replace(/:/g, '');
         if (isNfcTagMatched(book, cleanScanned)) {
+          setDetailScannerLoading(true);
           let freshCheckouts = memberCheckouts;
           const memberId = user?.uid || user?.id;
           if (memberId) {
@@ -1209,11 +1222,19 @@ const BookDetailPage = ({
               setNfcError("Geofence location check failed. We have automatically switched to the Validator QR tab for your convenience.");
               startDetailQrValidatorScanner();
             } else {
-              setNfcError(t('catalog.unableToSubmitRequest') + errMsg);
+              setDetailScannerLoading(false);
+              setInstantSuccess(false);
+              setInstantError(t('catalog.unableToSubmitRequest') + errMsg);
+              setInstantConfirmOpen(true);
+              handleCloseNfcModal();
             }
           }
         } else {
-          setNfcError(t('catalog.nfcSecurityMismatch') + serialNumber + ".");
+          setDetailScannerLoading(false);
+          setInstantSuccess(false);
+          setInstantError(t('catalog.nfcSecurityMismatch') + serialNumber + ".");
+          setInstantConfirmOpen(true);
+          handleCloseNfcModal();
         }
         } finally {
           processingNfcRef.current = false;

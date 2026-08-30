@@ -3,6 +3,7 @@ import { Camera, Smartphone, Scan, X, AlertTriangle, Edit3, RefreshCw } from 'lu
 import { useLanguage } from '../../i18n/LanguageContext';
 import ContinuousScannerAnimation from './ContinuousScannerAnimation';
 import './ScannerModal.css';
+import { fetchHeroConfig } from '../../services/heroApi';
 
 const ScannerModal = ({ 
     isOpen, 
@@ -19,18 +20,25 @@ const ScannerModal = ({
     showManualTab = false,
     loading = false
 }) => {
-    const { t } = useLanguage();
+    const { t, getLocalized } = useLanguage();
+    const DEFAULT_QUOTE = "A room without books is like a body without a soul. - Cicero";
+    const [loadingQuote, setLoadingQuote] = React.useState(DEFAULT_QUOTE);
 
     useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
+        if (loading) {
+            fetchHeroConfig().then(res => {
+                if (res && res.data) {
+                    const quotes = getLocalized(res.data, 'featuredQuotes') || [];
+                    if (quotes.length > 0) {
+                        const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+                        setLoadingQuote(randomQuote);
+                    }
+                }
+            }).catch(e => console.warn('Failed to load quote', e));
         }
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
-    }, [isOpen]);
+    }, [loading, getLocalized]);
+
+
 
     if (!isOpen) return null;
 
@@ -82,10 +90,46 @@ const ScannerModal = ({
                                 {/* Body Content */}
                 <div className="scanner-modal-body">
                     {loading ? (
-                        <div className="scanner-loading-state animate-fade-in" style={{ padding: '60px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                            <RefreshCw className="spin-icon" size={48} style={{ color: 'var(--gold-primary)' }} />
-                            <h4 style={{ color: 'var(--text-primary)', marginTop: '24px', marginBottom: '8px' }}>Verifying...</h4>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>Securely authenticating volume.</p>
+                        <div className="scanner-loading-state animate-fade-in" style={{ 
+                            padding: '40px 20px', 
+                            textAlign: 'center', 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            minHeight: '380px',
+                            background: 'var(--surface)',
+                            borderRadius: '12px'
+                        }}>
+                            <div className="gold-check-animation-wrapper" style={{ margin: '10px 0 20px' }}>
+                                <RefreshCw className="spin-icon" size={64} style={{ color: 'var(--gold-primary)' }} />
+                            </div>
+                            <h3 style={{ 
+                                color: 'var(--gold-primary)', 
+                                fontFamily: 'var(--font-serif)', 
+                                fontSize: '1.5rem', 
+                                marginBottom: '12px' 
+                            }}>
+                                {t('catalog.verifyingProgress', 'Verification in Progress')}
+                            </h3>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: 0, marginBottom: '32px' }}>
+                                Securely authenticating volume. Please wait...
+                            </p>
+                            
+                            <div className="loading-quote-container" style={{ 
+                                marginTop: 'auto', 
+                                fontStyle: 'italic', 
+                                color: 'var(--gold-primary)', 
+                                padding: '20px', 
+                                background: 'var(--glass-bg)', 
+                                borderRadius: '8px', 
+                                border: '1px solid var(--glass-border)', 
+                                width: '100%',
+                                fontSize: '0.95rem',
+                                lineHeight: '1.5'
+                            }}>
+                                "{loadingQuote}"
+                            </div>
                         </div>
                     ) : (
                         <>

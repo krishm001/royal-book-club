@@ -88,3 +88,17 @@ Focuses on refining the physical interaction UI for checkout (Barcode, QR, NFC) 
 
 ### Phase 5: NFC State Management and Race Condition Resolution
 Focuses on resolving race conditions, conflicting overlapping popups, and incorrect verification states during NFC scanning, bringing its reliability and behavior into perfect parity with the QR scanning flow.
+
+### 2.6 Loading States, Quotes, and Standardized Error Popups (Phase 6)
+1. **Verification Indicators**: 
+   - Ensure a "Verification in progress..." loading indicator is shown immediately upon a successful NFC tap or QR scan across all 3 contexts (Book Detail, Book Card, Top Scanner).
+2. **Admin Quotes during Loading**:
+   - While the verification indicator is visible, dynamically fetch and display one of the quotes configured by the admin (from `hero_config`) to entertain the user.
+3. **Scroll Locking**: 
+   - Ensure background scrolling is frozen when ANY popup is open (including confirmation and subsequent verification popups). Currently, it's only locked on the initial scan popup.
+4. **Standardized Error Handling**: 
+   - Remove inline red text errors (like "Security Mismatch: Scanned barcode does not match...").
+   - Instead, transition to the standard Next/Error popup (similar to the "checked out by another patron" popup) and display the failure reason there in a user-friendly manner.
+
+### Phase 6: Loading States, Admin Quotes, and UI Polish
+Focuses on enhancing the waiting experience with admin quotes, fixing background scrolling on all popups, and standardizing the error presentation to use the modal flow instead of inline red text.

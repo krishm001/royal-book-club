@@ -196,6 +196,18 @@ const CatalogPage = ({
       return () => clearTimeout(timer);
     }
   }, [nfcModalOpen, activeTab, selectedBook]);
+  // Lock body scroll when any modal is open
+  useEffect(() => {
+    if (topScannerOpen || cardScannerOpen || nfcModalOpen || p2dModalOpen || fallbackModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [topScannerOpen, cardScannerOpen, nfcModalOpen, p2dModalOpen, fallbackModalOpen]);
+
   const handleScannerClick = (e, scannerInstance) => {
     if (!scannerInstance) return;
     const container = e.currentTarget;
@@ -356,13 +368,15 @@ const CatalogPage = ({
         }).catch(err => {
           console.error("Failed to start scanner:", err);
           if (topScannerActiveRef.current) {
-            setTopScannerError("Camera initialization failed. Please ensure camera permissions are granted.");
+            setTopScannerLoading(false);
+            openP2dOverlay({ title: 'Camera Error', authors: [] }, false, 'checkout', "Camera initialization failed. Please ensure camera permissions are granted.");
           }
         });
       } catch (err) {
         console.error("Scanner exception:", err);
         if (topScannerActiveRef.current) {
-          setTopScannerError("Could not initialize the barcode scanner: " + err.message);
+          setTopScannerLoading(false);
+          openP2dOverlay({ title: 'Camera Error', authors: [] }, false, 'checkout', "Could not initialize the barcode scanner: " + err.message);
         }
       }
     }, 800);
@@ -409,6 +423,7 @@ const CatalogPage = ({
       window.alert(t('catalog.signInToCheckoutOrReturn'));
       return;
     }
+    setTopScannerLoading(true);
     const scannedCode = (decodedText || '').trim();
     let qrId = null;
 
@@ -500,10 +515,7 @@ const CatalogPage = ({
       openP2dOverlay(resolvedBook, false, actionType);
     } else {
       setTopScannerLoading(false);
-      if (Date.now() - (topScannerActiveRef.current_lastError || 0) > 3000) {
-        setTopScannerError(t('catalog.securityMismatch') + decodedText + ". Please try again.");
-        topScannerActiveRef.current_lastError = Date.now();
-      }
+      openP2dOverlay({ title: 'Unrecognized Volume', authors: [] }, false, 'checkout', t('catalog.securityMismatch') + decodedText + ". Please try again.");
     }
   };
     const startTopNfcRead = async () => {
@@ -530,7 +542,8 @@ const CatalogPage = ({
       const ndef = new window.NDEFReader();
       await ndef.scan({ signal: topNfcAbortControllerRef.current.signal });
       ndef.addEventListener("readingerror", () => {
-        setTopNfcError("NFC Reading Error: Place tag firmly against your device's NFC hot spot.");
+        setTopScannerLoading(false);
+        openP2dOverlay({ title: 'NFC Error', authors: [] }, false, 'checkout', "NFC Reading Error: Place tag firmly against your device's NFC hot spot.");
       });
       ndef.addEventListener("reading", async ({
         serialNumber,
@@ -540,6 +553,7 @@ const CatalogPage = ({
         processingTopNfcRef.current = true;
         try {
           console.log(`Top NFC scanned: ${serialNumber}`);
+          setTopScannerLoading(true);
         let matchedBook = null;
 
         // Match by UID first
@@ -593,7 +607,8 @@ const CatalogPage = ({
           }
           openP2dOverlay(matchedBook, false, actionType);
         } else {
-          setTopNfcError(`No book in catalog registered with NFC Serial ${serialNumber}`);
+          setTopScannerLoading(false);
+          openP2dOverlay({ title: 'Unrecognized Volume', authors: [] }, false, 'checkout', `No book in catalog registered with NFC Serial ${serialNumber}`);
         }
         } finally {
           processingTopNfcRef.current = false;
@@ -601,7 +616,8 @@ const CatalogPage = ({
       });
     } catch (err) {
       console.error("Top NFC error:", err);
-      setTopNfcError(`NFC Scan failed: ${err.message || err}`);
+      setTopScannerLoading(false);
+      openP2dOverlay({ title: 'NFC Error', authors: [] }, false, 'checkout', `NFC Scan failed: ${err.message || err}`);
       setTopNfcActive(false);
     }
   };
@@ -928,7 +944,8 @@ const CatalogPage = ({
       const ndef = new window.NDEFReader();
       await ndef.scan({ signal: cardNfcAbortControllerRef.current.signal });
       ndef.addEventListener("readingerror", () => {
-        setNfcError("NFC Reading Error: Unable to read tag. Place tag firmly against your device's NFC sweet spot.");
+        setCardScannerLoading(false);
+        openP2dOverlay(targetBook, false, 'checkout', "NFC Reading Error: Unable to read tag. Place tag firmly against your device's NFC sweet spot.");
       });
       ndef.addEventListener("reading", async ({
         serialNumber
@@ -937,6 +954,7 @@ const CatalogPage = ({
         processingCardNfcRef.current = true;
         try {
           console.log(`NFC tag scanned: ${serialNumber}`);
+          setCardScannerLoading(true);
         const cleanScanned = (serialNumber || '').toLowerCase().replace(/:/g, '');
         if (isNfcTagMatched(targetBook, cleanScanned)) {
           let freshCheckouts = memberCheckouts;
@@ -1005,7 +1023,8 @@ const CatalogPage = ({
             }
           }
         } else {
-          setNfcError(`Security Mismatch: This NFC tag (${serialNumber || 'Unknown'}) does not match this book volume's registered IDs.`);
+          setCardScannerLoading(false);
+          openP2dOverlay(targetBook, false, 'checkout', `Security Mismatch: This NFC tag (${serialNumber || 'Unknown'}) does not match this book volume's registered IDs.`);
         }
         } finally {
           processingCardNfcRef.current = false;
@@ -1111,13 +1130,15 @@ const CatalogPage = ({
         }).catch(err => {
           console.error("Failed to start card scanner:", err);
           if (cardScannerActiveRef.current) {
-            setCardScannerError("Camera initialization failed. Please ensure camera permissions are granted.");
+            setCardScannerLoading(false);
+            openP2dOverlay(targetBook || selectedBook, false, 'checkout', "Camera initialization failed. Please ensure camera permissions are granted.");
           }
         });
       } catch (err) {
         console.error("Card scanner exception:", err);
         if (cardScannerActiveRef.current) {
-          setCardScannerError("Could not initialize scanner: " + err.message);
+          setCardScannerLoading(false);
+          openP2dOverlay(targetBook || selectedBook, false, 'checkout', "Could not initialize scanner: " + err.message);
         }
       }
     }, 800);
@@ -1170,6 +1191,7 @@ const CatalogPage = ({
       return;
     }
     setCardScannerLoading(true);
+    setTopScannerLoading(true);
     const scannedCode = (decodedText || '').trim();
     let qrId = null;
 
