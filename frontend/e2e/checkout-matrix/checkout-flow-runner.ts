@@ -17,7 +17,7 @@ export async function runCheckoutFlow(
   reportSteps: string[]
 ): Promise<{ success: boolean; steps: string[]; error?: string }> {
   try {
-    const baseUrl = process.env.BASE_URL || 'http://localhost:5173';
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
     
     reportSteps.push(`Setting up user state: ${combo.userState}`);
     if (combo.userState === 'anonymous') {

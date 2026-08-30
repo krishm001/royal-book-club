@@ -74,3 +74,5 @@ linkedin:
   redirect-uri: ${LINKEDIN_REDIRECT_URI:https://royalbookclub.com}
 
 
+e2e:
+  shared-secret: ${E2E_SHARED_SECRET:}
