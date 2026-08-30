@@ -12,6 +12,7 @@ const ScannerModal = ({
     onTabChange, 
     book, 
     actionType, 
+    onActionChange, 
     isConfirmation,
     error,
     scannerId,
@@ -136,6 +137,22 @@ const ScannerModal = ({
                             {/* Animation Handles the Viewfinder Placement Internally */}
                             {(activeTab !== 'manual') && (
                                 <div className="animation-wrapper">
+                                    {onActionChange && (
+                                        <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 110, display: 'flex', background: 'var(--glass-bg)', borderRadius: '16px', padding: '2px', border: '1px solid var(--glass-border)' }}>
+                                            <button 
+                                                onClick={() => onActionChange('checkout')}
+                                                style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: '14px', border: 'none', cursor: 'pointer', background: actionType === 'checkout' ? 'var(--accent)' : 'transparent', color: actionType === 'checkout' ? '#fff' : 'var(--text-secondary)' }}
+                                            >
+                                                Checkout
+                                            </button>
+                                            <button 
+                                                onClick={() => onActionChange('return')}
+                                                style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: '14px', border: 'none', cursor: 'pointer', background: actionType === 'return' ? 'var(--accent)' : 'transparent', color: actionType === 'return' ? '#fff' : 'var(--text-secondary)' }}
+                                            >
+                                                Return
+                                            </button>
+                                        </div>
+                                    )}
                                     <ContinuousScannerAnimation 
                                         action={actionType} 
                                         type={activeTab === 'nfc' ? 'nfc' : 'barcode'} 

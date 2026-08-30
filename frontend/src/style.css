@@ -468,3 +468,10 @@ main {
   border-radius: 8px;
   transition: all 0.3s ease;
 }
+
+/* Lock body scrolling when modals are open */
+body.modal-open {
+  overflow: hidden !important;
+  touch-action: none;
+  -webkit-overflow-scrolling: auto;
+}

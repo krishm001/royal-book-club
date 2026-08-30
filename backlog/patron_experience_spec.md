@@ -102,3 +102,13 @@ Focuses on resolving race conditions, conflicting overlapping popups, and incorr
 
 ### Phase 6: Loading States, Admin Quotes, and UI Polish
 Focuses on enhancing the waiting experience with admin quotes, fixing background scrolling on all popups, and standardizing the error presentation to use the modal flow instead of inline red text.
+
+
+## Phase 7: UI & Animation Refinements
+- Update ContinuousScannerAnimation with distinct steps and explicit reset logic using React `key`.
+- Incorporate iOS vs Android specific UI tips and animation behaviors.
+- Decorate Verification in Progress state to match the final Golden confirmation UI.
+- Refactor 3D Book CSS box-model to prevent spine separation on rotation.
+- Add action toggles for switching between Return/Checkout during animation.
+- Move busy indicator strictly to the Checkout/Return button in BookDetailPage.
+- Ensure strict body scroll locking with `modal-open` CSS class.
