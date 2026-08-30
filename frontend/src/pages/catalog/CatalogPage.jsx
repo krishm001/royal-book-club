@@ -943,6 +943,7 @@ const CatalogPage = ({
     setNfcReading(true);
     setNfcError('');
     setNfcSuccess(false);
+    setCardScannerLoading(false);
     if (!('NDEFReader' in window)) {
       setNfcError("Web NFC is not supported on this browser/device. Please use the Barcode Scan tab or manual request fallback.");
       setNfcReading(false);
@@ -1327,6 +1328,10 @@ const CatalogPage = ({
   const handleCloseCardModal = async (keepBook = false) => {
     await stopCardBarcodeScanner();
     setNfcModalOpen(false);
+    setCardScannerOpen(false);
+    setCardScannerLoading(false);
+    setNfcReading(false);
+    if (cardNfcAbortControllerRef.current) cardNfcAbortControllerRef.current.abort();
     if (!keepBook) {
       setSelectedBook(null);
     }

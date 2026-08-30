@@ -272,7 +272,7 @@ const BookDetailPage = ({
   };
   const executeInstantAction = async actionType => {
     try {
-      setLoading(true);
+      // Intentionally NOT setting loading(true) so we don't unmount the page and overlay!
       setInstantError('');
       resetRatingAndCheckoutId();
       const targetUid = nfcSession?.ntagUid || book?.ntagUid || '04:A3:B2:C1:D0:E9:80';
@@ -1166,7 +1166,7 @@ const BookDetailPage = ({
              matchedCopy = book.copies.find(c => c.ntagUid === cleanScanned);
           }
           if (dynamicActionType === 'checkout' && matchedCopy && matchedCopy.status === 'CHECKED_OUT') {
-              setDetailScannerOpen(false);
+              handleCloseNfcModal();
               setInstantSuccess(false);
               setInstantError("This copy is currently checked out by another patron.");
               setInstantConfirmOpen(true);
