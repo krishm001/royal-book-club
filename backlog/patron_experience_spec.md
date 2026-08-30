@@ -73,3 +73,18 @@ Focuses on advanced combinations (e.g., scanning while logged out on iOS vs Andr
 
 ### Phase 4: Mobile Menu & Checkout Hardware UX Optimization
 Focuses on refining the physical interaction UI for checkout (Barcode, QR, NFC) to be intuitive with helper graphics and space-optimized for small screens. It also addresses scrolling usability in the mobile menu overlay.
+
+### 2.5 NFC State Management and Race Conditions (Phase 5)
+1. **NFC Checkout/Return Flow Reliability**: 
+   - Fix occasional failures with NFC checkout in book detail and book card checkout flows.
+   - Prevent the brief appearance of "transaction failed" popup followed by "gatepass / write review" popup when the transaction actually failed.
+   - Ensure consecutive NFC scans do not trigger multiple overlapping or racing popups (transaction failed, royal checkout verification, royal return verification, popups with only a "Done" button).
+   - Prevent checkout and return popups from alternating unpredictably.
+2. **Book Card Flow NFC Bug**: Ensure the confirmation popup does not incorrectly display during NFC tap in the book card flow, and multiple popup issues are resolved.
+3. **NFC Global State Consistency**: 
+   - Ensure that if an NFC tap issue occurs in book detail/card flow, it does not corrupt the state of the top scanner NFC tap on the study page.
+   - Resolve false negative errors like "This copy is currently checked out by another patron" when the book is checked out by the same user or not checked out at all.
+4. **Parity with QR Scanner**: NFC tap flows must behave identically to QR scanner flows in terms of verification state handling, logic, and success/failure handling. They are simply two input mechanisms for the same underlying verification logic.
+
+### Phase 5: NFC State Management and Race Condition Resolution
+Focuses on resolving race conditions, conflicting overlapping popups, and incorrect verification states during NFC scanning, bringing its reliability and behavior into perfect parity with the QR scanning flow.

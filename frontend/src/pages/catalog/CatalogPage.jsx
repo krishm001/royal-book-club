@@ -150,6 +150,10 @@ const CatalogPage = ({
     }
   }, [selectedBook]);
   const topHtml5QrCodeRef = useRef(null);
+  const topNfcAbortControllerRef = useRef(null);
+  const cardNfcAbortControllerRef = useRef(null);
+  const processingTopNfcRef = useRef(false);
+  const processingCardNfcRef = useRef(false);
   const cardHtml5QrCodeRef = useRef(null);
   const topScannerTimeoutRef = useRef(null);
   const topScannerActiveRef = useRef(false);
@@ -486,7 +490,8 @@ const CatalogPage = ({
          const passes = await checkGatingPasses('checkout', resolvedBook.isbn);
          if (!passes) {
              setTopScannerLoading(false);
-             setTopScannerOpen(false);
+             if (topNfcAbortControllerRef.current) topNfcAbortControllerRef.current.abort();
+    setTopScannerOpen(false);
              return;
          }
       }
@@ -501,10 +506,9 @@ const CatalogPage = ({
       }
     }
   };
-  let topNfcAbortController = null;
-  const startTopNfcRead = async () => {
-    if (topNfcAbortController) topNfcAbortController.abort();
-    topNfcAbortController = new AbortController();
+    const startTopNfcRead = async () => {
+    if (topNfcAbortControllerRef.current) topNfcAbortControllerRef.current.abort();
+    topNfcAbortControllerRef.current = new AbortController();
     if (!user || user.isAnonymous) {
       if (triggerOnboarding) triggerOnboarding({
         actionType: 'scan_nfc'
@@ -524,7 +528,7 @@ const CatalogPage = ({
     }
     try {
       const ndef = new window.NDEFReader();
-      await ndef.scan({ signal: topNfcAbortController.signal });
+      await ndef.scan({ signal: topNfcAbortControllerRef.current.signal });
       ndef.addEventListener("readingerror", () => {
         setTopNfcError("NFC Reading Error: Place tag firmly against your device's NFC hot spot.");
       });
@@ -532,7 +536,10 @@ const CatalogPage = ({
         serialNumber,
         message
       }) => {
-        console.log(`Top NFC scanned: ${serialNumber}`);
+        if (processingTopNfcRef.current) return;
+        processingTopNfcRef.current = true;
+        try {
+          console.log(`Top NFC scanned: ${serialNumber}`);
         let matchedBook = null;
 
         // Match by UID first
@@ -588,6 +595,9 @@ const CatalogPage = ({
         } else {
           setTopNfcError(`No book in catalog registered with NFC Serial ${serialNumber}`);
         }
+        } finally {
+          processingTopNfcRef.current = false;
+        }
       });
     } catch (err) {
       console.error("Top NFC error:", err);
@@ -597,9 +607,10 @@ const CatalogPage = ({
   };
   const stopTopNfcRead = () => {
     setTopNfcActive(false);
-    if (topNfcAbortController) topNfcAbortController.abort();
+    if (topNfcAbortControllerRef.current) topNfcAbortControllerRef.current.abort();
   };
   const openP2dOverlay = (book, success, actionType, errorMsg = '') => {
+    if (topNfcAbortControllerRef.current) topNfcAbortControllerRef.current.abort();
     setTopScannerOpen(false);
     setCardScannerOpen(false);
     setNfcModalOpen(false);
@@ -902,10 +913,9 @@ const CatalogPage = ({
       startCardBarcodeScanner(book);
     }
   };
-  let cardNfcAbortController = null;
-  const startNfcAction = async (targetBook, actionType) => {
-    if (cardNfcAbortController) cardNfcAbortController.abort();
-    cardNfcAbortController = new AbortController();
+    const startNfcAction = async (targetBook, actionType) => {
+    if (cardNfcAbortControllerRef.current) cardNfcAbortControllerRef.current.abort();
+    cardNfcAbortControllerRef.current = new AbortController();
     setNfcReading(true);
     setNfcError('');
     setNfcSuccess(false);
@@ -916,14 +926,17 @@ const CatalogPage = ({
     }
     try {
       const ndef = new window.NDEFReader();
-      await ndef.scan({ signal: cardNfcAbortController.signal });
+      await ndef.scan({ signal: cardNfcAbortControllerRef.current.signal });
       ndef.addEventListener("readingerror", () => {
         setNfcError("NFC Reading Error: Unable to read tag. Place tag firmly against your device's NFC sweet spot.");
       });
       ndef.addEventListener("reading", async ({
         serialNumber
       }) => {
-        console.log(`NFC tag scanned: ${serialNumber}`);
+        if (processingCardNfcRef.current) return;
+        processingCardNfcRef.current = true;
+        try {
+          console.log(`NFC tag scanned: ${serialNumber}`);
         const cleanScanned = (serialNumber || '').toLowerCase().replace(/:/g, '');
         if (isNfcTagMatched(targetBook, cleanScanned)) {
           let freshCheckouts = memberCheckouts;
@@ -976,6 +989,7 @@ const CatalogPage = ({
             }
             setNfcSuccess(true);
             setNfcReading(false);
+            if (cardNfcAbortControllerRef.current) cardNfcAbortControllerRef.current.abort();
             await refreshCatalogState();
             openP2dOverlay(targetBook, true, dynamicActionType);
           } catch (txError) {
@@ -992,6 +1006,9 @@ const CatalogPage = ({
           }
         } else {
           setNfcError(`Security Mismatch: This NFC tag (${serialNumber || 'Unknown'}) does not match this book volume's registered IDs.`);
+        }
+        } finally {
+          processingCardNfcRef.current = false;
         }
       });
     } catch (err) {
@@ -1651,7 +1668,8 @@ const CatalogPage = ({
           key={'top-scanner-' + (topScannerOpen ? 'open' : 'closed')}
           isOpen={topScannerOpen}
           loading={topScannerLoading}
-          onClose={() => { stopTopBarcodeScanner(); stopTopNfcRead(); setTopScannerOpen(false); }}
+          onClose={() => { stopTopBarcodeScanner(); stopTopNfcRead(); if (topNfcAbortControllerRef.current) topNfcAbortControllerRef.current.abort();
+    setTopScannerOpen(false); }}
           activeTab={activeTab}
           onTabChange={(tab) => {
               if (tab === 'nfc') { stopTopBarcodeScanner(); setActiveTab('nfc'); startTopNfcRead(); }

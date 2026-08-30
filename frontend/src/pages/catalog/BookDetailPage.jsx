@@ -413,6 +413,8 @@ const BookDetailPage = ({
   const [detailScannerError, setDetailScannerError] = useState('');
   const [detailScannerLoading, setDetailScannerLoading] = useState(false);
   const detailHtml5QrCodeRef = React.useRef(null);
+  const detailNfcAbortControllerRef = React.useRef(null);
+  const processingNfcRef = React.useRef(false);
   const detailScannerTimeoutRef = React.useRef(null);
   const detailScannerActiveRef = React.useRef(false);
   const detailQrHtml5QrCodeRef = React.useRef(null);
@@ -1102,14 +1104,14 @@ const BookDetailPage = ({
     setDetailScannerLoading(false);
     stopDetailBarcodeScanner();
     stopDetailQrValidatorScanner();
+    if (detailNfcAbortControllerRef.current) detailNfcAbortControllerRef.current.abort();
     setNfcModalOpen(false);
     setGeofenceFailed(false);
     setQrValidationFailed(false);
   };
-  let detailNfcAbortController = null;
-  const startNfcAction = async actionType => {
-    if (detailNfcAbortController) detailNfcAbortController.abort();
-    detailNfcAbortController = new AbortController();
+    const startNfcAction = async actionType => {
+    if (detailNfcAbortControllerRef.current) detailNfcAbortControllerRef.current.abort();
+    detailNfcAbortControllerRef.current = new AbortController();
     setDetailScannerLoading(false);
     setNfcReading(true);
     setNfcError('');
@@ -1121,14 +1123,17 @@ const BookDetailPage = ({
     }
     try {
       const ndef = new window.NDEFReader();
-      await ndef.scan({ signal: detailNfcAbortController.signal });
+      await ndef.scan({ signal: detailNfcAbortControllerRef.current.signal });
       ndef.addEventListener("readingerror", () => {
         setNfcError(t('catalog.nfcReadingError'));
       });
       ndef.addEventListener("reading", async ({
         serialNumber
       }) => {
-        console.log(`NFC tag scanned: ${serialNumber}`);
+        if (processingNfcRef.current) return;
+        processingNfcRef.current = true;
+        try {
+          console.log(`NFC tag scanned: ${serialNumber}`);
         const cleanScanned = (serialNumber || '').toLowerCase().replace(/:/g, '');
         if (isNfcTagMatched(book, cleanScanned)) {
           let freshCheckouts = memberCheckouts;
@@ -1181,8 +1186,10 @@ const BookDetailPage = ({
               });
             }
             if (txRes && txRes.id) {
+              if (detailNfcAbortControllerRef.current) detailNfcAbortControllerRef.current.abort();
               setCreatedCheckoutId(txRes.id);
             } else if (txRes && txRes.data && txRes.data.id) {
+              if (detailNfcAbortControllerRef.current) detailNfcAbortControllerRef.current.abort();
               setCreatedCheckoutId(txRes.data.id);
             }
             handleCloseNfcModal();
@@ -1207,6 +1214,9 @@ const BookDetailPage = ({
           }
         } else {
           setNfcError(t('catalog.nfcSecurityMismatch') + serialNumber + ".");
+        }
+        } finally {
+          processingNfcRef.current = false;
         }
       });
     } catch (err) {
