@@ -59,6 +59,20 @@ const BookDetailPage = ({
   const [allCheckouts, setAllCheckouts] = useState([]);
   const [loadingCheckouts, setLoadingCheckouts] = useState(false);
   const [loading, setLoading] = useState(true);
+  const DEFAULT_QUOTE = "A room without books is like a body without a soul. - Cicero";
+  const [loadingQuote, setLoadingQuote] = useState(DEFAULT_QUOTE);
+
+  useEffect(() => {
+    fetchHeroConfig().then(res => {
+      if (res && res.data) {
+        const quotes = getLocalized(res.data, 'featuredQuotes') || [];
+        if (quotes.length > 0) {
+            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            setLoadingQuote(randomQuote);
+        }
+      }
+    }).catch(() => {});
+  }, [getLocalized]);
   const [error, setError] = useState(null);
   const [reviewText, setReviewText] = useState('');
   const [reviews, setReviews] = useState([]);
