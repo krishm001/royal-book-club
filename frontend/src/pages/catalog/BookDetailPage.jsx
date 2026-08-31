@@ -2723,26 +2723,48 @@ const BookDetailPage = ({
                   </button>
                 </div>
               </div> : <div className="instant-processing-state animate-fade-in" style={{
-            padding: '24px 0',
+            padding: '24px 0 0 0',
             width: '100%',
-            textAlign: 'center'
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '300px'
           }}>
-                <div className="gold-check-animation-wrapper" style={{ margin: "10px auto 20px" }}><RefreshCw className="spin-icon" size={64} style={{ color: "var(--accent)" }} /></div>
+                <div className="royal-spinner" style={{
+              width: '40px',
+              height: '40px',
+              margin: '0 auto 16px',
+              borderColor: 'var(--accent) transparent var(--accent) transparent'
+            }}></div>
                 <h4 style={{
-              color: "var(--accent)",
-              margin: "0 0 8px 0",
-              fontSize: "1.5rem",
-              fontFamily: "var(--font-serif)"
+              color: 'var(--text-primary)',
+              margin: '0 0 8px 0',
+              fontSize: '1.1rem',
+              fontWeight: 'bold'
             }}>
                   {instantActionType === 'checkout' ? 'Executing Instant Royal Checkout...' : 'Executing Instant Royal Return...'}
                 </h4>
                 <p style={{
               color: 'var(--text-secondary)',
-              fontSize: '0.82rem',
-              margin: 0
+              fontSize: '0.9rem',
+              margin: '0 0 24px 0'
             }}>
                   {t('auto_3491', 'Cryptographically validating NFC physical signature and updating catalog ledger...')}
                 </p>
+                <div className="loading-quote-container" style={{ 
+                    marginTop: 'auto', 
+                    fontStyle: 'italic', 
+                    color: 'var(--text-primary)', 
+                    padding: '24px', 
+                    background: 'var(--surface-elevated)', 
+                    borderTop: '2px solid var(--accent)', 
+                    width: '100%',
+                    fontSize: '0.95rem',
+                    lineHeight: '1.5',
+                    borderRadius: '0 0 12px 12px'
+                }}>
+                    "{loadingQuote}"
+                </div>
               </div>}
           </div>
         </div>

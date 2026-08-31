@@ -26,7 +26,7 @@ const ScannerModal = ({
     const [loadingQuote, setLoadingQuote] = React.useState(DEFAULT_QUOTE);
 
     useEffect(() => {
-        if (loading) {
+        if (isOpen) {
             fetchHeroConfig().then(res => {
                 if (res && res.data) {
                     const quotes = getLocalized(res.data, 'featuredQuotes') || [];
@@ -58,35 +58,42 @@ const ScannerModal = ({
         <div className="universal-scanner-overlay animate-fade-in">
             <div className="universal-scanner-modal royal-card">
                 {/* Tabs (Header removed to save space, X button moved here) */}
+                {!loading ? (
                 <div className="scanner-tabs" style={{ display: 'flex', gap: '4px', width: '100%', justifyContent: 'space-between', padding: '8px', borderBottom: '1px solid rgba(212, 175, 55, 0.2)' }}>
-                    <button 
-                        className={`tab-btn ${activeTab === 'nfc' ? 'active' : ''} ${book !== null && !book?.ntagUid ? 'tab-disabled' : ''}`}
-                        onClick={() => onTabChange('nfc')}
-                        disabled={book !== null && !book?.ntagUid}
-                        style={{ padding: '6px 4px', fontWeight: 'bold' }}
-                    >
-                        {t('catalog.nfcTap', 'Tap')}
-                    </button>
-                    <button 
-                        className={`tab-btn ${activeTab === 'barcode' || activeTab === 'validator_qr' ? 'active' : ''}`}
-                        onClick={() => onTabChange('barcode')}
-                        style={{ padding: '6px 4px', fontWeight: 'bold' }}
-                    >
-                        {t('catalog.qrBarcodeScan', 'Scan')}
-                    </button>
+                    <button className={`tab-btn ${activeTab === 'nfc' ? 'active' : ''} ${book !== null && !book?.ntagUid ? 'tab-disabled' : ''}`} onClick={() => onTabChange('nfc')} disabled={book !== null && !book?.ntagUid} style={{ padding: '6px 4px', fontWeight: 'bold' }}>{t('catalog.nfcTap', 'Tap')}</button>
+                    <button className={`tab-btn ${activeTab === 'barcode' || activeTab === 'validator_qr' ? 'active' : ''}`} onClick={() => onTabChange('barcode')} style={{ padding: '6px 4px', fontWeight: 'bold' }}>{t('catalog.qrBarcodeScan', 'Scan')}</button>
                     {showManualTab && (
-                        <button 
-                            className={`tab-btn ${activeTab === 'manual' ? 'active' : ''}`} 
-                            onClick={() => onTabChange('manual')}
-                            style={{ padding: '6px 4px', fontWeight: 'bold' }}
-                        >
-                            {t('catalog.manualSubtab', 'Manual')}
-                        </button>
+                        <button className={`tab-btn ${activeTab === 'manual' ? 'active' : ''}`} onClick={() => onTabChange('manual')} style={{ padding: '6px 4px', fontWeight: 'bold' }}>{t('catalog.manualSubtab', 'Manual')}</button>
                     )}
-                    <button onClick={onClose} className="tab-btn close-btn" style={{ flex: '0 0 40px', padding: '6px 4px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <X size={18} />
-                    </button>
+                    <button onClick={onClose} className="tab-btn close-btn" style={{ flex: '0 0 40px', padding: '6px 4px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)' }}><X size={18} /></button>
                 </div>
+                ) : (
+                <div className="nfc-modal-header" style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    padding: '20px 24px 12px 24px',
+                    borderBottom: '1px solid rgba(212, 175, 55, 0.2)'
+                }}>
+                    <h3 style={{
+                        margin: 0,
+                        color: 'var(--accent)',
+                        fontSize: '1.25rem',
+                        fontFamily: 'var(--font-display)',
+                        fontWeight: 600,
+                        letterSpacing: '0.05em'
+                    }}>
+                        {actionType === 'checkout' ? t('catalog.royalCheckoutVerif', 'Royal Checkout Verification') : t('catalog.royalReturnVerif', 'Royal Return Verification')}
+                    </h3>
+                    <button onClick={onClose} className="close-nfc-btn" style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        padding: '4px'
+                    }}><X size={18} /></button>
+                </div>
+                )}
 
                                 {/* Body Content */}
                 <div className="scanner-modal-body" style={loading ? { padding: 0 } : {}}>
@@ -98,28 +105,30 @@ const ScannerModal = ({
                             flexDirection: 'column', 
                             alignItems: 'center', 
                             justifyContent: 'flex-start',
-                            minHeight: '380px',
+                            minHeight: '320px',
                             background: 'var(--surface)',
                             borderRadius: '12px',
-                            width: '100%',
-                            overflow: 'hidden'
+                            width: '100%'
                         }}>
-                            <div className="gold-check-animation-wrapper" style={{ margin: '10px 0 20px' }}>
-                                <RefreshCw className="spin-icon" size={64} style={{ color: 'var(--accent)' }} />
-                            </div>
-                            <h3 style={{ 
-                                color: 'var(--accent)', 
-                                fontFamily: 'var(--font-serif)', 
-                                fontSize: '1.5rem', 
-                                marginBottom: '12px' 
+                            <div className="royal-spinner" style={{
+                                width: '40px',
+                                height: '40px',
+                                margin: '0 auto 16px',
+                                borderColor: 'var(--accent) transparent var(--accent) transparent'
+                            }}></div>
+                            <h4 style={{
+                                color: 'var(--text-primary)',
+                                margin: '0 0 8px 0',
+                                fontSize: '1.1rem',
+                                fontWeight: 'bold'
                             }}>
-                                {t('catalog.verifyingProgress', 'Verification in Progress')}
-                            </h3>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: 0, marginBottom: '24px' }}>
-                                Securely authenticating volume. Please wait...
+                                {actionType === 'checkout' ? 'Executing Instant Royal Checkout...' : 'Executing Instant Royal Return...'}
+                            </h4>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0, marginBottom: '24px' }}>
+                                Cryptographically validating NFC physical signature and updating catalog ledger...
                             </p>
                             
-                            <div className="loading-quote-container" style={{ 
+                            <div className="loading-quote-container\" style={{ 
                                 marginTop: 'auto', 
                                 fontStyle: 'italic', 
                                 color: 'var(--text-primary)', 
@@ -128,7 +137,8 @@ const ScannerModal = ({
                                 borderTop: '2px solid var(--accent)', 
                                 width: '100%',
                                 fontSize: '0.95rem',
-                                lineHeight: '1.5'
+                                lineHeight: '1.5',
+                                borderRadius: '0 0 12px 12px'
                             }}>
                                 "{loadingQuote}"
                             </div>
