@@ -3,6 +3,7 @@ import { useParams, Link, useLocation } from 'react-router-dom';
 import { BookOpen, Star, ArrowLeft, BadgeCheck, ShoppingBag, CheckCircle, Clock, Smartphone, RefreshCw, X, Sparkles, AlertTriangle, Pencil, Trash2, Shield, Check, Loader2, QrCode, Camera, RotateCcw, Share2 } from 'lucide-react';
 import { fetchBookByIsbn, checkoutBook, fetchBookReviews, submitBookReview, requestCheckout, requestReturn, verifiedCheckout, verifiedReturn, fetchCheckoutsByMember, updateBookReview, deleteBookReview, fetchCheckouts, validateQrReturn, cancelCheckout, cancelReturn } from '../../services/libraryApi';
 import api from '../../api/apiClient';
+import { fetchHeroConfig } from '../../services/heroApi';
 import { auth } from '../../config/firebase';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -23,7 +24,8 @@ const BookDetailPage = ({
   const deepLinkQrId = searchParams.get('qrId');
   const hasTriggeredDeepLink = useRef(false);
   const {
-    t
+    t,
+    getLocalized
   } = useLanguage();
 
   const getCoordinates = () => {

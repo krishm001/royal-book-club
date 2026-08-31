@@ -37,7 +37,7 @@ const ScannerModal = ({
                 }
             }).catch(e => console.warn('Failed to load quote', e));
         }
-    }, [loading, getLocalized]);
+    }, [isOpen, getLocalized]);
 
 
 
