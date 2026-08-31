@@ -4,7 +4,7 @@ import { Wifi, QrCode, CheckCircle, Star } from 'lucide-react';
 import { getLogoSvgString } from '../../utils/qrStickerGenerator';
 import './ContinuousScanner.css';
 
-const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'checkout', isConfirmation = false, renderViewfinder }) => {
+const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'checkout', isConfirmation = false, renderViewfinder, actionToggleNode = null }) => {
   const [mounted, setMounted] = useState(false);
   const [phase, setPhase] = useState(0);
   const { t } = useLanguage(); // For text instructions
