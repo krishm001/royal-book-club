@@ -298,9 +298,9 @@
 .ios.checkout-nfc-phone { animation: phoneCheckoutNfcIos 20s infinite cubic-bezier(0.4, 0, 0.2, 1); }
 @keyframes phoneCheckoutNfcIos {
   0%, 45% { transform: translate3d(-100px, -100px, 0); opacity: 0; }
-  50%, 70% { transform: translate3d(-5px, -5px, 50px) rotateX(-50deg) rotateY(15deg); opacity: 1; }
-  80% { transform: translate3d(-5px, 25px, 50px) rotateX(-50deg) rotateY(15deg); opacity: 1; }
-  95% { transform: translate3d(-5px, -5px, 50px) rotateX(-50deg) rotateY(15deg); opacity: 1; }
+  50%, 70% { transform: translate3d(-5px, -5px, 50px) rotateX(50deg) rotateY(15deg); opacity: 1; }
+  80% { transform: translate3d(-5px, 25px, 50px) rotateX(50deg) rotateY(15deg); opacity: 1; }
+  95% { transform: translate3d(-5px, -5px, 50px) rotateX(50deg) rotateY(15deg); opacity: 1; }
   98% { opacity: 0; }
   100% { transform: translate3d(-100px, -100px, 0); opacity: 0; }
 }
@@ -326,9 +326,9 @@
 
 .ios.return-nfc-phone { animation: phoneReturnNfcIos 20s infinite cubic-bezier(0.4, 0, 0.2, 1); }
 @keyframes phoneReturnNfcIos {
-  0%, 20% { transform: translate3d(-5px, -5px, 50px) rotateX(-50deg) rotateY(15deg); opacity: 1; }
-  30% { transform: translate3d(-5px, 25px, 50px) rotateX(-50deg) rotateY(15deg); opacity: 1; }
-  45% { transform: translate3d(-5px, -5px, 50px) rotateX(-50deg) rotateY(15deg); opacity: 1; }
+  0%, 20% { transform: translate3d(-5px, -5px, 50px) rotateX(50deg) rotateY(15deg); opacity: 1; }
+  30% { transform: translate3d(-5px, 25px, 50px) rotateX(50deg) rotateY(15deg); opacity: 1; }
+  45% { transform: translate3d(-5px, -5px, 50px) rotateX(50deg) rotateY(15deg); opacity: 1; }
   48% { opacity: 0; }
   100% { transform: translate3d(-100px, -100px, 0); opacity: 0; }
 }
