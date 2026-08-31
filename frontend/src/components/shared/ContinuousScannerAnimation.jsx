@@ -227,6 +227,8 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
       
       {renderViewfinder && renderViewfinder}
 
+      {actionToggleNode && <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px', zIndex: 110 }}>{actionToggleNode}</div>}
+
       {/* Instruction Text Overlay */}
       <div className="anim-instruction-text" style={{ position: "relative", margin: "8px 0", zIndex: 100, textAlign: "center" }}>
         <p style={{ display: 'flex', flexDirection: 'column', gap: '4px', margin: 0 }}>
