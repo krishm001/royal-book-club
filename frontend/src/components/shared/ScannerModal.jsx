@@ -92,39 +92,39 @@ const ScannerModal = ({
                 <div className="scanner-modal-body">
                     {loading ? (
                         <div className="scanner-loading-state animate-fade-in" style={{ 
-                            padding: '40px 20px', 
+                            padding: '40px 0 0 0', 
                             textAlign: 'center', 
                             display: 'flex', 
                             flexDirection: 'column', 
                             alignItems: 'center', 
-                            justifyContent: 'center',
+                            justifyContent: 'flex-start',
                             minHeight: '380px',
                             background: 'var(--surface)',
-                            borderRadius: '12px'
+                            borderRadius: '12px',
+                            width: '100%'
                         }}>
                             <div className="gold-check-animation-wrapper" style={{ margin: '10px 0 20px' }}>
-                                <RefreshCw className="spin-icon" size={64} style={{ color: 'var(--gold-primary)' }} />
+                                <RefreshCw className="spin-icon" size={64} style={{ color: 'var(--accent)' }} />
                             </div>
                             <h3 style={{ 
-                                color: 'var(--gold-primary)', 
+                                color: 'var(--accent)', 
                                 fontFamily: 'var(--font-serif)', 
                                 fontSize: '1.5rem', 
                                 marginBottom: '12px' 
                             }}>
                                 {t('catalog.verifyingProgress', 'Verification in Progress')}
                             </h3>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: 0, marginBottom: '32px' }}>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: 0, marginBottom: '24px' }}>
                                 Securely authenticating volume. Please wait...
                             </p>
                             
                             <div className="loading-quote-container" style={{ 
                                 marginTop: 'auto', 
                                 fontStyle: 'italic', 
-                                color: 'var(--gold-primary)', 
-                                padding: '20px', 
-                                background: 'var(--glass-bg)', 
-                                borderRadius: '8px', 
-                                border: '1px solid var(--glass-border)', 
+                                color: 'var(--text-primary)', 
+                                padding: '24px', 
+                                background: 'var(--surface-elevated)', 
+                                borderTop: '2px solid var(--accent)', 
                                 width: '100%',
                                 fontSize: '0.95rem',
                                 lineHeight: '1.5'
