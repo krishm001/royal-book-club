@@ -75,7 +75,7 @@ const ContinuousScannerAnimation = ({ type = 'barcode', book = null, action = 'c
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
   const isDesktop = !isMobile;
 
-  const frontCoverUrl = book?.coverUrl || '/images/book-front-cover.png';
+  const frontCoverUrl = book?.coverUrl || '/images/default-scanner-book.png';
   const backCoverUrl = book?.backCoverUrl || '/images/book-back-cover.png';
   
   // Text instructions based on phase

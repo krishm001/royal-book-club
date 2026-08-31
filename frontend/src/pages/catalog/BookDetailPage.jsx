@@ -2406,8 +2406,8 @@ const BookDetailPage = ({
         }}>
               {fallbackSuccess ? <div className="nfc-success-animation animate-fade-in">
                   <CheckCircle size={56} className="gold-glow-icon" style={{
-              color: 'var(--success)',
-              marginBottom: '16px'
+              color: "var(--accent)",
+              marginBottom: "16px"
             }} />
                   <h4 style={{
               color: 'var(--text-primary)',
@@ -2727,15 +2727,12 @@ const BookDetailPage = ({
             width: '100%',
             textAlign: 'center'
           }}>
-                <div className="royal-spinner" style={{
-              width: '40px',
-              height: '40px',
-              margin: '0 auto 16px'
-            }}></div>
+                <div className="gold-check-animation-wrapper" style={{ margin: "10px auto 20px" }}><RefreshCw className="spin-icon" size={64} style={{ color: "var(--accent)" }} /></div>
                 <h4 style={{
-              color: 'var(--text-primary)',
-              margin: '0 0 8px 0',
-              fontSize: '1.05rem'
+              color: "var(--accent)",
+              margin: "0 0 8px 0",
+              fontSize: "1.5rem",
+              fontFamily: "var(--font-serif)"
             }}>
                   {instantActionType === 'checkout' ? 'Executing Instant Royal Checkout...' : 'Executing Instant Royal Return...'}
                 </h4>

@@ -89,7 +89,7 @@ const ScannerModal = ({
                 </div>
 
                                 {/* Body Content */}
-                <div className="scanner-modal-body">
+                <div className="scanner-modal-body" style={loading ? { padding: 0 } : {}}>
                     {loading ? (
                         <div className="scanner-loading-state animate-fade-in" style={{ 
                             padding: '40px 0 0 0', 
@@ -101,7 +101,8 @@ const ScannerModal = ({
                             minHeight: '380px',
                             background: 'var(--surface)',
                             borderRadius: '12px',
-                            width: '100%'
+                            width: '100%',
+                            overflow: 'hidden'
                         }}>
                             <div className="gold-check-animation-wrapper" style={{ margin: '10px 0 20px' }}>
                                 <RefreshCw className="spin-icon" size={64} style={{ color: 'var(--accent)' }} />
