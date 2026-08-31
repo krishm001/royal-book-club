@@ -2,11 +2,11 @@ name: E2E Checkout Matrix Tests
 
 on:
   # Run smoke tests on push to main
-  push:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types:
+      - completed
     branches: [main, master]
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/e2e-checkout-matrix.yml'
 
   # Manual trigger with coverage level selection
   workflow_dispatch:
@@ -39,6 +39,12 @@ env:
 jobs:
   checkout-matrix-tests:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+
+    permissions:
+      issues: write
+      contents: read
+
     # 10-minute budget for default smoke, 60 min for full-matrix
     timeout-minutes: ${{ inputs.level == 'full-matrix' && 60 || 10 }}
 
