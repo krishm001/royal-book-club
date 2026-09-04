@@ -15,15 +15,14 @@ const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
 const BookIngestionConsole = ({
   user
 }) => {
-  const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState('add'); // 'add' | 'inventory' | 'houses'
-
   // Preload OpenCV in the background to prevent UI freeze during WASM compilation
   useEffect(() => {
     setTimeout(() => {
       loadOpenCv().catch(err => console.error("Background OpenCV preload failed", err));
     }, 1000);
   }, []);
+
+
 
   const formatUidWithColons = val => {
     if (!val) return '';
