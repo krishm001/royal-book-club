@@ -427,6 +427,7 @@ const CatalogPage = ({
     }
   };
   const handleTopBarcodeScanned = async decodedText => {
+    if (!topScannerActiveRef.current) return;
     const { user: currentUser, books: currentBooks } = stateRef.current;
     if (!currentUser) {
       await stopTopBarcodeScanner();
@@ -635,8 +636,15 @@ const CatalogPage = ({
     setTopNfcActive(false);
     if (topNfcAbortControllerRef.current) topNfcAbortControllerRef.current.abort();
   };
-  const openP2dOverlay = (book, success, actionType, errorMsg = '') => {
+  const openP2dOverlay = async (book, success, actionType, errorMsg = '') => {
     if (topNfcAbortControllerRef.current) topNfcAbortControllerRef.current.abort();
+    
+    // Stop scanners completely before unmounting them so they can clean up their video tracks
+    await Promise.all([
+      stopTopBarcodeScanner().catch(e => console.warn(e)),
+      stopCardBarcodeScanner().catch(e => console.warn(e))
+    ]);
+
     setTopScannerOpen(false);
     setCardScannerOpen(false);
     setNfcModalOpen(false);
@@ -1191,6 +1199,7 @@ const CatalogPage = ({
     }
   };
   const handleCardBarcodeScanned = async (decodedText, bookToUse) => {
+    if (!cardScannerActiveRef.current) return;
     const { user: currentUser, nfcActionType: currentActionType } = stateRef.current;
     const currentBook = bookToUse || selectedBook;
     if (!currentBook) {

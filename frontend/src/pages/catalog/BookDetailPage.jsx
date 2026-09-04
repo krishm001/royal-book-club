@@ -852,6 +852,7 @@ const BookDetailPage = ({
             
             formatsToSupport: [SafeHtml5QrcodeSupportedFormats.QR_CODE]
           }, decodedText => {
+            if (!detailQrScannerActiveRef.current) return;
             console.log("Detail QR validator scanned successfully:", decodedText);
             stopDetailQrValidatorScanner();
             const pathName = extractQrPath(decodedText);
@@ -898,6 +899,7 @@ const BookDetailPage = ({
             qrbox: (videoWidth, videoHeight) => { const w = videoWidth || 400; const h = videoHeight || 300; return { width: Math.round(Math.min(w * 0.8, 300)), height: Math.round(Math.min(h * 0.8, 120)) }; },
           formatsToSupport: [SafeHtml5QrcodeSupportedFormats.QR_CODE]
           }, decodedText => {
+            if (!detailQrScannerActiveRef.current) return;
             console.log("Detail QR validator scanned successfully:", decodedText);
             stopDetailQrValidatorScanner();
             const pathName = extractQrPath(decodedText);
@@ -998,6 +1000,7 @@ const BookDetailPage = ({
     setIsQrCameraActive(false);
   };
   const handleDetailBarcodeScanned = async decodedText => {
+    if (!detailScannerActiveRef.current) return;
     const { user: currentUser, book: latestBook } = stateRef.current;
     if (!currentUser) {
       await stopDetailBarcodeScanner();
@@ -1132,10 +1135,12 @@ const BookDetailPage = ({
       startDetailQrValidatorScanner();
     }
   };
-  const handleCloseNfcModal = () => {
+  const handleCloseNfcModal = async () => {
     setDetailScannerLoading(false);
-    stopDetailBarcodeScanner();
-    stopDetailQrValidatorScanner();
+    await Promise.all([
+      stopDetailBarcodeScanner().catch(e => console.warn(e)),
+      stopDetailQrValidatorScanner().catch(e => console.warn(e))
+    ]);
     if (detailNfcAbortControllerRef.current) detailNfcAbortControllerRef.current.abort();
     setNfcModalOpen(false);
     setGeofenceFailed(false);
