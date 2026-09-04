@@ -1306,23 +1306,35 @@ const BookIngestionConsole = ({
   };
 
   const handleDocumentCaptured = (dataUrl) => {
-    fetch(dataUrl)
-      .then(res => res.blob())
-      .then(blob => {
-        if (cameraMode === 'backCover') {
-          const file = new File([blob], `back_cover_snapshot_${Date.now()}.jpg`, { type: 'image/jpeg' });
-          setSelectedBackImageFile(file);
-          setBackImagePreview(dataUrl);
-          stopCamera();
-          setIsEnhancingBackCover(true);
-        } else {
-          const file = new File([blob], `cover_snapshot_${Date.now()}.jpg`, { type: 'image/jpeg' });
-          setSelectedImageFile(file);
-          setImagePreview(dataUrl);
-          stopCamera();
-          setIsEnhancing(true);
-        }
-      });
+    if (!dataUrl) {
+       console.error("Capture failed, dataUrl is null. Stopping camera.");
+       stopCamera();
+       return;
+    }
+    try {
+      let arr = dataUrl.split(','), mime = arr[0].match(/:(.*?);/)[1];
+      let bstr = atob(arr[arr.length - 1]), n = bstr.length, u8arr = new Uint8Array(n);
+      while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+      }
+      const file = new File([u8arr], cameraMode === 'backCover' ? `back_cover_snapshot_${Date.now()}.jpg` : `cover_snapshot_${Date.now()}.jpg`, { type: mime });
+      
+      if (cameraMode === 'backCover') {
+        setSelectedBackImageFile(file);
+        setBackImagePreview(dataUrl);
+        stopCamera();
+        setIsEnhancingBackCover(true);
+      } else {
+        setSelectedImageFile(file);
+        setImagePreview(dataUrl);
+        stopCamera();
+        setIsEnhancing(true);
+      }
+    } catch (err) {
+      console.error("Error capturing document:", err);
+      // Fallback close
+      stopCamera();
+    }
   };
 
   const handleEnhanceSave = (enhancedDataUrl) => {

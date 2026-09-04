@@ -142,9 +142,24 @@ const DocumentDetector = ({ videoStream, onCapture, width = 640, height = 480 })
   }, [cvLoaded, videoStream]);
 
   const handleManualCapture = () => {
-    if (!canvasRef.current) return;
-    const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.9);
-    onCapture(dataUrl);
+    console.log("Capture Document button clicked!");
+    if (!canvasRef.current) {
+      console.error("No canvasRef available for capture.");
+      return;
+    }
+    try {
+      const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.9);
+      console.log("dataUrl generated successfully, length:", dataUrl.length);
+      if (onCapture) {
+        onCapture(dataUrl);
+      } else {
+        console.error("onCapture callback is missing!");
+      }
+    } catch (err) {
+      console.error("Failed to generate dataUrl from canvas. Canvas might be tainted:", err);
+      // Fallback: notify parent with an error or empty string so it doesn't just hang
+      if (onCapture) onCapture(null);
+    }
   };
 
   return (

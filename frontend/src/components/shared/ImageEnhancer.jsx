@@ -56,6 +56,10 @@ const ImageEnhancer = ({ initialImageSrc, onSave, onCancel }) => {
         applyEnhancements();
         setLoading(false);
       };
+      newImg.onerror = (e) => {
+        console.error("Failed to load cropped image", e);
+        setLoading(false);
+      };
       newImg.src = croppedDataUrl;
     } catch (err) {
       console.error("Failed to auto-crop image", err);
