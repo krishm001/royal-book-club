@@ -43,28 +43,31 @@ const ImageEnhancer = ({ initialImageSrc, onSave, onCancel }) => {
     }
   };
 
-  const handleSmartCrop = async () => {
+  const handleSmartCrop = () => {
     if (!originalImgRef.current) return;
     setLoading(true);
-    try {
-      const croppedDataUrl = await smartCropImage(originalImgRef.current);
-      // Update the original reference so further enhancements apply to the cropped version
-      const newImg = new Image();
-      newImg.crossOrigin = 'anonymous';
-      newImg.onload = () => {
-        originalImgRef.current = newImg;
-        applyEnhancements();
+    
+    // Yield to the browser's render thread so the loading spinner actually appears
+    // before OpenCV.js potentially freezes the main thread during WASM compilation
+    setTimeout(async () => {
+      try {
+        const croppedDataUrl = await smartCropImage(originalImgRef.current);
+        setImageSrc(croppedDataUrl);
+        
+        // Reset base image so further enhancements apply to the cropped version
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          originalImgRef.current = img;
+          setLoading(false);
+        };
+        img.onerror = () => setLoading(false);
+        img.src = croppedDataUrl;
+      } catch (err) {
+        console.error("Smart crop failed", err);
         setLoading(false);
-      };
-      newImg.onerror = (e) => {
-        console.error("Failed to load cropped image", e);
-        setLoading(false);
-      };
-      newImg.src = croppedDataUrl;
-    } catch (err) {
-      console.error("Failed to auto-crop image", err);
-      setLoading(false);
-    }
+      }
+    }, 100);
   };
 
   const handleChange = (key, value) => {

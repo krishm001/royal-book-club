@@ -191,12 +191,16 @@ const DocumentDetector = ({ videoStream, onCapture, width = 640, height = 480 })
           left: '50%',
           transform: 'translate(-50%, -50%)',
           color: 'white',
-          background: 'rgba(0,0,0,0.5)',
-          padding: '8px 16px',
-          borderRadius: '20px',
-          fontSize: '0.85rem'
+          background: 'rgba(0,0,0,0.85)',
+          padding: '20px',
+          borderRadius: '12px',
+          fontSize: '0.9rem',
+          textAlign: 'center',
+          border: '1px solid #d4a574',
+          zIndex: 20
         }}>
-          Loading Computer Vision...
+          <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>Loading AI Computer Vision...</div>
+          <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Please wait. Your browser is compiling the models. The page may become unresponsive for 5-15 seconds.</div>
         </div>
       )}
       <button 

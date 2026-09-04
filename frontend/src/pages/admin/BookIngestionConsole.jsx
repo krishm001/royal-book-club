@@ -8,12 +8,23 @@ import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useLanguage } from '../../i18n/LanguageContext';
 import ImageEnhancer from '../../components/shared/ImageEnhancer';
 import DocumentDetector from '../../components/shared/DocumentDetector';
+import { loadOpenCv } from '../../utils/documentProcessor';
 import './BookIngestionConsole.css';
 const SafeHtml5Qrcode = Html5Qrcode;
 const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
 const BookIngestionConsole = ({
   user
 }) => {
+  const { t } = useLanguage();
+  const [activeTab, setActiveTab] = useState('add'); // 'add' | 'inventory' | 'houses'
+
+  // Preload OpenCV in the background to prevent UI freeze during WASM compilation
+  useEffect(() => {
+    setTimeout(() => {
+      loadOpenCv().catch(err => console.error("Background OpenCV preload failed", err));
+    }, 1000);
+  }, []);
+
   const formatUidWithColons = val => {
     if (!val) return '';
     const clean = val.replace(/[^0-9a-fA-F]/g, '').substring(0, 14).toUpperCase();
