@@ -27,6 +27,23 @@
   margin-bottom: 24px;
 }
 
+@keyframes highlightPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(212, 165, 116, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(212, 165, 116, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(212, 165, 116, 0);
+  }
+}
+
+.copy-card-highlighted {
+  animation: highlightPulse 2s infinite;
+  background: rgba(212, 165, 116, 0.05) !important;
+}
+
 /* Grids */
 .ingestion-grid {
   display: grid;
@@ -462,11 +479,11 @@
 }
 
 .camera-help-text-below {
-  background: rgba(10, 10, 12, 0.5);
+  background: rgba(0, 0, 0, 0.75);
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 0.8rem;
-  color: var(--text-secondary);
+  color: #ffffff;
   border: 1px solid var(--glass-border);
   letter-spacing: 0.05em;
   text-align: center;
@@ -535,7 +552,7 @@
 .control-toggle-btn {
   background: var(--btn-secondary-bg);
   border: 1px solid var(--glass-border);
-  color: #e2e2e9; /* High-contrast white/light-gray text that is completely theme-independent */
+  color: var(--text-primary);
   border-radius: 16px;
   padding: 6px 14px;
   font-size: 0.75rem;

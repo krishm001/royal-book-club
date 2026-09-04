@@ -11,6 +11,7 @@ import { isNfcTagMatched } from './CatalogPage';
 import ShareModal from '../../components/shared/ShareModal';
 import ContinuousScannerAnimation from '../../components/shared/ContinuousScannerAnimation';
 import ScannerModal from '../../components/shared/ScannerModal';
+import { translateCheckoutError } from '../../utils/errorTranslator';
 import './BookDetailPage.css';
 const SafeHtml5Qrcode = Html5Qrcode;
 const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
@@ -340,7 +341,7 @@ const BookDetailPage = ({
         setNfcError("Geofence location check failed. We have automatically opened Validator QR scanning for your convenience.");
         startDetailQrValidatorScanner();
       } else {
-        setInstantError(errMsg);
+        setInstantError(translateCheckoutError(errMsg));
       }
     } finally {
       // do nothing
@@ -1100,15 +1101,19 @@ const BookDetailPage = ({
           await stopDetailBarcodeScanner();
           startDetailQrValidatorScanner();
         } else {
-          setNfcError(t('catalog.unableToSubmitRequest') + errMsg);
+          setDetailScannerLoading(false);
+          setInstantSuccess(false);
+          setInstantError(translateCheckoutError(errMsg));
+          setInstantConfirmOpen(true);
+          handleCloseNfcModal();
         }
       }
     } else {
-      // If mismatch, do NOT stop scanner. Just show error and throttle it.
-      if (Date.now() - detailLastErrorTimeRef.current > 3000) {
-        setNfcError(t('catalog.securityMismatch') + decodedText + ". Please try again.");
-        detailLastErrorTimeRef.current = Date.now();
-      }
+      setDetailScannerLoading(false);
+      setInstantSuccess(false);
+      setInstantError(translateCheckoutError(`Security Mismatch: Scanned code (${decodedText}) does not match this book.`));
+      setInstantConfirmOpen(true);
+      handleCloseNfcModal();
     }
   };
   const handleTabChange = async tabName => {
@@ -1239,7 +1244,7 @@ const BookDetailPage = ({
             } else {
               setDetailScannerLoading(false);
               setInstantSuccess(false);
-              setInstantError(t('catalog.unableToSubmitRequest') + errMsg);
+              setInstantError(translateCheckoutError(errMsg));
               setInstantConfirmOpen(true);
               handleCloseNfcModal();
             }
@@ -1247,7 +1252,7 @@ const BookDetailPage = ({
         } else {
           setDetailScannerLoading(false);
           setInstantSuccess(false);
-          setInstantError(t('catalog.nfcSecurityMismatch') + serialNumber + ".");
+          setInstantError(translateCheckoutError(`Security Mismatch: NFC tag ${serialNumber} does not match.`));
           setInstantConfirmOpen(true);
           handleCloseNfcModal();
         }

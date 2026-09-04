@@ -6,6 +6,8 @@ import { fetchBookHouses, createBookHouse } from '../../services/genreApi';
 import { uploadBookImage } from '../../services/storageApi';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useLanguage } from '../../i18n/LanguageContext';
+import ImageEnhancer from '../../components/shared/ImageEnhancer';
+import DocumentDetector from '../../components/shared/DocumentDetector';
 import './BookIngestionConsole.css';
 const SafeHtml5Qrcode = Html5Qrcode;
 const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
@@ -43,6 +45,11 @@ const BookIngestionConsole = ({
   const [editingBookId, setEditingBookId] = useState('');
   const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [isEnhancing, setIsEnhancing] = useState(false);
+  const [isEnhancingCoverUrl, setIsEnhancingCoverUrl] = useState(false);
+  const [selectedBackImageFile, setSelectedBackImageFile] = useState(null);
+  const [backImagePreview, setBackImagePreview] = useState(null);
+  const [isEnhancingBackCover, setIsEnhancingBackCover] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [bookLanguage, setBookLanguage] = useState('en');
   const {
@@ -80,6 +87,7 @@ const BookIngestionConsole = ({
   const [nfcSuccess, setNfcSuccess] = useState(false);
   const [alternativeIsbnsInput, setAlternativeIsbnsInput] = useState('');
   const [copyQrIds, setCopyQrIds] = useState([]);
+  const [highlightedCopyNo, setHighlightedCopyNo] = useState(null);
 
   // Synchronize ntagUids and copyQrIds size with totalCopies
   useEffect(() => {
@@ -216,12 +224,24 @@ const BookIngestionConsole = ({
       console.warn("Unable to load existing catalog for admin editing:", err);
     }
   };
-  const handleSelectExistingBook = book => {
+  const handleSelectExistingBook = (book, scannedCopyIndex = null) => {
     if (!book) return;
     setIsEditMode(true);
     setIsEditingExisting(true);
     setEditingBookId(book.id || book.isbn || '');
     setIsbn(book.isbn || '');
+    
+    if (scannedCopyIndex !== null) {
+      setHighlightedCopyNo(scannedCopyIndex);
+      setTimeout(() => {
+        const copyElem = document.getElementById(`copy-card-${scannedCopyIndex}`);
+        if (copyElem) {
+          copyElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+    } else {
+      setHighlightedCopyNo(null);
+    }
     setManualTitle(book.title || '');
     setManualAuthor(Array.isArray(book.authors) ? book.authors.join(', ') : book.author || '');
     setPublisher(book.publisher || '');
@@ -1074,7 +1094,8 @@ const BookIngestionConsole = ({
                     try {
                       const book = await fetchBookByQrId(parsedValue);
                       if (book) {
-                        handleSelectExistingBook(book);
+                        const copyIdx = Array.isArray(book.copies) ? book.copies.findIndex(c => String(c.qrId) === parsedValue) : -1;
+                        handleSelectExistingBook(book, copyIdx !== -1 ? copyIdx : null);
                         setInfoMessage(`Book "${book.title}" successfully loaded via copy QR ID #${parsedValue}.`);
                       } else {
                         setErrorMessage(`No matching book found for Copy QR ID #${parsedValue}.`);
@@ -1283,6 +1304,37 @@ const BookIngestionConsole = ({
       }
     }, 'image/png');
   };
+
+  const handleDocumentCaptured = (dataUrl) => {
+    fetch(dataUrl)
+      .then(res => res.blob())
+      .then(blob => {
+        if (cameraMode === 'backCover') {
+          const file = new File([blob], `back_cover_snapshot_${Date.now()}.jpg`, { type: 'image/jpeg' });
+          setSelectedBackImageFile(file);
+          setBackImagePreview(dataUrl);
+          stopCamera();
+          setIsEnhancingBackCover(true);
+        } else {
+          const file = new File([blob], `cover_snapshot_${Date.now()}.jpg`, { type: 'image/jpeg' });
+          setSelectedImageFile(file);
+          setImagePreview(dataUrl);
+          stopCamera();
+          setIsEnhancing(true);
+        }
+      });
+  };
+
+  const handleEnhanceSave = (enhancedDataUrl) => {
+    fetch(enhancedDataUrl)
+      .then(res => res.blob())
+      .then(blob => {
+        const file = new File([blob], `cover_enhanced_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        setSelectedImageFile(file);
+        setImagePreview(enhancedDataUrl);
+        setIsEnhancing(false);
+      });
+  };
   const handleSimulateIsbnScan = () => {
     const demoIsbns = ['9780141439570',
     // The Picture of Dorian Gray
@@ -1463,7 +1515,8 @@ const BookIngestionConsole = ({
         const isCurrentBook = matchedBook && (editingBookId && (matchedBook.id === editingBookId || matchedBook.isbn === editingBookId) || isbn && matchedBook.isbn && matchedBook.isbn.trim().replace(/[-\s]/g, '') === isbn.trim().replace(/[-\s]/g, ''));
         if (matchedBook && !isCurrentBook) {
           // Found an existing DIFFERENT book with this NFC tag! Load it!
-          handleSelectExistingBook(matchedBook);
+          const copyIdx = Array.isArray(matchedBook.copies) ? matchedBook.copies.findIndex(c => c.ntagUid && c.ntagUid.toLowerCase().replace(/:/g, '') === cleanScanned) : -1;
+          handleSelectExistingBook(matchedBook, copyIdx !== -1 ? copyIdx : null);
           setNfcSuccess(true);
           setIsNfcReading(false);
           setActiveScanningIndex(null);
@@ -1631,6 +1684,53 @@ const BookIngestionConsole = ({
   const removeImagePreview = () => {
     setSelectedImageFile(null);
     setImagePreview(null);
+  };
+
+  const handleBackImageSelect = e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSelectedBackImageFile(file);
+    const reader = new FileReader();
+    reader.onload = event => {
+      setBackImagePreview(event.target?.result);
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  const handleBackImageUpload = async () => {
+    if (!selectedBackImageFile) {
+      setErrorMessage('Please select a back image file.');
+      return;
+    }
+    setUploadingImage(true);
+    setErrorMessage('');
+    try {
+      const uploadedUrl = await uploadBookImage(selectedBackImageFile);
+      setBackCoverUrl(uploadedUrl);
+      setSelectedBackImageFile(null);
+      setBackImagePreview(null);
+    } catch (err) {
+      console.error(err);
+      setErrorMessage(err.message || 'Failed to upload back cover image.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+  
+  const removeBackImagePreview = () => {
+    setSelectedBackImageFile(null);
+    setBackImagePreview(null);
+  };
+  
+  const handleBackEnhanceSave = (enhancedDataUrl) => {
+    fetch(enhancedDataUrl)
+      .then(res => res.blob())
+      .then(blob => {
+        const file = new File([blob], `back_cover_enhanced_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        setSelectedBackImageFile(file);
+        setBackImagePreview(enhancedDataUrl);
+        setIsEnhancingBackCover(false);
+      });
   };
   const handleIngestionSubmit = async e => {
     e.preventDefault();
@@ -2224,14 +2324,15 @@ const BookIngestionConsole = ({
                 }}>
                       {Array.from({
                     length: totalCopies
-                  }).map((_, index) => <div key={index} style={{
+                  }).map((_, index) => <div key={index} id={`copy-card-${index}`} className={highlightedCopyNo === index ? 'copy-card-highlighted' : ''} style={{
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '8px',
                     padding: '12px',
                     background: "var(--glass-bg)",
                     borderRadius: '8px',
-                    border: '1px solid var(--glass-bg)'
+                    border: highlightedCopyNo === index ? '1px solid var(--accent)' : '1px solid var(--glass-bg)',
+                    transition: 'all 0.3s ease'
                   }}>
                           <div style={{
                       display: 'flex',
@@ -2241,8 +2342,23 @@ const BookIngestionConsole = ({
                             <span style={{
                         fontSize: '0.8rem',
                         fontWeight: 'bold',
-                        color: 'var(--accent)'
-                      }}>{t("str_5119", "Copy #")}{index + 1}</span>
+                        color: highlightedCopyNo === index ? 'var(--text-primary)' : 'var(--accent)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}>
+                        {t("str_5119", "Copy #")}{index + 1}
+                        {highlightedCopyNo === index && (
+                          <span style={{
+                            background: 'var(--accent)',
+                            color: '#000',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontSize: '0.65rem',
+                            fontWeight: 'bold'
+                          }}>Scanned Copy</span>
+                        )}
+                      </span>
                             {copyQrIds[index] && <span style={{
                         fontSize: '0.7rem',
                         fontFamily: 'monospace',
@@ -2882,33 +2998,55 @@ const BookIngestionConsole = ({
                             <Upload size={14} /> {uploadingImage ? 'Uploading...' : 'Confirm Upload'}
                           </button>}
                       </div>
-                      {imagePreview && <div style={{
-                    position: 'relative',
-                    marginBottom: '8px'
-                  }}>
+                      {isEnhancing && imagePreview ? (
+                        <ImageEnhancer 
+                          initialImageSrc={imagePreview} 
+                          onSave={handleEnhanceSave} 
+                          onCancel={() => setIsEnhancing(false)} 
+                        />
+                      ) : imagePreview ? (
+                        <div style={{
+                          position: 'relative',
+                          marginBottom: '8px'
+                        }}>
                           <img src={imagePreview} alt={t("str_5139", "Preview")} style={{
-                      maxWidth: '100%',
-                      maxHeight: '150px',
-                      borderRadius: '4px'
-                    }} />
-                          <button type="button" onClick={removeImagePreview} style={{
-                      position: 'absolute',
-                      top: '4px',
-                      right: '4px',
-                      background: "var(--glass-bg)",
-                      border: 'none',
-                      color: "var(--text-primary)",
-                      borderRadius: '50%',
-                      width: '24px',
-                      height: '24px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                            <X size={16} />
-                          </button>
-                        </div>}
+                            maxWidth: '100%',
+                            maxHeight: '150px',
+                            borderRadius: '4px'
+                          }} />
+                          <div style={{ position: 'absolute', top: '4px', right: '4px', display: 'flex', gap: '4px' }}>
+                            <button type="button" onClick={() => setIsEnhancing(true)} style={{
+                              background: "var(--accent)",
+                              border: 'none',
+                              color: "#000",
+                              borderRadius: '4px',
+                              padding: '2px 8px',
+                              fontSize: '0.75rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontWeight: '600'
+                            }}>
+                              <Sparkles size={12} /> Enhance
+                            </button>
+                            <button type="button" onClick={removeImagePreview} style={{
+                              background: "var(--glass-bg)",
+                              border: 'none',
+                              color: "var(--text-primary)",
+                              borderRadius: '50%',
+                              width: '24px',
+                              height: '24px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <X size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                   <p style={{
@@ -2918,78 +3056,112 @@ const BookIngestionConsole = ({
               }}>{t("str_5140", "OR")}</p>
                   <input type="text" className="royal-input" value={coverUrl} onChange={e => setCoverUrl(e.target.value)} placeholder={t("str_5141", "Paste direct image URL (https://...)")} />
                   {coverUrl && <div style={{
-                position: 'relative',
-                marginTop: '12px',
-                border: '1px solid var(--glass-border)',
-                padding: '6px',
-                borderRadius: '6px',
-                background: "var(--glass-bg)",
-                display: 'inline-block',
-                maxWidth: '100%'
-              }}>
-                      <img src={coverUrl} alt={t("str_5142", "Cover Preview")} style={{
-                  maxWidth: '100%',
-                  maxHeight: '180px',
-                  borderRadius: '4px',
-                  display: 'block'
-                }} />
-                      <button type="button" onClick={() => setCoverUrl('')} style={{
-                  position: 'absolute',
-                  top: '6px',
-                  right: '6px',
-                  background: "var(--glass-bg)",
-                  border: 'none',
-                  color: "var(--text-primary)",
-                  borderRadius: '50%',
-                  width: '24px',
-                  height: '24px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }} title={t("str_5143", "Clear cover URL")}>
-                        <X size={14} />
-                      </button>
-                    </div>}
+                    position: 'relative', marginTop: '12px', border: '1px solid var(--glass-border)', padding: '6px', borderRadius: '6px', background: "var(--glass-bg)", display: 'inline-block', maxWidth: '100%'
+                  }}>
+                    {isEnhancingCoverUrl ? (
+                      <ImageEnhancer initialImageSrc={coverUrl} onSave={(url) => { setCoverUrl(url); setIsEnhancingCoverUrl(false); }} onCancel={() => setIsEnhancingCoverUrl(false)} />
+                    ) : (
+                      <>
+                        <img src={coverUrl} alt={t("str_5142", "Cover Preview")} style={{ maxWidth: '100%', maxHeight: '180px', borderRadius: '4px', display: 'block' }} />
+                        <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
+                          <button type="button" onClick={() => setIsEnhancingCoverUrl(true)} style={{
+                            background: "var(--accent)", border: 'none', color: "#000", borderRadius: '4px', padding: '2px 8px', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600'
+                          }}>
+                            <Sparkles size={12} /> Enhance
+                          </button>
+                          <button type="button" onClick={() => setCoverUrl('')} style={{
+                            background: "var(--glass-bg)", border: 'none', color: "var(--text-primary)", borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                          }} title={t("str_5143", "Clear cover URL")}>
+                            <X size={14} />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>}
                 </div>
 
                 <div className="input-group">
-                  <label className="royal-input-label">Back Cover Image URL (Optional)</label>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '4px'
+                  }}>
+                    <label className="royal-input-label" style={{ margin: 0 }}>Back Cover Image (Optional)</label>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleBackImageSelect} style={{ display: 'none' }} id="back-image-file-input" />
+                        <label htmlFor="back-image-file-input" style={{ flex: '1 1 calc(50% - 4px)' }}>
+                          <button type="button" onClick={() => document.getElementById('back-image-file-input')?.click()} className="royal-btn" style={{ width: '100%' }}>
+                            {selectedBackImageFile ? `File: ${selectedBackImageFile.name}` : 'Upload Back Image'}
+                          </button>
+                        </label>
+                        <button type="button" onClick={() => startCamera('backCover')} className="royal-btn" style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flex: '1 1 calc(50% - 4px)'
+                        }}>
+                          <Camera size={14} /> {t('auto_3228', 'Snap Photo')}
+                        </button>
+                        {selectedBackImageFile && <button type="button" onClick={handleBackImageUpload} className="royal-btn" disabled={uploadingImage} style={{
+                          flex: '1 1 100%', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                        }}>
+                          <Upload size={14} /> {uploadingImage ? 'Uploading...' : 'Confirm Upload'}
+                        </button>}
+                      </div>
+                      
+                      {isEnhancingBackCover && backImagePreview ? (
+                        <ImageEnhancer 
+                          initialImageSrc={backImagePreview} 
+                          onSave={handleBackEnhanceSave} 
+                          onCancel={() => setIsEnhancingBackCover(false)} 
+                        />
+                      ) : backImagePreview ? (
+                        <div style={{ position: 'relative', marginBottom: '8px' }}>
+                          <img src={backImagePreview} alt="Back Cover Preview" style={{ maxWidth: '100%', maxHeight: '150px', borderRadius: '4px' }} />
+                          <div style={{ position: 'absolute', top: '4px', right: '4px', display: 'flex', gap: '4px' }}>
+                            <button type="button" onClick={() => setIsEnhancingBackCover(true)} style={{
+                              background: "var(--accent)", border: 'none', color: "#000", borderRadius: '4px', padding: '2px 8px', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600'
+                            }}>
+                              <Sparkles size={12} /> Enhance
+                            </button>
+                            <button type="button" onClick={removeBackImagePreview} style={{
+                              background: "var(--glass-bg)", border: 'none', color: "var(--text-primary)", borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                              <X size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                  
+                  <p style={{ fontSize: '0.85rem', color: '#999', marginTop: '8px' }}>{t("str_5140", "OR")}</p>
+                  
                   <input type="text" className="royal-input" value={backCoverUrl} onChange={e => setBackCoverUrl(e.target.value)} placeholder="Paste direct image URL for back cover (https://...)" />
                   {backCoverUrl && <div style={{
-                position: 'relative',
-                marginTop: '12px',
-                border: '1px solid var(--glass-border)',
-                padding: '6px',
-                borderRadius: '6px',
-                background: "var(--glass-bg)",
-                display: 'inline-block',
-                maxWidth: '100%'
-              }}>
-                      <img src={backCoverUrl} alt="Back Cover Preview" style={{
-                  maxWidth: '100%',
-                  maxHeight: '180px',
-                  borderRadius: '4px',
-                  display: 'block'
-                }} />
-                      <button type="button" onClick={() => setBackCoverUrl('')} style={{
-                  position: 'absolute',
-                  top: '6px',
-                  right: '6px',
-                  background: "var(--glass-bg)",
-                  border: 'none',
-                  color: "var(--text-primary)",
-                  borderRadius: '50%',
-                  width: '24px',
-                  height: '24px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }} title="Clear back cover URL">
-                        <X size={14} />
-                      </button>
-                    </div>}
+                    position: 'relative', marginTop: '12px', border: '1px solid var(--glass-border)', padding: '6px', borderRadius: '6px', background: "var(--glass-bg)", display: 'inline-block', maxWidth: '100%'
+                  }}>
+                    {isEnhancingBackCover ? (
+                      <ImageEnhancer initialImageSrc={backCoverUrl} onSave={(url) => { setBackCoverUrl(url); setIsEnhancingBackCover(false); }} onCancel={() => setIsEnhancingBackCover(false)} />
+                    ) : (
+                      <>
+                        <img src={backCoverUrl} alt="Back Cover URL Preview" style={{ maxWidth: '100%', maxHeight: '180px', borderRadius: '4px', display: 'block' }} />
+                        <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
+                          <button type="button" onClick={() => setIsEnhancingBackCover(true)} style={{
+                            background: "var(--accent)", border: 'none', color: "#000", borderRadius: '4px', padding: '2px 8px', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600'
+                          }}>
+                            <Sparkles size={12} /> Enhance
+                          </button>
+                          <button type="button" onClick={() => setBackCoverUrl('')} style={{
+                            background: "var(--glass-bg)", border: 'none', color: "var(--text-primary)", borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                          }} title="Clear back cover URL">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>}
                 </div>
 
                 <div className="input-group">
@@ -3140,15 +3312,9 @@ const BookIngestionConsole = ({
               position: 'absolute',
               top: 0,
               left: 0
-            }} /> : <video ref={videoRef} autoPlay playsInline muted className={`camera-video ${isFitMode ? 'contain-mode' : 'cover-mode'}`} style={{
-              transform: !isHardwareZoomActive && zoomValue > 1.0 ? `scale(${zoomValue})` : 'none',
-              transformOrigin: 'center',
-              transition: 'transform 0.1s ease-out'
-            }} />}
+            }} /> : <DocumentDetector videoStream={cameraStream} onCapture={handleDocumentCaptured} width={400} height={500} />}
                   
-                  {cameraMode === 'isbn' || cameraMode === 'copy_qr' ? null : <div className="cover-capture-guide">
-                      <div className="cover-frame-outline"></div>
-                    </div>}
+                  {cameraMode === 'isbn' || cameraMode === 'copy_qr' ? null : null}
                 </div>
 
                 {cameraMode === 'cover' && <div className="camera-under-view-controls">
@@ -3184,9 +3350,6 @@ const BookIngestionConsole = ({
                   </div>}
  
                 {cameraMode === 'cover' && <div className="camera-controls-bar">
-                    <button onClick={captureCoverPhoto} className="royal-btn capture-action-btn">
-                      <Camera size={16} /> {t('auto_3237', 'Snap Cover Photo')}
-                    </button>
                   </div>}
               </div>}
           </div>

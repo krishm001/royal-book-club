@@ -6,10 +6,12 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { fetchBooks, fetchCheckoutsByMember, verifiedCheckout, verifiedReturn, requestCheckout, requestReturn, rateCheckout } from '../../services/libraryApi';
 import { fetchBookHouses } from '../../services/genreApi';
 import { getLogoSvgString } from '../../utils/qrStickerGenerator';
+import { translateCheckoutError } from '../../utils/errorTranslator';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import api from '../../api/apiClient';
 import { auth } from '../../config/firebase';
 import './CatalogPage.css';
+
 const SafeHtml5Qrcode = Html5Qrcode;
 const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
 export const isNfcTagMatched = (b, cleanScanned) => {
@@ -523,7 +525,7 @@ const CatalogPage = ({
       openP2dOverlay(resolvedBook, false, actionType);
     } else {
       setTopScannerLoading(false);
-      openP2dOverlay({ title: 'Unrecognized Volume', authors: [] }, false, 'checkout', t('catalog.securityMismatch') + decodedText + ". Please try again.");
+      openP2dOverlay({ title: 'Unrecognized Volume', authors: [] }, false, 'checkout', translateCheckoutError(t('catalog.securityMismatch') + decodedText + ". Please try again."));
     }
   };
     const startTopNfcRead = async () => {
@@ -616,7 +618,7 @@ const CatalogPage = ({
           openP2dOverlay(matchedBook, false, actionType);
         } else {
           setTopScannerLoading(false);
-          openP2dOverlay({ title: 'Unrecognized Volume', authors: [] }, false, 'checkout', `No book in catalog registered with NFC Serial ${serialNumber}`);
+          openP2dOverlay({ title: 'Unrecognized Volume', authors: [] }, false, 'checkout', translateCheckoutError(`Security Mismatch: No book in catalog registered with NFC Serial ${serialNumber}`));
         }
         } finally {
           processingTopNfcRef.current = false;
@@ -625,7 +627,7 @@ const CatalogPage = ({
     } catch (err) {
       console.error("Top NFC error:", err);
       setTopScannerLoading(false);
-      openP2dOverlay({ title: 'NFC Error', authors: [] }, false, 'checkout', `NFC Scan failed: ${err.message || err}`);
+      openP2dOverlay({ title: 'NFC Error', authors: [] }, false, 'checkout', translateCheckoutError(`NFC Scan failed: ${err.message || err}`));
       setTopNfcActive(false);
     }
   };
@@ -690,7 +692,7 @@ const CatalogPage = ({
         setP2dModalOpen(false);
         navigate(`/catalog/${p2dBook.isbn}?action=return&geofenceFailed=true`);
       } else {
-        setP2dError(`Ledger rejected transaction: ${errMsg}`);
+        setP2dError(translateCheckoutError(errMsg));
       }
     } finally {
       setP2dLoading(false);
@@ -1029,12 +1031,12 @@ const CatalogPage = ({
               setNfcModalOpen(false);
               navigate(`/catalog/${targetBook.isbn}?action=return&geofenceFailed=true`);
             } else {
-              openP2dOverlay(targetBook, false, dynamicActionType, `Database rejected verification: ${errMsg}`);
+              openP2dOverlay(targetBook, false, dynamicActionType, translateCheckoutError(`Database rejected verification: ${errMsg}`));
             }
           }
         } else {
           setCardScannerLoading(false);
-          openP2dOverlay(targetBook, false, 'checkout', `Security Mismatch: This NFC tag (${serialNumber || 'Unknown'}) does not match this book volume's registered IDs.`);
+          openP2dOverlay(targetBook, false, 'checkout', translateCheckoutError(`Security Mismatch: This NFC tag (${serialNumber || 'Unknown'}) does not match this book volume's registered IDs.`));
         }
         } finally {
           processingCardNfcRef.current = false;
@@ -1042,8 +1044,8 @@ const CatalogPage = ({
       });
     } catch (err) {
       console.error('NFC scanning error:', err);
-      setNfcError(`NFC Scan failed: ${err.message || err}. Please use the Barcode Scan tab or manual request fallback.`);
       setNfcReading(false);
+      openP2dOverlay(selectedBook, false, nfcActionType, translateCheckoutError(`NFC Scan failed: ${err.message || err}`));
     }
   };
   const startCardBarcodeScanner = targetBook => {
@@ -1307,11 +1309,12 @@ const CatalogPage = ({
           setNfcModalOpen(false);
           navigate(`/catalog/${currentBook.isbn}?action=return&geofenceFailed=true`);
         } else {
-          setNfcError(`Database rejected verification: ${errMsg}`);
+          openP2dOverlay(currentBook, false, dynamicActionType, translateCheckoutError(`Database rejected verification: ${errMsg}`));
         }
       }
     } else {
-      setNfcError(`Security Mismatch: Scanned code (${decodedText}) does not match this book's ISBN or registered copy QR codes.`);
+      setCardScannerLoading(false);
+      openP2dOverlay(currentBook, false, 'checkout', translateCheckoutError(`Security Mismatch: Scanned code (${decodedText}) does not match this book's ISBN or registered copy QR codes.`));
     }
   };
   const handleCardTabChange = tabName => {
@@ -2012,6 +2015,21 @@ const CatalogPage = ({
               }} disabled={p2dLoading}>
                       {t('common.cancel')}
                     </button>
+                    {(p2dBook.isbn || p2dBook.id) && (
+                      <button type="button" onClick={() => {
+                        setP2dModalOpen(false);
+                        navigate(`/catalog/${p2dBook.isbn || p2dBook.id}`);
+                      }} className="royal-btn-secondary" style={{
+                        flex: 1,
+                        padding: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }} disabled={p2dLoading}>
+                        <BookOpen size={14} /> View Details
+                      </button>
+                    )}
                     <button type="button" onClick={handleP2dSubmit} className="royal-btn" style={{
                 flex: 1,
                 display: 'flex',
