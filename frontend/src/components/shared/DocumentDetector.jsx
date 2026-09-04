@@ -68,7 +68,7 @@ const DocumentDetector = ({ videoStream, onCapture, width = 640, height = 480 })
             
             // Dilate edges to merge disconnected fragments and reduce total contour count drastically
             let M_morph = cv.Mat.ones(5, 5, cv.CV_8U);
-            cv.dilate(dst, dst, M_morph, new cv.Point(-1, -1), 1, cv.BORDER_CONSTANT, cv.morphologyDefaultBorderValue());
+            cv.dilate(dst, dst, M_morph);
             M_morph.delete();
             
             // Find contours
