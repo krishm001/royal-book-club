@@ -36,11 +36,22 @@ const DocumentDetector = ({ videoStream, onCapture, width = 640, height = 480 })
             const canvas = canvasRef.current;
             const ctx = canvas.getContext('2d');
             
-            // Draw video to canvas
+            // Draw video to main canvas
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            // Read from canvas to Mat
-            let src = cv.imread(canvas);
+            // Downscale for fast processing
+            const procWidth = 320;
+            const scale = procWidth / canvas.width;
+            const procHeight = Math.round(canvas.height * scale);
+            
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = procWidth;
+            offCanvas.height = procHeight;
+            const offCtx = offCanvas.getContext('2d');
+            offCtx.drawImage(canvas, 0, 0, procWidth, procHeight);
+            
+            // Read downscaled image to Mat
+            let src = cv.imread(offCanvas);
             let dst = new cv.Mat();
             let gray = new cv.Mat();
             
@@ -65,18 +76,35 @@ const DocumentDetector = ({ videoStream, onCapture, width = 640, height = 480 })
             for (let i = 0; i < contours.size(); ++i) {
               let cnt = contours.get(i);
               let area = cv.contourArea(cnt);
-              if (area > maxArea && area > (canvas.width * canvas.height * 0.1)) { // at least 10% of screen
+              if (area > maxArea && area > (procWidth * procHeight * 0.1)) {
                 maxArea = area;
                 maxContourIndex = i;
               }
             }
             
             if (maxContourIndex !== -1) {
-              let color = new cv.Scalar(212, 165, 116, 255); // Royal accent color
-              cv.drawContours(src, contours, maxContourIndex, color, 3, cv.LINE_8, hierarchy, 0);
+              let maxContour = contours.get(maxContourIndex);
+              // Approximate to a polygon
+              let approx = new cv.Mat();
+              let perimeter = cv.arcLength(maxContour, true);
+              cv.approxPolyDP(maxContour, approx, 0.02 * perimeter, true);
+              
+              if (approx.rows === 4) {
+                // Draw manually using native Canvas 2D for speed and overlay mapping
+                ctx.strokeStyle = 'rgba(212, 165, 116, 0.9)'; // Royal accent
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                for (let i = 0; i < 4; i++) {
+                  let px = (approx.data32S[i * 2]) / scale;
+                  let py = (approx.data32S[i * 2 + 1]) / scale;
+                  if (i === 0) ctx.moveTo(px, py);
+                  else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                ctx.stroke();
+              }
+              approx.delete();
             }
-            
-            cv.imshow(canvas, src);
             
             // Cleanup
             src.delete();

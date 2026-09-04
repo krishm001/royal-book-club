@@ -125,13 +125,30 @@ export const smartCropImage = async (imageElement) => {
   await loadOpenCv();
   const cv = window.cv;
 
-  const canvas = document.createElement('canvas');
-  canvas.width = imageElement.width;
-  canvas.height = imageElement.height;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(imageElement, 0, 0);
+  const MAX_PROC_SIZE = 500;
+  let scale = 1;
+  let procWidth = imageElement.width;
+  let procHeight = imageElement.height;
+  
+  if (procWidth > MAX_PROC_SIZE || procHeight > MAX_PROC_SIZE) {
+    if (procWidth > procHeight) {
+      scale = MAX_PROC_SIZE / procWidth;
+      procWidth = MAX_PROC_SIZE;
+      procHeight = Math.round(imageElement.height * scale);
+    } else {
+      scale = MAX_PROC_SIZE / procHeight;
+      procHeight = MAX_PROC_SIZE;
+      procWidth = Math.round(imageElement.width * scale);
+    }
+  }
 
-  let src = cv.imread(canvas);
+  const procCanvas = document.createElement('canvas');
+  procCanvas.width = procWidth;
+  procCanvas.height = procHeight;
+  const procCtx = procCanvas.getContext('2d');
+  procCtx.drawImage(imageElement, 0, 0, procWidth, procHeight);
+
+  let src = cv.imread(procCanvas);
   let dst = new cv.Mat();
   let gray = new cv.Mat();
 
@@ -160,9 +177,15 @@ export const smartCropImage = async (imageElement) => {
     }
   }
 
-  let finalDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+  // Original full-res canvas for fallback or warp
+  const origCanvas = document.createElement('canvas');
+  origCanvas.width = imageElement.width;
+  origCanvas.height = imageElement.height;
+  const origCtx = origCanvas.getContext('2d');
+  origCtx.drawImage(imageElement, 0, 0);
+  let finalDataUrl = origCanvas.toDataURL('image/jpeg', 0.9);
 
-  if (maxContour && maxArea > (canvas.width * canvas.height * 0.05)) {
+  if (maxContour && maxArea > (procWidth * procHeight * 0.05)) {
     // Approximate polygon
     let approx = new cv.Mat();
     let perimeter = cv.arcLength(maxContour, true);
@@ -172,7 +195,11 @@ export const smartCropImage = async (imageElement) => {
     if (approx.rows === 4) {
       let pts = [];
       for (let i = 0; i < 4; i++) {
-        pts.push({ x: approx.data32S[i * 2], y: approx.data32S[i * 2 + 1] });
+        // scale points back to original image coordinates
+        pts.push({ 
+          x: approx.data32S[i * 2] / scale, 
+          y: approx.data32S[i * 2 + 1] / scale 
+        });
       }
 
       // Sort points to top-left, top-right, bottom-right, bottom-left
@@ -197,16 +224,18 @@ export const smartCropImage = async (imageElement) => {
         0, 0, maxWidth, 0, maxWidth, maxHeight, 0, maxHeight
       ]);
 
+      let highResSrc = cv.imread(origCanvas);
       let M = cv.getPerspectiveTransform(srcTri, dstTri);
       let warped = new cv.Mat();
       let dsize = new cv.Size(maxWidth, maxHeight);
-      cv.warpPerspective(src, warped, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+      
+      cv.warpPerspective(highResSrc, warped, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
 
       let outCanvas = document.createElement('canvas');
       cv.imshow(outCanvas, warped);
       finalDataUrl = outCanvas.toDataURL('image/jpeg', 0.9);
 
-      srcTri.delete(); dstTri.delete(); M.delete(); warped.delete();
+      highResSrc.delete(); srcTri.delete(); dstTri.delete(); M.delete(); warped.delete();
     }
     approx.delete();
   }
