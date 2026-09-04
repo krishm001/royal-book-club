@@ -11,6 +11,7 @@ const DocumentDetector = ({ videoStream, onCapture, width = 640, height = 480 })
   const [cvLoaded, setCvLoaded] = useState(false);
   const processingRef = useRef(false);
   const animationFrameRef = useRef(null);
+  const timeoutRef = useRef(null);
 
   useEffect(() => {
     loadOpenCv().then(() => {
@@ -58,12 +59,17 @@ const DocumentDetector = ({ videoStream, onCapture, width = 640, height = 480 })
             // Convert to grayscale
             cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
             
-            // Blur to reduce noise
-            let ksize = new cv.Size(5, 5);
+            // Blur heavily to remove texture noise
+            let ksize = new cv.Size(9, 9);
             cv.GaussianBlur(gray, gray, ksize, 0, 0, cv.BORDER_DEFAULT);
             
             // Edge detection
             cv.Canny(gray, dst, 75, 200, 3, false);
+            
+            // Dilate edges to merge disconnected fragments and reduce total contour count drastically
+            let M_morph = cv.Mat.ones(5, 5, cv.CV_8U);
+            cv.dilate(dst, dst, M_morph, new cv.Point(-1, -1), 1, cv.BORDER_CONSTANT, cv.morphologyDefaultBorderValue());
+            M_morph.delete();
             
             // Find contours
             let contours = new cv.MatVector();
@@ -80,6 +86,7 @@ const DocumentDetector = ({ videoStream, onCapture, width = 640, height = 480 })
                 maxArea = area;
                 maxContourIndex = i;
               }
+              cnt.delete(); // Prevent memory leak!
             }
             
             if (maxContourIndex !== -1) {
@@ -104,6 +111,7 @@ const DocumentDetector = ({ videoStream, onCapture, width = 640, height = 480 })
                 ctx.stroke();
               }
               approx.delete();
+              maxContour.delete(); // Prevent memory leak!
             }
             
             // Cleanup
@@ -119,7 +127,7 @@ const DocumentDetector = ({ videoStream, onCapture, width = 640, height = 480 })
           processingRef.current = false;
         }
         // Throttle processing to ~5 FPS to prevent UI unresponsiveness
-        setTimeout(() => {
+        timeoutRef.current = setTimeout(() => {
           animationFrameRef.current = requestAnimationFrame(processVideo);
         }, 200);
       };
@@ -128,9 +136,8 @@ const DocumentDetector = ({ videoStream, onCapture, width = 640, height = 480 })
     }
     
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
   }, [cvLoaded, videoStream]);
 

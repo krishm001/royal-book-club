@@ -95,27 +95,54 @@ function applySharpenFilter(ctx, width, height) {
 /**
  * Loads OpenCV.js dynamically from CDN.
  */
+let openCvPromise = null;
+
 export const loadOpenCv = () => {
-  return new Promise((resolve, reject) => {
-    if (window.cv) {
-      if (window.cv.Mat) return resolve(window.cv);
-      // It's still loading (defined but not initialized)
-      window.cv['onRuntimeInitialized'] = () => resolve(window.cv);
+  if (openCvPromise) return openCvPromise;
+
+  openCvPromise = new Promise((resolve, reject) => {
+    if (window.cv && window.cv.Mat) {
+      return resolve(window.cv);
+    }
+    
+    // Check if script already exists to avoid duplicates
+    if (document.querySelector('script[src="https://docs.opencv.org/4.8.0/opencv.js"]')) {
+      const interval = setInterval(() => {
+        if (window.cv && window.cv.Mat) {
+          clearInterval(interval);
+          resolve(window.cv);
+        }
+      }, 100);
       return;
     }
+
     const script = document.createElement('script');
     script.src = 'https://docs.opencv.org/4.8.0/opencv.js';
     script.async = true;
     script.onload = () => {
-      window.cv['onRuntimeInitialized'] = () => {
+      if (window.cv && window.cv.Mat) {
         resolve(window.cv);
-      };
+      } else if (window.cv) {
+        window.cv['onRuntimeInitialized'] = () => {
+          resolve(window.cv);
+        };
+      } else {
+        const interval = setInterval(() => {
+          if (window.cv && window.cv.Mat) {
+            clearInterval(interval);
+            resolve(window.cv);
+          }
+        }, 100);
+      }
     };
     script.onerror = () => {
+      openCvPromise = null;
       reject(new Error('Failed to load OpenCV.js'));
     };
     document.body.appendChild(script);
   });
+  
+  return openCvPromise;
 };
 
 /**
@@ -152,13 +179,18 @@ export const smartCropImage = async (imageElement) => {
   let dst = new cv.Mat();
   let gray = new cv.Mat();
 
-  // Convert to grayscale and blur
+  // Convert to grayscale and blur heavily to remove texture noise
   cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
-  let ksize = new cv.Size(5, 5);
+  let ksize = new cv.Size(9, 9);
   cv.GaussianBlur(gray, gray, ksize, 0, 0, cv.BORDER_DEFAULT);
 
   // Edge detection
   cv.Canny(gray, dst, 75, 200, 3, false);
+
+  // Dilate edges to merge disconnected fragments and drastically reduce total contour count
+  let M_morph = cv.Mat.ones(5, 5, cv.CV_8U);
+  cv.dilate(dst, dst, M_morph, new cv.Point(-1, -1), 1, cv.BORDER_CONSTANT, cv.morphologyDefaultBorderValue());
+  M_morph.delete();
 
   // Find contours
   let contours = new cv.MatVector();
@@ -167,25 +199,36 @@ export const smartCropImage = async (imageElement) => {
 
   // Find the largest contour
   let maxArea = 0;
-  let maxContour = null;
+  let maxContourIndex = -1;
   for (let i = 0; i < contours.size(); ++i) {
     let cnt = contours.get(i);
     let area = cv.contourArea(cnt);
     if (area > maxArea) {
       maxArea = area;
-      maxContour = cnt;
+      maxContourIndex = i;
     }
+    cnt.delete();
   }
 
-  // Original full-res canvas for fallback or warp
+  // Cap final output resolution to prevent warpPerspective from hanging on 12MP images
+  const MAX_FINAL_SIZE = 1920;
+  let origWidth = imageElement.width;
+  let origHeight = imageElement.height;
+  if (origWidth > MAX_FINAL_SIZE || origHeight > MAX_FINAL_SIZE) {
+    const finalScale = origWidth > origHeight ? (MAX_FINAL_SIZE / origWidth) : (MAX_FINAL_SIZE / origHeight);
+    origWidth = Math.round(origWidth * finalScale);
+    origHeight = Math.round(origHeight * finalScale);
+  }
+
   const origCanvas = document.createElement('canvas');
-  origCanvas.width = imageElement.width;
-  origCanvas.height = imageElement.height;
+  origCanvas.width = origWidth;
+  origCanvas.height = origHeight;
   const origCtx = origCanvas.getContext('2d');
-  origCtx.drawImage(imageElement, 0, 0);
+  origCtx.drawImage(imageElement, 0, 0, origWidth, origHeight);
   let finalDataUrl = origCanvas.toDataURL('image/jpeg', 0.9);
 
-  if (maxContour && maxArea > (procWidth * procHeight * 0.05)) {
+  if (maxContourIndex !== -1 && maxArea > (procWidth * procHeight * 0.05)) {
+    let maxContour = contours.get(maxContourIndex);
     // Approximate polygon
     let approx = new cv.Mat();
     let perimeter = cv.arcLength(maxContour, true);
@@ -194,11 +237,13 @@ export const smartCropImage = async (imageElement) => {
     // If we have a quadrilateral
     if (approx.rows === 4) {
       let pts = [];
+      const ratioX = origWidth / procWidth;
+      const ratioY = origHeight / procHeight;
       for (let i = 0; i < 4; i++) {
-        // scale points back to original image coordinates
+        // scale points back to bounded high-res image coordinates
         pts.push({ 
-          x: approx.data32S[i * 2] / scale, 
-          y: approx.data32S[i * 2 + 1] / scale 
+          x: approx.data32S[i * 2] * ratioX, 
+          y: approx.data32S[i * 2 + 1] * ratioY 
         });
       }
 
@@ -238,6 +283,7 @@ export const smartCropImage = async (imageElement) => {
       highResSrc.delete(); srcTri.delete(); dstTri.delete(); M.delete(); warped.delete();
     }
     approx.delete();
+    maxContour.delete();
   }
 
   src.delete(); dst.delete(); gray.delete();
