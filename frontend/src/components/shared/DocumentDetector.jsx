@@ -116,7 +116,7 @@ const DocumentDetector = ({ videoStream, onCapture, width = 640, height = 480 })
     <div style={{ position: 'relative', width: '100%', maxWidth: width, margin: '0 auto' }}>
       <video 
         ref={videoRef} 
-        style={{ display: 'none' }} 
+        style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, zIndex: -1, pointerEvents: 'none' }} 
         width={width} 
         height={height} 
         playsInline 

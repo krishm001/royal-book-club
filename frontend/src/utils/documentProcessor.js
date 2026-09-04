@@ -117,3 +117,103 @@ export const loadOpenCv = () => {
     document.body.appendChild(script);
   });
 };
+
+/**
+ * Uses OpenCV to detect the document boundary and perform a perspective crop.
+ */
+export const smartCropImage = async (imageElement) => {
+  await loadOpenCv();
+  const cv = window.cv;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = imageElement.width;
+  canvas.height = imageElement.height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(imageElement, 0, 0);
+
+  let src = cv.imread(canvas);
+  let dst = new cv.Mat();
+  let gray = new cv.Mat();
+
+  // Convert to grayscale and blur
+  cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+  let ksize = new cv.Size(5, 5);
+  cv.GaussianBlur(gray, gray, ksize, 0, 0, cv.BORDER_DEFAULT);
+
+  // Edge detection
+  cv.Canny(gray, dst, 75, 200, 3, false);
+
+  // Find contours
+  let contours = new cv.MatVector();
+  let hierarchy = new cv.Mat();
+  cv.findContours(dst, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+  // Find the largest contour
+  let maxArea = 0;
+  let maxContour = null;
+  for (let i = 0; i < contours.size(); ++i) {
+    let cnt = contours.get(i);
+    let area = cv.contourArea(cnt);
+    if (area > maxArea) {
+      maxArea = area;
+      maxContour = cnt;
+    }
+  }
+
+  let finalDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+  if (maxContour && maxArea > (canvas.width * canvas.height * 0.05)) {
+    // Approximate polygon
+    let approx = new cv.Mat();
+    let perimeter = cv.arcLength(maxContour, true);
+    cv.approxPolyDP(maxContour, approx, 0.02 * perimeter, true);
+
+    // If we have a quadrilateral
+    if (approx.rows === 4) {
+      let pts = [];
+      for (let i = 0; i < 4; i++) {
+        pts.push({ x: approx.data32S[i * 2], y: approx.data32S[i * 2 + 1] });
+      }
+
+      // Sort points to top-left, top-right, bottom-right, bottom-left
+      pts.sort((a, b) => a.y - b.y);
+      let top = [pts[0], pts[1]].sort((a, b) => a.x - b.x);
+      let bottom = [pts[2], pts[3]].sort((a, b) => a.x - b.x);
+      let tl = top[0], tr = top[1], bl = bottom[0], br = bottom[1];
+
+      // Compute new width and height
+      let widthA = Math.hypot(br.x - bl.x, br.y - bl.y);
+      let widthB = Math.hypot(tr.x - tl.x, tr.y - tl.y);
+      let maxWidth = Math.max(Math.round(widthA), Math.round(widthB));
+
+      let heightA = Math.hypot(tr.x - br.x, tr.y - br.y);
+      let heightB = Math.hypot(tl.x - bl.x, tl.y - bl.y);
+      let maxHeight = Math.max(Math.round(heightA), Math.round(heightB));
+
+      let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+        tl.x, tl.y, tr.x, tr.y, br.x, br.y, bl.x, bl.y
+      ]);
+      let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+        0, 0, maxWidth, 0, maxWidth, maxHeight, 0, maxHeight
+      ]);
+
+      let M = cv.getPerspectiveTransform(srcTri, dstTri);
+      let warped = new cv.Mat();
+      let dsize = new cv.Size(maxWidth, maxHeight);
+      cv.warpPerspective(src, warped, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+
+      let outCanvas = document.createElement('canvas');
+      cv.imshow(outCanvas, warped);
+      finalDataUrl = outCanvas.toDataURL('image/jpeg', 0.9);
+
+      srcTri.delete(); dstTri.delete(); M.delete(); warped.delete();
+    }
+    approx.delete();
+  }
+
+  src.delete(); dst.delete(); gray.delete();
+  contours.delete(); hierarchy.delete();
+
+  return finalDataUrl;
+};
+

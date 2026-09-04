@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { enhanceImage } from '../../utils/documentProcessor';
+import { enhanceImage, smartCropImage } from '../../utils/documentProcessor';
 import { RefreshCw, Check, X, Sliders } from 'lucide-react';
 import './ImageEnhancer.css';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -40,6 +40,26 @@ const ImageEnhancer = ({ initialImageSrc, onSave, onCancel }) => {
       setImageSrc(enhancedSrc);
     } catch (err) {
       console.error("Failed to enhance image", err);
+    }
+  };
+
+  const handleSmartCrop = async () => {
+    if (!originalImgRef.current) return;
+    setLoading(true);
+    try {
+      const croppedDataUrl = await smartCropImage(originalImgRef.current);
+      // Update the original reference so further enhancements apply to the cropped version
+      const newImg = new Image();
+      newImg.crossOrigin = 'anonymous';
+      newImg.onload = () => {
+        originalImgRef.current = newImg;
+        applyEnhancements();
+        setLoading(false);
+      };
+      newImg.src = croppedDataUrl;
+    } catch (err) {
+      console.error("Failed to auto-crop image", err);
+      setLoading(false);
     }
   };
 
@@ -107,6 +127,15 @@ const ImageEnhancer = ({ initialImageSrc, onSave, onCancel }) => {
           />
           Apply Sharpening Filter
         </label>
+
+        <button 
+          className="royal-btn-secondary" 
+          onClick={handleSmartCrop} 
+          disabled={loading}
+          style={{ width: '100%', marginTop: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+        >
+          <Sliders size={16} /> Auto-Crop Book Cover
+        </button>
       </div>
 
       <div className="enhancer-actions">
