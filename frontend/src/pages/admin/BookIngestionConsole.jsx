@@ -7,20 +7,13 @@ import { uploadBookImage } from '../../services/storageApi';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useLanguage } from '../../i18n/LanguageContext';
 import ImageEnhancer from '../../components/shared/ImageEnhancer';
-import DocumentDetector from '../../components/shared/DocumentDetector';
-import { loadOpenCv } from '../../utils/documentProcessor';
 import './BookIngestionConsole.css';
 const SafeHtml5Qrcode = Html5Qrcode;
 const SafeHtml5QrcodeSupportedFormats = Html5QrcodeSupportedFormats;
 const BookIngestionConsole = ({
   user
 }) => {
-  // Preload OpenCV in the background to prevent UI freeze during WASM compilation
-  useEffect(() => {
-    setTimeout(() => {
-      loadOpenCv().catch(err => console.error("Background OpenCV preload failed", err));
-    }, 1000);
-  }, []);
+
 
 
 
@@ -3334,7 +3327,38 @@ const BookIngestionConsole = ({
               position: 'absolute',
               top: 0,
               left: 0
-            }} /> : <DocumentDetector videoStream={cameraStream} onCapture={handleDocumentCaptured} width={400} height={500} />}
+            }} /> : (
+               <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    style={{ width: '100%', height: '100%', objectFit: isFitMode ? 'contain' : 'cover' }}
+                  />
+                  <button 
+                    className="capture-action-btn"
+                    onClick={() => {
+                      if (!videoRef.current) return;
+                      const canvas = document.createElement('canvas');
+                      canvas.width = videoRef.current.videoWidth || 640;
+                      canvas.height = videoRef.current.videoHeight || 480;
+                      const ctx = canvas.getContext('2d');
+                      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+                      handleDocumentCaptured(canvas.toDataURL('image/jpeg', 0.9));
+                    }}
+                    style={{
+                      position: 'absolute',
+                      bottom: '20px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      zIndex: 10
+                    }}
+                  >
+                    Capture Document
+                  </button>
+               </div>
+            )}
                   
                   {cameraMode === 'isbn' || cameraMode === 'copy_qr' ? null : null}
                 </div>

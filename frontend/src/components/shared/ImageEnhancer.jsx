@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { enhanceImage, smartCropImage } from '../../utils/documentProcessor';
+import { enhanceImage } from '../../utils/documentProcessor';
 import { RefreshCw, Check, X, Sliders } from 'lucide-react';
 import './ImageEnhancer.css';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -41,33 +41,6 @@ const ImageEnhancer = ({ initialImageSrc, onSave, onCancel }) => {
     } catch (err) {
       console.error("Failed to enhance image", err);
     }
-  };
-
-  const handleSmartCrop = () => {
-    if (!originalImgRef.current) return;
-    setLoading(true);
-    
-    // Yield to the browser's render thread so the loading spinner actually appears
-    // before OpenCV.js potentially freezes the main thread during WASM compilation
-    setTimeout(async () => {
-      try {
-        const croppedDataUrl = await smartCropImage(originalImgRef.current);
-        setImageSrc(croppedDataUrl);
-        
-        // Reset base image so further enhancements apply to the cropped version
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          originalImgRef.current = img;
-          setLoading(false);
-        };
-        img.onerror = () => setLoading(false);
-        img.src = croppedDataUrl;
-      } catch (err) {
-        console.error("Smart crop failed", err);
-        setLoading(false);
-      }
-    }, 100);
   };
 
   const handleChange = (key, value) => {
@@ -134,15 +107,6 @@ const ImageEnhancer = ({ initialImageSrc, onSave, onCancel }) => {
           />
           Apply Sharpening Filter
         </label>
-
-        <button 
-          className="royal-btn-secondary" 
-          onClick={handleSmartCrop} 
-          disabled={loading}
-          style={{ width: '100%', marginTop: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
-        >
-          <Sliders size={16} /> Auto-Crop Book Cover
-        </button>
       </div>
 
       <div className="enhancer-actions">
