@@ -1555,6 +1555,16 @@ const BookIngestionConsole = ({
           } else {
             if (matchedBook) {
               // copyIndex is null, but it's the current book. Just set info message and stop.
+              const copyIdx = Array.isArray(matchedBook.copies) ? matchedBook.copies.findIndex(c => c.ntagUid && c.ntagUid.toLowerCase().replace(/:/g, '') === cleanScanned) : -1;
+              if (copyIdx !== -1) {
+                setHighlightedCopyNo(copyIdx);
+                setTimeout(() => {
+                  const copyElem = document.getElementById(`copy-card-${copyIdx}`);
+                  if (copyElem) {
+                    copyElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                }, 300);
+              }
               setNfcSuccess(true);
               setIsNfcReading(false);
               setActiveScanningIndex(null);
