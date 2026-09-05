@@ -1390,34 +1390,14 @@ const BookIngestionConsole = ({
         }
       }
       if (matchedBook) {
-        setIsbn(matchedBook.isbn || '');
-        setEditingBookId(matchedBook.id || matchedBook.isbn || '');
-        setManualTitle(matchedBook.title || '');
-        setManualAuthor(Array.isArray(matchedBook.authors) ? matchedBook.authors.join(', ') : matchedBook.author || '');
-        setPublisher(matchedBook.publisher || '');
-        setPublishDate(matchedBook.publishDate || matchedBook.publishYear || '');
-        setCoverUrl(matchedBook.coverUrl || '');
-        setDescription(matchedBook.description || '');
-        setPages(matchedBook.pages || 0);
-        setTotalCopies(matchedBook.totalCopies || 1);
-        setAvailableCopies(matchedBook.availableCopies || 1);
-        setTagsInput(Array.isArray(matchedBook.tags) ? matchedBook.tags.join(', ') : '');
-        setNtagUid(formatUidWithColons(matchedBook.ntagUid || cleanScanned));
-        setAlternativeIsbnsInput(Array.isArray(matchedBook.alternativeIsbns) ? matchedBook.alternativeIsbns.join(', ') : '');
-        if (matchedBook.copies) {
-          setCopyQrIds(matchedBook.copies.map(c => c.qrId || ''));
-          setNtagUids(matchedBook.copies.map(c => formatUidWithColons(c.ntagUid || '')));
-        } else {
-          setCopyQrIds([]);
-          setNtagUids(matchedBook.ntagUids ? matchedBook.ntagUids.map(uid => formatUidWithColons(uid || '')) : []);
+        let copyIdx = -1;
+        if (Array.isArray(matchedBook.copies)) {
+          copyIdx = matchedBook.copies.findIndex(c => c.ntagUid && c.ntagUid.toLowerCase().replace(/:/g, '') === cleanScanned);
         }
-        setBookLanguage(matchedBook.language || 'en');
-        if (matchedBook.genre) {
-          setSelectedHouse(matchedBook.genre);
-          setGenreSearchQuery(matchedBook.genre);
+        if (copyIdx === -1 && Array.isArray(matchedBook.ntagUids)) {
+          copyIdx = matchedBook.ntagUids.findIndex(uid => uid && uid.toLowerCase().replace(/:/g, '') === cleanScanned);
         }
-        setIsEditMode(true);
-        setIsEditingExisting(true);
+        handleSelectExistingBook(matchedBook, copyIdx !== -1 ? copyIdx : null);
         setNfcSuccess(true);
         setIsNfcReading(false);
         setInfoMessage(`Existing book "${matchedBook.title}" loaded from NFC tap.`);
@@ -1499,7 +1479,7 @@ const BookIngestionConsole = ({
           }
         }
         const targetUid = extractedUid || serialNumber;
-        const cleanScanned = (targetUid || '').trim().toLowerCase().replace(/:/g, '');
+        const cleanScanned = (targetUid || '').trim().toLowerCase().replace(/:/g, '').split('x')[0];
 
         // Always search database first for this scanned NFC tag!
         setInfoMessage(`Searching database for tag ID: ${formatUidWithColons(cleanScanned)}...`);
@@ -1530,7 +1510,13 @@ const BookIngestionConsole = ({
         const isCurrentBook = matchedBook && (editingBookId && (matchedBook.id === editingBookId || matchedBook.isbn === editingBookId) || isbn && matchedBook.isbn && matchedBook.isbn.trim().replace(/[-\s]/g, '') === isbn.trim().replace(/[-\s]/g, ''));
         if (matchedBook && !isCurrentBook) {
           // Found an existing DIFFERENT book with this NFC tag! Load it!
-          const copyIdx = Array.isArray(matchedBook.copies) ? matchedBook.copies.findIndex(c => c.ntagUid && c.ntagUid.toLowerCase().replace(/:/g, '') === cleanScanned) : -1;
+          let copyIdx = -1;
+          if (Array.isArray(matchedBook.copies)) {
+            copyIdx = matchedBook.copies.findIndex(c => c.ntagUid && c.ntagUid.toLowerCase().replace(/:/g, '') === cleanScanned);
+          }
+          if (copyIdx === -1 && Array.isArray(matchedBook.ntagUids)) {
+            copyIdx = matchedBook.ntagUids.findIndex(uid => uid && uid.toLowerCase().replace(/:/g, '') === cleanScanned);
+          }
           handleSelectExistingBook(matchedBook, copyIdx !== -1 ? copyIdx : null);
           setNfcSuccess(true);
           setIsNfcReading(false);
@@ -1555,7 +1541,14 @@ const BookIngestionConsole = ({
           } else {
             if (matchedBook) {
               // copyIndex is null, but it's the current book. Just set info message and stop.
-              const copyIdx = Array.isArray(matchedBook.copies) ? matchedBook.copies.findIndex(c => c.ntagUid && c.ntagUid.toLowerCase().replace(/:/g, '') === cleanScanned) : -1;
+              let copyIdx = -1;
+              if (Array.isArray(matchedBook.copies)) {
+                copyIdx = matchedBook.copies.findIndex(c => c.ntagUid && c.ntagUid.toLowerCase().replace(/:/g, '') === cleanScanned);
+              }
+              if (copyIdx === -1 && Array.isArray(matchedBook.ntagUids)) {
+                copyIdx = matchedBook.ntagUids.findIndex(uid => uid && uid.toLowerCase().replace(/:/g, '') === cleanScanned);
+              }
+              
               if (copyIdx !== -1) {
                 setHighlightedCopyNo(copyIdx);
                 setTimeout(() => {
