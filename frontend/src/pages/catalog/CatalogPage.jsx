@@ -2015,12 +2015,18 @@ const CatalogPage = ({
 
                   <div className="fallback-actions-row" style={{
               display: 'flex',
-              gap: '14px',
-              width: '100%'
+              gap: '8px',
+              width: '100%',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              maxWidth: '100%'
             }}>
                     <button type="button" onClick={() => setP2dModalOpen(false)} className="royal-btn-secondary" style={{
-                flex: 1,
-                padding: '12px'
+                flex: '1 1 auto',
+                padding: '10px 6px',
+                fontSize: '0.85rem',
+                minWidth: '70px',
+                whiteSpace: 'nowrap'
               }} disabled={p2dLoading}>
                       {t('common.cancel')}
                     </button>
@@ -2029,27 +2035,32 @@ const CatalogPage = ({
                         setP2dModalOpen(false);
                         navigate(`/catalog/${p2dBook.isbn || p2dBook.id}`);
                       }} className="royal-btn-secondary" style={{
-                        flex: 1,
-                        padding: '12px',
+                        flex: '1 1 auto',
+                        padding: '10px 6px',
+                        fontSize: '0.85rem',
+                        minWidth: '70px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '6px'
+                        gap: '4px',
+                        whiteSpace: 'nowrap'
                       }} disabled={p2dLoading}>
-                        <BookOpen size={14} /> View Details
+                        <BookOpen size={14} /> {t('common.details') || 'Details'}
                       </button>
                     )}
                     <button type="button" onClick={handleP2dSubmit} className="royal-btn" style={{
-                flex: 1,
+                flex: '1 1 auto',
                 display: 'flex',
-                alignItems: 'flex-start',
-
+                alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px',
-                padding: '12px'
+                gap: '4px',
+                padding: '10px 6px',
+                fontSize: '0.85rem',
+                minWidth: '70px',
+                whiteSpace: 'nowrap'
               }} disabled={p2dLoading}>
                       {p2dLoading ? <RefreshCw className="spin-icon" size={14} /> : <CheckCircle size={14} />}
-                      {p2dLoading ? t('common.loading') : p2dActionType === 'checkout' ? t('catalog.confirmCheckout') : t('catalog.confirmReturn')}
+                      {p2dLoading ? t('common.loading') : p2dActionType === 'checkout' ? t('catalog.checkoutShort') : t('catalog.returnShort')}
                     </button>
                   </div>
                 </>}

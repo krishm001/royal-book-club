@@ -74,6 +74,8 @@ export default {
     "availableCopies": "उपलब्ध राजसी प्रतियां",
     "totalCopies": "कुल राजसी प्रतियां",
     "checkout": "ग्रंथ उधार लें (हुक्म जारी करें)",
+    "checkoutShort": "चेकआउट",
+    "returnShort": "वापसी",
     "checkingOut": "राजसी ऋण सुरक्षित किया जा रहा है...",
     "requested": "उधार अनुरोध विचाराधीन",
     "returnRequest": "ग्रंथ वापस सौंपें",

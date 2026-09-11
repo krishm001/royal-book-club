@@ -70,6 +70,8 @@ export default {
     "availableCopies": "ಲಭ್ಯವಿರುವ ರಾಜಸಿ ಪ್ರತಿಗಳು",
     "totalCopies": "ಒಟ್ಟು ರಾಜಸಿ ಪ್ರತಿಗಳು",
     "checkout": "ಗ್ರಂಥ ಎರವಲು ಪಡೆಯಿರಿ",
+    "checkoutShort": "ಎರವಲು",
+    "returnShort": "ಮರಳಿಸಿ",
     "checkingOut": "ರಾಜಸಿ ಗ್ರಂಥ ಎರವಲು ಭದ್ರಪಡಿಸಲಾಗುತ್ತಿದೆ...",
     "requested": "ಎರವಲು ವಿನಂತಿ ಪರಿಶೀಲನೆಯಲ್ಲಿದೆ",
     "returnRequest": "ಗ್ರಂಥವನ್ನು ಹಿಂತಿರುಗಿಸಿ",

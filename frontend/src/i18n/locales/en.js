@@ -74,6 +74,8 @@ export default {
     "availableCopies": "Available Copies",
     "totalCopies": "Total Copies",
     "checkout": "Check Out Volume",
+    "checkoutShort": "Checkout",
+    "returnShort": "Return",
     "checkingOut": "Securing Loan...",
     "requested": "Loan Pending Approval",
     "returnRequest": "Initiate Return",
