@@ -572,8 +572,8 @@ const DiscoursesPage = ({
         </div>
 
         {/* Hoverable reaction picker */}
-        {user && <div className="reaction-picker-trigger-wrapper">
-            <button type="button" className="reaction-picker-trigger" title={t('discourses.voiceAcademicResponse', 'Voice Academic Response')}>
+        {<div className="reaction-picker-trigger-wrapper">
+            <button type="button" onClick={() => { if (!user) { pendingActionRef.current = { type: 'react', id: node.id, reactionType: '👍', targetType }; if (triggerOnboarding) triggerOnboarding({ actionType: 'content' }); } }} className="reaction-picker-trigger" title={t('discourses.voiceAcademicResponse', 'Voice Academic Response')}>
               <Sparkles size={12} className="trigger-icon" />
               <span className="trigger-lbl">{t('discourses.react', 'React')}</span>
             </button>
@@ -806,14 +806,39 @@ const DiscoursesPage = ({
                       <MessageSquare size={16} /> {t('discourses.scholarlyDialogue', 'Scholarly Dialogue')} ({chronicleComments.length})
                     </h3>
 
-                    {user ? <form onSubmit={handleAddComment} className="comment-post-box">
-                        <textarea placeholder={t('discourses.graceInsightsPlaceholder', 'Grace this dissertation with your insights...')} className="royal-input comment-textarea" value={commentText} onChange={e => setCommentText(e.target.value)} required rows={3} />
-                        <button type="submit" disabled={isSubmittingComment} className="royal-btn comment-submit-btn">
+                    <form ref={commentFormRef} onSubmit={(e) => {
+                      if (!user) {
+                        e.preventDefault();
+                        pendingActionRef.current = { type: 'comment' };
+                        if (triggerOnboarding) triggerOnboarding({ actionType: 'content' });
+                        return;
+                      }
+                      handleAddComment(e);
+                    }} className="comment-post-box">
+                        <textarea 
+                          onClick={(e) => {
+                            if (!user) {
+                              e.preventDefault();
+                              pendingActionRef.current = { type: 'comment' };
+                              if (triggerOnboarding) triggerOnboarding({ actionType: 'content' });
+                            }
+                          }}
+                          placeholder={t('discourses.graceInsightsPlaceholder', 'Grace this dissertation with your insights...')} 
+                          className="royal-input comment-textarea" 
+                          value={commentText} 
+                          onChange={e => setCommentText(e.target.value)} 
+                          required 
+                          rows={3} 
+                        />
+                        <button type={!user ? "button" : "submit"} onClick={() => {
+                          if (!user) {
+                            pendingActionRef.current = { type: 'comment' };
+                            if (triggerOnboarding) triggerOnboarding({ actionType: 'content' });
+                          }
+                        }} disabled={user && isSubmittingComment} className="royal-btn comment-submit-btn">
                           {isSubmittingComment ? t('discourses.transcribing', 'Transcribing...') : t('discourses.scribeInsight', 'Scribe Insight')} <Send size={12} />
                         </button>
-                      </form> : <div className="comments-unauth-notice royal-card">
-                        <p>{t('discourses.verifiedPatronsNotice', 'Only verified library patrons may record insights. Please enter the library.')}</p>
-                      </div>}
+                      </form>
 
                     <div className="comments-thread-list">
                       {chronicleComments.map(c => {

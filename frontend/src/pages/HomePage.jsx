@@ -73,10 +73,20 @@ const HomePage = ({
   React.useEffect(() => {
     const handleOnboardingComplete = (e) => {
       const detail = e.detail;
-      if (detail?.actionType === 'content' && pendingActionRef.current?.type === 'testimonial') {
-        pendingActionRef.current = null;
-        if (testimonialFormRef.current) {
-          testimonialFormRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+      if (detail?.actionType === 'content') {
+        if (pendingActionRef.current?.type === 'testimonial') {
+          pendingActionRef.current = null;
+          if (testimonialFormRef.current) {
+            testimonialFormRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          }
+        } else if (pendingActionRef.current?.type === 'rsvp') {
+          const rsvpId = pendingActionRef.current.id;
+          pendingActionRef.current = null;
+          // dispatch an event that handleShowcaseRsvp will catch? No, we can just call it if we could, but handleShowcaseRsvp requires the 'event'.
+          // Wait, handleShowcaseRsvp just needs event to preventDefault. We can just simulate it or call the api directly.
+          // Wait, we can just trigger a click on the RSVP button if we assign it an ID!
+          const rsvpBtn = document.getElementById('rsvp-btn-main');
+          if (rsvpBtn) rsvpBtn.click();
         }
       }
     };
@@ -260,7 +270,12 @@ const HomePage = ({
     e.preventDefault();
     e.stopPropagation();
     if (!user) {
-      onSignIn();
+      pendingActionRef.current = { type: 'rsvp', id: currentShowcaseItem?.id };
+      if (triggerOnboarding) {
+        triggerOnboarding({ actionType: 'content' });
+      } else if (onSignIn) {
+        onSignIn();
+      }
       return;
     }
     if (isRsvpingShowcase) return;
@@ -460,7 +475,7 @@ const HomePage = ({
                     fontSize: '0.75rem'
                   }}>
                           {t('home.assemblyFull')}
-                        </button> : <button onClick={handleShowcaseRsvp} className="royal-btn" style={{
+                        </button> : <button id="rsvp-btn-main" onClick={handleShowcaseRsvp} className="royal-btn" style={{
                     padding: '8px 16px',
                     fontSize: '0.75rem'
                   }}>
@@ -758,7 +773,12 @@ const HomePage = ({
                   <div onClick={(e) => {
                     if (!user) {
                       e.preventDefault();
-                      if (onSignIn) onSignIn();
+                      pendingActionRef.current = { type: 'testimonial' };
+                      if (triggerOnboarding) {
+                        triggerOnboarding({ actionType: 'content' });
+                      } else if (onSignIn) {
+                        onSignIn();
+                      }
                     }
                   }}>
                     <label style={{
@@ -779,7 +799,12 @@ const HomePage = ({
                       {[1, 2, 3, 4, 5].map(starVal => <button key={starVal} type="button" onClick={(e) => {
                         if (!user) {
                           e.preventDefault();
-                          if (onSignIn) onSignIn();
+                          pendingActionRef.current = { type: 'testimonial' };
+                      if (triggerOnboarding) {
+                        triggerOnboarding({ actionType: 'content' });
+                      } else if (onSignIn) {
+                        onSignIn();
+                      }
                           return;
                         }
                         setReviewRating(starVal);
@@ -810,7 +835,12 @@ const HomePage = ({
                     <textarea value={reviewComment} onChange={e => setReviewComment(e.target.value)} onClick={(e) => {
                       if (!user) {
                         e.preventDefault();
-                        if (onSignIn) onSignIn();
+                        pendingActionRef.current = { type: 'testimonial' };
+                      if (triggerOnboarding) {
+                        triggerOnboarding({ actionType: 'content' });
+                      } else if (onSignIn) {
+                        onSignIn();
+                      }
                       }
                     }} placeholder={t("str_5083", "Share your experience of the Royal Book Club...")} rows={3} maxLength={500} style={{
                   width: '100%',
@@ -864,7 +894,12 @@ const HomePage = ({
                   <button type={!user ? "button" : "submit"} onClick={(e) => {
                     if (!user) {
                       e.preventDefault();
-                      if (onSignIn) onSignIn();
+                      pendingActionRef.current = { type: 'testimonial' };
+                      if (triggerOnboarding) {
+                        triggerOnboarding({ actionType: 'content' });
+                      } else if (onSignIn) {
+                        onSignIn();
+                      }
                     }
                   }} className="royal-btn" disabled={user && submittingReview} style={{
                 display: 'flex',
