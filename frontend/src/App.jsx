@@ -1026,13 +1026,13 @@ function App() {
         {/* Main Content Area */}
         <main className="main-content">
           <Routes>
-            <Route path="/" element={<HomePage user={user} onSignIn={handleSignIn} theme={theme} />} />
+            <Route path="/" element={<HomePage user={user} onSignIn={handleSignIn} theme={theme} triggerOnboarding={triggerOnboarding} />} />
             <Route path="/catalog" element={<CatalogPage user={user} triggerOnboarding={triggerOnboarding} />} />
             <Route path="/catalog/:id" element={<BookDetailPage user={user} triggerOnboarding={triggerOnboarding} />} />
             <Route path="/events" element={<EventsPage user={user} />} />
             <Route path="/events/:id" element={<EventDetailPage user={user} />} />
-            <Route path="/discourses" element={<DiscoursesPage user={user} />} />
-            <Route path="/discourses/:id" element={<DiscoursesPage user={user} />} />
+            <Route path="/discourses" element={<DiscoursesPage user={user} triggerOnboarding={triggerOnboarding} />} />
+            <Route path="/discourses/:id" element={<DiscoursesPage user={user} triggerOnboarding={triggerOnboarding} />} />
             <Route path="/admin" element={<AdminDashboard user={user} />} />
             <Route path="/admin/books" element={<BookIngestionConsole user={user} />} />
             <Route path="/admin/users" element={<UserManagementPage user={user} />} />

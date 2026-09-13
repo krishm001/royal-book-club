@@ -618,6 +618,8 @@ export default {
     "requirePinCodeDesc": "Mandatory postal indicator. Ensures physical address verification operates smoothly during collection periods.",
     "enforceEmailVerification": "Enforce Email Verification",
     "enforceEmailVerificationDesc": "Requires users with password-based log-ins to have verified email addresses before performing checkouts.",
+    "enforceEmailVerificationForContent": "Enforce Email Verification for Content",
+    "enforceEmailVerificationForContentDesc": "Requires users to have verified email addresses before generating content (e.g. writing reviews, participating in debates).",
     "enforceReturnGeofencing": "Enforce Location Geofencing on Self-Returns",
     "enforceReturnGeofencingDesc": "Requires scholars to be physically present within the configured library geofence perimeter to perform instant direct self-returns.",
     "enforceReturnQr": "Enforce Validator QR Verification on Fallback",

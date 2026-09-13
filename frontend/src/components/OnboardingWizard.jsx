@@ -129,24 +129,48 @@ export default function OnboardingWizard({
     fetchGatingSettings();
   }, []);
 
+  const isEmailVerificationEnforced = (gating, target) => {
+    if (!gating) return false;
+    return target?.actionType === 'content' ? gating.enforceEmailVerificationForContent : gating.enforceEmailVerification;
+  };
+
+  const isFieldRequired = (fieldName, gating, target) => {
+    if (!gating) return false;
+    const forContent = target?.actionType === 'content';
+    if (forContent) {
+      if (fieldName === 'phone') return gating.phoneMandatoryForContent;
+      if (fieldName === 'houseNo') return gating.houseNoMandatoryForContent;
+      if (fieldName === 'street') return gating.streetMandatoryForContent;
+      if (fieldName === 'city') return gating.cityMandatoryForContent;
+      if (fieldName === 'pinCode') return gating.pinCodeMandatoryForContent;
+    } else {
+      if (fieldName === 'phone') return gating.phoneMandatory;
+      if (fieldName === 'houseNo') return gating.houseNoMandatory;
+      if (fieldName === 'street') return gating.streetMandatory;
+      if (fieldName === 'city') return gating.cityMandatory;
+      if (fieldName === 'pinCode') return gating.pinCodeMandatory;
+    }
+    return false;
+  };
+
   // Determine gating status matching ProfilePage
-  const checkIfProfileMeetsGating = (u, gating) => {
+  const checkIfProfileMeetsGating = (u, gating, target) => {
     if (!gating) return false;
     if (!u?.consentAcceptedAt) return false;
 
     // Check email verification if enforced and user is a password user
     const currentUser = auth.currentUser;
-    if (gating.enforceEmailVerification && currentUser) {
+    if (isEmailVerificationEnforced(gating, target) && currentUser) {
       const isPasswordUser = currentUser.providerData?.some(p => p.providerId === 'password');
       if (isPasswordUser && !currentUser.emailVerified) {
         return false;
       }
     }
-    if (gating.phoneMandatory && !u?.phone) return false;
-    if (gating.houseNoMandatory && !u?.houseNo) return false;
-    if (gating.streetMandatory && !u?.street) return false;
-    if (gating.cityMandatory && !u?.city) return false;
-    if (gating.pinCodeMandatory && !u?.pinCode) return false;
+    if (isFieldRequired('phone', gating, targetState) && !u?.phone) return false;
+    if (isFieldRequired('houseNo', gating, targetState) && !u?.houseNo) return false;
+    if (isFieldRequired('street', gating, targetState) && !u?.street) return false;
+    if (isFieldRequired('city', gating, targetState) && !u?.city) return false;
+    if (isFieldRequired('pinCode', gating, targetState) && !u?.pinCode) return false;
     return true;
   };
 
@@ -155,7 +179,7 @@ export default function OnboardingWizard({
     let intervalId = null;
     const currentUser = auth.currentUser;
     const isPasswordUser = currentUser?.providerData?.some(p => p.providerId === 'password');
-    if (currentUser && isPasswordUser && !emailVerified && gatingSettings?.enforceEmailVerification) {
+    if (currentUser && isPasswordUser && !emailVerified && isEmailVerificationEnforced(gatingSettings, targetState)) {
       intervalId = setInterval(async () => {
         try {
           await currentUser.reload();
@@ -165,7 +189,7 @@ export default function OnboardingWizard({
             const res = await api.get('/api/v1/auth/me');
             if (res?.data?.success && res?.data?.data) {
               const d = res.data.data;
-              const meetsGating = checkIfProfileMeetsGating(d, gatingSettings);
+              const meetsGating = checkIfProfileMeetsGating(d, gatingSettings, targetState);
               if (meetsGating) {
                 if (onResume) {
                   onResume(targetState);
@@ -221,7 +245,7 @@ export default function OnboardingWizard({
         const res = await api.get('/api/v1/auth/me');
         if (res?.data?.success && res?.data?.data) {
           const d = res.data.data;
-          const meetsGating = checkIfProfileMeetsGating(d, gatingSettings);
+          const meetsGating = checkIfProfileMeetsGating(d, gatingSettings, targetState);
           if (meetsGating) {
             if (onResume) {
               onResume(targetState);
@@ -259,7 +283,7 @@ export default function OnboardingWizard({
               const hasConsent = !!d.consentAcceptedAt;
               if (hasConsent) {
                 setCovenantAccepted(true);
-                const meetsGating = checkIfProfileMeetsGating(d, gatingSettings);
+                const meetsGating = checkIfProfileMeetsGating(d, gatingSettings, targetState);
                 if (meetsGating) {
                   // Profile is fully complete and complies with all gating: skip and resume target action instantly
                   if (onResume) {
@@ -574,7 +598,7 @@ export default function OnboardingWizard({
         pinCode,
         consentAcceptedAt: consentDate
       };
-      const meetsGating = checkIfProfileMeetsGating(updatedUser, gatingSettings);
+      const meetsGating = checkIfProfileMeetsGating(updatedUser, gatingSettings, targetState);
       if (meetsGating) {
         if (onResume) {
           onResume(targetState);
@@ -628,14 +652,14 @@ export default function OnboardingWizard({
 
   // Real-time calculation of missing fields
   const missingFields = [];
-  if (gatingSettings?.enforceEmailVerification && auth.currentUser?.providerData?.some(p => p.providerId === 'password') && !emailVerified) {
+  if (isEmailVerificationEnforced(gatingSettings, targetState) && auth.currentUser?.providerData?.some(p => p.providerId === 'password') && !emailVerified) {
     missingFields.push('Email Verification');
   }
-  if (gatingSettings?.phoneMandatory && !phone.trim()) missingFields.push('Phone Number');
-  if (gatingSettings?.houseNoMandatory && !houseNo.trim()) missingFields.push('House/Apartment Number');
-  if (gatingSettings?.streetMandatory && !street.trim()) missingFields.push('Street Address');
-  if (gatingSettings?.cityMandatory && !city.trim()) missingFields.push('City');
-  if (gatingSettings?.pinCodeMandatory && !pinCode.trim()) missingFields.push('Postal/PIN Code');
+  if (isFieldRequired('phone', gatingSettings, targetState) && !phone.trim()) missingFields.push('Phone Number');
+  if (isFieldRequired('houseNo', gatingSettings, targetState) && !houseNo.trim()) missingFields.push('House/Apartment Number');
+  if (isFieldRequired('street', gatingSettings, targetState) && !street.trim()) missingFields.push('Street Address');
+  if (isFieldRequired('city', gatingSettings, targetState) && !city.trim()) missingFields.push('City');
+  if (isFieldRequired('pinCode', gatingSettings, targetState) && !pinCode.trim()) missingFields.push('Postal/PIN Code');
   const isGated = missingFields.length > 0;
   return <div className="onboarding-overlay">
       <div className="onboarding-container" style={{
@@ -993,7 +1017,7 @@ export default function OnboardingWizard({
                       </div>}
                   </section>
 
-                  {gatingSettings?.enforceEmailVerification && auth.currentUser?.providerData?.some(p => p.providerId === 'password') && !emailVerified ? <div className="email-verification-blocking-panel animate-fade-in royal-card" style={{
+                  {isEmailVerificationEnforced(gatingSettings, targetState) && auth.currentUser?.providerData?.some(p => p.providerId === 'password') && !emailVerified ? <div className="email-verification-blocking-panel animate-fade-in royal-card" style={{
               padding: '16px',
               margin: '10px 0',
               border: '1px solid rgba(212,165,116,0.3)',
@@ -1089,13 +1113,13 @@ export default function OnboardingWizard({
                   }}>
                           <label htmlFor="phone" className="required-marker-label" style={{
                       fontSize: '0.75rem'
-                    }}> {t("str_5058", "Phone Number")} {gatingSettings?.phoneMandatory && <span className="gold-text-req">*</span>}
+                    }}> {t("str_5058", "Phone Number")} {isFieldRequired('phone', gatingSettings, targetState) && <span className="gold-text-req">*</span>}
                           </label>
                           <div className="input-with-icon-wrapper">
                             <Phone className="input-field-icon" size={14} style={{
                         left: '12px'
                       }} />
-                            <input type="tel" id="phone" value={phone} onChange={e => setPhone(e.target.value)} required={gatingSettings?.phoneMandatory} placeholder={t("str_5059", "e.g. +1 (555) 019-2831")} className="royal-input input-padded-left" />
+                            <input type="tel" id="phone" value={phone} onChange={e => setPhone(e.target.value)} required={isFieldRequired('phone', gatingSettings, targetState)} placeholder={t("str_5059", "e.g. +1 (555) 019-2831")} className="royal-input input-padded-left" />
                           </div>
                         </div>
 
@@ -1168,16 +1192,16 @@ export default function OnboardingWizard({
                           <div className="form-group flex-1">
                             <label htmlFor="houseNo" style={{
                         fontSize: '0.75rem'
-                      }}> {t("str_5061", "House/Suite #")} {gatingSettings?.houseNoMandatory && <span className="gold-text-req">*</span>}
+                      }}> {t("str_5061", "House/Suite #")} {isFieldRequired('houseNo', gatingSettings, targetState) && <span className="gold-text-req">*</span>}
                             </label>
-                            <input type="text" id="houseNo" value={houseNo} onChange={e => setHouseNo(e.target.value)} required={gatingSettings?.houseNoMandatory} placeholder={t("str_5062", "e.g. Suite 404")} className="royal-input" />
+                            <input type="text" id="houseNo" value={houseNo} onChange={e => setHouseNo(e.target.value)} required={isFieldRequired('houseNo', gatingSettings, targetState)} placeholder={t("str_5062", "e.g. Suite 404")} className="royal-input" />
                           </div>
                           <div className="form-group flex-2">
                             <label htmlFor="street" style={{
                         fontSize: '0.75rem'
-                      }}> {t("str_5063", "Street Address")} {gatingSettings?.streetMandatory && <span className="gold-text-req">*</span>}
+                      }}> {t("str_5063", "Street Address")} {isFieldRequired('street', gatingSettings, targetState) && <span className="gold-text-req">*</span>}
                             </label>
-                            <input type="text" id="street" value={street} onChange={e => setStreet(e.target.value)} required={gatingSettings?.streetMandatory} placeholder={t("str_5064", "e.g. Boulevard of Philosophy")} className="royal-input" />
+                            <input type="text" id="street" value={street} onChange={e => setStreet(e.target.value)} required={isFieldRequired('street', gatingSettings, targetState)} placeholder={t("str_5064", "e.g. Boulevard of Philosophy")} className="royal-input" />
                           </div>
                         </div>
 
@@ -1187,16 +1211,16 @@ export default function OnboardingWizard({
                           <div className="form-group flex-1">
                             <label htmlFor="city" style={{
                         fontSize: '0.75rem'
-                      }}> {t("str_5065", "Municipal City")} {gatingSettings?.cityMandatory && <span className="gold-text-req">*</span>}
+                      }}> {t("str_5065", "Municipal City")} {isFieldRequired('city', gatingSettings, targetState) && <span className="gold-text-req">*</span>}
                             </label>
-                            <input type="text" id="city" value={city} onChange={e => setCity(e.target.value)} required={gatingSettings?.cityMandatory} placeholder={t("str_5066", "e.g. K\xF6nigsberg")} className="royal-input" />
+                            <input type="text" id="city" value={city} onChange={e => setCity(e.target.value)} required={isFieldRequired('city', gatingSettings, targetState)} placeholder={t("str_5066", "e.g. K\xF6nigsberg")} className="royal-input" />
                           </div>
                           <div className="form-group flex-1">
                             <label htmlFor="pinCode" style={{
                         fontSize: '0.75rem'
-                      }}> {t("str_5067", "Postal/PIN Code")} {gatingSettings?.pinCodeMandatory && <span className="gold-text-req">*</span>}
+                      }}> {t("str_5067", "Postal/PIN Code")} {isFieldRequired('pinCode', gatingSettings, targetState) && <span className="gold-text-req">*</span>}
                             </label>
-                            <input type="text" id="pinCode" value={pinCode} onChange={e => setPinCode(e.target.value)} required={gatingSettings?.pinCodeMandatory} placeholder={t("str_5068", "e.g. 10928")} className="royal-input" />
+                            <input type="text" id="pinCode" value={pinCode} onChange={e => setPinCode(e.target.value)} required={isFieldRequired('pinCode', gatingSettings, targetState)} placeholder={t("str_5068", "e.g. 10928")} className="royal-input" />
                           </div>
                         </div>
 
@@ -1252,7 +1276,7 @@ export default function OnboardingWizard({
                     flexDirection: 'column',
                     gap: '12px'
                   }}>
-                          {gatingSettings?.enforceEmailVerification && auth.currentUser?.providerData?.some(p => p.providerId === 'password') && <div className="checklist-item" style={{
+                          {isEmailVerificationEnforced(gatingSettings, targetState) && auth.currentUser?.providerData?.some(p => p.providerId === 'password') && <div className="checklist-item" style={{
                       display: 'flex',
                       gap: '10px',
                       alignItems: 'center'
@@ -1280,8 +1304,8 @@ export default function OnboardingWizard({
                       gap: '10px',
                       alignItems: 'center'
                     }}>
-                            <div className={`status-indicator ${phone.trim() ? 'completed' : gatingSettings?.phoneMandatory ? 'missing' : 'optional'}`}>
-                              {phone.trim() ? <CheckCircle size={14} /> : gatingSettings?.phoneMandatory ? <AlertTriangle size={14} /> : <CheckCircle size={14} style={{
+                            <div className={`status-indicator ${phone.trim() ? 'completed' : isFieldRequired('phone', gatingSettings, targetState) ? 'missing' : 'optional'}`}>
+                              {phone.trim() ? <CheckCircle size={14} /> : isFieldRequired('phone', gatingSettings, targetState) ? <AlertTriangle size={14} /> : <CheckCircle size={14} style={{
                           opacity: 0.3
                         }} />}
                             </div>
@@ -1295,7 +1319,7 @@ export default function OnboardingWizard({
                           fontSize: '0.7rem',
                           color: 'var(--text-secondary)'
                         }}>
-                                {gatingSettings?.phoneMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
+                                {isFieldRequired('phone', gatingSettings, targetState) ? 'Mandatory Field' : 'Optional Coordinate'}
                               </span>
                             </div>
                           </div>
@@ -1305,8 +1329,8 @@ export default function OnboardingWizard({
                       gap: '10px',
                       alignItems: 'center'
                     }}>
-                            <div className={`status-indicator ${houseNo.trim() ? 'completed' : gatingSettings?.houseNoMandatory ? 'missing' : 'optional'}`}>
-                              {houseNo.trim() ? <CheckCircle size={14} /> : gatingSettings?.houseNoMandatory ? <AlertTriangle size={14} /> : <CheckCircle size={14} style={{
+                            <div className={`status-indicator ${houseNo.trim() ? 'completed' : isFieldRequired('houseNo', gatingSettings, targetState) ? 'missing' : 'optional'}`}>
+                              {houseNo.trim() ? <CheckCircle size={14} /> : isFieldRequired('houseNo', gatingSettings, targetState) ? <AlertTriangle size={14} /> : <CheckCircle size={14} style={{
                           opacity: 0.3
                         }} />}
                             </div>
@@ -1320,7 +1344,7 @@ export default function OnboardingWizard({
                           fontSize: '0.7rem',
                           color: 'var(--text-secondary)'
                         }}>
-                                {gatingSettings?.houseNoMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
+                                {isFieldRequired('houseNo', gatingSettings, targetState) ? 'Mandatory Field' : 'Optional Coordinate'}
                               </span>
                             </div>
                           </div>
@@ -1330,8 +1354,8 @@ export default function OnboardingWizard({
                       gap: '10px',
                       alignItems: 'center'
                     }}>
-                            <div className={`status-indicator ${street.trim() ? 'completed' : gatingSettings?.streetMandatory ? 'missing' : 'optional'}`}>
-                              {street.trim() ? <CheckCircle size={14} /> : gatingSettings?.streetMandatory ? <AlertTriangle size={14} /> : <CheckCircle size={14} style={{
+                            <div className={`status-indicator ${street.trim() ? 'completed' : isFieldRequired('street', gatingSettings, targetState) ? 'missing' : 'optional'}`}>
+                              {street.trim() ? <CheckCircle size={14} /> : isFieldRequired('street', gatingSettings, targetState) ? <AlertTriangle size={14} /> : <CheckCircle size={14} style={{
                           opacity: 0.3
                         }} />}
                             </div>
@@ -1345,7 +1369,7 @@ export default function OnboardingWizard({
                           fontSize: '0.7rem',
                           color: 'var(--text-secondary)'
                         }}>
-                                {gatingSettings?.streetMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
+                                {isFieldRequired('street', gatingSettings, targetState) ? 'Mandatory Field' : 'Optional Coordinate'}
                               </span>
                             </div>
                           </div>
@@ -1355,8 +1379,8 @@ export default function OnboardingWizard({
                       gap: '10px',
                       alignItems: 'center'
                     }}>
-                            <div className={`status-indicator ${city.trim() ? 'completed' : gatingSettings?.cityMandatory ? 'missing' : 'optional'}`}>
-                              {city.trim() ? <CheckCircle size={14} /> : gatingSettings?.cityMandatory ? <AlertTriangle size={14} /> : <CheckCircle size={14} style={{
+                            <div className={`status-indicator ${city.trim() ? 'completed' : isFieldRequired('city', gatingSettings, targetState) ? 'missing' : 'optional'}`}>
+                              {city.trim() ? <CheckCircle size={14} /> : isFieldRequired('city', gatingSettings, targetState) ? <AlertTriangle size={14} /> : <CheckCircle size={14} style={{
                           opacity: 0.3
                         }} />}
                             </div>
@@ -1370,7 +1394,7 @@ export default function OnboardingWizard({
                           fontSize: '0.7rem',
                           color: 'var(--text-secondary)'
                         }}>
-                                {gatingSettings?.cityMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
+                                {isFieldRequired('city', gatingSettings, targetState) ? 'Mandatory Field' : 'Optional Coordinate'}
                               </span>
                             </div>
                           </div>
@@ -1380,8 +1404,8 @@ export default function OnboardingWizard({
                       gap: '10px',
                       alignItems: 'center'
                     }}>
-                            <div className={`status-indicator ${pinCode.trim() ? 'completed' : gatingSettings?.pinCodeMandatory ? 'missing' : 'optional'}`}>
-                              {pinCode.trim() ? <CheckCircle size={14} /> : gatingSettings?.pinCodeMandatory ? <AlertTriangle size={14} /> : <CheckCircle size={14} style={{
+                            <div className={`status-indicator ${pinCode.trim() ? 'completed' : isFieldRequired('pinCode', gatingSettings, targetState) ? 'missing' : 'optional'}`}>
+                              {pinCode.trim() ? <CheckCircle size={14} /> : isFieldRequired('pinCode', gatingSettings, targetState) ? <AlertTriangle size={14} /> : <CheckCircle size={14} style={{
                           opacity: 0.3
                         }} />}
                             </div>
@@ -1395,7 +1419,7 @@ export default function OnboardingWizard({
                           fontSize: '0.7rem',
                           color: 'var(--text-secondary)'
                         }}>
-                                {gatingSettings?.pinCodeMandatory ? 'Mandatory Field' : 'Optional Coordinate'}
+                                {isFieldRequired('pinCode', gatingSettings, targetState) ? 'Mandatory Field' : 'Optional Coordinate'}
                               </span>
                             </div>
                           </div>

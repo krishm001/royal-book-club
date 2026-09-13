@@ -8,11 +8,40 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import './DiscoursesPage.css';
 const DiscoursesPage = ({
+  triggerOnboarding,
   user
 }) => {
-  const {
-    id
-  } = useParams();
+
+  const { id } = useParams();
+  const pendingActionRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleOnboardingComplete = (e) => {
+      const detail = e.detail;
+      if (detail?.actionType === 'content' && pendingActionRef.current) {
+        const action = pendingActionRef.current;
+        pendingActionRef.current = null;
+        if (action.type === 'create') {
+          setIsCreating(true);
+          setFormType(action.tab);
+        } else if (action.type === 'react') {
+          handleToggleReaction(action.id, action.reactionType, action.targetType);
+        } else if (action.type === 'reply') {
+          setReplyInputId(action.id);
+          setTimeout(() => {
+            const el = document.getElementById(`reply-textarea-${action.id}`);
+            if (el) el.focus();
+          }, 100);
+        } else if (action.type === 'stance') {
+          const el = document.querySelector('.root-reply-textarea');
+          if (el) el.focus();
+        }
+      }
+    };
+    window.addEventListener('onboarding_complete', handleOnboardingComplete);
+    return () => window.removeEventListener('onboarding_complete', handleOnboardingComplete);
+  }, []);
+
   const navigate = useNavigate();
   const {
     t,
@@ -428,7 +457,8 @@ const DiscoursesPage = ({
   };
   const handleToggleReaction = async (id, reactionType, targetType) => {
     if (!user) {
-      alert(t('discourses.mustBeLoggedInReaction', "You must be logged in to participate in academic reactions."));
+      pendingActionRef.current = { type: 'react', id, reactionType, targetType };
+      if (triggerOnboarding) triggerOnboarding({ actionType: 'content' });
       return;
     }
     const userId = user.uid || user.id;
@@ -630,7 +660,17 @@ const DiscoursesPage = ({
             <div className="reply-footer-row">
               {renderReactions(reply, 'reply')}
 
-              {user && <div className="reply-actions">
+              {!user ? (
+                <div className="reply-actions">
+                  <button onClick={() => { 
+                    pendingActionRef.current = { type: 'reply', id: reply.id };
+                    if (triggerOnboarding) triggerOnboarding({ actionType: 'content' }); 
+                  }} className="reply-trigger-btn">
+                    <MessageCircle size={12} /> <span className="btn-label-text">{t('discourses.reply')}</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="reply-actions">
                   <button onClick={() => {
                 setReplyInputId(replyInputId === reply.id ? null : reply.id);
                 setReplyText('');
@@ -646,7 +686,8 @@ const DiscoursesPage = ({
                         <Trash2 size={12} /> <span className="btn-label-text">{t('discourses.delete')}</span>
                       </button>
                     </>}
-                </div>}
+                </div>
+              )}
             </div>
 
             {replyInputId === reply.id && <form onSubmit={e => handlePostReply(e, reply.id)} className="reply-submit-form animate-fade-in">
@@ -895,8 +936,13 @@ const DiscoursesPage = ({
       </header>
 
       {/* Action Controls & Composition Form */}
-      {user && <section className="composition-orchestrator">
+      <section className="composition-orchestrator">
           {!isCreating ? <button onClick={() => {
+        if (!user) {
+          pendingActionRef.current = { type: 'create', tab: activeTab };
+          if (triggerOnboarding) triggerOnboarding({ actionType: 'content' });
+          return;
+        }
         setIsCreating(true);
         setFormType(activeTab);
       }} className="royal-btn composition-trigger-btn">
@@ -968,7 +1014,7 @@ const DiscoursesPage = ({
                 </div>
               </form>
             </div>}
-        </section>}
+        </section>
 
       {/* Search Filter Bar */}
       <section className="search-filter-section royal-card glassmorphic">
@@ -1081,10 +1127,29 @@ const DiscoursesPage = ({
                         </div>}
 
                       {/* Top level Reply Box for root debate (Sticky Voice My Stance) */}
-                      {user && replyInputId === null && <div className="debate-stance-sticky-wrapper royal-card glassmorphic">
-                          <form onSubmit={e => handlePostReply(e, disc.id)} className="debate-root-reply-form">
-                            <textarea placeholder={t('discourses.submitResponsePlaceholder', 'Submit your dialectic response to this topic...')} className="royal-input root-reply-textarea" value={replyText} onChange={e => setReplyText(e.target.value)} required rows={2} />
-                            <button type="submit" disabled={isSubmittingReply} className="royal-btn root-reply-submit">
+                      {replyInputId === null && <div className="debate-stance-sticky-wrapper royal-card glassmorphic">
+                          <form onSubmit={e => {
+                            if (!user) {
+                              e.preventDefault();
+                              pendingActionRef.current = { type: 'stance' };
+                              if (triggerOnboarding) triggerOnboarding({ actionType: 'content' });
+                              return;
+                            }
+                            handlePostReply(e, disc.id);
+                          }} className="debate-root-reply-form">
+                            <textarea placeholder={t('discourses.submitResponsePlaceholder', 'Submit your dialectic response to this topic...')} className="royal-input root-reply-textarea" value={replyText} onChange={e => setReplyText(e.target.value)} onClick={(e) => {
+                              if (!user) {
+                                e.preventDefault();
+                                pendingActionRef.current = { type: 'stance' };
+                                if (triggerOnboarding) triggerOnboarding({ actionType: 'content' });
+                              }
+                            }} required rows={2} />
+                            <button type={!user ? "button" : "submit"} onClick={() => {
+                              if (!user) {
+                                pendingActionRef.current = { type: 'stance' };
+                                if (triggerOnboarding) triggerOnboarding({ actionType: 'content' });
+                              }
+                            }} disabled={user && isSubmittingReply} className="royal-btn root-reply-submit">
                               {t('discourses.voiceStance', 'Voice Stance')} <Send size={12} />
                             </button>
                           </form>

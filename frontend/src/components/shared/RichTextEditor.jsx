@@ -6,14 +6,13 @@ import { Bold, Italic, Strikethrough, Heading1, Heading2, List, ListOrdered, Quo
 import './RichTextEditor.css';
 const RichTextEditor = ({
   value = '',
-  onChange = () => {
-    const {
-      t
-    } = useLanguage();
-  },
+  onChange = () => {},
   placeholder = 'Begin your literary draft here...',
   minHeight = '200px'
 }) => {
+  const {
+    t
+  } = useLanguage();
   const editor = useEditor({
     extensions: [StarterKit.configure({
       // Configure extensions if needed

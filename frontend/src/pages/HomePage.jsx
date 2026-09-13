@@ -23,7 +23,7 @@ const HomePage = ({
   user,
   onSignIn,
   theme
-}) => {
+, triggerOnboarding}) => {
   const {
     t,
     getLocalized
@@ -66,6 +66,23 @@ const HomePage = ({
   const [approvedReviews, setApprovedReviews] = useState([]);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
+
+  const pendingActionRef = React.useRef(null);
+  const testimonialFormRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleOnboardingComplete = (e) => {
+      const detail = e.detail;
+      if (detail?.actionType === 'content' && pendingActionRef.current?.type === 'testimonial') {
+        pendingActionRef.current = null;
+        if (testimonialFormRef.current) {
+          testimonialFormRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
+      }
+    };
+    window.addEventListener('onboarding_complete', handleOnboardingComplete);
+    return () => window.removeEventListener('onboarding_complete', handleOnboardingComplete);
+  }, []);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewSuccessMsg, setReviewSuccessMsg] = useState('');
   const [reviewErrorMsg, setReviewErrorMsg] = useState('');
@@ -721,12 +738,29 @@ const HomePage = ({
                 {t('auto_3130', 'Inscribe Your Testimonial')}
               </h3>
 
-              {user ? <form onSubmit={handleReviewSubmit} style={{
+              <form ref={testimonialFormRef} onSubmit={(e) => {
+                if (!user) {
+                  e.preventDefault();
+                  pendingActionRef.current = { type: 'testimonial' };
+                  if (triggerOnboarding) {
+                    triggerOnboarding({ actionType: 'content' });
+                  } else if (onSignIn) {
+                    onSignIn();
+                  }
+                  return;
+                }
+                handleReviewSubmit(e);
+              }} style={{
               display: 'flex',
               flexDirection: 'column',
               gap: '16px'
             }}>
-                  <div>
+                  <div onClick={(e) => {
+                    if (!user) {
+                      e.preventDefault();
+                      if (onSignIn) onSignIn();
+                    }
+                  }}>
                     <label style={{
                   display: 'block',
                   fontSize: '0.8rem',
@@ -742,7 +776,14 @@ const HomePage = ({
                   display: 'flex',
                   gap: '6px'
                 }}>
-                      {[1, 2, 3, 4, 5].map(starVal => <button key={starVal} type="button" onClick={() => setReviewRating(starVal)} style={{
+                      {[1, 2, 3, 4, 5].map(starVal => <button key={starVal} type="button" onClick={(e) => {
+                        if (!user) {
+                          e.preventDefault();
+                          if (onSignIn) onSignIn();
+                          return;
+                        }
+                        setReviewRating(starVal);
+                      }} style={{
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
@@ -766,7 +807,12 @@ const HomePage = ({
                 }}>
                       {t('auto_3132', 'Commentary')}
                     </label>
-                    <textarea value={reviewComment} onChange={e => setReviewComment(e.target.value)} placeholder={t("str_5083", "Share your experience of the Royal Book Club...")} rows={3} maxLength={500} style={{
+                    <textarea value={reviewComment} onChange={e => setReviewComment(e.target.value)} onClick={(e) => {
+                      if (!user) {
+                        e.preventDefault();
+                        if (onSignIn) onSignIn();
+                      }
+                    }} placeholder={t("str_5083", "Share your experience of the Royal Book Club...")} rows={3} maxLength={500} style={{
                   width: '100%',
                   padding: '12px',
                   background: 'var(--surface)',
@@ -815,7 +861,12 @@ const HomePage = ({
                       {reviewErrorMsg}
                     </div>}
 
-                  <button type="submit" className="royal-btn" disabled={submittingReview} style={{
+                  <button type={!user ? "button" : "submit"} onClick={(e) => {
+                    if (!user) {
+                      e.preventDefault();
+                      if (onSignIn) onSignIn();
+                    }
+                  }} className="royal-btn" disabled={user && submittingReview} style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -827,37 +878,7 @@ const HomePage = ({
               }}>
                     <Send size={14} /> {submittingReview ? "Submitting..." : "Submit Testimonial"}
                   </button>
-                </form> : <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-              minHeight: '180px',
-              textAlign: 'center',
-              padding: '20px',
-              background: 'var(--surface)',
-              border: '1px dashed var(--glass-border-hover)',
-              borderRadius: '6px'
-            }}>
-                  <Sparkles size={28} className="gold-glow-icon" style={{
-                marginBottom: '12px'
-              }} />
-                  <p style={{
-                margin: '0 0 16px 0',
-                fontSize: '0.9rem',
-                color: 'var(--text-secondary)',
-                lineHeight: '1.5'
-              }}>
-                    {t('auto_3133', 'Only registered members can submit testimonies. Sign in to contribute your evaluation to the chronicle.')}
-                  </p>
-                  <button onClick={onSignIn} className="royal-btn" style={{
-                padding: '8px 20px',
-                fontSize: '0.8rem'
-              }}>
-                    {t('auto_3134', 'Sign In')}
-                  </button>
-                </div>}
+                </form>
             </div>
 
           </div>

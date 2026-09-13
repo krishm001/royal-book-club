@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Sparkles, ArrowLeft, Loader2, CheckCircle, AlertTriangle, Trash2, ThumbsUp, ThumbsDown, BookOpen, MessageSquare, Edit3, Eye, RefreshCw, AlertCircle, Clock, Star, BarChart2, BookMarked } from 'lucide-react';
+import { Shield, Sparkles, ArrowLeft, Loader2, CheckCircle, AlertTriangle, Trash2, ThumbsUp, ThumbsDown, BookOpen, MessageSquare, Edit3, Eye, RefreshCw, Settings, AlertCircle, Clock, Star, BarChart2, BookMarked , ToggleRight, ToggleLeft} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { getCheckoutSettings, updateCheckoutSettings } from '../../services/checkoutSettingsApi';
 import { getBlockedContents, clearBlockedContents, getPendingReviews, approveReview, rejectReview } from '../../services/moderationApi';
 import { fetchPendingSiteReviews, approveSiteReview, rejectSiteReview, fetchRatingStatistics, publishSiteReview, unpublishSiteReview, disapproveSiteReview } from '../../services/libraryApi';
 import './CuratorModerationPage.css';
@@ -15,6 +16,15 @@ const CuratorModerationPage = ({
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null); // stores id of item being processed
   const [message, setMessage] = useState(null);
+  const [settings, setSettings] = useState({
+    enforceEmailVerificationForContent: false,
+    autoModerateBlogs: false,
+    phoneMandatoryForContent: false,
+    houseNoMandatoryForContent: false,
+    streetMandatoryForContent: false,
+    cityMandatoryForContent: false,
+    pinCodeMandatoryForContent: false
+  });
   const [pendingReviews, setPendingReviews] = useState([]);
   const [blockedLogs, setBlockedLogs] = useState([]);
   const [siteReviews, setSiteReviews] = useState([]);
@@ -59,6 +69,11 @@ const CuratorModerationPage = ({
             text: res?.message || 'Failed to fetch site testimonials.'
           });
         }
+      } else if (activeTab === 'settings') {
+        const data = await getCheckoutSettings();
+        if (data?.success) {
+          setSettings(data.data);
+        }
       } else if (activeTab === 'statistics') {
         const res = await fetchRatingStatistics();
         if (res?.success) {
@@ -83,6 +98,16 @@ const CuratorModerationPage = ({
   useEffect(() => {
     loadData();
   }, [activeTab, isAdmin]);
+  const handleToggle = async (key) => {
+    try {
+      const newVal = !settings[key];
+      const updated = { ...settings, [key]: newVal };
+      setSettings(updated);
+      await updateCheckoutSettings(updated);
+    } catch (err) {
+      console.error(err);
+    }
+  };
   const handleApprove = async (collection, id) => {
     try {
       setActionLoading(id);
@@ -415,6 +440,10 @@ const CuratorModerationPage = ({
           <button className={`moderation-tab-btn ${activeTab === 'statistics' ? 'active' : ''}`} onClick={() => setActiveTab('statistics')}>
             <BarChart2 size={16} />
             <span>{t('auto_3375', 'Evaluation Statistics')}</span>
+          </button>
+          <button className={`moderation-tab-btn ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
+            <Settings size={16} />
+            <span>{t('admin.contentGatingRules', 'Content Gating Rules')}</span>
           </button>
           <button className="moderation-refresh-btn icon-only" onClick={loadData} title={t('admin.refreshLiveData', 'Refresh Live Data')} disabled={loading}>
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -821,7 +850,60 @@ const CuratorModerationPage = ({
                     </div>
                   </div>)}
               </div>}
-          </div>) : (/* Statistics Section */
+          </div>) : activeTab === 'settings' ? (
+      <div className="moderation-content-panel">
+         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '24px' }}>Configure gating rules specifically for content generation (e.g. blogs, reviews, debates).</p>
+         
+         <div className="royal-card" style={{ padding: '30px', border: '1px solid var(--border-color)' }}>
+            <h3 style={{ marginBottom: '20px', color: 'var(--accent)' }}>Content Security & Moderation</h3>
+            
+            <div className="gating-toggle-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <div style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>Enforce Email Verification for Content</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Require users to have verified email addresses before generating content.</div>
+              </div>
+              <button type="button" onClick={() => handleToggle('enforceEmailVerificationForContent')} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                 {settings.enforceEmailVerificationForContent ? <ToggleRight size={38} className="gold-toggle" color="var(--accent)" /> : <ToggleLeft size={38} className="muted-toggle" color="var(--text-secondary)" />}
+              </button>
+            </div>
+            
+            <div className="gating-toggle-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <div style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>Bypass Default Admin Review (AI Auto-Moderation)</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Publish blogs automatically if they pass Google Cloud AI NLP/Vision checks.</div>
+              </div>
+              <button type="button" onClick={() => handleToggle('autoModerateBlogs')} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                 {settings.autoModerateBlogs ? <ToggleRight size={38} className="gold-toggle" color="var(--accent)" /> : <ToggleLeft size={38} className="muted-toggle" color="var(--text-secondary)" />}
+              </button>
+            </div>
+            
+            <h3 style={{ margin: '30px 0 20px', color: 'var(--accent)', borderTop: '1px solid var(--border-color, rgba(212,175,55,0.15))', paddingTop: '30px' }}>
+               Patron Profile Requirements
+            </h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+               Select which physical profile fields are strictly required before a user can participate in content creation.
+            </p>
+            
+            {[
+              { id: 'phone', label: 'Phone Number' },
+              { id: 'houseNo', label: 'House Number' },
+              { id: 'street', label: 'Street Address' },
+              { id: 'city', label: 'City' },
+              { id: 'pinCode', label: 'Pin Code' }
+            ].map(field => (
+               <div key={field.id} className="gating-toggle-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div>
+                  <div style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>Mandatory {field.label}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Require a valid {field.label.toLowerCase()} in the user's profile before allowing content creation.</div>
+                </div>
+                <button type="button" onClick={() => handleToggle(field.id + 'MandatoryForContent')} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                   {settings[field.id + 'MandatoryForContent'] ? <ToggleRight size={38} className="gold-toggle" color="var(--accent)" /> : <ToggleLeft size={38} className="muted-toggle" color="var(--text-secondary)" />}
+                </button>
+              </div>
+            ))}
+         </div>
+      </div>
+          ) : (/* Statistics Section */
       <div className="moderation-content-panel">
             <p style={{
           color: 'var(--text-secondary)',

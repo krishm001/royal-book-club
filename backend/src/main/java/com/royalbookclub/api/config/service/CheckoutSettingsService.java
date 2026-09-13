@@ -45,15 +45,21 @@ public class CheckoutSettingsService {
                 return CheckoutSettings.builder()
                         .id(DOCUMENT_ID)
                         .phoneMandatory(Boolean.TRUE.equals(document.getBoolean("phoneMandatory")))
+                        .phoneMandatoryForContent(Boolean.TRUE.equals(document.getBoolean("phoneMandatoryForContent")))
                         .houseNoMandatory(Boolean.TRUE.equals(document.getBoolean("houseNoMandatory")))
+                        .houseNoMandatoryForContent(Boolean.TRUE.equals(document.getBoolean("houseNoMandatoryForContent")))
                         .streetMandatory(Boolean.TRUE.equals(document.getBoolean("streetMandatory")))
+                        .streetMandatoryForContent(Boolean.TRUE.equals(document.getBoolean("streetMandatoryForContent")))
                         .cityMandatory(Boolean.TRUE.equals(document.getBoolean("cityMandatory")))
+                        .cityMandatoryForContent(Boolean.TRUE.equals(document.getBoolean("cityMandatoryForContent")))
                         .pinCodeMandatory(Boolean.TRUE.equals(document.getBoolean("pinCodeMandatory")))
+                        .pinCodeMandatoryForContent(Boolean.TRUE.equals(document.getBoolean("pinCodeMandatoryForContent")))
                         .autoModerateBlogs(Boolean.TRUE.equals(document.getBoolean("autoModerateBlogs")))
                         .libraryLatitude(document.getDouble("libraryLatitude"))
                         .libraryLongitude(document.getDouble("libraryLongitude"))
                         .validRadiusMeters(document.getDouble("validRadiusMeters"))
                         .enforceEmailVerification(Boolean.TRUE.equals(document.getBoolean("enforceEmailVerification")))
+                        .enforceEmailVerificationForContent(Boolean.TRUE.equals(document.getBoolean("enforceEmailVerificationForContent")))
                         .latestQrPathName(document.getString("latestQrPathName"))
                         .previousQrPathName(document.getString("previousQrPathName"))
                         .previousQrActive(Boolean.TRUE.equals(document.getBoolean("previousQrActive")))
@@ -66,15 +72,21 @@ public class CheckoutSettingsService {
                 return CheckoutSettings.builder()
                         .id(DOCUMENT_ID)
                         .phoneMandatory(false)
+                        .phoneMandatoryForContent(false)
                         .houseNoMandatory(false)
+                        .houseNoMandatoryForContent(false)
                         .streetMandatory(false)
+                        .streetMandatoryForContent(false)
                         .cityMandatory(false)
+                        .cityMandatoryForContent(false)
                         .pinCodeMandatory(false)
+                        .pinCodeMandatoryForContent(false)
                         .autoModerateBlogs(false)
                         .libraryLatitude(12.8983) // default library location
                         .libraryLongitude(77.705317)
                         .validRadiusMeters(100.0)
                         .enforceEmailVerification(false)
+                        .enforceEmailVerificationForContent(false)
                         .latestQrPathName(null)
                         .previousQrPathName(null)
                         .previousQrActive(false)
@@ -103,15 +115,21 @@ public class CheckoutSettingsService {
             Map<String, Object> map = new HashMap<>();
             map.put("id", DOCUMENT_ID);
             map.put("phoneMandatory", settings.isPhoneMandatory());
+            map.put("phoneMandatoryForContent", settings.isPhoneMandatoryForContent());
             map.put("houseNoMandatory", settings.isHouseNoMandatory());
+            map.put("houseNoMandatoryForContent", settings.isHouseNoMandatoryForContent());
             map.put("streetMandatory", settings.isStreetMandatory());
+            map.put("streetMandatoryForContent", settings.isStreetMandatoryForContent());
             map.put("cityMandatory", settings.isCityMandatory());
+            map.put("cityMandatoryForContent", settings.isCityMandatoryForContent());
             map.put("pinCodeMandatory", settings.isPinCodeMandatory());
+            map.put("pinCodeMandatoryForContent", settings.isPinCodeMandatoryForContent());
             map.put("autoModerateBlogs", settings.isAutoModerateBlogs());
             map.put("libraryLatitude", settings.getLibraryLatitude());
             map.put("libraryLongitude", settings.getLibraryLongitude());
             map.put("validRadiusMeters", settings.getValidRadiusMeters());
             map.put("enforceEmailVerification", settings.isEnforceEmailVerification());
+            map.put("enforceEmailVerificationForContent", settings.isEnforceEmailVerificationForContent());
             map.put("latestQrPathName", settings.getLatestQrPathName());
             map.put("previousQrPathName", settings.getPreviousQrPathName());
             map.put("previousQrActive", settings.isPreviousQrActive());

@@ -569,6 +569,11 @@ const BookDetailPage = ({
            else if (e.detail.actionType === "return") {
              if (sessionStorage.getItem("nfc_session")) handleInstantNfcAction("return");
              else handleReturnClick();
+           } else if (e.detail.actionType === "content") {
+             const el = document.getElementById("reviews-section");
+             if (el) {
+               el.scrollIntoView({ behavior: "smooth", block: "center" });
+             }
            }
 
         }
@@ -2202,8 +2207,11 @@ const BookDetailPage = ({
             <button type="submit" className="royal-btn submit-review-btn">
               {t('catalog.publishDissertation')}
             </button>
-          </form> : <div className="review-prompt-card">
+          </form> : <div className="review-prompt-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
             <p>{t('catalog.loginToReview')}</p>
+            {triggerOnboarding && <button type="button" onClick={() => triggerOnboarding({ actionType: 'content', isbn: book?.isbn })} className="royal-btn submit-review-btn">
+              <Sparkles size={16} style={{ marginRight: '8px' }}/> {t('auto_3486', 'Write a Book Review')}
+            </button>}
           </div>}
 
         <div className="reviews-feed">
