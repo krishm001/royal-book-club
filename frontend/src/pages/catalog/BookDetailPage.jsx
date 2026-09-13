@@ -2205,7 +2205,7 @@ const BookDetailPage = ({
             </div>
             <textarea className="royal-textarea review-textarea" placeholder={t('catalog.critiquePlaceholder')} value={reviewText} onChange={e => setReviewText(e.target.value)} rows={4} required />
             <button type="submit" className="royal-btn submit-review-btn">
-              {t('catalog.publishDissertation')}
+              <Sparkles size={16} style={{ marginRight: '8px' }}/> {t('auto_3486', 'Write a Book Review')}
             </button>
           </form> : <div className="review-prompt-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
             <p>{t('catalog.loginToReview')}</p>
