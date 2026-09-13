@@ -14,6 +14,7 @@ const DiscoursesPage = ({
 
   const { id } = useParams();
   const pendingActionRef = React.useRef(null);
+  const commentFormRef = React.useRef(null);
 
   React.useEffect(() => {
     const handleOnboardingComplete = (e) => {
