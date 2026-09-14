@@ -547,7 +547,7 @@ const HomePage = ({
               <Link to="/discourses" className="feed-link">{t('home.browseEssays')} <ChevronRight size={14} /></Link>
             </div>
             <div className="feed-list">
-              {dissertations.length > 0 ? dissertations.map((diss, idx) => <Link to="/discourses" className="feed-item animate-fade-in" key={diss.id || idx}>
+              {dissertations.length > 0 ? dissertations.map((diss, idx) => <Link to={`/discourses/${diss.id}`} className="feed-item animate-fade-in" key={diss.id || idx}>
                     <div className="feed-item-meta">
                       <span className="feed-item-tag font-accent">{diss.house || 'Chronicle'}</span>
                       <span className="feed-item-date">

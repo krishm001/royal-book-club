@@ -111,21 +111,23 @@ const BookDetailPage = ({
     fetchGatingSettings();
   }, []);
 
-  // Handle smooth scroll to reviews if hash is present and loading is complete
+  // Handle smooth scroll to hashes (like #reviews-section) if present and loading is complete
   useEffect(() => {
-    if (!loading && window.location.hash === '#reviews-section') {
-      const timer = setTimeout(() => {
-        const element = document.getElementById('reviews-section');
+    if (!loading && location.hash) {
+      const hash = location.hash.substring(1);
+      let attempts = 0;
+      const interval = setInterval(() => {
+        const element = document.getElementById(hash);
         if (element) {
-          element.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-          });
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          clearInterval(interval);
         }
-      }, 300);
-      return () => clearTimeout(timer);
+        attempts++;
+        if (attempts > 20) clearInterval(interval); // give up after 2 seconds
+      }, 100);
+      return () => clearInterval(interval);
     }
-  }, [loading]);
+  }, [loading, location.hash]);
 
   // Monitor NFC active session with a countdown timer
   useEffect(() => {
@@ -589,7 +591,7 @@ const BookDetailPage = ({
 
   // Center checkout action card in the viewport upon catalog details loading (Epic 1)
   useEffect(() => {
-    if (!loading && book) {
+    if (!loading && book && !location.hash) {
       const timer = setTimeout(() => {
         const el = document.getElementById('detail-checkout-action-card');
         if (el) {
@@ -601,7 +603,7 @@ const BookDetailPage = ({
       }, 500); // 500ms delay to let layouts render
       return () => clearTimeout(timer);
     }
-  }, [loading, book]);
+  }, [loading, book, location.hash]);
 
   const handleCheckoutClick = async () => {
     setIsProcessing(true);
@@ -2669,10 +2671,7 @@ const BookDetailPage = ({
                 setInstantConfirmOpen(false);
                 const element = document.getElementById('reviews-section');
                 if (element) {
-                  element.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                  });
+                  element.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
               }} className="royal-btn" style={{
                 display: 'flex',

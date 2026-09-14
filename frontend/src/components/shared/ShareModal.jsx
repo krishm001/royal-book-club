@@ -9,6 +9,7 @@ import {
   Sparkles 
 } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { useScrollLock } from '../../utils/useScrollLock';
 import './ShareModal.css';
 
 const ShareModal = ({ 
@@ -19,6 +20,7 @@ const ShareModal = ({
   url = window.location.href,
   type = 'book' // 'book' or 'discourse'
 }) => {
+  useScrollLock(isOpen);
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
 

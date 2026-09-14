@@ -4,6 +4,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import ContinuousScannerAnimation from './ContinuousScannerAnimation';
 import './ScannerModal.css';
 import { fetchHeroConfig } from '../../services/heroApi';
+import { useScrollLock } from '../../utils/useScrollLock';
 
 const ScannerModal = ({ 
     isOpen, 
@@ -21,6 +22,7 @@ const ScannerModal = ({
     showManualTab = false,
     loading = false
 }) => {
+    useScrollLock(isOpen);
     const { t, getLocalized } = useLanguage();
     const DEFAULT_QUOTE = "A room without books is like a body without a soul. - Cicero";
     const [loadingQuote, setLoadingQuote] = React.useState(DEFAULT_QUOTE);

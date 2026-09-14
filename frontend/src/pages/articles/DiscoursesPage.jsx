@@ -1058,7 +1058,7 @@ const DiscoursesPage = ({
           </div> : filteredDiscourses.length > 0 ? <div className={activeTab === 'CHRONICLE' ? 'chronicles-grid' : 'debates-list'}>
             
             {/* Chronicles Tab Rendering */}
-            {activeTab === 'CHRONICLE' && filteredDiscourses.map(disc => <div key={disc.id} className="chronicle-card royal-card glassmorphic animate-fade-in">
+            {activeTab === 'CHRONICLE' && filteredDiscourses.map(disc => <div key={disc.id} onClick={() => handleOpenChronicle(disc)} className="chronicle-card royal-card glassmorphic animate-fade-in" style={{ cursor: 'pointer' }}>
                 <div className="chron-cover-wrapper">
                   <img src={disc.coverUrl || 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80'} alt={disc.title} />
                   <div className="chron-badge">{disc.house || t('discourses.royalLore', 'Royal Lore')}</div>
@@ -1078,9 +1078,6 @@ const DiscoursesPage = ({
                   {renderReactions(disc, 'chronicle')}
                   <div className="chron-footer">
                     <span className="chron-author">{t('common.by', 'by')} <strong className="gold-gradient-text">{disc.authorName}</strong></span>
-                    <button onClick={() => handleOpenChronicle(disc)} className="chron-read-btn">
-                      {t('discourses.examineEssay', 'Examine Essay')} <ChevronRight size={14} />
-                    </button>
                   </div>
                 </div>
               </div>)}
@@ -1107,16 +1104,6 @@ const DiscoursesPage = ({
                         </div>
                       </div>
                     </div>
-                    <button className="debate-expand-trigger" onClick={e => {
-                e.stopPropagation();
-                handleOpenDebate(disc);
-              }}>
-                      {isExpanded ? <>
-                          <X size={14} /> <span className="btn-label-text">{t('discourses.foldDialogue', 'Fold Dialogue')}</span>
-                        </> : <>
-                          <MessageSquare size={14} /> <span className="btn-label-text">{t('discourses.joinDialogue', 'Join Dialogue')}</span>
-                        </>}
-                    </button>
                   </div>
 
                   {isExpanded && <div className="debate-expanded-body animate-fade-in">

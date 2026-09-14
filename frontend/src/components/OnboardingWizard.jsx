@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useScrollLock } from '../utils/useScrollLock';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, FacebookAuthProvider, TwitterAuthProvider, OAuthProvider, sendEmailVerification, signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import api from '../api/apiClient';
@@ -54,6 +55,7 @@ export default function OnboardingWizard({
   const {
     t
   } = useLanguage();
+  useScrollLock(true);
   const [step, setStep] = useState(1);
   const [authMode, setAuthFormMode] = useState('signin'); // 'signin' or 'signup'
   const [email, setEmail] = useState('');

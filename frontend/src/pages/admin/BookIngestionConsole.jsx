@@ -314,10 +314,8 @@ const BookIngestionConsole = ({
     const timer = setTimeout(() => {
       const el = document.getElementById('db-search-panel');
       if (el) {
-        el.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
+        const y = el.getBoundingClientRect().top + window.scrollY - 120;
+        window.scrollTo({ top: y, behavior: 'smooth' });
       }
     }, 100);
     return () => clearTimeout(timer);

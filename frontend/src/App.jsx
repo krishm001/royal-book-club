@@ -38,38 +38,63 @@ import OnboardingWizard from './components/OnboardingWizard';
 import CovenantViewerModal from './components/CovenantViewerModal';
 import { fetchBookByQrId } from './services/libraryApi';
 const ScrollToTop = () => {
-  const {
-    pathname
-  } = useLocation();
+  const { pathname, hash } = useLocation();
   useEffect(() => {
     // 1. Book Ingestion
     if (pathname.includes('/admin/books/ingest') || pathname.includes('/admin/books')) {
       const element = document.getElementById('db-search-panel');
       if (element) {
-        element.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
+        const y = element.getBoundingClientRect().top + window.scrollY - 120;
+        window.scrollTo({ top: y, behavior: 'smooth' });
         return;
       }
     }
 
-    // 2. Book detail
-    if (pathname.includes('/books/')) {
-      // By default scroll to top
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
+    // 2. Book detail (handled by BookDetailPage internally, skip overriding it)
+    if (pathname.match(/^\/catalog\/[^/]+$/)) {
       return;
     }
 
-    // 3. All other pages (Home, Catalog, Assembly/Events, Discourses, Gatepass, Profile, Curator Settings, Admin Dashboard, Help, Sages)
+    // 3. Study Page (Catalog)
+    if (pathname === '/catalog' || pathname === '/catalog/') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    // 4. Assembly / Events
+    if (pathname === '/events' || pathname.startsWith('/events/')) {
+      setTimeout(() => {
+        const element = document.querySelector('.events-filter-bar');
+        if (element) {
+          const y = element.getBoundingClientRect().top + window.scrollY - 120;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 100);
+      return;
+    }
+
+    // 5. Discourses
+    if (pathname === '/discourses' || pathname.startsWith('/discourses/')) {
+      setTimeout(() => {
+        const element = document.querySelector('.royal-tabs-container');
+        if (element) {
+          const y = element.getBoundingClientRect().top + window.scrollY - 120;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 100);
+      return;
+    }
+
+    // 6. All other pages (Home, Gatepass, Profile, Curator Console, etc.)
     window.scrollTo({
       top: 0,
       behavior: 'smooth'
     });
-  }, [pathname]);
+  }, [pathname, hash]);
   return null;
 };
 function App() {

@@ -1,6 +1,7 @@
 import { useLanguage } from '../i18n/LanguageContext';
 import React from 'react';
 import { ShieldCheck, FileText, X } from 'lucide-react';
+import { useScrollLock } from '../utils/useScrollLock';
 import './CovenantViewerModal.css';
 export default function CovenantViewerModal({
   type,
@@ -8,6 +9,7 @@ export default function CovenantViewerModal({
   onDecline,
   onClose
 }) {
+  useScrollLock(true);
   const {
     t
   } = useLanguage();
