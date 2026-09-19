@@ -103,7 +103,7 @@ jobs:
       contents: read
       deployments: write
     outputs:
-      url: ${{ steps.cf_deploy.outputs.url }}
+      url: ${{ steps.cf_deploy.outputs.deployment-url }}
 
     steps:
       - name: Checkout Repository
@@ -136,14 +136,12 @@ jobs:
 
       - name: Deploy to Cloudflare Pages
         id: cf_deploy
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: royal-book-club
-          directory: frontend/dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          command: pages deploy frontend/dist --project-name="royal-book-club"
 
   e2e-tests:
     needs: frontend-deploy
