@@ -1,0 +1,288 @@
+.interactive-help-guide {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
+  min-height: 600px;
+}
+
+@media (min-width: 768px) {
+  .interactive-help-guide {
+    flex-direction: row;
+  }
+}
+
+.guide-visual-panel {
+  flex: 1;
+  position: relative;
+  background: var(--surface-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  overflow: hidden;
+}
+
+.help-scene-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.device-tips-overlay {
+  position: absolute;
+  bottom: 2rem;
+  left: 2rem;
+  right: 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  padding: 1.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.dark .device-tips-overlay {
+  background: rgba(30, 30, 30, 0.9);
+}
+
+.device-tips-overlay h4 {
+  margin: 0 0 0.5rem 0;
+  color: var(--primary);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.device-tips-overlay ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.device-tips-overlay li {
+  margin-bottom: 0.25rem;
+}
+
+.guide-interaction-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  background: var(--surface);
+}
+
+.guide-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  min-height: 24px;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: var(--surface-hover);
+}
+
+.btn-icon.text-muted {
+  color: var(--text-secondary);
+}
+
+.guide-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.scene-title {
+  margin: 0 0 1rem 0;
+  font-size: 1.75rem;
+  color: var(--text);
+}
+
+.scene-subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  line-height: 1.5;
+  margin-bottom: 2rem;
+}
+
+.scene-subtitle p {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+.scene-branches {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: auto;
+}
+
+.branch-btn {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+
+.branch-btn:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.branch-btn.highlight {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.branch-btn.highlight:hover {
+  background: var(--primary-dark);
+}
+
+.branch-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.05);
+}
+
+.branch-btn.highlight .branch-icon {
+  background: rgba(255,255,255,0.2);
+}
+
+.branch-label {
+  font-weight: 500;
+  font-size: 1.1rem;
+}
+
+.auto-advance-indicator {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 1s linear;
+}
+
+.btn-text-small {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.btn-text-small:hover {
+  text-decoration: underline;
+}
+
+/* Phone Mockup Frame for Screenshots */
+.phone-mockup-frame {
+  width: 280px;
+  height: 570px;
+  background: #111;
+  border-radius: 36px;
+  position: relative;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2), inset 0 0 0 10px #222;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #333;
+}
+
+.phone-notch {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 24px;
+  background: #111;
+  border-radius: 0 0 12px 12px;
+  z-index: 10;
+}
+
+.phone-screen-image-container {
+  width: calc(100% - 20px);
+  height: calc(100% - 20px);
+  background: white;
+  border-radius: 26px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.phone-screenshot {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.phone-screen-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  gap: 1rem;
+}
+
+.dark .phone-mockup-frame {
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 0 0 10px #000;
+  border-color: #222;
+}
+
+.dark .phone-screen-image-container {
+  background: #222;
+}

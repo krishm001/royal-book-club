@@ -437,6 +437,18 @@ This section details the architectural designs, database schema updates, and sta
   - One-click copy link to clipboard with visual toast checkmark feedback.
   - Integrated into Book Details Page (`BookDetailPage.jsx`) and Discourses / Courtyard Debates (`DiscoursesPage.jsx`).
 
+#### 🎓 Epic 16: Interactive Sages Guild Help Flow (V2)
+**Goal**: Provide an immersive, interactive, translation-ready tutorial using real Playwright-generated mobile screenshots of the app, replacing abstract visualizations.
+*   **Path**: `/help` or `/sages` (Sages Guild).
+*   **Architecture**: State-machine driven guide (`InteractiveHelpGuide.jsx`).
+*   **Flows Covered**:
+    1.  **Browse Digital Catalog**: Checkout via Top Scanner, Book Card, Book Details.
+    2.  **Quick Checkout**: NFC tapping, QR code scanning.
+    3.  **Authentication**: Visualizing the Onboarding Wizard (Login, Signup, Terms, Profile).
+    4.  **Returns**: NFC, QR, or GPS-based return flow.
+*   **Assets**: Uses real screenshots captured via Playwright (`capture-help-screens.ts`) rendered inside a realistic CSS-based iPhone frame, coupled with `ContinuousScannerAnimation` for physical actions.
+*   **Internationalization**: Fully integrated with `en.js`, `hi.js`, and `kn.js` via `LanguageContext` for all instructions and fallback logic.
+
 
 ### Patron Experience Rules (Scanner Modal)
 1. **Consistency**: All three scanner contexts (Top Scanner, Book List Scanner, Book Detail Scanner) MUST use the shared `<ScannerModal>` component. Inline modals are strictly prohibited.
