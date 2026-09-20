@@ -1,215 +1,118 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { 
-  Wifi, 
-  Battery, 
-  Signal, 
-  Chrome, 
-  Linkedin, 
-  Mail, 
-  CheckCircle, 
-  QrCode, 
-  BookOpen,
-  User,
-  Lock
-} from 'lucide-react';
 import ContinuousScannerAnimation from '../shared/ContinuousScannerAnimation';
 import './HelpSceneAnimation.css';
 
-export default function HelpSceneAnimation({ scene, book, isPaused, onSceneEnd }) {
+const HelpSceneAnimation = ({ activeStage, selectedPath, isMobile, headingText }) => {
   const { t } = useLanguage();
-  const [deviceEnv, setDeviceEnv] = useState({ isIOS: false, isMobile: false });
 
-  useEffect(() => {
-    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                 (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
-    setDeviceEnv({ isIOS, isMobile });
-  }, []);
-
-  useEffect(() => {
-    // If the scene has a specific duration, we could trigger onSceneEnd here
-    // For now, we leave timing control to the parent or specific CSS animation events
-  }, [scene, onSceneEnd]);
-
-  const defaultBook = book || {
-    title: t('help.sample_book_title', 'The Royal Gardens'),
-    author: t('help.sample_book_author', 'A. Hawthorne'),
-    coverUrl: 'https://via.placeholder.com/150x220/2c3e50/d4af37?text=Royal+Gardens',
+  // STAGE 1: Getting Ready
+  // We use the continuous scanner animation, which matches the real checkout experience.
+  const renderStage1 = () => {
+    let type = 'barcode';
+    if (selectedPath === 'nfc' || selectedPath === 'top_scanner') type = 'nfc';
+    
+    // We can render ContinuousScannerAnimation
+    return (
+      <div className="help-scene-inner scale-wrapper stage1-wrapper">
+        <ContinuousScannerAnimation type={type} action="checkout" />
+      </div>
+    );
   };
 
-  const renderPhoneStatusBar = () => (
-    <div className={`phone-status-bar ${deviceEnv.isIOS ? 'ios' : 'android'}`}>
-      <span className="time">9:41</span>
-      <div className="status-icons">
-        <Signal size={12} />
-        <Wifi size={12} />
-        <Battery size={12} />
-      </div>
-    </div>
-  );
-
-  const renderLargePhoneScreen = (content) => (
-    <div className="large-phone-container">
-      <div className={`large-phone-mockup ${deviceEnv.isIOS ? 'ios' : 'android'}`}>
-        {deviceEnv.isIOS && <div className="notch" />}
-        {renderPhoneStatusBar()}
-        <div className="phone-screen-content">
-          {content}
+  // STAGE 2: Sign In & Setup
+  // We will build a simple CSS animation simulating the onboarding flow.
+  const renderStage2 = () => {
+    return (
+      <div className="help-scene-inner stage2-wrapper">
+        <div className="onboarding-simulator">
+           <div className="sim-phone">
+              <div className="sim-notch"></div>
+              
+              {/* Sequence of screens */}
+              <div className="sim-screens-container">
+                 <div className="sim-screen signin-screen">
+                    <h4>{t('Sign In')}</h4>
+                    <div className="sim-btn google">{t('Continue with Google')}</div>
+                    <div className="sim-btn email">{t('Continue with Email')}</div>
+                 </div>
+                 <div className="sim-screen email-verification">
+                    <div className="inbox-header">{t('Email Inbox')}</div>
+                    <div className="email-card">
+                       <strong>From:</strong> noreply@royal-book-club.firebaseapp.com<br/>
+                       <strong>Subject:</strong> Verify your email for Royal Book Club<br/><br/>
+                       {t('Follow this link to verify your email address.')}
+                       <div className="verify-link">{t('Verify Email')}</div>
+                    </div>
+                 </div>
+                 <div className="sim-screen profile-setup">
+                    <h4>{t('Profile Setup')}</h4>
+                    <div className="sim-input phone"></div>
+                    <div className="sim-input location"></div>
+                    <div className="sim-btn complete">{t('Complete Setup')}</div>
+                 </div>
+              </div>
+           </div>
         </div>
-        {deviceEnv.isIOS && <div className="home-indicator" />}
       </div>
-    </div>
-  );
+    );
+  };
 
-  const renderSceneContent = () => {
-    switch (scene) {
-      case 'welcome':
-        return (
-          <div className="help-scene-custom welcome-scene">
-            <div className="glow-effect golden-glow" />
-            <div className="library-shelf">
-              <div className="shelf-level top-level">
-                <div className="book-spine b1" />
-                <div className="book-spine b2" />
-                <div className="book-spine b3" />
-              </div>
-              <div className="shelf-level mid-level">
-                <div className="book-spine b4" />
-                <div className="book-spine target-book-spine" />
-                <div className="book-spine b5" />
-              </div>
-            </div>
-            <div className="person-silhouette standing" />
-          </div>
-        );
-
-      case 'pickup':
-        return (
-          <div className="help-scene-custom pickup-scene">
-            <div className="library-shelf">
-              <div className="shelf-level mid-level">
-                <div className="book-spine b4" />
-                <div className="book-spine b5" />
-              </div>
-            </div>
-            <div className="person-silhouette reaching">
-              <div className="arm-reaching" />
-            </div>
-            <div className="transitioning-book">
-              <div className="spine" />
-              <div className="front" style={{ backgroundImage: `url(${defaultBook.coverUrl})` }} />
-            </div>
-          </div>
-        );
-
-      case 'nfc_scan':
-      case 'qr_scan':
-      case 'return_nfc':
-      case 'return_qr': {
-        const isNFC = scene.includes('nfc');
-        const isReturn = scene.includes('return');
-        return (
-          <div className="help-scene-scanner-wrapper slow-scan">
-            <ContinuousScannerAnimation 
-              type={isNFC ? 'nfc' : 'barcode'} 
-              action={isReturn ? 'return' : 'checkout'}
-              book={defaultBook}
-            />
-          </div>
-        );
-      }
-
-      case 'phone_screen_detail':
-        return renderLargePhoneScreen(
-          <div className="mock-screen-detail">
-            <div className="detail-header">
-              <BookOpen size={20} />
-            </div>
-            <div className="detail-cover">
-              <img src={defaultBook.coverUrl} alt={defaultBook.title} />
-            </div>
-            <h3 className="detail-title">{defaultBook.title}</h3>
-            <p className="detail-author">{defaultBook.author}</p>
-            <div className="detail-actions">
-              <button className="btn-gold-mock">{t('action.checkout', 'Checkout')}</button>
-            </div>
-          </div>
-        );
-
-      case 'phone_screen_login':
-        return renderLargePhoneScreen(
-          <div className="mock-screen-login">
-            <div className="login-logo">
-              <div className="logo-circle" />
-            </div>
-            <h3 className="login-title">{t('auth.welcome', 'Welcome')}</h3>
-            <div className="login-buttons">
-              <div className="btn-social-mock">
-                <Chrome size={16} /> {t('auth.google', 'Continue with Google')}
-              </div>
-              <div className="btn-social-mock">
-                <Linkedin size={16} /> {t('auth.linkedin', 'Continue with LinkedIn')}
-              </div>
-              <div className="divider-mock">
-                <span>{t('auth.or', 'or')}</span>
-              </div>
-              <div className="btn-social-mock outline">
-                <Mail size={16} /> {t('auth.email', 'Continue with Email')}
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'phone_screen_gatepass':
-        return renderLargePhoneScreen(
-          <div className="mock-screen-gatepass">
-            <h3 className="gatepass-title">{t('gatepass.title', 'Exit Gatepass')}</h3>
-            <p className="gatepass-desc">{t('gatepass.scan_at_exit', 'Scan at the exit gates')}</p>
-            <div className="gatepass-barcode-box">
-              <QrCode size={80} className="barcode-icon" />
-              <div className="barcode-bars">
-                <div className="bar w-1" />
-                <div className="bar w-2" />
-                <div className="bar w-1" />
-                <div className="bar w-3" />
-                <div className="bar w-1" />
-                <div className="bar w-2" />
-              </div>
-            </div>
-            <div className="gatepass-status success">
-              <CheckCircle size={16} /> {t('gatepass.active', 'Active')}
-            </div>
-          </div>
-        );
-
-      case 'return_complete':
-        return (
-          <div className="help-scene-custom return-complete-scene">
-            <div className="library-shelf blurred">
-              <div className="shelf-level mid-level">
-                <div className="book-spine b4" />
-                <div className="book-spine target-book-spine returned" />
-                <div className="book-spine b5" />
-              </div>
-            </div>
-            <div className="completion-overlay">
-              <div className="success-badge">
-                <CheckCircle size={48} />
-              </div>
-              <p>{t('return.success', 'Return Complete!')}</p>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
+  // STAGE 3: Execute Checkout / Return
+  const renderStage3 = () => {
+    // If it's a standard scanner, we show ContinuousScannerAnimation again but maybe it's too repetitive?
+    // User requested: "Stage 3... should show Executing Instant Royal Checkout popup with quotes... Standard Scanner also should show video of all transiting popups"
+    if (selectedPath === 'instant') {
+      return (
+        <div className="help-scene-inner stage3-wrapper">
+           <div className="sim-popup processing-popup">
+              <div className="sim-spinner"></div>
+              <h4>{t('Executing Instant Royal Checkout...')}</h4>
+              <p className="sim-quote">"A word, deeply read, becomes conviction..."</p>
+           </div>
+        </div>
+      );
     }
+    
+    let type = 'barcode';
+    if (selectedPath === 'standard' || selectedPath === 'return_nfc') type = 'nfc';
+    
+    return (
+      <div className="help-scene-inner scale-wrapper stage3-wrapper">
+        <ContinuousScannerAnimation type={type} action={selectedPath.startsWith('return') ? 'return' : 'checkout'} />
+      </div>
+    );
+  };
+
+  // STAGE 4: Gatepass
+  const renderStage4 = () => {
+    return (
+      <div className="help-scene-inner stage4-wrapper">
+         <div className="sim-phone">
+            <div className="sim-notch"></div>
+            <div className="gatepass-ticket">
+               <h3>{t('Security Gatepass')}</h3>
+               <div className="sim-barcode"></div>
+               <div className="sim-btn green">{t('Valid to exit')}</div>
+            </div>
+         </div>
+      </div>
+    );
   };
 
   return (
-    <div className={`help-scene-container ${isPaused ? 'help-scene-paused' : ''} scene-${scene}`}>
-      {renderSceneContent()}
+    <div className={`help-scene-wrapper ${isMobile ? 'mobile' : 'desktop'}`}>
+      <div className="scene-header">
+        <h2>{headingText || t(`STAGE ${activeStage}`)}</h2>
+      </div>
+      <div className="scene-content">
+        {activeStage === 1 && renderStage1()}
+        {activeStage === 2 && renderStage2()}
+        {activeStage === 3 && renderStage3()}
+        {activeStage === 4 && renderStage4()}
+      </div>
     </div>
   );
-}
+};
+
+export default HelpSceneAnimation;
