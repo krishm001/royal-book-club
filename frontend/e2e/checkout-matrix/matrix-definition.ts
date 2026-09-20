@@ -25,7 +25,7 @@ export type EntryPoint =
   | 'qr_scan'
   | 'direct_url'
   | 'nfc_tap_expired'
-  | 'qr_deeplink';
+  | 'qr_deeplink', 'ui_top_scanner', 'ui_book_card', 'ui_book_detail' | 'ui_top_scanner' | 'ui_book_card' | 'ui_book_detail';
 
 export type GatingConfig = 
   | 'phone_only'
@@ -56,7 +56,7 @@ export const ENTRY_POINTS: EntryPoint[] = [
   'qr_scan', 
   'direct_url', 
   'nfc_tap_expired', 
-  'qr_deeplink'
+  'qr_deeplink', 'ui_top_scanner', 'ui_book_card', 'ui_book_detail'
 ];
 export const GATING_CONFIGS: GatingConfig[] = [
   'phone_only', 
@@ -131,26 +131,51 @@ const SMOKE_SPECS = [
   { p: 'desktop_chrome', u: 'email_unverified', e: 'qr_scan', g: 'phone_email' },
   { p: 'desktop_chrome', u: 'email_verified_incomplete', e: 'direct_url', g: 'full_gating' },
   { p: 'desktop_chrome', u: 'email_verified_complete', e: 'nfc_tap_expired', g: 'no_gating' },
-  { p: 'desktop_chrome', u: 'google_oauth', e: 'qr_deeplink', g: 'phone_only' },
-  { p: 'desktop_chrome', u: 'linkedin_oauth', e: 'nfc_tap_valid', g: 'phone_email' },
   { p: 'android_mobile', u: 'anonymous', e: 'qr_scan', g: 'full_gating' },
-  { p: 'android_mobile', u: 'email_unverified', e: 'direct_url', g: 'no_gating' },
+  { p: 'android_mobile', u: 'email_unverified', e: 'nfc_tap_valid', g: 'no_gating' },
   { p: 'android_mobile', u: 'email_verified_incomplete', e: 'nfc_tap_expired', g: 'phone_only' },
-  { p: 'android_mobile', u: 'email_verified_complete', e: 'qr_deeplink', g: 'phone_email' },
-  { p: 'android_mobile', u: 'google_oauth', e: 'nfc_tap_valid', g: 'full_gating' },
-  { p: 'android_mobile', u: 'linkedin_oauth', e: 'qr_scan', g: 'no_gating' },
-  { p: 'iphone_mobile', u: 'anonymous', e: 'direct_url', g: 'phone_only' },
-  { p: 'iphone_mobile', u: 'email_unverified', e: 'nfc_tap_expired', g: 'phone_email' },
-  { p: 'iphone_mobile', u: 'email_verified_incomplete', e: 'qr_deeplink', g: 'full_gating' },
-  { p: 'iphone_mobile', u: 'email_verified_complete', e: 'nfc_tap_valid', g: 'no_gating' },
-  { p: 'iphone_mobile', u: 'google_oauth', e: 'qr_scan', g: 'phone_only' },
-  { p: 'iphone_mobile', u: 'linkedin_oauth', e: 'direct_url', g: 'phone_email' },
-  { p: 'desktop_chrome', u: 'anonymous', e: 'nfc_tap_expired', g: 'full_gating' },
-  { p: 'android_mobile', u: 'email_unverified', e: 'qr_deeplink', g: 'phone_only' },
+  { p: 'android_mobile', u: 'email_verified_complete', e: 'direct_url', g: 'phone_email' },
+  { p: 'iphone_mobile', u: 'anonymous', e: 'direct_url', g: 'no_gating' },
+  { p: 'iphone_mobile', u: 'email_unverified', e: 'nfc_tap_expired', g: 'full_gating' },
   { p: 'iphone_mobile', u: 'email_verified_incomplete', e: 'nfc_tap_valid', g: 'phone_email' },
-  { p: 'desktop_chrome', u: 'email_verified_complete', e: 'qr_scan', g: 'full_gating' },
-  { p: 'android_mobile', u: 'google_oauth', e: 'direct_url', g: 'no_gating' },
-  { p: 'iphone_mobile', u: 'linkedin_oauth', e: 'nfc_tap_expired', g: 'phone_only' }
+  { p: 'iphone_mobile', u: 'email_verified_complete', e: 'qr_scan', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'google_oauth', e: 'qr_deeplink', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'linkedin_oauth', e: 'ui_top_scanner', g: 'phone_only' },
+  { p: 'android_mobile', u: 'google_oauth', e: 'ui_top_scanner', g: 'phone_email' },
+  { p: 'android_mobile', u: 'linkedin_oauth', e: 'qr_deeplink', g: 'phone_email' },
+  { p: 'iphone_mobile', u: 'google_oauth', e: 'ui_book_card', g: 'full_gating' },
+  { p: 'iphone_mobile', u: 'linkedin_oauth', e: 'ui_book_detail', g: 'full_gating' },
+  { p: 'desktop_chrome', u: 'anonymous', e: 'ui_book_card', g: 'phone_email' },
+  { p: 'desktop_chrome', u: 'email_unverified', e: 'ui_book_detail', g: 'phone_only' },
+  { p: 'android_mobile', u: 'email_verified_incomplete', e: 'ui_book_card', g: 'no_gating' },
+  { p: 'android_mobile', u: 'google_oauth', e: 'ui_book_detail', g: 'no_gating' },
+  { p: 'iphone_mobile', u: 'email_verified_complete', e: 'qr_deeplink', g: 'full_gating' },
+  { p: 'desktop_chrome', u: 'linkedin_oauth', e: 'qr_scan', g: 'no_gating' },
+  { p: 'iphone_mobile', u: 'anonymous', e: 'ui_top_scanner', g: 'full_gating' },
+  { p: 'desktop_chrome', u: 'anonymous', e: 'nfc_tap_expired', g: 'phone_email' },
+  { p: 'desktop_chrome', u: 'anonymous', e: 'qr_deeplink', g: 'no_gating' },
+  { p: 'desktop_chrome', u: 'anonymous', e: 'ui_book_detail', g: 'phone_email' },
+  { p: 'desktop_chrome', u: 'email_unverified', e: 'direct_url', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'email_unverified', e: 'ui_top_scanner', g: 'no_gating' },
+  { p: 'desktop_chrome', u: 'email_unverified', e: 'ui_book_card', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'email_verified_complete', e: 'nfc_tap_valid', g: 'full_gating' },
+  { p: 'desktop_chrome', u: 'email_unverified', e: 'qr_deeplink', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'email_verified_incomplete', e: 'qr_scan', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'email_verified_incomplete', e: 'qr_deeplink', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'email_verified_incomplete', e: 'ui_top_scanner', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'email_verified_incomplete', e: 'ui_book_detail', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'email_verified_complete', e: 'ui_top_scanner', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'email_verified_complete', e: 'ui_book_card', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'email_verified_complete', e: 'ui_book_detail', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'google_oauth', e: 'nfc_tap_valid', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'google_oauth', e: 'qr_scan', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'google_oauth', e: 'direct_url', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'google_oauth', e: 'nfc_tap_expired', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'linkedin_oauth', e: 'nfc_tap_valid', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'linkedin_oauth', e: 'direct_url', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'linkedin_oauth', e: 'nfc_tap_expired', g: 'phone_only' },
+  { p: 'desktop_chrome', u: 'linkedin_oauth', e: 'ui_book_card', g: 'phone_only' }
+
 ] as const;
 
 export const SMOKE_COMBINATIONS: TestCombination[] = SMOKE_SPECS.map(spec => {
@@ -190,6 +215,16 @@ export function getExpectedSteps(combo: TestCombination): string[] {
   } else if (combo.entryPoint === 'qr_scan' || combo.entryPoint === 'qr_deeplink') {
     steps.push('Load page via QR URL');
     steps.push('Navigate to gated book detail');
+  } else if (combo.entryPoint === 'ui_top_scanner') {
+    steps.push('Load standard catalog');
+    steps.push('Click top scanner button');
+    steps.push('Dynamically query DB before checkout');
+  } else if (combo.entryPoint === 'ui_book_card') {
+    steps.push('Load standard catalog');
+    steps.push('Click instant checkout on book card');
+  } else if (combo.entryPoint === 'ui_book_detail') {
+    steps.push('Load standard book detail page');
+    steps.push('Click checkout button on detail page');
   } else {
     steps.push('Load standard book detail page');
   }
