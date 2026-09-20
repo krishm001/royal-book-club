@@ -4,7 +4,6 @@ import { useLanguage } from '../../i18n/LanguageContext';
 const PrintableHelpBanners = () => {
   const { t } = useLanguage();
 
-  // Common styles
   const pageStyle = {
     fontFamily: '"Playfair Display", Georgia, serif',
     color: '#000',
@@ -18,15 +17,14 @@ const PrintableHelpBanners = () => {
     border: '4px solid #d4af37',
     position: 'relative',
     display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between'
+    flexDirection: 'column'
   };
 
   const headerStyle = {
     textAlign: 'center',
     borderBottom: '2px solid #d4af37',
     paddingBottom: '20px',
-    marginBottom: '30px'
+    marginBottom: '20px'
   };
 
   const titleStyle = {
@@ -34,10 +32,7 @@ const PrintableHelpBanners = () => {
     fontWeight: 'bold',
     margin: '0 0 10px 0',
     letterSpacing: '4px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '15px'
+    color: '#1a1a2e'
   };
 
   const subtitleStyle = {
@@ -47,255 +42,134 @@ const PrintableHelpBanners = () => {
     fontStyle: 'italic'
   };
 
-  const stepsContainerStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '30px',
-    flex: 1
-  };
-
-  const stepStyle = {
-    flex: 1,
-    textAlign: 'center',
+  const mainPathStyle = {
+    flex: 2,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    padding: '20px',
-    backgroundColor: '#fdfbf7',
-    border: '1px solid #eee',
-    borderRadius: '8px'
-  };
-
-  const stepNumberStyle = {
-    fontSize: '24px',
-    fontWeight: 'bold',
-    color: '#d4af37',
-    marginBottom: '10px'
-  };
-
-  const stepTitleStyle = {
-    fontSize: '22px',
-    fontWeight: 'bold',
-    margin: '15px 0',
-    textTransform: 'uppercase'
-  };
-
-  const stepTextStyle = {
-    fontSize: '16px',
-    lineHeight: 1.4,
-    color: '#444',
-    whiteSpace: 'pre-line'
-  };
-
-  const footerStyle = {
-    marginTop: '30px',
-    paddingTop: '20px',
-    borderTop: '1px solid #ddd',
-    display: 'flex',
-    justifyContent: 'space-between',
-    fontSize: '16px'
-  };
-
-  const tentPageStyle = {
-    fontFamily: '"Playfair Display", Georgia, serif',
-    color: '#000',
-    backgroundColor: '#fff',
-    margin: 0,
-    padding: 0,
-    boxSizing: 'border-box',
-    width: '210mm',
-    height: '297mm', // A4 portrait, folded to two A5 landscape
-    pageBreakAfter: 'always',
-    display: 'flex',
-    flexDirection: 'column'
-  };
-
-  const tentHalfStyle = {
-    flex: 1,
-    padding: '40px',
-    display: 'flex',
-    flexDirection: 'column',
     justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#fdfbf7',
     border: '2px solid #d4af37',
-    boxSizing: 'border-box',
+    borderRadius: '12px',
+    padding: '30px',
+    marginBottom: '20px',
     textAlign: 'center'
   };
 
-  // SVGs
-  const CrownIcon = () => (
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d4af37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
-    </svg>
-  );
+  const subPathsContainer = {
+    flex: 1,
+    display: 'flex',
+    gap: '20px',
+    justifyContent: 'space-between'
+  };
 
-  const BookOpenIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-    </svg>
-  );
-
-  const SmartphoneIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-      <line x1="12" y1="18" x2="12.01" y2="18" />
-    </svg>
-  );
-
-  const KeyIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-    </svg>
-  );
-
-  const CheckCircleIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  );
-
-  const UserIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
+  const subPathStyle = {
+    flex: 1,
+    backgroundColor: '#fff',
+    border: '1px solid #ccc',
+    borderRadius: '8px',
+    padding: '20px',
+    textAlign: 'center'
+  };
 
   return (
     <div className="printable-help-banners" style={{ display: 'none' }}>
       
-      {/* Banner 1: Checkout */}
+      {/* Banner 1: MEGA-STAGE 1 */}
       <div style={pageStyle}>
         <div style={headerStyle}>
-          <h1 style={titleStyle}><CrownIcon /> {t('ROYAL BOOK CLUB')} <CrownIcon /></h1>
-          <h2 style={subtitleStyle}>{t('Self-Checkout Guide')}</h2>
+          <h1 style={titleStyle}>{t('STAGE 1: GETTING READY')}</h1>
+          <h2 style={subtitleStyle}>{t('How to start checking out your book')}</h2>
         </div>
-        <div style={stepsContainerStyle}>
-          <div style={stepStyle}>
-            <div style={stepNumberStyle}>1</div>
-            <BookOpenIcon />
-            <div style={stepTitleStyle}>{t('PICK UP')}</div>
-            <div style={stepTextStyle}>{t('Pick up your chosen book from the shelf')}</div>
-          </div>
-          <div style={stepStyle}>
-            <div style={stepNumberStyle}>2</div>
-            <SmartphoneIcon />
-            <div style={stepTitleStyle}>{t('TAP or SCAN')}</div>
-            <div style={stepTextStyle}>
-              {t('NFC: Hold phone on front cover\nQR: Camera on back cover QR')}
-            </div>
-          </div>
-          <div style={stepStyle}>
-            <div style={stepNumberStyle}>3</div>
-            <KeyIcon />
-            <div style={stepTitleStyle}>{t('SIGN IN')}</div>
-            <div style={stepTextStyle}>{t('New? Quick sign up via Google, LinkedIn, or Email')}</div>
-          </div>
-          <div style={stepStyle}>
-            <div style={stepNumberStyle}>4</div>
-            <CheckCircleIcon />
-            <div style={stepTitleStyle}>{t('CHECKOUT')}</div>
-            <div style={stepTextStyle}>{t('Click the golden Checkout button. Show Gatepass at exit.')}</div>
-          </div>
+        
+        <div style={mainPathStyle}>
+          <h2 style={{ fontSize: '42px', color: '#d4af37', margin: '0 0 20px 0' }}>★ {t('QUICKEST PATH: NFC TAP')}</h2>
+          <p style={{ fontSize: '32px', margin: 0 }}>
+            {t('1. Unlock your phone')}<br/>
+            {t('2. Tap phone to the Gold NFC Badge on the book cover')}<br/>
+            {t('3. Done! The app opens instantly.')}
+          </p>
         </div>
-        <div style={footerStyle}>
-          <div>{t('📱 iPhone: Hold top edge near NFC badge')}</div>
-          <div>{t('🤖 Android: Center-back of phone, slide up/down')}</div>
+
+        <div style={subPathsContainer}>
+          <div style={subPathStyle}>
+            <h3 style={{ fontSize: '24px', margin: '0 0 10px 0' }}>{t('OR: Scan QR Code')}</h3>
+            <p style={{ fontSize: '20px' }}>{t('Open your camera and scan the QR sticker on the back of the book.')}</p>
+          </div>
+          <div style={subPathStyle}>
+            <h3 style={{ fontSize: '24px', margin: '0 0 10px 0' }}>{t('OR: Use Website Scanner')}</h3>
+            <p style={{ fontSize: '20px' }}>{t('Go to royalbookclub.com, click Study, and use the Top Scanner.')}</p>
+          </div>
         </div>
       </div>
 
-      {/* Banner 2: Return */}
+      {/* Banner 2: MEGA-STAGE 2 */}
       <div style={pageStyle}>
         <div style={headerStyle}>
-          <h1 style={titleStyle}><CrownIcon /> {t('ROYAL BOOK CLUB')} <CrownIcon /></h1>
-          <h2 style={subtitleStyle}>{t('How to Return a Book')}</h2>
+          <h1 style={titleStyle}>{t('STAGE 2: SIGN IN & SETUP')}</h1>
+          <h2 style={subtitleStyle}>{t('Create a free account to borrow books')}</h2>
         </div>
-        <div style={stepsContainerStyle}>
-          <div style={stepStyle}>
-            <div style={stepNumberStyle}>1</div>
-            <UserIcon />
-            <div style={stepTitleStyle}>{t('OPEN PROFILE')}</div>
-            <div style={stepTextStyle}>{t('Find your book in Active Loans on the website')}</div>
-          </div>
-          <div style={stepStyle}>
-            <div style={stepNumberStyle}>2</div>
-            <SmartphoneIcon />
-            <div style={stepTitleStyle}>{t('VERIFY')}</div>
-            <div style={stepTextStyle}>
-              {t('NFC: Tap phone on book\nQR: Scan sticker or desk placard\nGPS: Stand inside library')}
+
+        <div style={mainPathStyle}>
+          <h2 style={{ fontSize: '42px', color: '#d4af37', margin: '0 0 20px 0' }}>{t('NEW TO THE LIBRARY?')}</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '0 40px' }}>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: '32px', fontWeight: 'bold' }}>{t('1. Sign Up')}</p>
+              <p style={{ fontSize: '24px' }}>{t('Use Google for 1-tap sign up, or email.')}</p>
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: '32px', fontWeight: 'bold' }}>{t('2. Verify')}</p>
+              <p style={{ fontSize: '24px' }}>{t('Verify email & accept Library Terms.')}</p>
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: '32px', fontWeight: 'bold' }}>{t('3. Profile')}</p>
+              <p style={{ fontSize: '24px' }}>{t('Enter your phone number.')}</p>
             </div>
           </div>
-          <div style={stepStyle}>
-            <div style={stepNumberStyle}>3</div>
-            <CheckCircleIcon />
-            <div style={stepTitleStyle}>{t('DONE')}</div>
-            <div style={stepTextStyle}>{t('Return confirmed! Place book back on shelf. Optional: Write a review.')}</div>
+        </div>
+
+        <div style={subPathsContainer}>
+          <div style={subPathStyle}>
+            <h3 style={{ fontSize: '24px', margin: '0 0 10px 0' }}>{t('RETURNING USERS')}</h3>
+            <p style={{ fontSize: '20px' }}>{t('Just sign in! If you are already signed in, this entire step is skipped automatically.')}</p>
+          </div>
+          <div style={{ ...subPathStyle, flex: 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '80px', height: '80px', border: '4px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>QR</div>
+            <p style={{ margin: '10px 0 0 0', fontWeight: 'bold' }}>{t('Scan for Help')}</p>
           </div>
         </div>
       </div>
 
-      {/* Banner 3: NFC Quick Tips (Tent Card) */}
-      <div style={tentPageStyle}>
-        {/* Top half - right side up */}
-        <div style={tentHalfStyle}>
-          <h2 style={{ fontSize: '36px', marginBottom: '30px' }}>{t('📱 NFC Scanning Tips')}</h2>
-          
-          <div style={{ display: 'flex', gap: '40px', textAlign: 'left', marginBottom: '40px', maxWidth: '80%' }}>
-            <div style={{ flex: 1 }}>
-              <h3 style={{ fontSize: '24px', borderBottom: '2px solid #d4af37', paddingBottom: '10px' }}>{t('iPhone')}</h3>
-              <ul style={{ fontSize: '18px', lineHeight: 1.6, paddingLeft: '20px' }}>
-                <li>{t('Top edge near NFC badge')}</li>
-                <li>{t('Screen must be unlocked')}</li>
-                <li>{t('iPhone 7/8: Open NFC from Control Center first')}</li>
-              </ul>
-            </div>
-            <div style={{ flex: 1 }}>
-              <h3 style={{ fontSize: '24px', borderBottom: '2px solid #d4af37', paddingBottom: '10px' }}>{t('Android')}</h3>
-              <ul style={{ fontSize: '18px', lineHeight: 1.6, paddingLeft: '20px' }}>
-                <li>{t('Center-back of phone')}</li>
-                <li>{t('Slide up/down slowly')}</li>
-                <li>{t('Wait for vibration')}</li>
-              </ul>
-            </div>
-          </div>
-          
-          <div style={{ display: 'flex', gap: '40px', fontSize: '20px', fontWeight: 'bold' }}>
-            <div style={{ color: '#d32f2f' }}>{t('❌ Remove metallic cases')}</div>
-            <div style={{ color: '#388e3c' }}>{t('✅ No app download needed!')}</div>
-          </div>
+      {/* Banner 3: MEGA-STAGE 3 */}
+      <div style={pageStyle}>
+        <div style={headerStyle}>
+          <h1 style={titleStyle}>{t('STAGE 3: COMPLETE CHECKOUT / RETURN')}</h1>
+          <h2 style={subtitleStyle}>{t('Get your Gatepass and enjoy reading')}</h2>
         </div>
 
-        {/* Bottom half - rotated 180 degrees */}
-        <div style={{ ...tentHalfStyle, transform: 'rotate(180deg)', borderTop: 'none' }}>
-          <h2 style={{ fontSize: '36px', marginBottom: '30px' }}>{t('📱 NFC Scanning Tips')}</h2>
-          
-          <div style={{ display: 'flex', gap: '40px', textAlign: 'left', marginBottom: '40px', maxWidth: '80%' }}>
-            <div style={{ flex: 1 }}>
-              <h3 style={{ fontSize: '24px', borderBottom: '2px solid #d4af37', paddingBottom: '10px' }}>{t('iPhone')}</h3>
-              <ul style={{ fontSize: '18px', lineHeight: 1.6, paddingLeft: '20px' }}>
-                <li>{t('Top edge near NFC badge')}</li>
-                <li>{t('Screen must be unlocked')}</li>
-                <li>{t('iPhone 7/8: Open NFC from Control Center first')}</li>
-              </ul>
-            </div>
-            <div style={{ flex: 1 }}>
-              <h3 style={{ fontSize: '24px', borderBottom: '2px solid #d4af37', paddingBottom: '10px' }}>{t('Android')}</h3>
-              <ul style={{ fontSize: '18px', lineHeight: 1.6, paddingLeft: '20px' }}>
-                <li>{t('Center-back of phone')}</li>
-                <li>{t('Slide up/down slowly')}</li>
-                <li>{t('Wait for vibration')}</li>
-              </ul>
-            </div>
+        <div style={{ display: 'flex', flex: 1, gap: '20px' }}>
+          <div style={{ ...mainPathStyle, flex: 1, margin: 0, justifyContent: 'flex-start', paddingTop: '40px' }}>
+            <h2 style={{ fontSize: '36px', color: '#d4af37' }}>{t('CHECKOUT')}</h2>
+            <ul style={{ fontSize: '26px', textAlign: 'left', lineHeight: '1.6', marginTop: '20px' }}>
+              <li><strong>{t('NFC Tap:')}</strong> {t('Click "Instant Checkout"')}</li>
+              <li><strong>{t('Standard:')}</strong> {t('Use the Scanner Popup')}</li>
+              <li style={{ marginTop: '20px', listStyle: 'none', color: '#d4af37', fontWeight: 'bold', textAlign: 'center' }}>
+                {t('→ WAIT FOR GATEPASS ←')}
+              </li>
+            </ul>
           </div>
-          
-          <div style={{ display: 'flex', gap: '40px', fontSize: '20px', fontWeight: 'bold' }}>
-            <div style={{ color: '#d32f2f' }}>{t('❌ Remove metallic cases')}</div>
-            <div style={{ color: '#388e3c' }}>{t('✅ No app download needed!')}</div>
+
+          <div style={{ ...mainPathStyle, flex: 1, margin: 0, justifyContent: 'flex-start', paddingTop: '40px' }}>
+            <h2 style={{ fontSize: '36px', color: '#d4af37' }}>{t('RETURN')}</h2>
+            <ul style={{ fontSize: '26px', textAlign: 'left', lineHeight: '1.6', marginTop: '20px' }}>
+              <li><strong>{t('NFC Tap:')}</strong> {t('Click "Instant Return"')}</li>
+              <li><strong>{t('GPS Location:')}</strong> {t('Stand inside the library')}</li>
+              <li><strong>{t('QR Validator:')}</strong> {t('Scan library desk QR')}</li>
+            </ul>
           </div>
         </div>
       </div>
+
     </div>
   );
 };

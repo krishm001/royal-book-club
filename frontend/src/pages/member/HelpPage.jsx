@@ -55,28 +55,15 @@ const HelpPage = () => {
       {/* Background aesthetic premium glow */}
       <div className="sages-hero-bg-glow"></div>
       
-      <header className="sages-help-header">
-        <div className="header-top-row">
-          <button className="sages-back-btn" onClick={() => navigate(-1)} aria-label={t("str_5407", "Go back")}>
-            <ArrowLeft size={20} />
-            <span>{t('common.back') || 'Back'}</span>
-          </button>
-
-          <button className="print-guide-btn" onClick={handlePrint}>
-            <Printer size={16} />
-            <span>{t('helpGuide.printBanners', 'Print Library Banners')}</span>
-          </button>
-        </div>
-        
-        <div className="sages-header-titles">
-          <div className="sages-badge">
-            <BookOpen size={14} className="sparkle-icon" />
-            <span>{t('common.sagesGuild')}</span>
-          </div>
-          <h1>{t('helpGuide.pageTitle', 'Your Complete Library Guide')}</h1>
-          <p className="sages-subtitle">{t('helpGuide.pageSubtitle', 'Follow the interactive walkthrough below. Choose your path and we\'ll guide you step by step — from picking up a book to walking out with your Gatepass.')}</p>
-        </div>
+      <header className="help-toolbar">
+        <button onClick={() => navigate(-1)} className="help-back-btn">
+          <ArrowLeft size={18} /> {t('common.back', 'Back')}
+        </button>
+        <button onClick={handlePrint} className="help-print-btn">
+          <Printer size={18} /> {t('helpGuide.print', 'Print Guide')}
+        </button>
       </header>
+
 
       {/* Interactive Video Guide */}
       <main className="sages-content-area">
