@@ -257,3 +257,123 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
+
+/* New CSS for Phase 5 Adjustments */
+
+.timeline-bar {
+  height: 3px;
+  background: var(--accent);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  transition: width 0.1s linear;
+}
+
+.scene-header {
+  position: relative;
+}
+
+/* Stage 1 Zoomed Overlay */
+.final-state-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+.final-state-overlay.visible {
+  opacity: 1;
+}
+
+.zoomed-phone-frame {
+  width: 260px;
+  height: 520px;
+  background: #111;
+  border-radius: 36px;
+  border: 12px solid #222;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  transform: scale(0.8) translateY(50px);
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.final-state-overlay.visible .zoomed-phone-frame {
+  transform: scale(1) translateY(0);
+}
+
+.zoomed-phone-frame img,
+.real-screenshots img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+
+/* Stage 2 Sim Phone Updates */
+.sim-phone.real-screenshots {
+  background: #fff;
+  padding: 0;
+}
+
+.email-verification-override {
+  background: #f0f2f5;
+  width: 100%;
+  height: 100%;
+  padding: 40px 15px 15px;
+  box-sizing: border-box;
+}
+
+.inbox-header {
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+/* Fake Cursor Animations */
+.fake-cursor {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="black" stroke-width="2"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>') no-repeat;
+  z-index: 300;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.cursor-click-transition {
+  animation: cursorMoveAndClick 3.5s ease-out forwards;
+}
+
+.cursor-click-complete {
+  animation: cursorClickComplete 3.5s ease-out forwards;
+}
+
+@keyframes cursorMoveAndClick {
+  0% { transform: translate(150px, 400px); opacity: 0; }
+  20% { transform: translate(150px, 400px); opacity: 1; }
+  60% { transform: translate(130px, 250px); opacity: 1; }
+  70% { transform: translate(130px, 250px) scale(0.8); opacity: 1; }
+  80% { transform: translate(130px, 250px) scale(1); opacity: 1; }
+  100% { transform: translate(130px, 250px); opacity: 1; }
+}
+
+@keyframes cursorClickComplete {
+  0% { transform: translate(150px, 400px); opacity: 0; }
+  20% { transform: translate(150px, 400px); opacity: 1; }
+  60% { transform: translate(110px, 350px); opacity: 1; }
+  70% { transform: translate(110px, 350px) scale(0.8); opacity: 1; }
+  80% { transform: translate(110px, 350px) scale(1); opacity: 1; }
+  100% { transform: translate(110px, 350px); opacity: 1; }
+}
