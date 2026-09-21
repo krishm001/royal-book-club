@@ -377,3 +377,69 @@
   80% { transform: translate(110px, 350px) scale(1); opacity: 1; }
   100% { transform: translate(110px, 350px); opacity: 1; }
 }
+
+/* Stage 1 App Flow Mocks */
+.stage1-ui-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.top-scanner-mock, .browse-mock {
+  background: #f8f9fa;
+  padding: 30px 15px;
+}
+
+.nav-bar {
+  background: var(--accent);
+  color: #fff;
+  padding: 10px;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.study-tab {
+  background: #fff;
+  padding: 20px;
+  text-align: center;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.scan-btn {
+  background: #333;
+  color: #fff;
+}
+
+.search-bar {
+  background: #fff;
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #666;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+}
+
+.book-card-mock {
+  background: #fff;
+  height: 150px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+}
+
+.gatepass-sim {
+  background: #f0f2f5;
+  justify-content: center;
+}

@@ -27,7 +27,7 @@ export default defineConfig({
     // Existing default project
     {
       name: 'chromium',
-      testMatch: /^(?!.*checkout-matrix).*\.spec\.ts$/,
+      testMatch: /^(?!.*checkout-matrix)(?!.*help-screenshots).*\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
     // Sanity: 8 critical path tests, ~3 min
